@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { generateContent } from './services/claude'
+import { generateDeepDive } from './services/claude'
 import LearnScreen from './components/LearnScreen'
 import ReviewScreen from './components/ReviewScreen'
 import CardLibrary from './components/CardLibrary'
@@ -12,6 +12,7 @@ function App() {
   const [learnContent, setLearnContent] = useState('')
   const [learnTopic, setLearnTopic] = useState('')
   const [cardStats, setCardStats] = useState({ total: 0, dueToday: 0 })
+  const [deepDiveProgress, setDeepDiveProgress] = useState(null)
 
   useEffect(() => {
     // Calculate card statistics
@@ -43,14 +44,19 @@ function App() {
     if (topic.trim()) {
       setLoading(true)
       setError(null)
+      setDeepDiveProgress({ current: 0, total: 0, section: 'Generating outline...' })
 
       try {
-        const content = await generateContent(topic, 'initial')
+        const content = await generateDeepDive(topic, (current, total, section) => {
+          setDeepDiveProgress({ current, total, section })
+        })
         setLearnContent(content)
         setLearnTopic(topic)
+        setDeepDiveProgress(null)
         setScreen('learn')
       } catch (err) {
         setError(err.message)
+        setDeepDiveProgress(null)
       } finally {
         setLoading(false)
       }
@@ -149,13 +155,32 @@ function App() {
             />
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-          >
-            {loading ? 'Loading...' : 'Get Started'}
-          </button>
+          {deepDiveProgress ? (
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="text-center mb-4">
+                <div className="text-xl font-bold text-indigo-600 mb-2">
+                  {deepDiveProgress.current > 0 ? `${deepDiveProgress.current} / ${deepDiveProgress.total}` : 'Preparing...'}
+                </div>
+                <div className="text-gray-600 text-sm">
+                  {deepDiveProgress.section}
+                </div>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-indigo-600 h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${deepDiveProgress.total > 0 ? (deepDiveProgress.current / deepDiveProgress.total) * 100 : 0}%` }}
+                ></div>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            >
+              {loading ? 'Loading...' : 'Get Started'}
+            </button>
+          )}
 
           {error && (
             <div className="text-red-600 text-sm text-center bg-red-50 p-3 rounded-lg">

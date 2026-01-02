@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { generateContent, generateFlashcard, generateDeepDive } from '../services/claude'
+import { generateContent, generateFlashcard } from '../services/claude'
 
 export default function LearnScreen({ initialContent, initialTopic, onBack }) {
   const [content, setContent] = useState(initialContent)
@@ -7,7 +7,6 @@ export default function LearnScreen({ initialContent, initialTopic, onBack }) {
   const [loading, setLoading] = useState(false)
   const [savedCards, setSavedCards] = useState([])
   const [error, setError] = useState(null)
-  const [deepDiveProgress, setDeepDiveProgress] = useState(null)
 
   const handleDeeper = async () => {
     setLoading(true)
@@ -72,26 +71,6 @@ export default function LearnScreen({ initialContent, initialTopic, onBack }) {
     }
   }
 
-  const handleLearnEverything = async () => {
-    setLoading(true)
-    setError(null)
-    setDeepDiveProgress({ current: 0, total: 0, section: 'Generating outline...' })
-
-    try {
-      const fullContent = await generateDeepDive(topic, (current, total, section) => {
-        setDeepDiveProgress({ current, total, section })
-      })
-
-      setContent(fullContent)
-      setDeepDiveProgress(null)
-    } catch (err) {
-      setError('Failed to generate comprehensive content. Please try again.')
-      setDeepDiveProgress(null)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 px-4 py-8">
       <div className="max-w-3xl mx-auto">
@@ -112,41 +91,22 @@ export default function LearnScreen({ initialContent, initialTopic, onBack }) {
 
         {/* Content area */}
         <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
-          {deepDiveProgress ? (
-            <div className="text-center py-8">
-              <div className="mb-4">
-                <div className="text-2xl font-bold text-indigo-600 mb-2">
-                  {deepDiveProgress.current > 0 ? `${deepDiveProgress.current} / ${deepDiveProgress.total}` : 'Preparing...'}
-                </div>
-                <div className="text-gray-600">
-                  {deepDiveProgress.section}
-                </div>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-3 max-w-md mx-auto">
-                <div
-                  className="bg-indigo-600 h-3 rounded-full transition-all duration-500"
-                  style={{ width: `${deepDiveProgress.total > 0 ? (deepDiveProgress.current / deepDiveProgress.total) * 100 : 0}%` }}
-                ></div>
-              </div>
-            </div>
-          ) : (
-            <div className="prose prose-lg max-w-none">
-              {content.split('\n\n').map((paragraph, index) => {
-                // Check if it's a heading
-                if (paragraph.startsWith('# ')) {
-                  return <h1 key={index} className="text-3xl font-bold mb-4 text-gray-900">{paragraph.slice(2)}</h1>
-                }
-                if (paragraph.startsWith('## ')) {
-                  return <h2 key={index} className="text-2xl font-bold mt-6 mb-3 text-gray-800">{paragraph.slice(3)}</h2>
-                }
-                return (
-                  <p key={index} className="mb-4 text-gray-800 leading-relaxed">
-                    {paragraph}
-                  </p>
-                )
-              })}
-            </div>
-          )}
+          <div className="prose prose-lg max-w-none">
+            {content.split('\n\n').map((paragraph, index) => {
+              // Check if it's a heading
+              if (paragraph.startsWith('# ')) {
+                return <h1 key={index} className="text-3xl font-bold mb-4 text-gray-900">{paragraph.slice(2)}</h1>
+              }
+              if (paragraph.startsWith('## ')) {
+                return <h2 key={index} className="text-2xl font-bold mt-6 mb-3 text-gray-800">{paragraph.slice(3)}</h2>
+              }
+              return (
+                <p key={index} className="mb-4 text-gray-800 leading-relaxed">
+                  {paragraph}
+                </p>
+              )
+            })}
+          </div>
         </div>
 
         {/* Error message */}
@@ -157,42 +117,30 @@ export default function LearnScreen({ initialContent, initialTopic, onBack }) {
         )}
 
         {/* Action buttons */}
-        <div className="space-y-4">
-          {/* Learn Everything button - prominent */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <button
-            onClick={handleLearnEverything}
+            onClick={handleDeeper}
             disabled={loading}
-            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-5 px-6 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading && deepDiveProgress ? 'Generating...' : 'Learn Everything'}
+            {loading ? 'Loading...' : 'Go Deeper'}
           </button>
 
-          {/* Standard buttons */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button
-              onClick={handleDeeper}
-              disabled={loading}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading && !deepDiveProgress ? 'Loading...' : 'Go Deeper'}
-            </button>
+          <button
+            onClick={handleTangent}
+            disabled={loading}
+            className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? 'Loading...' : 'Take a Tangent'}
+          </button>
 
-            <button
-              onClick={handleTangent}
-              disabled={loading}
-              className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading && !deepDiveProgress ? 'Loading...' : 'Take a Tangent'}
-            </button>
-
-            <button
-              onClick={handleSaveAndContinue}
-              disabled={loading}
-              className="bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading && !deepDiveProgress ? 'Loading...' : 'Save & Continue'}
-            </button>
-          </div>
+          <button
+            onClick={handleSaveAndContinue}
+            disabled={loading}
+            className="bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? 'Loading...' : 'Save & Continue'}
+          </button>
         </div>
       </div>
     </div>
