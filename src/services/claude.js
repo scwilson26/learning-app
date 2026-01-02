@@ -17,44 +17,45 @@ export async function generateContent(topic, mode = 'initial', context = '') {
     let prompt;
 
     if (mode === 'initial') {
-      prompt = `You are a friendly teacher explaining "${topic}" to a curious learner.
+      prompt = `Explain "${topic}" in clear, accessible language.
 
-Write 2-3 short paragraphs using simple, conversational language:
-- Use short sentences and common words
-- Explain like you're talking to a friend
-- Include a cool example or interesting fact
-- Keep it engaging but easy to read
+Write 2-3 concise paragraphs:
+- Use straightforward language and clear explanations
+- Keep sentences relatively short
+- Include an interesting example or detail
+- Aim for clarity over complexity
 
 IMPORTANT:
-- Write at a high school reading level
-- Avoid complex vocabulary and jargon
-- Use everyday language
-- Do NOT ask questions like "Would you like me to elaborate?" - just provide the information directly.`;
+- Write at an accessible reading level (similar to quality journalism)
+- Avoid unnecessary jargon, but don't dumb it down
+- Be informative and engaging, not overly casual
+- Do NOT use phrases like "super cool" or overly informal language
+- Do NOT ask questions like "Would you like me to elaborate?"`;
     } else if (mode === 'deeper') {
       prompt = `The user is learning about this topic:
 
 ${context}
 
-Go a bit deeper, but keep it simple and readable. Write 2-3 short paragraphs explaining more details.
+Provide more depth and detail. Write 2-3 concise paragraphs with additional information.
 
 IMPORTANT:
-- Use simple, clear language
-- Break complex ideas into easy-to-understand pieces
-- Short sentences work better than long ones
-- Avoid overly technical terms when possible
+- Use clear, straightforward language
+- Break down complex ideas logically
+- Keep sentences manageable
+- Be informative but accessible
 - Do NOT ask questions or prompt for user input.`;
     } else if (mode === 'tangent') {
       prompt = `Context:
 
 ${context}
 
-Take the user to an interesting related topic - something surprising or unexpected. Write 2-3 short paragraphs about this connection.
+Explore an interesting related topic - a surprising connection or related concept. Write 2-3 concise paragraphs.
 
 IMPORTANT:
-- Use simple, conversational language
-- Keep sentences short and clear
-- Make it feel like a fun discovery
-- Avoid complex vocabulary
+- Use clear, engaging language
+- Keep it informative but accessible
+- Make the connection interesting
+- Avoid overly casual or informal tone
 - Do NOT ask questions or prompt for user input.`;
     }
 
