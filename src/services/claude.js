@@ -143,12 +143,14 @@ Include relevant sections like: overview, historical context, key concepts, sign
  */
 export async function generateSection(topic, sectionTitle) {
   try {
-    const sectionPrompt = `Write about "${sectionTitle}" for an article on ${topic}.
+    const sectionPrompt = `Write the "${sectionTitle}" section for an article on ${topic}.
+
+IMPORTANT: This is one section within a larger article. The introduction already covered who/what/when/where basics. Do NOT re-introduce ${topic}. Jump straight into the specific content for "${sectionTitle}".
 
 Use a mix of paragraphs and bullet points for readability. Make it scannable like Wikipedia.
 
 Format guidelines:
-- Start with 1-2 short paragraphs of key context
+- Start with 1-2 short paragraphs of key context (specific to this section)
 - Use bullet points for lists, multiple items, or key facts
 - Use **bold** for important names, terms, dates
 - Break up dense information - vary the format
