@@ -34,11 +34,11 @@ Go deeper into this same topic. Explain more technical details, mechanisms, or a
 
 IMPORTANT: Write only informational content. Do NOT ask questions or prompt for user input. Just provide the information directly.`;
     } else if (mode === 'tangent') {
-      prompt = `The user just learned about:
+      prompt = `Context:
 
 ${context}
 
-Take them on an interesting tangent to a related but unexpected topic. Find a surprising connection or related concept that would fascinate them. Write 2-3 engaging paragraphs about this new direction.
+Take the user on an interesting tangent to a related but unexpected topic. Find a surprising connection or related concept that would fascinate them. Write 2-3 engaging paragraphs about this new direction.
 
 IMPORTANT: Write only informational content. Do NOT ask questions or prompt for user input. Just provide the information directly.`;
     }

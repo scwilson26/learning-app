@@ -27,7 +27,9 @@ export default function LearnScreen({ initialContent, initialTopic, onBack }) {
     setError(null)
 
     try {
-      const newContent = await generateContent(topic, 'tangent', content)
+      // If no content yet, use the topic as context
+      const context = content || `The topic: ${topic}`
+      const newContent = await generateContent(topic, 'tangent', context)
       setContent(newContent)
       // Update topic based on the tangent (we'll use the first sentence as a proxy)
       const firstSentence = newContent.split('.')[0]
