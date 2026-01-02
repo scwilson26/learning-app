@@ -1,6 +1,17 @@
 import { useState } from 'react'
 import { generateContent, generateFlashcard, generateSection } from '../services/claude'
 
+// Helper function to render text with **bold** markdown
+function renderTextWithBold(text) {
+  const parts = text.split(/(\*\*.*?\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
+}
+
 export default function LearnScreen({ topic, intro, sections, onBack }) {
   const [savedCards, setSavedCards] = useState([])
   const [error, setError] = useState(null)
@@ -90,11 +101,27 @@ export default function LearnScreen({ topic, intro, sections, onBack }) {
                 {/* Section content - expandable */}
                 {expandedSections[index] && sectionContent[index] && (
                   <div className="px-4 py-4 bg-white">
-                    {sectionContent[index].split('\n\n').map((paragraph, pIndex) => (
-                      <p key={pIndex} className="mb-3 text-gray-800 leading-relaxed">
-                        {paragraph}
-                      </p>
-                    ))}
+                    {sectionContent[index].split('\n').map((line, pIndex) => {
+                      // Handle bullet points
+                      if (line.trim().startsWith('- ')) {
+                        const bulletText = line.trim().substring(2);
+                        return (
+                          <li key={pIndex} className="ml-5 mb-2 text-gray-800 leading-relaxed">
+                            {renderTextWithBold(bulletText)}
+                          </li>
+                        );
+                      }
+                      // Skip empty lines
+                      if (line.trim() === '') {
+                        return null;
+                      }
+                      // Regular paragraph
+                      return (
+                        <p key={pIndex} className="mb-3 text-gray-800 leading-relaxed">
+                          {renderTextWithBold(line)}
+                        </p>
+                      );
+                    })}
                   </div>
                 )}
               </div>

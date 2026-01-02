@@ -145,18 +145,25 @@ export async function generateSection(topic, sectionTitle) {
   try {
     const sectionPrompt = `Write about "${sectionTitle}" for an article on ${topic}.
 
-Write 2-3 concise paragraphs covering this section's key information.
+Use a mix of paragraphs and bullet points for readability. Make it scannable like Wikipedia.
 
-Requirements:
-- Write in Wikipedia style: factual, direct, informative
-- Include specific facts, dates, examples, and relevant details
-- Use clear, efficient sentences - avoid filler words
-- Every sentence must add new information
+Format guidelines:
+- Start with 1-2 short paragraphs of key context
+- Use bullet points for lists, multiple items, or key facts
+- Use **bold** for important names, terms, dates
+- Break up dense information - vary the format
+- Think: "How would Wikipedia present this?"
+
+Content requirements:
+- Factual, direct, informative
+- Include specific facts, dates, examples
+- Clear, efficient sentences - no filler
+- Every sentence adds new information
 - No adjectives like "remarkable," "extraordinary," "profound"
-- No phrases like "not only...but also" or redundant transitions
+- No redundant phrases like "not only...but also"
 - Do NOT ask questions or prompt for user input
 
-Be thorough but succinct. Make every word count.`;
+Be thorough but succinct. Make it easy to scan and absorb.`;
 
     const message = await anthropic.messages.create({
       model: 'claude-3-5-haiku-20241022',
