@@ -24,19 +24,23 @@ Write 2-3 paragraphs that:
 - Include a fascinating detail or example
 - Make the reader curious to learn more
 
-Keep it conversational and engaging.`;
+IMPORTANT: Write only informational content. Do NOT ask questions like "Would you like me to elaborate?" or "Should I explain more?" This is a one-way information flow - just provide the content directly.`;
     } else if (mode === 'deeper') {
       prompt = `The user is learning about this topic:
 
 ${context}
 
-Go deeper into this same topic. Explain more technical details, mechanisms, or advanced concepts. Write 2-3 engaging paragraphs.`;
+Go deeper into this same topic. Explain more technical details, mechanisms, or advanced concepts. Write 2-3 engaging paragraphs.
+
+IMPORTANT: Write only informational content. Do NOT ask questions or prompt for user input. Just provide the information directly.`;
     } else if (mode === 'tangent') {
       prompt = `The user just learned about:
 
 ${context}
 
-Take them on an interesting tangent to a related but unexpected topic. Find a surprising connection or related concept that would fascinate them. Write 2-3 engaging paragraphs about this new direction.`;
+Take them on an interesting tangent to a related but unexpected topic. Find a surprising connection or related concept that would fascinate them. Write 2-3 engaging paragraphs about this new direction.
+
+IMPORTANT: Write only informational content. Do NOT ask questions or prompt for user input. Just provide the information directly.`;
     }
 
     const message = await anthropic.messages.create({
