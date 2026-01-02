@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { generateContent, generateFlashcard, generateSection } from '../services/claude'
+import { generateContent, generateFlashcard } from '../services/claude'
 
 // Helper function to render text with **bold** markdown
 function renderTextWithBold(text) {
@@ -15,39 +15,6 @@ function renderTextWithBold(text) {
 export default function LearnScreen({ topic, intro, sections, onBack }) {
   const [savedCards, setSavedCards] = useState([])
   const [error, setError] = useState(null)
-
-  // Track which sections are expanded and their content
-  const [expandedSections, setExpandedSections] = useState({})
-  const [sectionContent, setSectionContent] = useState({})
-  const [loadingSections, setLoadingSections] = useState({})
-
-  const handleToggleSection = async (sectionTitle, index) => {
-    // If already expanded, just collapse it
-    if (expandedSections[index]) {
-      setExpandedSections(prev => ({ ...prev, [index]: false }))
-      return
-    }
-
-    // If we already have content cached, just expand it
-    if (sectionContent[index]) {
-      setExpandedSections(prev => ({ ...prev, [index]: true }))
-      return
-    }
-
-    // Otherwise, fetch the content
-    setLoadingSections(prev => ({ ...prev, [index]: true }))
-    setError(null)
-
-    try {
-      const content = await generateSection(topic, sectionTitle)
-      setSectionContent(prev => ({ ...prev, [index]: content }))
-      setExpandedSections(prev => ({ ...prev, [index]: true }))
-    } catch (err) {
-      setError(`Failed to load section: ${sectionTitle}`)
-    } finally {
-      setLoadingSections(prev => ({ ...prev, [index]: false }))
-    }
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 px-4 py-8">
@@ -75,58 +42,40 @@ export default function LearnScreen({ topic, intro, sections, onBack }) {
           {/* Intro paragraph */}
           <p className="mb-6 text-gray-800 leading-relaxed">{intro}</p>
 
-          {/* Section outline with collapsible content */}
-          <div className="space-y-3">
-            {sections.map((sectionTitle, index) => (
-              <div key={index} className="border border-gray-200 rounded-lg overflow-hidden">
-                {/* Section header - clickable */}
-                <button
-                  onClick={() => handleToggleSection(sectionTitle, index)}
-                  className="w-full px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors duration-150"
-                >
-                  <h2 className="text-lg font-semibold text-gray-800 text-left">
-                    {sectionTitle}
-                  </h2>
-                  <span className="text-gray-500 text-xl">
-                    {loadingSections[index] ? (
-                      <span className="animate-spin inline-block">⟳</span>
-                    ) : expandedSections[index] ? (
-                      '▼'
-                    ) : (
-                      '▶'
-                    )}
-                  </span>
-                </button>
+          {/* All sections with content */}
+          {sections.map((section, index) => (
+            <div key={index} className="mb-8">
+              {/* Section title */}
+              <h2 className="text-2xl font-bold mb-4 text-gray-800 border-b-2 border-gray-200 pb-2">
+                {section.title}
+              </h2>
 
-                {/* Section content - expandable */}
-                {expandedSections[index] && sectionContent[index] && (
-                  <div className="px-4 py-4 bg-white">
-                    {sectionContent[index].split('\n').map((line, pIndex) => {
-                      // Handle bullet points
-                      if (line.trim().startsWith('- ')) {
-                        const bulletText = line.trim().substring(2);
-                        return (
-                          <li key={pIndex} className="ml-5 mb-2 text-gray-800 leading-relaxed">
-                            {renderTextWithBold(bulletText)}
-                          </li>
-                        );
-                      }
-                      // Skip empty lines
-                      if (line.trim() === '') {
-                        return null;
-                      }
-                      // Regular paragraph
-                      return (
-                        <p key={pIndex} className="mb-3 text-gray-800 leading-relaxed">
-                          {renderTextWithBold(line)}
-                        </p>
-                      );
-                    })}
-                  </div>
-                )}
+              {/* Section content */}
+              <div className="space-y-3">
+                {section.content.split('\n').map((line, lIndex) => {
+                  // Handle bullet points
+                  if (line.trim().startsWith('- ')) {
+                    const bulletText = line.trim().substring(2);
+                    return (
+                      <li key={lIndex} className="ml-5 mb-2 text-gray-800 leading-relaxed">
+                        {renderTextWithBold(bulletText)}
+                      </li>
+                    );
+                  }
+                  // Skip empty lines
+                  if (line.trim() === '') {
+                    return null;
+                  }
+                  // Regular paragraph
+                  return (
+                    <p key={lIndex} className="mb-3 text-gray-800 leading-relaxed">
+                      {renderTextWithBold(line)}
+                    </p>
+                  );
+                })}
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
 
         {/* Error message */}

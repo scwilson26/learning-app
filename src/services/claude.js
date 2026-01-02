@@ -75,12 +75,14 @@ IMPORTANT:
 }
 
 /**
- * Generate outline with intro paragraph for a topic
+ * Generate complete article with all sections
  * @param {string} topic - The topic to explore
- * @returns {Promise<{intro: string, sections: string[]}>} Intro paragraph and section titles
+ * @param {Function} onProgress - Progress callback (current, total, sectionTitle)
+ * @returns {Promise<{intro: string, sections: Array<{title: string, content: string}>}>}
  */
-export async function generateOutline(topic) {
+export async function generateFullArticle(topic, onProgress = () => {}) {
   try {
+    // First, generate outline
     const outlinePrompt = `Create a comprehensive outline for "${topic}".
 
 First, write a brief 2-3 sentence introduction paragraph that provides essential context (who/what/when/where/why this topic matters).
@@ -100,13 +102,13 @@ SECTIONS:
 
 Include relevant sections like: overview, historical context, key concepts, significant events/details, impact/legacy, related topics, etc.`;
 
-    const message = await anthropic.messages.create({
+    const outlineMessage = await anthropic.messages.create({
       model: 'claude-3-5-haiku-20241022',
       max_tokens: 1024,
       messages: [{ role: 'user', content: outlinePrompt }]
     });
 
-    const response = message.content[0].text;
+    const response = outlineMessage.content[0].text;
 
     // Parse intro
     const introMatch = response.match(/INTRO:\s*(.+?)(?=SECTIONS:)/s);
@@ -126,12 +128,23 @@ Include relevant sections like: overview, historical context, key concepts, sign
       throw new Error('Failed to parse section titles');
     }
 
-    const sections = sectionMatches.map(line => line.replace(/^\d+\.\s*/, '').trim());
+    const sectionTitles = sectionMatches.map(line => line.replace(/^\d+\.\s*/, '').trim());
+
+    // Now generate content for each section
+    const sections = [];
+
+    for (let i = 0; i < sectionTitles.length; i++) {
+      const sectionTitle = sectionTitles[i];
+      onProgress(i + 1, sectionTitles.length, sectionTitle);
+
+      const content = await generateSection(topic, sectionTitle);
+      sections.push({ title: sectionTitle, content });
+    }
 
     return { intro, sections };
   } catch (error) {
-    console.error('Error generating outline:', error);
-    throw new Error('Failed to generate outline');
+    console.error('Error generating full article:', error);
+    throw new Error('Failed to generate article');
   }
 }
 
