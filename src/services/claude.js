@@ -17,30 +17,45 @@ export async function generateContent(topic, mode = 'initial', context = '') {
     let prompt;
 
     if (mode === 'initial') {
-      prompt = `You are a knowledgeable and engaging teacher. Explain "${topic}" in a clear, interesting way.
+      prompt = `You are a friendly teacher explaining "${topic}" to a curious learner.
 
-Write 2-3 paragraphs that:
-- Start with the core concept in simple terms
-- Include a fascinating detail or example
-- Make the reader curious to learn more
+Write 2-3 short paragraphs using simple, conversational language:
+- Use short sentences and common words
+- Explain like you're talking to a friend
+- Include a cool example or interesting fact
+- Keep it engaging but easy to read
 
-IMPORTANT: Write only informational content. Do NOT ask questions like "Would you like me to elaborate?" or "Should I explain more?" This is a one-way information flow - just provide the content directly.`;
+IMPORTANT:
+- Write at a high school reading level
+- Avoid complex vocabulary and jargon
+- Use everyday language
+- Do NOT ask questions like "Would you like me to elaborate?" - just provide the information directly.`;
     } else if (mode === 'deeper') {
       prompt = `The user is learning about this topic:
 
 ${context}
 
-Go deeper into this same topic. Explain more technical details, mechanisms, or advanced concepts. Write 2-3 engaging paragraphs.
+Go a bit deeper, but keep it simple and readable. Write 2-3 short paragraphs explaining more details.
 
-IMPORTANT: Write only informational content. Do NOT ask questions or prompt for user input. Just provide the information directly.`;
+IMPORTANT:
+- Use simple, clear language
+- Break complex ideas into easy-to-understand pieces
+- Short sentences work better than long ones
+- Avoid overly technical terms when possible
+- Do NOT ask questions or prompt for user input.`;
     } else if (mode === 'tangent') {
       prompt = `Context:
 
 ${context}
 
-Take the user on an interesting tangent to a related but unexpected topic. Find a surprising connection or related concept that would fascinate them. Write 2-3 engaging paragraphs about this new direction.
+Take the user to an interesting related topic - something surprising or unexpected. Write 2-3 short paragraphs about this connection.
 
-IMPORTANT: Write only informational content. Do NOT ask questions or prompt for user input. Just provide the information directly.`;
+IMPORTANT:
+- Use simple, conversational language
+- Keep sentences short and clear
+- Make it feel like a fun discovery
+- Avoid complex vocabulary
+- Do NOT ask questions or prompt for user input.`;
     }
 
     const message = await anthropic.messages.create({
