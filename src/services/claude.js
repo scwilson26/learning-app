@@ -75,74 +75,99 @@ IMPORTANT:
 }
 
 /**
- * Generate comprehensive multi-section content about a topic
- * @param {string} topic - The topic to deeply explore
- * @param {Function} onProgress - Callback for progress updates (sectionIndex, totalSections, sectionTitle)
- * @returns {Promise<string>} Complete multi-section content
+ * Generate outline with intro paragraph for a topic
+ * @param {string} topic - The topic to explore
+ * @returns {Promise<{intro: string, sections: string[]}>} Intro paragraph and section titles
  */
-export async function generateDeepDive(topic, onProgress = () => {}) {
+export async function generateOutline(topic) {
   try {
-    // First, generate an outline
-    const outlinePrompt = `Create a comprehensive outline for learning about "${topic}".
+    const outlinePrompt = `Create a comprehensive outline for "${topic}".
 
-Generate 5-6 section titles that cover the topic thoroughly, like a complete Wikipedia article would.
+First, write a brief 2-3 sentence introduction paragraph that provides essential context (who/what/when/where/why this topic matters).
+
+Then, generate section titles that cover the topic thoroughly, like a Wikipedia article. Use as many sections as needed - no limit. Each section should cover one specific aspect.
 
 Format EXACTLY as:
+
+INTRO:
+[2-3 sentence introduction]
+
+SECTIONS:
 1. [Section title]
 2. [Section title]
 3. [Section title]
 ...
 
-Keep titles clear and specific. Cover: introduction, history/background, key concepts, important details, impact/legacy, and related topics.`;
+Include relevant sections like: overview, historical context, key concepts, significant events/details, impact/legacy, related topics, etc.`;
 
-    const outlineMessage = await anthropic.messages.create({
+    const message = await anthropic.messages.create({
       model: 'claude-3-5-haiku-20241022',
-      max_tokens: 512,
+      max_tokens: 1024,
       messages: [{ role: 'user', content: outlinePrompt }]
     });
 
-    const outlineText = outlineMessage.content[0].text;
+    const response = message.content[0].text;
 
-    // Parse section titles
-    const sectionMatches = outlineText.match(/\d+\.\s*(.+)/g);
+    // Parse intro
+    const introMatch = response.match(/INTRO:\s*(.+?)(?=SECTIONS:)/s);
+    if (!introMatch) {
+      throw new Error('Failed to parse introduction');
+    }
+    const intro = introMatch[1].trim();
+
+    // Parse sections
+    const sectionsMatch = response.match(/SECTIONS:\s*(.+)/s);
+    if (!sectionsMatch) {
+      throw new Error('Failed to parse sections');
+    }
+
+    const sectionMatches = sectionsMatch[1].match(/\d+\.\s*(.+)/g);
     if (!sectionMatches || sectionMatches.length === 0) {
-      throw new Error('Failed to generate outline');
+      throw new Error('Failed to parse section titles');
     }
 
     const sections = sectionMatches.map(line => line.replace(/^\d+\.\s*/, '').trim());
 
-    // Generate content for each section
-    let fullContent = `# ${topic}\n\n`;
-
-    for (let i = 0; i < sections.length; i++) {
-      const sectionTitle = sections[i];
-      onProgress(i + 1, sections.length, sectionTitle);
-
-      const sectionPrompt = `Write a comprehensive section about "${sectionTitle}" as part of an article about ${topic}.
-
-Write 3-4 detailed paragraphs that thoroughly cover this aspect of the topic.
-
-IMPORTANT:
-- Use clear, straightforward language (quality journalism style)
-- Be thorough and informative
-- Include specific details, examples, and context
-- Keep sentences manageable but don't oversimplify
-- Do NOT ask questions or prompt for user input`;
-
-      const sectionMessage = await anthropic.messages.create({
-        model: 'claude-3-5-haiku-20241022',
-        max_tokens: 1024,
-        messages: [{ role: 'user', content: sectionPrompt }]
-      });
-
-      const sectionContent = sectionMessage.content[0].text;
-      fullContent += `## ${sectionTitle}\n\n${sectionContent}\n\n`;
-    }
-
-    return fullContent;
+    return { intro, sections };
   } catch (error) {
-    console.error('Error generating deep dive:', error);
-    throw new Error('Failed to generate comprehensive content');
+    console.error('Error generating outline:', error);
+    throw new Error('Failed to generate outline');
+  }
+}
+
+/**
+ * Generate content for a specific section
+ * @param {string} topic - The main topic
+ * @param {string} sectionTitle - The section to generate content for
+ * @returns {Promise<string>} Section content
+ */
+export async function generateSection(topic, sectionTitle) {
+  try {
+    const sectionPrompt = `Write about "${sectionTitle}" for an article on ${topic}.
+
+Write 2-3 concise paragraphs covering this section's key information.
+
+Requirements:
+- Write in Wikipedia style: factual, direct, informative
+- Include specific facts, dates, examples, and relevant details
+- Use clear, efficient sentences - avoid filler words
+- Every sentence must add new information
+- No adjectives like "remarkable," "extraordinary," "profound"
+- No phrases like "not only...but also" or redundant transitions
+- Do NOT ask questions or prompt for user input
+
+Be thorough but succinct. Make every word count.`;
+
+    const message = await anthropic.messages.create({
+      model: 'claude-3-5-haiku-20241022',
+      max_tokens: 1024,
+      messages: [{ role: 'user', content: sectionPrompt }]
+    });
+
+    return message.content[0].text;
+  } catch (error) {
+    console.error('Error generating section:', error);
+    throw new Error('Failed to generate section content');
   }
 }
 

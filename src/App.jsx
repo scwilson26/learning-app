@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { generateDeepDive } from './services/claude'
+import { generateOutline } from './services/claude'
 import LearnScreen from './components/LearnScreen'
 import ReviewScreen from './components/ReviewScreen'
 import CardLibrary from './components/CardLibrary'
@@ -9,10 +9,8 @@ function App() {
   const [topic, setTopic] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [learnContent, setLearnContent] = useState('')
-  const [learnTopic, setLearnTopic] = useState('')
+  const [learnData, setLearnData] = useState(null) // { topic, intro, sections }
   const [cardStats, setCardStats] = useState({ total: 0, dueToday: 0 })
-  const [deepDiveProgress, setDeepDiveProgress] = useState(null)
 
   useEffect(() => {
     // Calculate card statistics
@@ -44,19 +42,13 @@ function App() {
     if (topic.trim()) {
       setLoading(true)
       setError(null)
-      setDeepDiveProgress({ current: 0, total: 0, section: 'Generating outline...' })
 
       try {
-        const content = await generateDeepDive(topic, (current, total, section) => {
-          setDeepDiveProgress({ current, total, section })
-        })
-        setLearnContent(content)
-        setLearnTopic(topic)
-        setDeepDiveProgress(null)
+        const { intro, sections } = await generateOutline(topic)
+        setLearnData({ topic, intro, sections })
         setScreen('learn')
       } catch (err) {
         setError(err.message)
-        setDeepDiveProgress(null)
       } finally {
         setLoading(false)
       }
@@ -66,8 +58,7 @@ function App() {
   const handleBackToHome = () => {
     setScreen('home')
     setTopic('')
-    setLearnContent('')
-    setLearnTopic('')
+    setLearnData(null)
   }
 
   const handleGoToReview = () => {
@@ -79,11 +70,12 @@ function App() {
   }
 
   // Show Learn screen if we're on it
-  if (screen === 'learn') {
+  if (screen === 'learn' && learnData) {
     return (
       <LearnScreen
-        initialContent={learnContent}
-        initialTopic={learnTopic}
+        topic={learnData.topic}
+        intro={learnData.intro}
+        sections={learnData.sections}
         onBack={handleBackToHome}
       />
     )
@@ -155,32 +147,13 @@ function App() {
             />
           </div>
 
-          {deepDiveProgress ? (
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="text-center mb-4">
-                <div className="text-xl font-bold text-indigo-600 mb-2">
-                  {deepDiveProgress.current > 0 ? `${deepDiveProgress.current} / ${deepDiveProgress.total}` : 'Preparing...'}
-                </div>
-                <div className="text-gray-600 text-sm">
-                  {deepDiveProgress.section}
-                </div>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className="bg-indigo-600 h-2 rounded-full transition-all duration-500"
-                  style={{ width: `${deepDiveProgress.total > 0 ? (deepDiveProgress.current / deepDiveProgress.total) * 100 : 0}%` }}
-                ></div>
-              </div>
-            </div>
-          ) : (
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-            >
-              {loading ? 'Loading...' : 'Get Started'}
-            </button>
-          )}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          >
+            {loading ? 'Generating outline...' : 'Get Started'}
+          </button>
 
           {error && (
             <div className="text-red-600 text-sm text-center bg-red-50 p-3 rounded-lg">

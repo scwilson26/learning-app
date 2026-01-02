@@ -1,73 +1,40 @@
 import { useState } from 'react'
-import { generateContent, generateFlashcard } from '../services/claude'
+import { generateContent, generateFlashcard, generateSection } from '../services/claude'
 
-export default function LearnScreen({ initialContent, initialTopic, onBack }) {
-  const [content, setContent] = useState(initialContent)
-  const [topic, setTopic] = useState(initialTopic)
-  const [loading, setLoading] = useState(false)
+export default function LearnScreen({ topic, intro, sections, onBack }) {
   const [savedCards, setSavedCards] = useState([])
   const [error, setError] = useState(null)
 
-  const handleDeeper = async () => {
-    setLoading(true)
-    setError(null)
+  // Track which sections are expanded and their content
+  const [expandedSections, setExpandedSections] = useState({})
+  const [sectionContent, setSectionContent] = useState({})
+  const [loadingSections, setLoadingSections] = useState({})
 
-    try {
-      const newContent = await generateContent(topic, 'deeper', content)
-      setContent(newContent)
-    } catch (err) {
-      setError('Failed to generate content. Please try again.')
-    } finally {
-      setLoading(false)
+  const handleToggleSection = async (sectionTitle, index) => {
+    // If already expanded, just collapse it
+    if (expandedSections[index]) {
+      setExpandedSections(prev => ({ ...prev, [index]: false }))
+      return
     }
-  }
 
-  const handleTangent = async () => {
-    setLoading(true)
-    setError(null)
-
-    try {
-      // If no content yet, use the topic as context
-      const context = content || `The topic: ${topic}`
-      const newContent = await generateContent(topic, 'tangent', context)
-      setContent(newContent)
-      // Update topic based on the tangent (we'll use the first sentence as a proxy)
-      const firstSentence = newContent.split('.')[0]
-      setTopic(firstSentence)
-    } catch (err) {
-      setError('Failed to generate content. Please try again.')
-    } finally {
-      setLoading(false)
+    // If we already have content cached, just expand it
+    if (sectionContent[index]) {
+      setExpandedSections(prev => ({ ...prev, [index]: true }))
+      return
     }
-  }
 
-  const handleSaveAndContinue = async () => {
-    setLoading(true)
+    // Otherwise, fetch the content
+    setLoadingSections(prev => ({ ...prev, [index]: true }))
     setError(null)
 
     try {
-      // Generate multiple flashcards from current content
-      const flashcards = await generateFlashcard(content)
-
-      // Add to saved cards with unique IDs
-      const newCards = flashcards.map((flashcard, index) => ({
-        id: Date.now() + index,
-        ...flashcard,
-        createdAt: new Date().toISOString()
-      }))
-      setSavedCards([...savedCards, ...newCards])
-
-      // Save to localStorage
-      const existingCards = JSON.parse(localStorage.getItem('flashcards') || '[]')
-      localStorage.setItem('flashcards', JSON.stringify([...existingCards, ...newCards]))
-
-      // Continue with deeper content
-      const newContent = await generateContent(topic, 'deeper', content)
-      setContent(newContent)
+      const content = await generateSection(topic, sectionTitle)
+      setSectionContent(prev => ({ ...prev, [index]: content }))
+      setExpandedSections(prev => ({ ...prev, [index]: true }))
     } catch (err) {
-      setError('Failed to save cards. Please try again.')
+      setError(`Failed to load section: ${sectionTitle}`)
     } finally {
-      setLoading(false)
+      setLoadingSections(prev => ({ ...prev, [index]: false }))
     }
   }
 
@@ -91,21 +58,47 @@ export default function LearnScreen({ initialContent, initialTopic, onBack }) {
 
         {/* Content area */}
         <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
-          <div className="prose prose-lg max-w-none">
-            {content.split('\n\n').map((paragraph, index) => {
-              // Check if it's a heading
-              if (paragraph.startsWith('# ')) {
-                return <h1 key={index} className="text-3xl font-bold mb-4 text-gray-900">{paragraph.slice(2)}</h1>
-              }
-              if (paragraph.startsWith('## ')) {
-                return <h2 key={index} className="text-2xl font-bold mt-6 mb-3 text-gray-800">{paragraph.slice(3)}</h2>
-              }
-              return (
-                <p key={index} className="mb-4 text-gray-800 leading-relaxed">
-                  {paragraph}
-                </p>
-              )
-            })}
+          {/* Title */}
+          <h1 className="text-3xl font-bold mb-4 text-gray-900">{topic}</h1>
+
+          {/* Intro paragraph */}
+          <p className="mb-6 text-gray-800 leading-relaxed">{intro}</p>
+
+          {/* Section outline with collapsible content */}
+          <div className="space-y-3">
+            {sections.map((sectionTitle, index) => (
+              <div key={index} className="border border-gray-200 rounded-lg overflow-hidden">
+                {/* Section header - clickable */}
+                <button
+                  onClick={() => handleToggleSection(sectionTitle, index)}
+                  className="w-full px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors duration-150"
+                >
+                  <h2 className="text-lg font-semibold text-gray-800 text-left">
+                    {sectionTitle}
+                  </h2>
+                  <span className="text-gray-500 text-xl">
+                    {loadingSections[index] ? (
+                      <span className="animate-spin inline-block">⟳</span>
+                    ) : expandedSections[index] ? (
+                      '▼'
+                    ) : (
+                      '▶'
+                    )}
+                  </span>
+                </button>
+
+                {/* Section content - expandable */}
+                {expandedSections[index] && sectionContent[index] && (
+                  <div className="px-4 py-4 bg-white">
+                    {sectionContent[index].split('\n\n').map((paragraph, pIndex) => (
+                      <p key={pIndex} className="mb-3 text-gray-800 leading-relaxed">
+                        {paragraph}
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
 
@@ -119,27 +112,24 @@ export default function LearnScreen({ initialContent, initialTopic, onBack }) {
         {/* Action buttons */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <button
-            onClick={handleDeeper}
-            disabled={loading}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled
+            className="bg-gray-400 text-white font-semibold py-4 px-6 rounded-lg cursor-not-allowed opacity-50"
           >
-            {loading ? 'Loading...' : 'Go Deeper'}
+            Go Deeper
           </button>
 
           <button
-            onClick={handleTangent}
-            disabled={loading}
-            className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled
+            className="bg-gray-400 text-white font-semibold py-4 px-6 rounded-lg cursor-not-allowed opacity-50"
           >
-            {loading ? 'Loading...' : 'Take a Tangent'}
+            Take a Tangent
           </button>
 
           <button
-            onClick={handleSaveAndContinue}
-            disabled={loading}
-            className="bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled
+            className="bg-gray-400 text-white font-semibold py-4 px-6 rounded-lg cursor-not-allowed opacity-50"
           >
-            {loading ? 'Loading...' : 'Save & Continue'}
+            Save & Continue
           </button>
         </div>
       </div>
