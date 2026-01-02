@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { generateContent } from './services/claude'
 import LearnScreen from './components/LearnScreen'
 import ReviewScreen from './components/ReviewScreen'
+import CardLibrary from './components/CardLibrary'
 
 function App() {
-  const [screen, setScreen] = useState('home') // 'home', 'learn', or 'review'
+  const [screen, setScreen] = useState('home') // 'home', 'learn', 'review', or 'library'
   const [topic, setTopic] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -41,6 +42,10 @@ function App() {
     setScreen('review')
   }
 
+  const handleGoToLibrary = () => {
+    setScreen('library')
+  }
+
   // Show Learn screen if we're on it
   if (screen === 'learn') {
     return (
@@ -57,11 +62,22 @@ function App() {
     return <ReviewScreen onBack={handleBackToHome} />
   }
 
+  // Show Card Library screen if we're on it
+  if (screen === 'library') {
+    return <CardLibrary onBack={handleBackToHome} />
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md">
-        {/* Review button */}
-        <div className="flex justify-end mb-4">
+        {/* Navigation buttons */}
+        <div className="flex justify-end gap-4 mb-4">
+          <button
+            onClick={handleGoToLibrary}
+            className="text-indigo-600 hover:text-indigo-800 font-medium underline"
+          >
+            View All Cards
+          </button>
           <button
             onClick={handleGoToReview}
             className="text-indigo-600 hover:text-indigo-800 font-medium underline"

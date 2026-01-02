@@ -106,49 +106,30 @@ export default function LearnScreen({ initialContent, initialTopic, onBack }) {
         )}
 
         {/* Action buttons */}
-        <div className="space-y-4">
-          {/* Explore section */}
-          <div>
-            <p className="text-sm font-medium text-gray-700 mb-2">Keep Exploring:</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <button
-                  onClick={handleDeeper}
-                  disabled={loading}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? 'Loading...' : 'Go Deeper'}
-                </button>
-                <p className="text-xs text-gray-500 mt-1 text-center">More about this topic</p>
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <button
+            onClick={handleDeeper}
+            disabled={loading}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? 'Loading...' : 'Go Deeper'}
+          </button>
 
-              <div>
-                <button
-                  onClick={handleTangent}
-                  disabled={loading}
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? 'Loading...' : 'Take a Tangent'}
-                </button>
-                <p className="text-xs text-gray-500 mt-1 text-center">Jump to something related</p>
-              </div>
-            </div>
-          </div>
+          <button
+            onClick={handleTangent}
+            disabled={loading}
+            className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? 'Loading...' : 'Take a Tangent'}
+          </button>
 
-          {/* Save section */}
-          <div className="pt-2 border-t border-gray-200">
-            <p className="text-sm font-medium text-gray-700 mb-2">Save as Flashcards:</p>
-            <button
-              onClick={handleSaveAndContinue}
-              disabled={loading}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-lg"
-            >
-              {loading ? 'Loading...' : '💾 Save & Continue Learning'}
-            </button>
-            <p className="text-xs text-gray-500 mt-2 text-center">
-              Creates multiple flashcards from this content and continues exploring
-            </p>
-          </div>
+          <button
+            onClick={handleSaveAndContinue}
+            disabled={loading}
+            className="bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? 'Loading...' : 'Save & Continue'}
+          </button>
         </div>
       </div>
     </div>
