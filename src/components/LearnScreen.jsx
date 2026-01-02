@@ -44,26 +44,26 @@ export default function LearnScreen({ initialContent, initialTopic, onBack }) {
     setError(null)
 
     try {
-      // Generate a flashcard from current content
-      const flashcard = await generateFlashcard(content)
+      // Generate multiple flashcards from current content
+      const flashcards = await generateFlashcard(content)
 
-      // Add to saved cards
-      const newCard = {
-        id: Date.now(),
+      // Add to saved cards with unique IDs
+      const newCards = flashcards.map((flashcard, index) => ({
+        id: Date.now() + index,
         ...flashcard,
         createdAt: new Date().toISOString()
-      }
-      setSavedCards([...savedCards, newCard])
+      }))
+      setSavedCards([...savedCards, ...newCards])
 
       // Save to localStorage
       const existingCards = JSON.parse(localStorage.getItem('flashcards') || '[]')
-      localStorage.setItem('flashcards', JSON.stringify([...existingCards, newCard]))
+      localStorage.setItem('flashcards', JSON.stringify([...existingCards, ...newCards]))
 
       // Continue with deeper content
       const newContent = await generateContent(topic, 'deeper', content)
       setContent(newContent)
     } catch (err) {
-      setError('Failed to save card. Please try again.')
+      setError('Failed to save cards. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -137,7 +137,7 @@ export default function LearnScreen({ initialContent, initialTopic, onBack }) {
 
           {/* Save section */}
           <div className="pt-2 border-t border-gray-200">
-            <p className="text-sm font-medium text-gray-700 mb-2">Save as Flashcard:</p>
+            <p className="text-sm font-medium text-gray-700 mb-2">Save as Flashcards:</p>
             <button
               onClick={handleSaveAndContinue}
               disabled={loading}
@@ -146,7 +146,7 @@ export default function LearnScreen({ initialContent, initialTopic, onBack }) {
               {loading ? 'Loading...' : '💾 Save & Continue Learning'}
             </button>
             <p className="text-xs text-gray-500 mt-2 text-center">
-              Creates a flashcard from this content and continues exploring
+              Creates multiple flashcards from this content and continues exploring
             </p>
           </div>
         </div>

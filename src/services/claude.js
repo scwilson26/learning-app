@@ -55,25 +55,30 @@ Take them on an interesting tangent to a related but unexpected topic. Find a su
 }
 
 /**
- * Generate a flashcard question and answer from content
- * @param {string} content - The content to create a flashcard from
- * @returns {Promise<{question: string, answer: string}>} Flashcard Q&A
+ * Generate multiple flashcards from content
+ * @param {string} content - The content to create flashcards from
+ * @returns {Promise<Array<{question: string, answer: string}>>} Array of flashcard Q&As
  */
 export async function generateFlashcard(content) {
   try {
-    const prompt = `Based on this learning content, create ONE flashcard question and answer:
+    const prompt = `Based on this learning content, create as many flashcard questions and answers as possible. Extract every concept, fact, relationship, or detail that could be tested. Aim for 5-6 flashcards, but create more if the content supports it.
 
 ${content}
 
 Format your response EXACTLY as:
-Q: [question here]
-A: [answer here]
+Q: [question 1]
+A: [answer 1]
 
-Make the question test understanding, not just memorization.`;
+Q: [question 2]
+A: [answer 2]
+
+(and so on...)
+
+Make the questions test understanding, not just memorization. Cover different aspects of the content.`;
 
     const message = await anthropic.messages.create({
       model: 'claude-3-5-haiku-20241022',
-      max_tokens: 512,
+      max_tokens: 1500,
       messages: [
         { role: 'user', content: prompt }
       ]
@@ -81,18 +86,27 @@ Make the question test understanding, not just memorization.`;
 
     const response = message.content[0].text;
 
-    // Parse the response
-    const qMatch = response.match(/Q:\s*(.+?)(?=\nA:)/s);
-    const aMatch = response.match(/A:\s*(.+)/s);
+    // Parse multiple Q&A pairs
+    const flashcards = [];
+    const pairs = response.split(/\n\s*\n/); // Split by double newlines
 
-    if (qMatch && aMatch) {
-      return {
-        question: qMatch[1].trim(),
-        answer: aMatch[1].trim()
-      };
-    } else {
-      throw new Error('Failed to parse flashcard response');
+    for (const pair of pairs) {
+      const qMatch = pair.match(/Q:\s*(.+?)(?=\nA:)/s);
+      const aMatch = pair.match(/A:\s*(.+)/s);
+
+      if (qMatch && aMatch) {
+        flashcards.push({
+          question: qMatch[1].trim(),
+          answer: aMatch[1].trim()
+        });
+      }
     }
+
+    if (flashcards.length === 0) {
+      throw new Error('Failed to parse any flashcards from response');
+    }
+
+    return flashcards;
   } catch (error) {
     console.error('Error generating flashcard:', error);
     throw new Error('Failed to generate flashcard');
