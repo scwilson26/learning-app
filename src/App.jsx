@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { generateContent } from './services/claude'
 import LearnScreen from './components/LearnScreen'
 import ReviewScreen from './components/ReviewScreen'
@@ -11,6 +11,32 @@ function App() {
   const [error, setError] = useState(null)
   const [learnContent, setLearnContent] = useState('')
   const [learnTopic, setLearnTopic] = useState('')
+  const [cardStats, setCardStats] = useState({ total: 0, dueToday: 0 })
+
+  useEffect(() => {
+    // Calculate card statistics
+    const updateCardStats = () => {
+      const savedCards = JSON.parse(localStorage.getItem('flashcards') || '[]')
+      const now = new Date()
+
+      const dueCards = savedCards.filter(card => {
+        if (!card.nextReview) return true // New cards are always due
+        return new Date(card.nextReview) <= now
+      })
+
+      setCardStats({
+        total: savedCards.length,
+        dueToday: dueCards.length
+      })
+    }
+
+    updateCardStats()
+
+    // Update stats when screen changes (in case cards were added/reviewed)
+    if (screen === 'home') {
+      updateCardStats()
+    }
+  }, [screen])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -78,12 +104,14 @@ function App() {
           >
             View All Cards
           </button>
-          <button
-            onClick={handleGoToReview}
-            className="text-indigo-600 hover:text-indigo-800 font-medium underline"
-          >
-            Review Cards →
-          </button>
+          {cardStats.dueToday > 0 && (
+            <button
+              onClick={handleGoToReview}
+              className="text-indigo-600 hover:text-indigo-800 font-medium underline"
+            >
+              Review Cards →
+            </button>
+          )}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -93,6 +121,23 @@ function App() {
             </h1>
             <p className="text-gray-600">Discover something new today</p>
           </div>
+
+          {/* Progress stats */}
+          {cardStats.total > 0 && (
+            <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
+              <div className="flex justify-around text-center">
+                <div>
+                  <div className="text-2xl font-bold text-indigo-600">{cardStats.dueToday}</div>
+                  <div className="text-sm text-gray-600">due today</div>
+                </div>
+                <div className="border-l border-gray-200"></div>
+                <div>
+                  <div className="text-2xl font-bold text-gray-800">{cardStats.total}</div>
+                  <div className="text-sm text-gray-600">total cards</div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div>
             <input
