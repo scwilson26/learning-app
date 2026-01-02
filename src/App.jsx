@@ -1,0 +1,110 @@
+import { useState } from 'react'
+import { generateContent } from './services/claude'
+import LearnScreen from './components/LearnScreen'
+import ReviewScreen from './components/ReviewScreen'
+
+function App() {
+  const [screen, setScreen] = useState('home') // 'home', 'learn', or 'review'
+  const [topic, setTopic] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [learnContent, setLearnContent] = useState('')
+  const [learnTopic, setLearnTopic] = useState('')
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (topic.trim()) {
+      setLoading(true)
+      setError(null)
+
+      try {
+        const content = await generateContent(topic, 'initial')
+        setLearnContent(content)
+        setLearnTopic(topic)
+        setScreen('learn')
+      } catch (err) {
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+  }
+
+  const handleBackToHome = () => {
+    setScreen('home')
+    setTopic('')
+    setLearnContent('')
+    setLearnTopic('')
+  }
+
+  const handleGoToReview = () => {
+    setScreen('review')
+  }
+
+  // Show Learn screen if we're on it
+  if (screen === 'learn') {
+    return (
+      <LearnScreen
+        initialContent={learnContent}
+        initialTopic={learnTopic}
+        onBack={handleBackToHome}
+      />
+    )
+  }
+
+  // Show Review screen if we're on it
+  if (screen === 'review') {
+    return <ReviewScreen onBack={handleBackToHome} />
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4 py-8">
+      <div className="w-full max-w-md">
+        {/* Review button */}
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={handleGoToReview}
+            className="text-indigo-600 hover:text-indigo-800 font-medium underline"
+          >
+            Review Cards →
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
+              Start Learning
+            </h1>
+            <p className="text-gray-600">Discover something new today</p>
+          </div>
+
+          <div>
+            <input
+              type="text"
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              placeholder="What do you want to learn about?"
+              className="w-full px-6 py-4 text-lg border-2 border-gray-300 rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all duration-200 shadow-sm"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          >
+            {loading ? 'Loading...' : 'Get Started'}
+          </button>
+
+          {error && (
+            <div className="text-red-600 text-sm text-center bg-red-50 p-3 rounded-lg">
+              {error}
+            </div>
+          )}
+        </form>
+      </div>
+    </div>
+  )
+}
+
+export default App
