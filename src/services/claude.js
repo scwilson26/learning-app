@@ -160,25 +160,23 @@ export async function generateSection(topic, sectionTitle) {
 
 IMPORTANT: This is one section within a larger article. The introduction already covered who/what/when/where basics. Do NOT re-introduce ${topic}. Jump straight into the specific content for "${sectionTitle}".
 
-Use a mix of paragraphs and bullet points for readability. Make it scannable like Wikipedia.
-
-Format guidelines:
-- Start with 1-2 short paragraphs of key context (specific to this section)
-- Use bullet points for lists, multiple items, or key facts
+BREVITY IS CRITICAL:
+- Write ONLY 2-3 short paragraphs total (100-150 words maximum)
+- Use bullet points sparingly - only 3-5 key items if needed, not for everything
 - Use **bold** for important names, terms, dates
-- Break up dense information - vary the format
-- Think: "How would Wikipedia present this?"
+- Prioritize the most essential facts only
+- Less is more - cover only what's truly important
 
 Content requirements:
 - Factual, direct, informative
-- Include specific facts, dates, examples
+- Include only the most important facts, dates, examples
 - Clear, efficient sentences - no filler
-- Every sentence adds new information
+- Every sentence must add new information
 - No adjectives like "remarkable," "extraordinary," "profound"
 - No redundant phrases like "not only...but also"
 - Do NOT ask questions or prompt for user input
 
-Be thorough but succinct. Make it easy to scan and absorb.`;
+Be brief. Keep it under 150 words. Make every word count.`;
 
     const message = await anthropic.messages.create({
       model: 'claude-3-5-haiku-20241022',
