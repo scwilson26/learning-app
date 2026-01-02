@@ -87,7 +87,22 @@ export async function generateFullArticle(topic, onProgress = () => {}) {
 
 First, write a brief 2-3 sentence introduction paragraph that provides essential context (who/what/when/where/why this topic matters).
 
-Then, generate section titles that cover the topic thoroughly, like a Wikipedia article. Use as many sections as needed - no limit. Each section should cover one specific aspect.
+Then, generate 6-8 BROAD major section titles that cover the complete story chronologically. Think big picture - each section should be a major theme or phase that will contain multiple subsections within it.
+
+CRITICAL: For biographical topics, follow chronological order and ensure you cover:
+1. Early life/background
+2. Rise/major achievements
+3. Later period/decline (if applicable)
+4. Death/end (if applicable)
+5. Legacy/impact
+
+For example, for "Alexander the Great":
+- "Early Life and Education" (birth, childhood, tutors as subsections)
+- "Rise to Power" (succession, consolidating control)
+- "The Persian Campaign" (all Persian battles/conquests as subsections)
+- "The Eastern Campaigns" (India, Central Asia as subsections)
+- "Death and Succession" (final years, death, immediate aftermath)
+- "Legacy and Historical Impact" (cultural influence, historical interpretations)
 
 Format EXACTLY as:
 
@@ -95,12 +110,12 @@ INTRO:
 [2-3 sentence introduction]
 
 SECTIONS:
-1. [Section title]
-2. [Section title]
-3. [Section title]
+1. [Broad section title]
+2. [Broad section title]
+3. [Broad section title]
 ...
 
-Include relevant sections like: overview, historical context, key concepts, significant events/details, impact/legacy, related topics, etc.`;
+Generate 6-8 major sections. Cover the COMPLETE chronological story without redundancy.`;
 
     const outlineMessage = await anthropic.messages.create({
       model: 'claude-3-5-haiku-20241022',
@@ -158,14 +173,22 @@ export async function generateSection(topic, sectionTitle) {
   try {
     const sectionPrompt = `Write the "${sectionTitle}" section for an article on ${topic}.
 
-IMPORTANT: This is one section within a larger article. The introduction already covered who/what/when/where basics. Do NOT re-introduce ${topic}. Jump straight into the specific content for "${sectionTitle}".
+IMPORTANT: This is a MAJOR section within a larger article. The introduction already covered who/what/when/where basics. Do NOT re-introduce ${topic}. Jump straight into the specific content for "${sectionTitle}".
 
-BREVITY IS CRITICAL:
-- Write ONLY 2-3 short paragraphs total (100-150 words maximum)
-- Use bullet points sparingly - only 3-5 key items if needed, not for everything
-- Use **bold** for important names, terms, dates
-- Prioritize the most essential facts only
-- Less is more - cover only what's truly important
+This is a broad section that should contain natural subsections. Structure it like this:
+
+**Subsection Name**
+2-3 sentences (50-75 words) covering this aspect.
+
+**Another Subsection**
+2-3 sentences (50-75 words) covering this aspect.
+
+FORMATTING:
+- Use **bold** for subsection headings (like **Asia Minor (334-333 BCE)**)
+- Use **bold** for important names, terms, dates within text
+- Use bullet points very sparingly - only 3-5 key items if truly needed
+- Each subsection should be brief (50-75 words)
+- Include 3-5 subsections per major section
 
 Content requirements:
 - Factual, direct, informative
@@ -176,7 +199,7 @@ Content requirements:
 - No redundant phrases like "not only...but also"
 - Do NOT ask questions or prompt for user input
 
-Be brief. Keep it under 150 words. Make every word count.`;
+Keep each subsection brief (50-75 words). Make every word count.`;
 
     const message = await anthropic.messages.create({
       model: 'claude-3-5-haiku-20241022',
