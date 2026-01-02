@@ -75,6 +75,78 @@ IMPORTANT:
 }
 
 /**
+ * Generate comprehensive multi-section content about a topic
+ * @param {string} topic - The topic to deeply explore
+ * @param {Function} onProgress - Callback for progress updates (sectionIndex, totalSections, sectionTitle)
+ * @returns {Promise<string>} Complete multi-section content
+ */
+export async function generateDeepDive(topic, onProgress = () => {}) {
+  try {
+    // First, generate an outline
+    const outlinePrompt = `Create a comprehensive outline for learning about "${topic}".
+
+Generate 5-6 section titles that cover the topic thoroughly, like a complete Wikipedia article would.
+
+Format EXACTLY as:
+1. [Section title]
+2. [Section title]
+3. [Section title]
+...
+
+Keep titles clear and specific. Cover: introduction, history/background, key concepts, important details, impact/legacy, and related topics.`;
+
+    const outlineMessage = await anthropic.messages.create({
+      model: 'claude-3-5-haiku-20241022',
+      max_tokens: 512,
+      messages: [{ role: 'user', content: outlinePrompt }]
+    });
+
+    const outlineText = outlineMessage.content[0].text;
+
+    // Parse section titles
+    const sectionMatches = outlineText.match(/\d+\.\s*(.+)/g);
+    if (!sectionMatches || sectionMatches.length === 0) {
+      throw new Error('Failed to generate outline');
+    }
+
+    const sections = sectionMatches.map(line => line.replace(/^\d+\.\s*/, '').trim());
+
+    // Generate content for each section
+    let fullContent = `# ${topic}\n\n`;
+
+    for (let i = 0; i < sections.length; i++) {
+      const sectionTitle = sections[i];
+      onProgress(i + 1, sections.length, sectionTitle);
+
+      const sectionPrompt = `Write a comprehensive section about "${sectionTitle}" as part of an article about ${topic}.
+
+Write 3-4 detailed paragraphs that thoroughly cover this aspect of the topic.
+
+IMPORTANT:
+- Use clear, straightforward language (quality journalism style)
+- Be thorough and informative
+- Include specific details, examples, and context
+- Keep sentences manageable but don't oversimplify
+- Do NOT ask questions or prompt for user input`;
+
+      const sectionMessage = await anthropic.messages.create({
+        model: 'claude-3-5-haiku-20241022',
+        max_tokens: 1024,
+        messages: [{ role: 'user', content: sectionPrompt }]
+      });
+
+      const sectionContent = sectionMessage.content[0].text;
+      fullContent += `## ${sectionTitle}\n\n${sectionContent}\n\n`;
+    }
+
+    return fullContent;
+  } catch (error) {
+    console.error('Error generating deep dive:', error);
+    throw new Error('Failed to generate comprehensive content');
+  }
+}
+
+/**
  * Generate multiple flashcards from content
  * @param {string} content - The content to create flashcards from
  * @returns {Promise<Array<{question: string, answer: string}>>} Array of flashcard Q&As
