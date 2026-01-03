@@ -12,13 +12,31 @@ function renderContent(text, onLinkClick) {
       return (
         <span
           key={i}
-          onClick={() => onLinkClick(term)}
-          onTouchEnd={(e) => {
+          onClick={(e) => {
             e.preventDefault();
+            e.stopPropagation();
             onLinkClick(term);
           }}
-          className="text-indigo-600 active:text-indigo-800 font-medium underline decoration-2 underline-offset-2 cursor-pointer transition-colors inline-block"
-          style={{ WebkitTapHighlightColor: 'rgba(99, 102, 241, 0.1)' }}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onLinkClick(term);
+            }
+          }}
+          style={{
+            color: '#4F46E5',
+            fontWeight: '500',
+            textDecoration: 'underline',
+            textDecorationThickness: '2px',
+            textUnderlineOffset: '2px',
+            cursor: 'pointer',
+            display: 'inline-block',
+            WebkitTapHighlightColor: 'rgba(79, 70, 229, 0.1)',
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+          }}
         >
           {term}
         </span>
