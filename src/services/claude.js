@@ -75,142 +75,157 @@ IMPORTANT:
 }
 
 /**
- * Generate complete article with all sections
+ * Generate narrative article with embedded hyperlinks
  * @param {string} topic - The topic to explore
- * @param {Function} onProgress - Progress callback (current, total, sectionTitle)
- * @returns {Promise<{intro: string, sections: Array<{title: string, content: string}>}>}
+ * @param {Function} onProgress - Progress callback (message)
+ * @returns {Promise<{hook: string, content: string, hyperlinks: Array<string>}>}
  */
 export async function generateFullArticle(topic, onProgress = () => {}) {
   try {
-    // First, generate outline
-    const outlinePrompt = `Create a comprehensive outline for "${topic}".
+    onProgress('Crafting your story...');
 
-First, write a brief 2-3 sentence introduction paragraph that provides essential context (who/what/when/where/why this topic matters).
+    const prompt = `Write a SHORT article about "${topic}" designed to make the reader want to explore more.
 
-Then, generate 6-8 BROAD major section titles that cover the complete story chronologically. Think big picture - each section should be a major theme or phase that will contain multiple subsections within it.
+OPENING HOOK (1-2 sentences):
+Start with something that creates immediate curiosity - a contradiction, mystery, or unexpected fact.
 
-CRITICAL: For biographical topics, follow chronological order and ensure you cover:
-1. Early life/background
-2. Rise/major achievements
-3. Later period/decline (if applicable)
-4. Death/end (if applicable)
-5. Legacy/impact
+Examples:
+- "The Praetorian Guard was supposed to protect Roman emperors. Instead, they murdered more emperors than they saved."
+- "Cleopatra lived closer in time to the iPhone than to the construction of the Great Pyramid"
+- "We still can't figure out how to make Roman concrete - and theirs gets stronger with time while ours crumbles"
 
-For example, for "Alexander the Great":
-- "Early Life and Education" (birth, childhood, tutors as subsections)
-- "Rise to Power" (succession, consolidating control)
-- "The Persian Campaign" (all Persian battles/conquests as subsections)
-- "The Eastern Campaigns" (India, Central Asia as subsections)
-- "Death and Succession" (final years, death, immediate aftermath)
-- "Legacy and Historical Impact" (cultural influence, historical interpretations)
+BODY (6-8 VERY SHORT paragraphs):
+Give enough to explore, but keep them hungry for MORE through hyperlinks.
 
-Format EXACTLY as:
+CRITICAL REQUIREMENTS:
+- VERY short paragraphs (2-3 sentences max)
+- **Use past tense for historical events**
+- End paragraphs with hooks that create curiosity - don't resolve everything
+- Include gaps - plant questions but don't always answer them
+- Make facts surprising or counterintuitive when possible
+- Article should feel COMPLETE enough but leave details for clicking
 
-INTRO:
-[2-3 sentence introduction]
+SECTION HEADERS:
+Use 1-2 headers that create curiosity (use ## markdown format).
+- Make them intriguing but not clickbait
+- ❌ NOT: "The 5th Century: Democracy and Philosophy"
+- ✅ YES: "The Experiment That Changed Politics" or "When Citizens Became Rulers"
 
-SECTIONS:
-1. [Broad section title]
-2. [Broad section title]
-3. [Broad section title]
-...
+HYPERLINKS - CRITICAL FORMAT:
+Use EXACTLY [[double brackets]] around hyperlinks. NOT single brackets [term]. ONLY [[term]].
 
-Generate 6-8 major sections. Cover the COMPLETE chronological story without redundancy.`;
+HYPERLINK STRATEGY - COMPREHENSIVE & SPECIFIC:
+- Hyperlink EVERY important concept, person, event, method, or term (8-12 per article is ideal)
+- Make hyperlinks SPECIFIC and INTERESTING: not just "democracy" but "Athenian democracy", not just "slavery" but "Athenian slavery"
+- Include METHODS, TECHNIQUES, SYSTEMS that are clickable: "the Socratic method", "ostracism", "trial by jury"
+- Your WRITING creates curiosity, hyperlinks ensure NOTHING is missing
+- The goal: Every interesting detail should be one click away
 
-    const outlineMessage = await anthropic.messages.create({
+CRITICAL: Make hyperlinks SPECIFIC and UNAMBIGUOUS. Avoid generic terms that could refer to multiple things.
+- ❌ NEVER: "[[Old City]]" (which Old City? Jerusalem? Philadelphia? Prague?)
+- ✅ ALWAYS: "[[Old City of Jerusalem]]" or "[[Jerusalem's Old City]]"
+- ❌ NEVER: "[[Temple]]" (which temple?)
+- ✅ ALWAYS: "[[Second Temple]]" or "[[Temple of Jerusalem]]"
+- ❌ NEVER: "[[Revolution]]" (which one?)
+- ✅ ALWAYS: "[[French Revolution]]" or "[[American Revolution]]"
+- ❌ NEVER: "[[dory]]" (Dory the fish from Finding Nemo or Greek spear?)
+- ✅ ALWAYS: "[[dory spear]]" or "[[Greek dory]]"
+- ❌ NEVER: "[[English physician]]" or "[[Roman emperor]]" (generic professions/titles - which person?)
+- ✅ ALWAYS: Use the person's actual name like "[[William Harvey]]" or "[[Marcus Aurelius]]"
+
+❌ BAD - generic, missing key concepts:
+"Socrates was executed in [[Athens]] for his [[philosophical]] questioning."
+(Too generic! Missing: Socratic method, trial system, hemlock, Plato, specific charges, his students)
+
+✅ GOOD - specific, comprehensive hyperlink coverage:
+"[[Socrates]] invented [[the Socratic method]] - questioning people until contradictions emerged. When he challenged powerful Athenians too often, they put him on [[trial by jury]] for [[corrupting the youth]]. He drank [[hemlock]] rather than accept exile. His student [[Plato]] documented everything in [[The Apology]]."
+
+More examples showing SPECIFIC, INTERESTING coverage:
+- "[[The Praetorian Guard]] murdered nine emperors in 200 years. They used [[poison]], [[stabbing]], and even [[public execution]]. In [[193 CE]], they literally [[auctioned the Roman throne]] to [[Didius Julianus]], who lasted 66 days before the [[Senate]] had him killed."
+- "[[Roman concrete]] uses [[volcanic ash]] from [[Mount Vesuvius]] and [[seawater]] to get stronger over time. Modern concrete uses [[Portland cement]], which cracks. We've studied [[ancient Roman harbors]] for decades but still can't replicate their [[self-healing concrete]]."
+
+CRITICAL: Include SHOCKING moments, SPECIFIC systems/methods, and ensure ALL key concepts are hyperlinked with INTERESTING phrasing. Nothing important should be un-clickable.`;
+
+    const message = await anthropic.messages.create({
       model: 'claude-3-5-haiku-20241022',
-      max_tokens: 1024,
-      messages: [{ role: 'user', content: outlinePrompt }]
+      max_tokens: 2048,
+      messages: [{ role: 'user', content: prompt }]
     });
 
-    const response = outlineMessage.content[0].text;
+    const content = message.content[0].text;
 
-    // Parse intro
-    const introMatch = response.match(/INTRO:\s*(.+?)(?=SECTIONS:)/s);
-    if (!introMatch) {
-      throw new Error('Failed to parse introduction');
-    }
-    const intro = introMatch[1].trim();
+    // Extract hyperlinks from [[term]] format
+    const hyperlinkMatches = content.match(/\[\[([^\]]+)\]\]/g) || [];
+    const hyperlinks = [...new Set(hyperlinkMatches.map(match => match.slice(2, -2)))];
 
-    // Parse sections
-    const sectionsMatch = response.match(/SECTIONS:\s*(.+)/s);
-    if (!sectionsMatch) {
-      throw new Error('Failed to parse sections');
-    }
+    // Split into hook (first paragraph) and rest
+    const paragraphs = content.split('\n\n').filter(p => p.trim());
+    const hook = paragraphs[0] || '';
+    const body = paragraphs.slice(1).join('\n\n');
 
-    const sectionMatches = sectionsMatch[1].match(/\d+\.\s*(.+)/g);
-    if (!sectionMatches || sectionMatches.length === 0) {
-      throw new Error('Failed to parse section titles');
-    }
-
-    const sectionTitles = sectionMatches.map(line => line.replace(/^\d+\.\s*/, '').trim());
-
-    // Now generate content for each section
-    const sections = [];
-
-    for (let i = 0; i < sectionTitles.length; i++) {
-      const sectionTitle = sectionTitles[i];
-      onProgress(i + 1, sectionTitles.length, sectionTitle);
-
-      const content = await generateSection(topic, sectionTitle);
-      sections.push({ title: sectionTitle, content });
-    }
-
-    return { intro, sections };
+    return { hook, content: body, hyperlinks };
   } catch (error) {
-    console.error('Error generating full article:', error);
+    console.error('Error generating article:', error);
     throw new Error('Failed to generate article');
   }
 }
 
 /**
- * Generate content for a specific section
- * @param {string} topic - The main topic
- * @param {string} sectionTitle - The section to generate content for
- * @returns {Promise<string>} Section content
+ * Generate a Quick Card (2-3 sentences) for a hyperlinked term
+ * @param {string} term - The term to explain
+ * @param {string} context - The topic/context where this term appeared
+ * @returns {Promise<{text: string, hyperlinks: Array<string>}>}
  */
-export async function generateSection(topic, sectionTitle) {
+export async function generateQuickCard(term, context = '') {
   try {
-    const sectionPrompt = `Write the "${sectionTitle}" section for an article on ${topic}.
+    const prompt = `Write a Quick Card (2-3 sentences) about "${term}"${context ? ` in the context of ${context}` : ''}.
 
-IMPORTANT: This is a MAJOR section within a larger article. The introduction already covered who/what/when/where basics. Do NOT re-introduce ${topic}. Jump straight into the specific content for "${sectionTitle}".
+GOAL: Create curiosity, not completion. Make them click "Go Deeper."
 
-This is a broad section that should contain natural subsections. Structure it like this:
+CRITICAL REQUIREMENTS:
+- Exactly 2-3 sentences - very brief
+- Lead with the MOST interesting/surprising fact
+- **Use past tense for historical events**
+- End with an unresolved hook or unanswered question
+- Include 2-3 hyperlinks to related topics
+- Don't explain everything - leave massive gaps
 
-**Subsection Name**
-2-3 sentences (50-75 words) covering this aspect.
+HYPERLINKS - CRITICAL FORMAT:
+Use EXACTLY [[double brackets]] around hyperlinks. NOT single brackets [term]. ONLY [[term]].
 
-**Another Subsection**
-2-3 sentences (50-75 words) covering this aspect.
+HYPERLINK STRATEGY:
+- Keep hyperlinks SIMPLE: people, places, events (1-3 words max)
+- Maximum 2-3 hyperlinks total (don't overwhelm in a short card)
+- Your WRITING creates curiosity, hyperlinks are just clean topics
+- Include DRAMATIC moments - don't be boring!
 
-FORMATTING:
-- Use **bold** for subsection headings (like **Asia Minor (334-333 BCE)**)
-- Use **bold** for important names, terms, dates within text
-- Use bullet points very sparingly - only 3-5 key items if truly needed
-- Each subsection should be brief (50-75 words)
-- Include 3-5 subsections per major section
+❌ BAD - wrong format, boring:
+"[Socrates] was a philosopher in [Athens]."
 
-Content requirements:
-- Factual, direct, informative
-- Include only the most important facts, dates, examples
-- Clear, efficient sentences - no filler
-- Every sentence must add new information
-- No adjectives like "remarkable," "extraordinary," "profound"
-- No redundant phrases like "not only...but also"
-- Do NOT ask questions or prompt for user input
+✅ GOOD - correct format, dramatic:
+"[[Socrates]] was sentenced to death in [[399 BCE]] for corrupting youth. He chose poison over exile - drinking [[hemlock]] while discussing philosophy with his students."
 
-Keep each subsection brief (50-75 words). Make every word count.`;
+Example for "Praetorian Guard":
+"The [[Praetorian Guard]] murdered more emperors than they protected. In [[193 CE]], they auctioned the throne to the highest bidder, who lasted 66 days."
+
+Write a curiosity-driving Quick Card for "${term}" with [[double brackets]] and dramatic moments:`;
 
     const message = await anthropic.messages.create({
       model: 'claude-3-5-haiku-20241022',
-      max_tokens: 1024,
-      messages: [{ role: 'user', content: sectionPrompt }]
+      max_tokens: 256,
+      messages: [{ role: 'user', content: prompt }]
     });
 
-    return message.content[0].text;
+    const text = message.content[0].text;
+
+    // Extract hyperlinks
+    const hyperlinkMatches = text.match(/\[\[([^\]]+)\]\]/g) || [];
+    const hyperlinks = [...new Set(hyperlinkMatches.map(match => match.slice(2, -2)))];
+
+    return { text, hyperlinks };
   } catch (error) {
-    console.error('Error generating section:', error);
-    throw new Error('Failed to generate section content');
+    console.error('Error generating quick card:', error);
+    throw new Error('Failed to generate quick card');
   }
 }
 

@@ -9,9 +9,10 @@ function App() {
   const [topic, setTopic] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [learnData, setLearnData] = useState(null) // { topic, intro, sections }
+  const [learnData, setLearnData] = useState(null) // { topic, hook, content, hyperlinks }
   const [cardStats, setCardStats] = useState({ total: 0, dueToday: 0 })
   const [progress, setProgress] = useState(null)
+  const [breadcrumbs, setBreadcrumbs] = useState([]) // Track user's journey: [{topic, hook, content, hyperlinks}, ...]
 
   useEffect(() => {
     // Calculate card statistics
@@ -43,13 +44,16 @@ function App() {
     if (topic.trim()) {
       setLoading(true)
       setError(null)
-      setProgress({ current: 0, total: 0, section: 'Generating outline...' })
+      setProgress({ message: 'Crafting your story...' })
 
       try {
-        const { intro, sections } = await generateFullArticle(topic, (current, total, section) => {
-          setProgress({ current, total, section })
+        const { hook, content, hyperlinks } = await generateFullArticle(topic, (message) => {
+          setProgress({ message })
         })
-        setLearnData({ topic, intro, sections })
+        const newData = { topic, hook, content, hyperlinks }
+        setLearnData(newData)
+        // Start new journey - reset breadcrumbs and add first topic
+        setBreadcrumbs([newData])
         setProgress(null)
         setScreen('learn')
       } catch (err) {
@@ -65,6 +69,36 @@ function App() {
     setScreen('home')
     setTopic('')
     setLearnData(null)
+    setBreadcrumbs([])
+  }
+
+  const handleGoDeeper = async (term) => {
+    setLoading(true)
+    setProgress({ message: 'Crafting your story...' })
+
+    try {
+      const { hook, content, hyperlinks } = await generateFullArticle(term, (message) => {
+        setProgress({ message })
+      })
+      const newData = { topic: term, hook, content, hyperlinks }
+      setLearnData(newData)
+      // Add to breadcrumb trail
+      setBreadcrumbs(prev => [...prev, newData])
+      setProgress(null)
+    } catch (err) {
+      setError(err.message)
+      setProgress(null)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleBreadcrumbClick = (index) => {
+    // Jump back to a previous topic in the journey
+    const selectedData = breadcrumbs[index]
+    setLearnData(selectedData)
+    // Trim breadcrumbs to this point
+    setBreadcrumbs(prev => prev.slice(0, index + 1))
   }
 
   const handleGoToReview = () => {
@@ -80,9 +114,15 @@ function App() {
     return (
       <LearnScreen
         topic={learnData.topic}
-        intro={learnData.intro}
-        sections={learnData.sections}
+        hook={learnData.hook}
+        content={learnData.content}
+        hyperlinks={learnData.hyperlinks}
+        breadcrumbs={breadcrumbs}
         onBack={handleBackToHome}
+        onGoDeeper={handleGoDeeper}
+        onBreadcrumbClick={handleBreadcrumbClick}
+        loading={loading}
+        progress={progress}
       />
     )
   }
@@ -155,19 +195,13 @@ function App() {
 
           {progress ? (
             <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="text-center mb-4">
-                <div className="text-xl font-bold text-indigo-600 mb-2">
-                  {progress.current > 0 ? `${progress.current} / ${progress.total}` : 'Preparing...'}
+              <div className="text-center">
+                <div className="text-lg font-medium text-indigo-600 mb-4">
+                  {progress.message}
                 </div>
-                <div className="text-gray-600 text-sm">
-                  {progress.section}
+                <div className="flex justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
                 </div>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className="bg-indigo-600 h-2 rounded-full transition-all duration-500"
-                  style={{ width: `${progress.total > 0 ? (progress.current / progress.total) * 100 : 0}%` }}
-                ></div>
               </div>
             </div>
           ) : (
