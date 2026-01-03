@@ -106,6 +106,39 @@ export default function LearnScreen({
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 px-4 py-8">
       <div className="max-w-3xl mx-auto">
+        {/* DEBUG CONSOLE AT TOP - IMPOSSIBLE TO MISS */}
+        <div style={{
+          backgroundColor: '#FF0000',
+          color: '#FFFFFF',
+          padding: '20px',
+          marginBottom: '20px',
+          border: '5px solid #FFFF00',
+          fontSize: '16px',
+          fontWeight: 'bold'
+        }}>
+          <div style={{ marginBottom: '10px' }}>🔍 DEBUG (iPhone test):</div>
+          <button
+            onClick={() => addDebugLog('BUTTON CLICKED!')}
+            style={{
+              backgroundColor: '#FFFF00',
+              color: '#000000',
+              padding: '15px 30px',
+              border: 'none',
+              fontSize: '18px',
+              fontWeight: 'bold',
+              marginBottom: '10px',
+              width: '100%'
+            }}
+          >
+            TAP THIS YELLOW BUTTON
+          </button>
+          <div style={{ color: '#FFFF00' }}>
+            {debugLogs.length === 0 ? 'No events yet...' : debugLogs.map((log, i) => (
+              <div key={i}>{log}</div>
+            ))}
+          </div>
+        </div>
+
         {/* Breadcrumb Navigation */}
         {breadcrumbs.length > 0 && (
           <div className="bg-white rounded-lg shadow-sm mb-4 p-3 overflow-x-auto">
@@ -251,27 +284,6 @@ export default function LearnScreen({
           </div>
         )}
 
-        {/* Debug console for mobile - ALWAYS VISIBLE */}
-        <div className="fixed bottom-0 left-0 right-0 bg-red-600 text-white p-4 text-sm font-bold z-[9999] max-h-48 overflow-y-auto border-t-4 border-yellow-400">
-          <div className="mb-2">🔍 DEBUG CONSOLE:</div>
-
-          {/* Test button to verify touch works */}
-          <button
-            onClick={() => addDebugLog('TEST BUTTON CLICKED!')}
-            onTouchEnd={() => addDebugLog('TEST BUTTON TOUCHED!')}
-            className="bg-yellow-400 text-black px-4 py-2 rounded mb-2 font-bold"
-          >
-            TAP THIS TEST BUTTON
-          </button>
-
-          {debugLogs.length === 0 ? (
-            <div className="text-yellow-200">No events yet...</div>
-          ) : (
-            debugLogs.map((log, i) => (
-              <div key={i} className="mb-1">{log}</div>
-            ))
-          )}
-        </div>
       </div>
     </div>
   )
