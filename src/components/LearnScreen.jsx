@@ -252,10 +252,20 @@ export default function LearnScreen({
         )}
 
         {/* Debug console for mobile - ALWAYS VISIBLE */}
-        <div className="fixed bottom-0 left-0 right-0 bg-red-600 text-white p-4 text-sm font-bold z-50 max-h-48 overflow-y-auto border-t-4 border-yellow-400">
-          <div className="mb-2">🔍 DEBUG CONSOLE (tap a blue link above):</div>
+        <div className="fixed bottom-0 left-0 right-0 bg-red-600 text-white p-4 text-sm font-bold z-[9999] max-h-48 overflow-y-auto border-t-4 border-yellow-400">
+          <div className="mb-2">🔍 DEBUG CONSOLE:</div>
+
+          {/* Test button to verify touch works */}
+          <button
+            onClick={() => addDebugLog('TEST BUTTON CLICKED!')}
+            onTouchEnd={() => addDebugLog('TEST BUTTON TOUCHED!')}
+            className="bg-yellow-400 text-black px-4 py-2 rounded mb-2 font-bold"
+          >
+            TAP THIS TEST BUTTON
+          </button>
+
           {debugLogs.length === 0 ? (
-            <div className="text-yellow-200">No events yet - waiting for you to tap a hyperlink...</div>
+            <div className="text-yellow-200">No events yet...</div>
           ) : (
             debugLogs.map((log, i) => (
               <div key={i} className="mb-1">{log}</div>
