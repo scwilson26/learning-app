@@ -61,16 +61,24 @@ export default function LearnScreen({
 }) {
   const [quickCard, setQuickCard] = useState(null) // { term, text, hyperlinks }
   const [loadingCard, setLoadingCard] = useState(false)
+  const [debugLogs, setDebugLogs] = useState([])
   const contentRef = useRef(null)
+
+  const addDebugLog = (message) => {
+    setDebugLogs(prev => [...prev.slice(-4), message])
+  }
 
   const handleLinkClick = async (term) => {
     console.log('handleLinkClick called with:', term)
+    addDebugLog(`handleLinkClick: ${term}`)
     setLoadingCard(true)
     try {
       const cardData = await generateQuickCard(term, topic)
       setQuickCard({ term, ...cardData })
+      addDebugLog(`Card loaded for: ${term}`)
     } catch (error) {
       console.error('Error loading quick card:', error)
+      addDebugLog(`ERROR: ${error.message}`)
     } finally {
       setLoadingCard(false)
     }
@@ -87,6 +95,7 @@ export default function LearnScreen({
 
       if (term) {
         console.log('Native click detected:', term)
+        addDebugLog(`Click detected: ${term}`)
         e.preventDefault()
         e.stopPropagation()
         handleLinkClick(term)
@@ -95,6 +104,8 @@ export default function LearnScreen({
 
     contentElement.addEventListener('click', handleClick, { passive: false })
     contentElement.addEventListener('touchend', handleClick, { passive: false })
+
+    addDebugLog('Event listeners attached')
 
     return () => {
       contentElement.removeEventListener('click', handleClick)
@@ -256,6 +267,15 @@ export default function LearnScreen({
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Debug console for mobile */}
+        {debugLogs.length > 0 && (
+          <div className="fixed bottom-0 left-0 right-0 bg-black bg-opacity-90 text-green-400 p-4 text-xs font-mono z-50 max-h-32 overflow-y-auto">
+            {debugLogs.map((log, i) => (
+              <div key={i}>{log}</div>
+            ))}
           </div>
         )}
       </div>
