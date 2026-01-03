@@ -213,79 +213,79 @@ export default function LearnScreen({
             })}
           </div>
         </div>
-
-        {/* Quick Card Pop-up */}
-        {quickCard && (
-          <div
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center"
-            style={{ zIndex: 99999 }}
-            onClick={handleCloseCard}
-          >
-            <div
-              className="bg-white rounded-t-2xl md:rounded-2xl p-6 max-w-2xl w-full md:mx-4 shadow-2xl transform transition-all"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Header */}
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="text-2xl font-bold text-gray-900">{quickCard.term}</h3>
-                <button
-                  onClick={handleCloseCard}
-                  className="text-gray-400 hover:text-gray-600 text-2xl"
-                >
-                  ×
-                </button>
-              </div>
-
-              {/* Card content */}
-              <div className="text-gray-800 text-lg leading-relaxed mb-6">
-                {renderContent(quickCard.text, handleLinkClick, addDebugLog)}
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-3">
-                <button
-                  onClick={() => handleGoDeeper(quickCard.term)}
-                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-                >
-                  Go Deeper →
-                </button>
-                <button
-                  onClick={handleCloseCard}
-                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-6 rounded-lg transition-colors"
-                >
-                  Keep Reading
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Loading overlay for quick cards */}
-        {loadingCard && (
-          <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-40">
-            <div className="bg-white rounded-lg p-6 shadow-xl">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-            </div>
-          </div>
-        )}
-
-        {/* Loading overlay for "Go Deeper" navigation */}
-        {loading && progress && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-8 shadow-2xl max-w-md">
-              <div className="text-center">
-                <div className="text-lg font-medium text-indigo-600 mb-4">
-                  {progress.message}
-                </div>
-                <div className="flex justify-center">
-                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
       </div>
+
+      {/* Quick Card Pop-up - MOVED OUTSIDE CONTAINER */}
+      {quickCard && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center"
+          style={{ zIndex: 99999 }}
+          onClick={handleCloseCard}
+        >
+          <div
+            className="bg-white rounded-t-2xl md:rounded-2xl p-6 max-w-2xl w-full md:mx-4 shadow-2xl transform transition-all"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="text-2xl font-bold text-gray-900">{quickCard.term}</h3>
+              <button
+                onClick={handleCloseCard}
+                className="text-gray-400 hover:text-gray-600 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Card content */}
+            <div className="text-gray-800 text-lg leading-relaxed mb-6">
+              {renderContent(quickCard.text, handleLinkClick, addDebugLog)}
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => handleGoDeeper(quickCard.term)}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+              >
+                Go Deeper →
+              </button>
+              <button
+                onClick={handleCloseCard}
+                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-6 rounded-lg transition-colors"
+              >
+                Keep Reading
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Loading overlay for quick cards - MOVED OUTSIDE CONTAINER */}
+      {loadingCard && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-40">
+          <div className="bg-white rounded-lg p-6 shadow-xl">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+          </div>
+        </div>
+      )}
+
+      {/* Loading overlay for "Go Deeper" navigation - MOVED OUTSIDE CONTAINER */}
+      {loading && progress && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 shadow-2xl max-w-md">
+            <div className="text-center">
+              <div className="text-lg font-medium text-indigo-600 mb-4">
+                {progress.message}
+              </div>
+              <div className="flex justify-center">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
