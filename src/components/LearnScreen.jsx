@@ -9,21 +9,22 @@ function renderContent(text, onLinkClick) {
     // Check if this is a hyperlink
     if (part.startsWith('[[') && part.endsWith(']]')) {
       const term = part.slice(2, -2);
+
+      const handleClick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('Hyperlink clicked:', term);
+        onLinkClick(term);
+      };
+
       return (
-        <span
+        <a
           key={i}
-          onClick={(e) => {
+          href="#"
+          onClick={handleClick}
+          onPointerDown={(e) => {
             e.preventDefault();
-            e.stopPropagation();
-            onLinkClick(term);
-          }}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              onLinkClick(term);
-            }
+            console.log('Pointer down on:', term);
           }}
           style={{
             color: '#4F46E5',
@@ -33,13 +34,12 @@ function renderContent(text, onLinkClick) {
             textUnderlineOffset: '2px',
             cursor: 'pointer',
             display: 'inline-block',
-            WebkitTapHighlightColor: 'rgba(79, 70, 229, 0.1)',
-            userSelect: 'none',
-            WebkitUserSelect: 'none',
+            WebkitTapHighlightColor: 'rgba(79, 70, 229, 0.3)',
+            touchAction: 'manipulation',
           }}
         >
           {term}
-        </span>
+        </a>
       );
     }
 
