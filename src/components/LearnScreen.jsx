@@ -10,20 +10,20 @@ function renderContent(text, onLinkClick) {
     if (part.startsWith('[[') && part.endsWith(']]')) {
       const term = part.slice(2, -2);
 
-      const handleClick = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+      const handleClick = () => {
         console.log('Hyperlink clicked:', term);
         onLinkClick(term);
       };
 
       return (
-        <a
+        <button
           key={i}
-          href="#"
+          type="button"
           onClick={handleClick}
-          onTouchStart={(e) => {
-            console.log('Touch start on:', term);
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            console.log('Touch end on:', term);
+            handleClick();
           }}
           style={{
             color: '#4F46E5',
@@ -32,7 +32,11 @@ function renderContent(text, onLinkClick) {
             textDecorationThickness: '2px',
             textUnderlineOffset: '2px',
             cursor: 'pointer',
-            display: 'inline-block',
+            display: 'inline',
+            background: 'none',
+            border: 'none',
+            padding: '0',
+            font: 'inherit',
             WebkitTapHighlightColor: 'rgba(79, 70, 229, 0.3)',
             touchAction: 'manipulation',
             WebkitUserSelect: 'none',
@@ -40,7 +44,7 @@ function renderContent(text, onLinkClick) {
           }}
         >
           {term}
-        </a>
+        </button>
       );
     }
 
