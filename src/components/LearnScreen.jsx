@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { generateQuickCard } from '../services/claude'
 
 // Helper function to render text with [[hyperlinks]]
-function renderContent(text, onLinkClick, addDebugLog) {
+function renderContent(text, onLinkClick) {
   const parts = text.split(/(\[\[.*?\]\])/g);
 
   return parts.map((part, i) => {
@@ -13,16 +13,9 @@ function renderContent(text, onLinkClick, addDebugLog) {
       return (
         <span
           key={i}
-          onClick={() => {
-            addDebugLog(`SPAN CLICKED: ${term}`)
-            onLinkClick(term)
-          }}
-          onTouchStart={() => {
-            addDebugLog(`TOUCH START: ${term}`)
-          }}
+          onClick={() => onLinkClick(term)}
           onTouchEnd={(e) => {
             e.preventDefault()
-            addDebugLog(`TOUCH END: ${term}`)
             onLinkClick(term)
           }}
           style={{
@@ -72,23 +65,14 @@ export default function LearnScreen({
 }) {
   const [quickCard, setQuickCard] = useState(null) // { term, text, hyperlinks }
   const [loadingCard, setLoadingCard] = useState(false)
-  const [debugLogs, setDebugLogs] = useState([])
-
-  const addDebugLog = (message) => {
-    setDebugLogs(prev => [...prev.slice(-4), message])
-  }
 
   const handleLinkClick = async (term) => {
-    console.log('handleLinkClick called with:', term)
-    addDebugLog(`handleLinkClick: ${term}`)
     setLoadingCard(true)
     try {
       const cardData = await generateQuickCard(term, topic)
       setQuickCard({ term, ...cardData })
-      addDebugLog(`Card loaded: ${term}`)
     } catch (error) {
       console.error('Error loading quick card:', error)
-      addDebugLog(`ERROR: ${error.message}`)
     } finally {
       setLoadingCard(false)
     }
@@ -106,39 +90,6 @@ export default function LearnScreen({
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 px-4 py-8">
       <div className="max-w-3xl mx-auto">
-        {/* DEBUG CONSOLE AT TOP - IMPOSSIBLE TO MISS */}
-        <div style={{
-          backgroundColor: '#FF0000',
-          color: '#FFFFFF',
-          padding: '20px',
-          marginBottom: '20px',
-          border: '5px solid #FFFF00',
-          fontSize: '16px',
-          fontWeight: 'bold'
-        }}>
-          <div style={{ marginBottom: '10px' }}>🔍 DEBUG (iPhone test):</div>
-          <button
-            onClick={() => addDebugLog('BUTTON CLICKED!')}
-            style={{
-              backgroundColor: '#FFFF00',
-              color: '#000000',
-              padding: '15px 30px',
-              border: 'none',
-              fontSize: '18px',
-              fontWeight: 'bold',
-              marginBottom: '10px',
-              width: '100%'
-            }}
-          >
-            TAP THIS YELLOW BUTTON
-          </button>
-          <div style={{ color: '#FFFF00' }}>
-            {debugLogs.length === 0 ? 'No events yet...' : debugLogs.map((log, i) => (
-              <div key={i}>{log}</div>
-            ))}
-          </div>
-        </div>
-
         {/* Breadcrumb Navigation */}
         {breadcrumbs.length > 0 && (
           <div className="bg-white rounded-lg shadow-sm mb-4 p-3 overflow-x-auto">
@@ -186,7 +137,7 @@ export default function LearnScreen({
 
           {/* Hook paragraph - larger, bold */}
           <p className="text-xl font-semibold mb-6 text-gray-900 leading-relaxed">
-            {renderContent(hook, handleLinkClick, addDebugLog)}
+            {renderContent(hook, handleLinkClick)}
           </p>
 
           {/* Body content - render paragraphs */}
@@ -200,14 +151,14 @@ export default function LearnScreen({
                 const headerText = paragraph.trim().slice(3);
                 return (
                   <h2 key={idx} className="text-2xl font-bold mt-8 mb-4 text-gray-900">
-                    {renderContent(headerText, handleLinkClick, addDebugLog)}
+                    {renderContent(headerText, handleLinkClick)}
                   </h2>
                 );
               }
 
               return (
                 <p key={idx} className="mb-4">
-                  {renderContent(paragraph, handleLinkClick, addDebugLog)}
+                  {renderContent(paragraph, handleLinkClick)}
                 </p>
               );
             })}
@@ -268,7 +219,7 @@ export default function LearnScreen({
 
             {/* Card content */}
             <div style={{ color: '#1F2937', fontSize: '18px', lineHeight: '1.75', marginBottom: '24px' }}>
-              {renderContent(quickCard.text, handleLinkClick, addDebugLog)}
+              {renderContent(quickCard.text, handleLinkClick)}
             </div>
 
             {/* Actions */}
