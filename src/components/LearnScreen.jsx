@@ -217,7 +217,8 @@ export default function LearnScreen({
         {/* Quick Card Pop-up */}
         {quickCard && (
           <div
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50"
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center"
+            style={{ zIndex: 99999 }}
             onClick={handleCloseCard}
           >
             <div
