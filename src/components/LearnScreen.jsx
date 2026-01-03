@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { generateQuickCard } from '../services/claude'
 
 // Helper function to render text with [[hyperlinks]]
@@ -10,21 +10,10 @@ function renderContent(text, onLinkClick) {
     if (part.startsWith('[[') && part.endsWith(']]')) {
       const term = part.slice(2, -2);
 
-      const handleClick = () => {
-        console.log('Hyperlink clicked:', term);
-        onLinkClick(term);
-      };
-
       return (
-        <button
+        <span
           key={i}
-          type="button"
-          onClick={handleClick}
-          onTouchEnd={(e) => {
-            e.preventDefault();
-            console.log('Touch end on:', term);
-            handleClick();
-          }}
+          data-hyperlink={term}
           style={{
             color: '#4F46E5',
             fontWeight: '500',
@@ -32,11 +21,7 @@ function renderContent(text, onLinkClick) {
             textDecorationThickness: '2px',
             textUnderlineOffset: '2px',
             cursor: 'pointer',
-            display: 'inline',
-            background: 'none',
-            border: 'none',
-            padding: '0',
-            font: 'inherit',
+            display: 'inline-block',
             WebkitTapHighlightColor: 'rgba(79, 70, 229, 0.3)',
             touchAction: 'manipulation',
             WebkitUserSelect: 'none',
@@ -44,7 +29,7 @@ function renderContent(text, onLinkClick) {
           }}
         >
           {term}
-        </button>
+        </span>
       );
     }
 
@@ -76,8 +61,10 @@ export default function LearnScreen({
 }) {
   const [quickCard, setQuickCard] = useState(null) // { term, text, hyperlinks }
   const [loadingCard, setLoadingCard] = useState(false)
+  const contentRef = useRef(null)
 
   const handleLinkClick = async (term) => {
+    console.log('handleLinkClick called with:', term)
     setLoadingCard(true)
     try {
       const cardData = await generateQuickCard(term, topic)
@@ -88,6 +75,32 @@ export default function LearnScreen({
       setLoadingCard(false)
     }
   }
+
+  // Add native event listener for hyperlinks
+  useEffect(() => {
+    const contentElement = contentRef.current
+    if (!contentElement) return
+
+    const handleClick = (e) => {
+      const target = e.target
+      const term = target.getAttribute('data-hyperlink')
+
+      if (term) {
+        console.log('Native click detected:', term)
+        e.preventDefault()
+        e.stopPropagation()
+        handleLinkClick(term)
+      }
+    }
+
+    contentElement.addEventListener('click', handleClick, { passive: false })
+    contentElement.addEventListener('touchend', handleClick, { passive: false })
+
+    return () => {
+      contentElement.removeEventListener('click', handleClick)
+      contentElement.removeEventListener('touchend', handleClick)
+    }
+  }, [topic, hook, content])
 
   const handleCloseCard = () => {
     setQuickCard(null)
@@ -100,7 +113,7 @@ export default function LearnScreen({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 px-4 py-8">
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-3xl mx-auto" ref={contentRef}>
         {/* Breadcrumb Navigation */}
         {breadcrumbs.length > 0 && (
           <div className="bg-white rounded-lg shadow-sm mb-4 p-3 overflow-x-auto">
