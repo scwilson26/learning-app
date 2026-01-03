@@ -218,41 +218,90 @@ export default function LearnScreen({
       {/* Quick Card Pop-up - MOVED OUTSIDE CONTAINER */}
       {quickCard && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center"
-          style={{ zIndex: 99999 }}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 99999,
+            padding: '16px',
+            overflowY: 'auto'
+          }}
           onClick={handleCloseCard}
         >
           <div
-            className="bg-white rounded-t-2xl md:rounded-2xl p-6 max-w-2xl w-full md:mx-4 shadow-2xl transform transition-all"
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '16px',
+              padding: '24px',
+              maxWidth: '672px',
+              width: '100%',
+              maxHeight: '80vh',
+              overflowY: 'auto',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-2xl font-bold text-gray-900">{quickCard.term}</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '24px', fontWeight: 'bold', color: '#111827', margin: 0 }}>{quickCard.term}</h3>
               <button
                 onClick={handleCloseCard}
-                className="text-gray-400 hover:text-gray-600 text-2xl"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#9CA3AF',
+                  fontSize: '32px',
+                  cursor: 'pointer',
+                  padding: '0',
+                  lineHeight: '1'
+                }}
               >
                 ×
               </button>
             </div>
 
             {/* Card content */}
-            <div className="text-gray-800 text-lg leading-relaxed mb-6">
+            <div style={{ color: '#1F2937', fontSize: '18px', lineHeight: '1.75', marginBottom: '24px' }}>
               {renderContent(quickCard.text, handleLinkClick, addDebugLog)}
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3">
+            <div style={{ display: 'flex', gap: '12px' }}>
               <button
                 onClick={() => handleGoDeeper(quickCard.term)}
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+                style={{
+                  flex: 1,
+                  backgroundColor: '#4F46E5',
+                  color: 'white',
+                  fontWeight: '600',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '16px'
+                }}
               >
                 Go Deeper →
               </button>
               <button
                 onClick={handleCloseCard}
-                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-6 rounded-lg transition-colors"
+                style={{
+                  flex: 1,
+                  backgroundColor: '#E5E7EB',
+                  color: '#1F2937',
+                  fontWeight: '600',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '16px'
+                }}
               >
                 Keep Reading
               </button>
