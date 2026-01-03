@@ -10,13 +10,18 @@ function renderContent(text, onLinkClick) {
     if (part.startsWith('[[') && part.endsWith(']]')) {
       const term = part.slice(2, -2);
       return (
-        <button
+        <span
           key={i}
           onClick={() => onLinkClick(term)}
-          className="text-indigo-600 hover:text-indigo-800 font-medium underline decoration-2 underline-offset-2 cursor-pointer transition-colors"
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            onLinkClick(term);
+          }}
+          className="text-indigo-600 active:text-indigo-800 font-medium underline decoration-2 underline-offset-2 cursor-pointer transition-colors inline-block"
+          style={{ WebkitTapHighlightColor: 'rgba(99, 102, 241, 0.1)' }}
         >
           {term}
-        </button>
+        </span>
       );
     }
 

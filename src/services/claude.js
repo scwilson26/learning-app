@@ -187,9 +187,31 @@ CRITICAL: Include SHOCKING moments, SPECIFIC systems/methods, and ensure ALL key
       messages: [{ role: 'user', content: prompt }]
     });
 
-    const content = message.content[0].text;
+    let content = message.content[0].text;
 
-    // Extract hyperlinks from [[term]] format
+    // Filter out generic/ambiguous hyperlinks
+    const genericPatterns = [
+      /\[\[(British|American|French|German|Russian|Chinese|Japanese) (Ambassador|President|General|King|Queen|Emperor|Minister|Senator|Representative)\]\]/gi,
+      /\[\[(the )?(Ambassador|President|General|Minister|King|Queen|Emperor|Senator|Representative)\]\]/gi,
+      /\[\[Old City\]\]/gi,
+      /\[\[Temple\]\]/gi,
+      /\[\[Revolution\]\]/gi,
+      /\[\[War\]\]/gi,
+      /\[\[Empire\]\]/gi,
+      /\[\[Battle\]\]/gi,
+      /\[\[\d{4}\]\]/g, // Bare years like [[1929]]
+      /\[\[\d+\]\]/g, // Any bare number
+    ];
+
+    // Remove the brackets from generic terms (leave the text, remove hyperlink)
+    genericPatterns.forEach(pattern => {
+      content = content.replace(pattern, (match) => {
+        // Extract the text without brackets
+        return match.slice(2, -2);
+      });
+    });
+
+    // Extract hyperlinks from [[term]] format (after filtering)
     const hyperlinkMatches = content.match(/\[\[([^\]]+)\]\]/g) || [];
     const hyperlinks = [...new Set(hyperlinkMatches.map(match => match.slice(2, -2)))];
 
