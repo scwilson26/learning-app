@@ -22,9 +22,8 @@ function renderContent(text, onLinkClick) {
           key={i}
           href="#"
           onClick={handleClick}
-          onPointerDown={(e) => {
-            e.preventDefault();
-            console.log('Pointer down on:', term);
+          onTouchStart={(e) => {
+            console.log('Touch start on:', term);
           }}
           style={{
             color: '#4F46E5',
@@ -36,6 +35,8 @@ function renderContent(text, onLinkClick) {
             display: 'inline-block',
             WebkitTapHighlightColor: 'rgba(79, 70, 229, 0.3)',
             touchAction: 'manipulation',
+            WebkitUserSelect: 'none',
+            userSelect: 'none',
           }}
         >
           {term}
