@@ -75,16 +75,19 @@ IMPORTANT:
 }
 
 /**
- * Generate narrative article with embedded hyperlinks
+ * Generate narrative article with embedded hyperlinks (TWO-PASS APPROACH)
+ * Pass 1: Generate clean narrative content
+ * Pass 2: AI adds specific, unambiguous hyperlinks
  * @param {string} topic - The topic to explore
  * @param {Function} onProgress - Progress callback (message)
  * @returns {Promise<{hook: string, content: string, hyperlinks: Array<string>}>}
  */
 export async function generateFullArticle(topic, onProgress = () => {}) {
   try {
-    onProgress('Crafting your story...');
+    // PASS 1: Generate narrative content WITHOUT hyperlinks
+    onProgress('Writing your article...');
 
-    const prompt = `Write a SHORT article about "${topic}" designed to make the reader want to explore more.
+    const narrativePrompt = `Write a SHORT article about "${topic}" designed to be engaging and curiosity-driven.
 
 OPENING HOOK (1-2 sentences):
 Start with something that creates immediate curiosity - a contradiction, mystery, or unexpected fact.
@@ -98,11 +101,11 @@ Start with something that creates immediate curiosity - a contradiction, mystery
 
 ✅ ALWAYS start with a SPECIFIC, DRAMATIC fact:
 - "The Praetorian Guard was supposed to protect Roman emperors. Instead, they murdered more emperors than they saved."
-- "Cleopatra lived closer in time to the iPhone than to the construction of the Great Pyramid"
-- "We still can't figure out how to make Roman concrete - and theirs gets stronger with time while ours crumbles"
+- "Cleopatra lived closer in time to the iPhone than to the construction of the Great Pyramid."
+- "We still can't figure out how to make Roman concrete - and theirs gets stronger with time while ours crumbles."
 
 BODY (6-8 VERY SHORT paragraphs):
-Give enough to explore, but keep them hungry for MORE through hyperlinks.
+Write engaging narrative content that creates curiosity.
 
 CRITICAL REQUIREMENTS:
 - VERY short paragraphs (2-3 sentences max)
@@ -110,7 +113,7 @@ CRITICAL REQUIREMENTS:
 - End paragraphs with hooks that create curiosity - don't resolve everything
 - Include gaps - plant questions but don't always answer them
 - Make facts surprising or counterintuitive when possible
-- Article should feel COMPLETE enough but leave details for clicking
+- Article should feel COMPLETE enough but leave readers wanting more
 
 SECTION HEADERS:
 Use 1-2 headers that create curiosity (use ## markdown format).
@@ -118,58 +121,75 @@ Use 1-2 headers that create curiosity (use ## markdown format).
 - ❌ NOT: "The 5th Century: Democracy and Philosophy"
 - ✅ YES: "The Experiment That Changed Politics" or "When Citizens Became Rulers"
 
-HYPERLINKS - CRITICAL FORMAT:
-Use EXACTLY [[double brackets]] around hyperlinks. NOT single brackets [term]. ONLY [[term]].
+DO NOT include any hyperlinks or brackets in your response. Just write pure narrative text.`;
 
-HYPERLINK STRATEGY - COMPREHENSIVE & SPECIFIC:
-- Hyperlink EVERY important concept, person, event, method, or term (8-12 per article is ideal)
-- Make hyperlinks SPECIFIC and INTERESTING: not just "democracy" but "Athenian democracy", not just "slavery" but "Athenian slavery"
-- Include METHODS, TECHNIQUES, SYSTEMS that are clickable: "the Socratic method", "ostracism", "trial by jury"
-- Your WRITING creates curiosity, hyperlinks ensure NOTHING is missing
-- The goal: Every interesting detail should be one click away
-
-CRITICAL: Make hyperlinks SPECIFIC and UNAMBIGUOUS. Avoid generic terms that could refer to multiple things.
-- ❌ NEVER: "[[Old City]]" (which Old City? Jerusalem? Philadelphia? Prague?)
-- ✅ ALWAYS: "[[Old City of Jerusalem]]" or "[[Jerusalem's Old City]]"
-- ❌ NEVER: "[[Temple]]" (which temple?)
-- ✅ ALWAYS: "[[Second Temple]]" or "[[Temple of Jerusalem]]"
-- ❌ NEVER: "[[Revolution]]" (which one?)
-- ✅ ALWAYS: "[[French Revolution]]" or "[[American Revolution]]"
-- ❌ NEVER: "[[dory]]" (Dory the fish from Finding Nemo or Greek spear?)
-- ✅ ALWAYS: "[[dory spear]]" or "[[Greek dory]]"
-- ❌ NEVER: "[[English physician]]" or "[[Roman emperor]]" (generic professions/titles - which person?)
-- ✅ ALWAYS: Use the person's actual name like "[[William Harvey]]" or "[[Marcus Aurelius]]"
-
-❌ BAD - generic, missing key concepts:
-"Socrates was executed in [[Athens]] for his [[philosophical]] questioning."
-(Too generic! Missing: Socratic method, trial system, hemlock, Plato, specific charges, his students)
-
-✅ GOOD - specific, comprehensive hyperlink coverage:
-"[[Socrates]] invented [[the Socratic method]] - questioning people until contradictions emerged. When he challenged powerful Athenians too often, they put him on [[trial by jury]] for [[corrupting the youth]]. He drank [[hemlock]] rather than accept exile. His student [[Plato]] documented everything in [[The Apology]]."
-
-More examples showing SPECIFIC, INTERESTING coverage:
-- "[[The Praetorian Guard]] murdered nine emperors in 200 years. They used [[poison]], [[stabbing]], and even [[public execution]]. In [[193 CE]], they literally [[auctioned the Roman throne]] to [[Didius Julianus]], who lasted 66 days before the [[Senate]] had him killed."
-- "[[Roman concrete]] uses [[volcanic ash]] from [[Mount Vesuvius]] and [[seawater]] to get stronger over time. Modern concrete uses [[Portland cement]], which cracks. We've studied [[ancient Roman harbors]] for decades but still can't replicate their [[self-healing concrete]]."
-
-CRITICAL: Include SHOCKING moments, SPECIFIC systems/methods, and ensure ALL key concepts are hyperlinked with INTERESTING phrasing. Nothing important should be un-clickable.`;
-
-    const message = await anthropic.messages.create({
+    const narrativeMessage = await anthropic.messages.create({
       model: 'claude-3-5-haiku-20241022',
       max_tokens: 2048,
-      messages: [{ role: 'user', content: prompt }]
+      messages: [{ role: 'user', content: narrativePrompt }]
     });
 
-    const content = message.content[0].text;
+    const narrativeContent = narrativeMessage.content[0].text;
+
+    // PASS 2: Add hyperlinks strategically
+    onProgress('Adding hyperlinks...');
+
+    const hyperlinkPrompt = `You are a hyperlink specialist. Your job is to add [[double bracket]] hyperlinks to this article about "${topic}".
+
+ARTICLE TEXT:
+${narrativeContent}
+
+YOUR TASK:
+Add [[double brackets]] around 8-12 important terms, concepts, people, places, or events that readers might want to explore.
+
+CRITICAL RULES FOR HYPERLINKS:
+
+1. **ONLY hyperlink NOUNS** (people, places, things, events, concepts)
+   - ✅ YES: "[[William Harvey]]", "[[Great Depression]]", "[[Wall Street]]"
+   - ❌ NO: "[[teetered]]", "[[began]]", "[[were]]" (verbs)
+   - ❌ NO: "[[1929]]", "[[thousands]]" (bare numbers/quantities without context)
+
+2. **Make hyperlinks SPECIFIC and UNAMBIGUOUS**:
+   - ❌ NEVER: "[[Old City]]" → ✅ ALWAYS: "[[Old City of Jerusalem]]"
+   - ❌ NEVER: "[[Temple]]" → ✅ ALWAYS: "[[Second Temple]]"
+   - ❌ NEVER: "[[English physician]]" → ✅ ALWAYS: "[[William Harvey]]"
+   - ❌ NEVER: "[[1929]]" → ✅ ALWAYS: "[[Great Depression of 1929]]" or "[[Stock Market Crash of 1929]]"
+   - ❌ NEVER: "[[dory]]" → ✅ ALWAYS: "[[dory spear]]" or "[[Greek dory]]"
+
+3. **Hyperlink proper nouns with full context**:
+   - People: Use full names "[[William Harvey]]" not "[[physician]]"
+   - Places: Be specific "[[Wall Street]]" not "[[street]]"
+   - Events: Include identifying details "[[Great Depression]]" not "[[depression]]"
+   - Concepts/Methods: "[[Socratic method]]", "[[trial by jury]]"
+
+4. **DO NOT hyperlink**:
+   - Generic adjectives or verbs
+   - Bare numbers without context
+   - Common words like "time", "place", "people"
+   - Generic professions without names
+
+5. **Target 8-12 hyperlinks total** - every important concept should be one click away.
+
+Return ONLY the article text with [[hyperlinks]] added. Do not add any commentary or explanation.`;
+
+    const hyperlinkMessage = await anthropic.messages.create({
+      model: 'claude-3-5-haiku-20241022',
+      max_tokens: 2048,
+      messages: [{ role: 'user', content: hyperlinkPrompt }]
+    });
+
+    const contentWithHyperlinks = hyperlinkMessage.content[0].text;
 
     // Extract hyperlinks from [[term]] format
-    const hyperlinkMatches = content.match(/\[\[([^\]]+)\]\]/g) || [];
+    const hyperlinkMatches = contentWithHyperlinks.match(/\[\[([^\]]+)\]\]/g) || [];
     const hyperlinks = [...new Set(hyperlinkMatches.map(match => match.slice(2, -2)))];
 
     // Split into hook (first paragraph) and rest
-    const paragraphs = content.split('\n\n').filter(p => p.trim());
+    const paragraphs = contentWithHyperlinks.split('\n\n').filter(p => p.trim());
     const hook = paragraphs[0] || '';
     const body = paragraphs.slice(1).join('\n\n');
 
+    onProgress('Done!');
     return { hook, content: body, hyperlinks };
   } catch (error) {
     console.error('Error generating article:', error);
