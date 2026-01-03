@@ -89,7 +89,14 @@ export async function generateFullArticle(topic, onProgress = () => {}) {
 OPENING HOOK (1-2 sentences):
 Start with something that creates immediate curiosity - a contradiction, mystery, or unexpected fact.
 
-Examples:
+❌ NEVER use generic openings like:
+- "Imagine a time when..."
+- "Imagine a place where..."
+- "Picture a world where..."
+- "In a time before..."
+- "Long ago..."
+
+✅ ALWAYS start with a SPECIFIC, DRAMATIC fact:
 - "The Praetorian Guard was supposed to protect Roman emperors. Instead, they murdered more emperors than they saved."
 - "Cleopatra lived closer in time to the iPhone than to the construction of the Great Pyramid"
 - "We still can't figure out how to make Roman concrete - and theirs gets stronger with time while ours crumbles"
