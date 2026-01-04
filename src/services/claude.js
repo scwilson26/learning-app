@@ -146,12 +146,21 @@ Use 1-2 headers that create curiosity (use ## markdown format).
 HYPERLINKS - CRITICAL FORMAT:
 Use EXACTLY [[double brackets]] around hyperlinks. NOT single brackets [term]. ONLY [[term]].
 
-HYPERLINK STRATEGY - COMPREHENSIVE & SPECIFIC:
-- Hyperlink EVERY important concept, person, event, method, or term (8-12 per article is ideal)
-- Make hyperlinks SPECIFIC and INTERESTING: not just "democracy" but "Athenian democracy", not just "slavery" but "Athenian slavery"
-- Include METHODS, TECHNIQUES, SYSTEMS that are clickable: "the Socratic method", "ostracism", "trial by jury"
-- Your WRITING creates curiosity, hyperlinks ensure NOTHING is missing
-- The goal: Every interesting detail should be one click away
+HYPERLINK STRATEGY:
+- Aim for 5-10 hyperlinks per article (enough to feel rich, not overwhelming)
+- Each link should make the reader think "huh, I never thought about that"
+- Prioritize specificity: "[[Cloaca Maxima]]" over "sewers", "[[hypocaust heating]]" over "Roman technology"
+- Mix it up: some links go deeper (zoom in on details), some go sideways (unexpected connections), some bridge to completely different domains
+- The BEST links create surprise: "How does gladiator medicine connect to modern sports surgery?"
+- Link proper nouns (people, places, events) over generic concepts
+- Only link the FIRST mention of each term
+- Ask: "Would I click this at 2 AM down a rabbit hole?" If no, skip it
+
+Special bonus points for:
+- Pop culture connections (Game of Thrones, movies, modern references)
+- Weird but real historical connections between distant topics
+- Technical deep-dives that sound impossible ("Wait, Roman concrete is BETTER than modern?")
+- Human stories that are stranger than fiction
 
 CRITICAL HYPERLINK RULES - FOLLOW THESE STRICTLY:
 
@@ -163,23 +172,13 @@ CRITICAL HYPERLINK RULES - FOLLOW THESE STRICTLY:
    - ❌ NEVER: "[[Old City]]" → ✅ ALWAYS: "[[Old City of Jerusalem]]"
    - ❌ NEVER: "[[Temple]]" → ✅ ALWAYS: "[[Second Temple]]"
    - ❌ NEVER: "[[Revolution]]" → ✅ ALWAYS: "[[French Revolution]]"
-   - ❌ NEVER: "[[dory]]" → ✅ ALWAYS: "[[dory spear]]" or "[[Greek dory]]"
-   - ❌ NEVER: "[[English physician]]" → ✅ ALWAYS: "[[William Harvey]]"
    - ❌ NEVER: "[[1929]]" → ✅ ALWAYS: "[[Great Depression]]" or "[[Stock Market Crash of 1929]]"
 
-3. **Hyperlink proper nouns with full context**:
-   - People: Use full names like "[[William Harvey]]" not generic titles
-   - Places: Be specific "[[Wall Street]]" not "[[street]]"
-   - Events: Include identifying details "[[Great Depression]]" not just "[[depression]]"
-   - Concepts/Methods: "[[Socratic method]]", "[[trial by jury]]"
-
-4. **DO NOT hyperlink**:
+3. **DO NOT hyperlink**:
    - Generic adjectives or verbs
    - Bare numbers without context (no "[[1929]]" by itself)
    - Common words like "time", "place", "people"
-   - Generic professions without names
-
-CRITICAL: Include SHOCKING moments, SPECIFIC systems/methods, and ensure ALL key concepts are hyperlinked with INTERESTING phrasing. Nothing important should be un-clickable.`;
+   - Generic professions without names`;
 
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
@@ -235,37 +234,50 @@ CRITICAL: Include SHOCKING moments, SPECIFIC systems/methods, and ensure ALL key
  */
 export async function generateQuickCard(term, context = '') {
   try {
-    const prompt = `Write a Quick Card (2-3 sentences) about "${term}"${context ? ` in the context of ${context}` : ''}.
+    const prompt = `Write a Quick Card about "${term}"${context ? ` in the context of ${context}` : ''}.
 
-GOAL: Create curiosity, not completion. Make them click "Go Deeper."
+GOAL: Make them go "WHAT?!" and immediately click "Go Deeper"
 
-CRITICAL REQUIREMENTS:
-- Exactly 2-3 sentences - very brief
-- Lead with the MOST interesting/surprising fact
+WRITING STYLE - CRITICAL:
+- Exactly 2-3 SHORT sentences
+- Lead with the WEIRDEST, most shocking fact
 - **Use past tense for historical events**
-- End with an unresolved hook or unanswered question
-- Include 2-3 hyperlinks to related topics
-- Don't explain everything - leave massive gaps
+- Simple words, punchy sentences
+- NO context-setting or explanations
+- Just state the shocking facts and STOP
 
-HYPERLINKS - CRITICAL FORMAT:
-Use EXACTLY [[double brackets]] around hyperlinks. NOT single brackets [term]. ONLY [[term]].
+NEVER END WITH A QUESTION:
+❌ BAD: "Could this have changed history?"
+❌ BAD: "What secrets does it still hold?"
+✅ GOOD: "Nobody knows why."
+✅ GOOD: "We still can't figure out how they did it."
+✅ GOOD: "He vanished and was never seen again."
 
-HYPERLINK STRATEGY:
-- Keep hyperlinks SIMPLE: people, places, events (1-3 words max)
-- Maximum 2-3 hyperlinks total (don't overwhelm in a short card)
-- Your WRITING creates curiosity, hyperlinks are just clean topics
-- Include DRAMATIC moments - don't be boring!
+BANNED PHRASES:
+❌ "Here's the Quick Card for..."
+❌ "Remarkably..."
+❌ "What began as..."
+❌ "Could..." (no questions!)
+❌ Any rhetorical questions
 
-❌ BAD - wrong format, boring:
-"[Socrates] was a philosopher in [Athens]."
+HYPERLINKS - FORMAT:
+Use EXACTLY [[double brackets]] around 1-3 hyperlinks. Keep them simple.
 
-✅ GOOD - correct format, dramatic:
-"[[Socrates]] was sentenced to death in [[399 BCE]] for corrupting youth. He chose poison over exile - drinking [[hemlock]] while discussing philosophy with his students."
+EXAMPLES:
 
-Example for "Praetorian Guard":
-"The [[Praetorian Guard]] murdered more emperors than they protected. In [[193 CE]], they auctioned the throne to the highest bidder, who lasted 66 days."
+❌ BAD (too much context, ends with question):
+"When Michael Ventris cracked the mysterious Linear B script in 1952, he revealed a lost language of the Mycenaean civilization. Could other scripts be waiting?"
 
-Write a curiosity-driving Quick Card for "${term}" with [[double brackets]] and dramatic moments:`;
+✅ GOOD (punchy, dramatic, no question):
+"Nobody could read [[Linear B]] until 1952. Turns out it was [[Greek]] - written 500 years before Greeks were supposed to have writing."
+
+❌ BAD (boring, explaining too much):
+"The Praetorian Guard were elite soldiers tasked with protecting Roman emperors, but they often became involved in political intrigue."
+
+✅ GOOD (shocking, leaves gaps):
+"The [[Praetorian Guard]] murdered more emperors than they protected. In [[193 CE]], they auctioned the throne to the highest bidder."
+
+Write a shocking Quick Card for "${term}" - NO QUESTIONS, just drama:`;
 
     const message = await anthropic.messages.create({
       model: 'claude-3-5-haiku-20241022',
@@ -283,6 +295,56 @@ Write a curiosity-driving Quick Card for "${term}" with [[double brackets]] and 
   } catch (error) {
     console.error('Error generating quick card:', error);
     throw new Error('Failed to generate quick card');
+  }
+}
+
+/**
+ * Generate a random surprising topic
+ * @returns {Promise<string>} A fascinating topic to explore
+ */
+export async function generateSurpriseTopic() {
+  try {
+    const prompt = `Generate ONE random fascinating topic that would make someone go "wait, what?!" and want to learn more.
+
+REQUIREMENTS:
+- Must be a real historical event, person, phenomenon, mystery, or scientific concept
+- Should sound surprising, weird, or counterintuitive
+- Keep it SHORT (3-6 words max)
+- Make it SPECIFIC (not vague like "Ancient Rome" but specific like "The Dancing Plague of 1518")
+
+EXAMPLES of GOOD topics:
+- "Xerxes whipping the ocean"
+- "The Great Emu War"
+- "Tarrare the French glutton"
+- "Emperor Norton of the United States"
+- "The London Beer Flood of 1814"
+- "Wojtek the soldier bear"
+- "Turritopsis dohrnii immortal jellyfish"
+
+CATEGORIES to choose from (pick any):
+- Bizarre historical events
+- Strange historical figures
+- Unsolved mysteries
+- Counterintuitive science
+- Ancient technology
+- Weird wars or battles
+- Medical oddities
+- Natural phenomena
+- Archaeological mysteries
+- Historical coincidences
+
+Return ONLY the topic name, nothing else. No explanation, no quotes, just the topic.`;
+
+    const message = await anthropic.messages.create({
+      model: 'claude-3-5-haiku-20241022',
+      max_tokens: 50,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    return message.content[0].text.trim();
+  } catch (error) {
+    console.error('Error generating surprise topic:', error);
+    throw new Error('Failed to generate surprise topic');
   }
 }
 
