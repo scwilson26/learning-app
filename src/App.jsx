@@ -47,10 +47,10 @@ function App() {
       setProgress({ message: 'Crafting your story...' })
 
       try {
-        const { hook, content, hyperlinks } = await generateFullArticle(topic, (message) => {
+        const { hook, content, hyperlinks, suggestions } = await generateFullArticle(topic, (message) => {
           setProgress({ message })
         })
-        const newData = { topic, hook, content, hyperlinks }
+        const newData = { topic, hook, content, hyperlinks, suggestions }
         setLearnData(newData)
         // Start new journey - reset breadcrumbs and add first topic
         setBreadcrumbs([newData])
@@ -71,16 +71,15 @@ function App() {
     setProgress({ message: 'Finding something fascinating...' })
 
     try {
-      // Generate a random topic
+      // Generate a random topic (don't show it yet!)
       const randomTopic = await generateSurpriseTopic()
-      setTopic(randomTopic)
 
       // Immediately load the article
       setProgress({ message: 'Crafting your story...' })
-      const { hook, content, hyperlinks } = await generateFullArticle(randomTopic, (message) => {
+      const { hook, content, hyperlinks, suggestions } = await generateFullArticle(randomTopic, (message) => {
         setProgress({ message })
       })
-      const newData = { topic: randomTopic, hook, content, hyperlinks }
+      const newData = { topic: randomTopic, hook, content, hyperlinks, suggestions }
       setLearnData(newData)
       setBreadcrumbs([newData])
       setProgress(null)
@@ -105,10 +104,10 @@ function App() {
     setProgress({ message: 'Crafting your story...' })
 
     try {
-      const { hook, content, hyperlinks } = await generateFullArticle(term, (message) => {
+      const { hook, content, hyperlinks, suggestions } = await generateFullArticle(term, (message) => {
         setProgress({ message })
       })
-      const newData = { topic: term, hook, content, hyperlinks }
+      const newData = { topic: term, hook, content, hyperlinks, suggestions }
       setLearnData(newData)
       // Add to breadcrumb trail
       setBreadcrumbs(prev => [...prev, newData])
@@ -145,6 +144,7 @@ function App() {
         hook={learnData.hook}
         content={learnData.content}
         hyperlinks={learnData.hyperlinks}
+        suggestions={learnData.suggestions || { related: [], tangents: [] }}
         breadcrumbs={breadcrumbs}
         onBack={handleBackToHome}
         onGoDeeper={handleGoDeeper}

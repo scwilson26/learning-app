@@ -87,7 +87,7 @@ export async function generateFullArticle(topic, onProgress = () => {}) {
     const prompt = `Write a SHORT article about "${topic}" designed to make the reader want to explore more.
 
 OPENING HOOK (1-2 sentences):
-Start with something that creates immediate curiosity - a contradiction, mystery, or unexpected fact.
+CRITICAL: Start with a shocking fact FIRST, then weave in what it is.
 
 ❌ NEVER use generic openings like:
 - "Imagine a time when..."
@@ -96,10 +96,22 @@ Start with something that creates immediate curiosity - a contradiction, mystery
 - "In a time before..."
 - "Long ago..."
 
-✅ ALWAYS start with a SPECIFIC, DRAMATIC fact:
+✅ ALWAYS start with: [Mind-blowing fact that naturally reveals what this is]
+
+EXAMPLES:
 - "The Praetorian Guard was supposed to protect Roman emperors. Instead, they murdered more emperors than they saved."
-- "Cleopatra lived closer in time to the iPhone than to the construction of the Great Pyramid"
-- "We still can't figure out how to make Roman concrete - and theirs gets stronger with time while ours crumbles"
+  (Hook grabs you → naturally reveals they're bodyguards)
+
+- "Aboriginal songs can navigate 40,000 miles of Australian desert with perfect accuracy - no maps, no roads, no landmarks. These are dream maps: knowledge encoded in music."
+  (Hook grabs you → definition comes second)
+
+- "We still can't figure out how to make Roman concrete - and theirs gets stronger with time while ours crumbles."
+  (Hook grabs you → you already know what concrete is from context)
+
+- "A single street corner can make you feel anxious, nostalgic, or mysteriously energized - and nobody can explain why. This is psychogeography: the study of how places mess with our emotions."
+  (Hook grabs you → definition explains the weird fact)
+
+FIRST sentence = shocking/weird/fascinating fact. SECOND sentence = what we're talking about (if needed).
 
 BODY (6-8 VERY SHORT paragraphs):
 Write like an AUDIOBOOK NARRATOR - engaging, conversational, easy to read aloud.
@@ -214,12 +226,60 @@ CRITICAL HYPERLINK RULES - FOLLOW THESE STRICTLY:
     const hyperlinkMatches = content.match(/\[\[([^\]]+)\]\]/g) || [];
     const hyperlinks = [...new Set(hyperlinkMatches.map(match => match.slice(2, -2)))];
 
+    // Generate "Where to next?" suggestions
+    onProgress('Finding connections...');
+    const suggestionsPrompt = `Based on the article about "${topic}", suggest topics for "Where to next?"
+
+Generate TWO categories:
+
+1. RELATED (2-3 topics): Direct, logical next steps
+   - Should be closely connected to the main topic
+   - Natural continuations or deep dives
+
+2. TANGENTS (2-3 topics): Unexpected but fascinating jumps
+   - Surprising connections that make you go "huh!"
+   - Can bridge to completely different domains
+   - The "Wikipedia rabbit hole" effect
+
+Article context:
+${content.substring(0, 500)}
+
+Return ONLY a JSON object in this exact format (no markdown, no explanation):
+{
+  "related": ["Topic 1", "Topic 2", "Topic 3"],
+  "tangents": ["Topic 1", "Topic 2", "Topic 3"]
+}
+
+CRITICAL: Keep topic names VERY SHORT - prefer 1-2 words max!
+Examples:
+✅ GOOD: "Mars", "Octopuses", "Synesthesia", "Tulip Mania"
+❌ BAD: "Martian surface geology", "Octopus intelligence research", "Synesthesia perception mixing"
+
+Make tangents SURPRISING.`;
+
+    const suggestionsMessage = await anthropic.messages.create({
+      model: 'claude-3-5-haiku-20241022',
+      max_tokens: 256,
+      messages: [{ role: 'user', content: suggestionsPrompt }]
+    });
+
+    let suggestions = { related: [], tangents: [] };
+    try {
+      const suggestionsText = suggestionsMessage.content[0].text.trim();
+      // Remove markdown code blocks if present
+      const jsonText = suggestionsText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+      suggestions = JSON.parse(jsonText);
+    } catch (e) {
+      console.error('Failed to parse suggestions:', e);
+      // Fallback to empty arrays if parsing fails
+    }
+
     // Split into hook (first paragraph) and rest
     const paragraphs = content.split('\n\n').filter(p => p.trim());
     const hook = paragraphs[0] || '';
     const body = paragraphs.slice(1).join('\n\n');
 
-    return { hook, content: body, hyperlinks };
+    return { hook, content: body, hyperlinks, suggestions };
   } catch (error) {
     console.error('Error generating article:', error);
     throw new Error('Failed to generate article');
@@ -253,12 +313,16 @@ NEVER END WITH A QUESTION:
 ✅ GOOD: "We still can't figure out how they did it."
 ✅ GOOD: "He vanished and was never seen again."
 
-BANNED PHRASES:
-❌ "Here's the Quick Card for..."
+BANNED PHRASES - ABSOLUTELY NEVER USE THESE:
+❌ "Here's the Quick Card" / "Here's a Quick Card" / "Here is the Quick Card"
+❌ "This is the Quick Card" / "Quick Card:"
 ❌ "Remarkably..."
 ❌ "What began as..."
 ❌ "Could..." (no questions!)
 ❌ Any rhetorical questions
+❌ Any meta-commentary about the card itself
+
+START IMMEDIATELY WITH THE FACTS. No introductions. No preamble.
 
 HYPERLINKS - FORMAT:
 Use EXACTLY [[double brackets]] around 1-3 hyperlinks. Keep them simple.
@@ -285,7 +349,14 @@ Write a shocking Quick Card for "${term}" - NO QUESTIONS, just drama:`;
       messages: [{ role: 'user', content: prompt }]
     });
 
-    const text = message.content[0].text;
+    let text = message.content[0].text;
+
+    // Strip out any meta-commentary about the card itself
+    text = text.replace(/^Here's (the|a) [Qq]uick [Cc]ard[:\s]+/i, '');
+    text = text.replace(/^Here is (the|a) [Qq]uick [Cc]ard[:\s]+/i, '');
+    text = text.replace(/^This is (the|a) [Qq]uick [Cc]ard[:\s]+/i, '');
+    text = text.replace(/^[Qq]uick [Cc]ard:[:\s]+/i, '');
+    text = text.trim();
 
     // Extract hyperlinks
     const hyperlinkMatches = text.match(/\[\[([^\]]+)\]\]/g) || [];
@@ -307,33 +378,56 @@ export async function generateSurpriseTopic() {
     const prompt = `Generate ONE random fascinating topic that would make someone go "wait, what?!" and want to learn more.
 
 REQUIREMENTS:
-- Must be a real historical event, person, phenomenon, mystery, or scientific concept
+- Can be from ANY domain: science, history, nature, psychology, technology, culture, space, biology, etc.
 - Should sound surprising, weird, or counterintuitive
-- Keep it SHORT (3-6 words max)
-- Make it SPECIFIC (not vague like "Ancient Rome" but specific like "The Dancing Plague of 1518")
+- KEEP IT VERY SHORT - prefer 1-2 words, max 3 words
+- Can be general (like "Mars") or specific (like "Tulip Mania") - both are fine!
 
-EXAMPLES of GOOD topics:
-- "Xerxes whipping the ocean"
-- "The Great Emu War"
-- "Tarrare the French glutton"
-- "Emperor Norton of the United States"
-- "The London Beer Flood of 1814"
-- "Wojtek the soldier bear"
-- "Turritopsis dohrnii immortal jellyfish"
+EXAMPLES spanning different domains:
 
-CATEGORIES to choose from (pick any):
-- Bizarre historical events
-- Strange historical figures
-- Unsolved mysteries
-- Counterintuitive science
-- Ancient technology
-- Weird wars or battles
-- Medical oddities
-- Natural phenomena
-- Archaeological mysteries
-- Historical coincidences
+SCIENCE/NATURE:
+- "Tardigrades"
+- "Bioluminescence"
+- "Quantum entanglement"
+- "Magnetoreception"
 
-Return ONLY the topic name, nothing else. No explanation, no quotes, just the topic.`;
+PSYCHOLOGY/HUMAN:
+- "Synesthesia"
+- "Phantom limbs"
+- "Sleep paralysis"
+- "Lucid dreaming"
+
+TECHNOLOGY/MODERN:
+- "Deepfakes"
+- "Quantum computers"
+- "CRISPR"
+- "Neural networks"
+
+SPACE/COSMOS:
+- "Black holes"
+- "Dark matter"
+- "Rogue planets"
+- "Neutron stars"
+
+HISTORY (use sparingly):
+- "Tulip Mania"
+- "The Emu War"
+- "Emperor Norton"
+- "Dancing Plague"
+
+CULTURE/SOCIETY:
+- "Cargo cults"
+- "Memes"
+- "Urban legends"
+- "Conspiracy theories"
+
+BIOLOGY/MEDICINE:
+- "Microbiomes"
+- "Placebos"
+- "Mycelium"
+- "Extremophiles"
+
+Pick a RANDOM category (don't default to history). Return ONLY the topic name - 1-2 words preferred! No explanation, no quotes, just the topic.`;
 
     const message = await anthropic.messages.create({
       model: 'claude-3-5-haiku-20241022',

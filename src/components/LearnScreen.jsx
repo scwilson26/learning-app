@@ -56,6 +56,7 @@ export default function LearnScreen({
   hook,
   content,
   hyperlinks,
+  suggestions = { related: [], tangents: [] },
   breadcrumbs = [],
   onBack,
   onGoDeeper,
@@ -69,7 +70,7 @@ export default function LearnScreen({
   const handleLinkClick = async (term) => {
     setLoadingCard(true)
     try {
-      const cardData = await generateQuickCard(term, topic)
+      const cardData = await generateQuickCard(term)
       setQuickCard({ term, ...cardData })
     } catch (error) {
       console.error('Error loading quick card:', error)
@@ -85,6 +86,26 @@ export default function LearnScreen({
   const handleGoDeeper = (term) => {
     setQuickCard(null)
     onGoDeeper(term)
+  }
+
+  const handleSuggestionClick = async (term) => {
+    // Show Quick Card preview first
+    setLoadingCard(true)
+    try {
+      const cardData = await generateQuickCard(term)
+      setQuickCard({ term, ...cardData })
+    } catch (error) {
+      console.error('Error loading quick card:', error)
+    } finally {
+      setLoadingCard(false)
+    }
+  }
+
+  const handleSurpriseMe = async () => {
+    // Import the function at runtime
+    const { generateSurpriseTopic } = await import('../services/claude')
+    const randomTopic = await generateSurpriseTopic()
+    onGoDeeper(randomTopic)
   }
 
   return (
@@ -164,6 +185,57 @@ export default function LearnScreen({
             })}
           </div>
         </div>
+
+        {/* Where to next? section */}
+        {(suggestions.related.length > 0 || suggestions.tangents.length > 0) && (
+          <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">🎯 Where to next?</h2>
+
+            {suggestions.related.length > 0 && (
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">Related</h3>
+                <div className="flex flex-wrap gap-2">
+                  {suggestions.related.map((suggestedTopic, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleSuggestionClick(suggestedTopic)}
+                      className="px-4 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-medium rounded-lg transition-colors"
+                    >
+                      {suggestedTopic}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {suggestions.tangents.length > 0 && (
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">Tangents</h3>
+                <div className="flex flex-wrap gap-2">
+                  {suggestions.tangents.map((suggestedTopic, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleSuggestionClick(suggestedTopic)}
+                      className="px-4 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 font-medium rounded-lg transition-colors"
+                    >
+                      {suggestedTopic}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Surprise Me button */}
+            <div className="pt-4 border-t border-gray-200">
+              <button
+                onClick={handleSurpriseMe}
+                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98]"
+              >
+                ✨ Surprise Me
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Quick Card Pop-up - MOVED OUTSIDE CONTAINER */}
