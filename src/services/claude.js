@@ -379,36 +379,37 @@ Write a shocking Quick Card for "${term}" - NO QUESTIONS, just drama:`;
  */
 export async function generateSurpriseTopic() {
   try {
-    const prompt = `Generate ONE completely random, unique, fascinating topic that would make someone go "wait, what?!" and want to learn more.
+    // Pick a random domain to force variety
+    const domains = [
+      'History', 'Art', 'Architecture', 'Music', 'Sports', 'Food', 'Fashion',
+      'Geography', 'Anthropology', 'Archaeology', 'Philosophy', 'Economics',
+      'Engineering', 'Mathematics', 'Linguistics', 'Medicine', 'Meteorology',
+      'Geology', 'Paleontology', 'Botany', 'Culture', 'Technology'
+    ];
+    const randomDomain = domains[Math.floor(Math.random() * domains.length)];
+
+    const prompt = `You are generating a random fascinating topic for someone to learn about.
+
+DOMAIN FOCUS: ${randomDomain}
+Pick a surprising, unusual, or counterintuitive topic from this domain.
 
 CRITICAL RULES:
-1. Be truly creative and random - dig deep into your knowledge
-2. THINK OF SOMETHING COMPLETELY DIFFERENT each time
+1. Must be from the ${randomDomain} domain
+2. Pick something OBSCURE and unexpected - not the obvious popular topics
 3. Keep it short - prefer 1 word, but use 2-3 words for proper nouns/events
 
-DOMAIN OPTIONS (pick any):
-Science • History • Nature • Psychology • Technology • Culture • Space • Biology • Medicine • Art • Architecture • Linguistics • Mathematics • Music • Sports • Food • Fashion • Geography • Anthropology • Archaeology • Philosophy • Economics • Engineering • Materials Science • Neuroscience • Oceanography • Geology • Meteorology • Paleontology • Botany • Zoology • Ecology
-
-TYPES OF TOPICS:
-- Obscure historical events or figures
-- Unusual natural phenomena
-- Strange cultural practices
-- Bizarre inventions or discoveries
-- Mysterious archaeological finds
-- Counterintuitive scientific facts
-- Weird biological adaptations
-- Fascinating engineering feats
-- Unusual psychological effects
-- Strange mathematical paradoxes
-- Peculiar medical conditions
-- Odd linguistic phenomena
-
 LENGTH REQUIREMENTS:
-✅ GREAT (1 word): "Octopuses", "Placebos", "Samurai", "Concrete", "Tulips", "Mars", "Memes", "Vikings"
-✅ GOOD (2-3 words for proper names): "Tulip Mania", "World War II", "Cargo Cults", "Roman Empire", "French Revolution"
-❌ TOO LONG: "The history of ancient warfare", "Octopus intelligence research", "Roman concrete technology"
+✅ GREAT (1 word): "Placebos", "Samurai", "Concrete", "Tulips", "Vikings", "Bananas"
+✅ GOOD (2-3 words for proper names): "Tulip Mania", "Cargo Cults", "Roman Empire", "Emu War"
+❌ TOO LONG: "The history of ancient warfare", "Roman concrete technology"
 
-IMPORTANT: Every topic should be DIFFERENT. Think outside the box. Be creative. Surprise me.
+EXAMPLES of good obscure topics by domain:
+- History: "Emu War", "Defenestration", "Tulip Mania"
+- Architecture: "Brutalism", "Earthships", "Geodesic Domes"
+- Music: "Theremin", "Gamelan", "Yodeling"
+- Food: "Surströmming", "Hákarl", "Casu Marzu"
+- Geography: "Enclaves", "Exclaves", "Microstates"
+- Medicine: "Trepanation", "Lobotomy", "Leeches"
 
 Return ONLY the topic name - no explanation, no quotes, just 1-3 words.`;
 
