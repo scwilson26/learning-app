@@ -250,12 +250,16 @@ Return ONLY a JSON object in this exact format (no markdown, no explanation):
   "tangents": ["Topic 1", "Topic 2", "Topic 3"]
 }
 
-CRITICAL: Keep topic names VERY SHORT - prefer 1-2 words max!
-Examples:
-✅ GOOD: "Mars", "Octopuses", "Synesthesia", "Tulip Mania"
-❌ BAD: "Martian surface geology", "Octopus intelligence research", "Synesthesia perception mixing"
+LENGTH REQUIREMENTS:
+- Prefer single words when possible: "Mars", "Octopuses", "Placebos", "Vikings", "Memes"
+- Use 2-3 words for proper nouns and named events: "Tulip Mania", "World War II", "French Revolution"
+- Avoid long descriptive phrases
 
-Make tangents SURPRISING.`;
+✅ GREAT (1 word): "Mars", "Octopuses", "Placebos", "Vikings", "Samurai", "Concrete"
+✅ GOOD (2-3 words for proper names): "Tulip Mania", "Roman Empire", "World War II", "Cargo Cults"
+❌ TOO LONG: "Martian surface geology", "The history of octopus intelligence", "Ancient Roman building techniques"
+
+Make tangents SURPRISING and keep them SHORT!`;
 
     const suggestionsMessage = await anthropic.messages.create({
       model: 'claude-3-5-haiku-20241022',
@@ -375,63 +379,43 @@ Write a shocking Quick Card for "${term}" - NO QUESTIONS, just drama:`;
  */
 export async function generateSurpriseTopic() {
   try {
-    const prompt = `Generate ONE random fascinating topic that would make someone go "wait, what?!" and want to learn more.
+    const prompt = `Generate ONE completely random, unique, fascinating topic that would make someone go "wait, what?!" and want to learn more.
 
-REQUIREMENTS:
-- Can be from ANY domain: science, history, nature, psychology, technology, culture, space, biology, etc.
-- Should sound surprising, weird, or counterintuitive
-- KEEP IT VERY SHORT - prefer 1-2 words, max 3 words
-- Can be general (like "Mars") or specific (like "Tulip Mania") - both are fine!
+CRITICAL RULES:
+1. Be truly creative and random - dig deep into your knowledge
+2. THINK OF SOMETHING COMPLETELY DIFFERENT each time
+3. Keep it short - prefer 1 word, but use 2-3 words for proper nouns/events
 
-EXAMPLES spanning different domains:
+DOMAIN OPTIONS (pick any):
+Science • History • Nature • Psychology • Technology • Culture • Space • Biology • Medicine • Art • Architecture • Linguistics • Mathematics • Music • Sports • Food • Fashion • Geography • Anthropology • Archaeology • Philosophy • Economics • Engineering • Materials Science • Neuroscience • Oceanography • Geology • Meteorology • Paleontology • Botany • Zoology • Ecology
 
-SCIENCE/NATURE:
-- "Tardigrades"
-- "Bioluminescence"
-- "Quantum entanglement"
-- "Magnetoreception"
+TYPES OF TOPICS:
+- Obscure historical events or figures
+- Unusual natural phenomena
+- Strange cultural practices
+- Bizarre inventions or discoveries
+- Mysterious archaeological finds
+- Counterintuitive scientific facts
+- Weird biological adaptations
+- Fascinating engineering feats
+- Unusual psychological effects
+- Strange mathematical paradoxes
+- Peculiar medical conditions
+- Odd linguistic phenomena
 
-PSYCHOLOGY/HUMAN:
-- "Synesthesia"
-- "Phantom limbs"
-- "Sleep paralysis"
-- "Lucid dreaming"
+LENGTH REQUIREMENTS:
+✅ GREAT (1 word): "Octopuses", "Placebos", "Samurai", "Concrete", "Tulips", "Mars", "Memes", "Vikings"
+✅ GOOD (2-3 words for proper names): "Tulip Mania", "World War II", "Cargo Cults", "Roman Empire", "French Revolution"
+❌ TOO LONG: "The history of ancient warfare", "Octopus intelligence research", "Roman concrete technology"
 
-TECHNOLOGY/MODERN:
-- "Deepfakes"
-- "Quantum computers"
-- "CRISPR"
-- "Neural networks"
+IMPORTANT: Every topic should be DIFFERENT. Think outside the box. Be creative. Surprise me.
 
-SPACE/COSMOS:
-- "Black holes"
-- "Dark matter"
-- "Rogue planets"
-- "Neutron stars"
-
-HISTORY (use sparingly):
-- "Tulip Mania"
-- "The Emu War"
-- "Emperor Norton"
-- "Dancing Plague"
-
-CULTURE/SOCIETY:
-- "Cargo cults"
-- "Memes"
-- "Urban legends"
-- "Conspiracy theories"
-
-BIOLOGY/MEDICINE:
-- "Microbiomes"
-- "Placebos"
-- "Mycelium"
-- "Extremophiles"
-
-Pick a RANDOM category (don't default to history). Return ONLY the topic name - 1-2 words preferred! No explanation, no quotes, just the topic.`;
+Return ONLY the topic name - no explanation, no quotes, just 1-3 words.`;
 
     const message = await anthropic.messages.create({
       model: 'claude-3-5-haiku-20241022',
       max_tokens: 50,
+      temperature: 1.0,
       messages: [{ role: 'user', content: prompt }]
     });
 
