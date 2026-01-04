@@ -169,60 +169,47 @@ function App() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-lg">
         {/* Header */}
-        <div className="text-center mb-8">
+        <div className="text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-3">
             Start Learning
           </h1>
-          <p className="text-gray-600 text-lg">Discover something new today</p>
+
+          {/* Surprise Me button - centered below title */}
+          <button
+            type="button"
+            onClick={handleSurpriseMe}
+            disabled={loading}
+            style={{
+              marginTop: '1.5rem',
+              marginBottom: '2.5rem',
+              padding: '1.25rem 3.5rem',
+              fontSize: '1.5rem'
+            }}
+            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold rounded-2xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          >
+            ✨ Surprise Me!
+          </button>
         </div>
 
-        {/* Progress stats */}
-        {cardStats.total > 0 && (
-          <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-            <div className="flex justify-around text-center">
-              <div>
-                <div className="text-3xl font-bold text-indigo-600">{cardStats.dueToday}</div>
-                <div className="text-sm text-gray-600 mt-1">due today</div>
-              </div>
-              <div className="border-l-2 border-gray-200"></div>
-              <div>
-                <div className="text-3xl font-bold text-gray-800">{cardStats.total}</div>
-                <div className="text-sm text-gray-600 mt-1">total cards</div>
-              </div>
-            </div>
-
-            {/* Navigation buttons */}
-            <div className="flex gap-3 mt-4 pt-4 border-t border-gray-200">
-              <button
-                onClick={handleGoToLibrary}
-                className="flex-1 text-indigo-600 hover:text-indigo-800 font-medium py-2 px-4 rounded-lg hover:bg-indigo-50 transition-colors"
-              >
-                View All Cards
-              </button>
-              {cardStats.dueToday > 0 && (
-                <button
-                  onClick={handleGoToReview}
-                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
-                >
-                  Review Now →
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
         <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
+          <div className="flex gap-3 items-center justify-center">
             <input
               type="text"
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               placeholder="What do you want to learn about?"
-              className="w-full px-6 py-4 text-lg border-2 border-gray-300 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all duration-200 shadow-sm"
+              className="w-72 px-6 py-4 text-lg border-2 border-gray-300 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all duration-200 shadow-sm"
             />
+            <button
+              type="submit"
+              disabled={loading}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-2xl"
+            >
+              ↵
+            </button>
           </div>
 
-          {progress ? (
+          {progress && (
             <div className="bg-white rounded-xl shadow-md p-8">
               <div className="text-center">
                 <div className="text-lg font-medium text-indigo-600 mb-4">
@@ -233,35 +220,6 @@ function App() {
                 </div>
               </div>
             </div>
-          ) : (
-            <>
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-lg"
-              >
-                {loading ? 'Loading...' : 'Get Started'}
-              </button>
-
-              {/* Surprise Me button */}
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-3 bg-gradient-to-br from-blue-50 to-indigo-100 text-gray-500">or</span>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleSurpriseMe}
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-4 px-8 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-lg"
-              >
-                ✨ Surprise Me
-              </button>
-            </>
           )}
 
           {error && (
