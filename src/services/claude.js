@@ -60,7 +60,7 @@ IMPORTANT:
     }
 
     const message = await anthropic.messages.create({
-      model: 'claude-3-5-haiku-20241022',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 1024,
       messages: [
         { role: 'user', content: prompt }
@@ -186,11 +186,17 @@ CRITICAL HYPERLINK RULES - FOLLOW THESE STRICTLY:
    - ❌ NEVER: "[[Revolution]]" → ✅ ALWAYS: "[[French Revolution]]"
    - ❌ NEVER: "[[1929]]" → ✅ ALWAYS: "[[Great Depression]]" or "[[Stock Market Crash of 1929]]"
 
+   **CRITICAL for names**: Even if text uses last name only, the hyperlink MUST be the full name:
+   - Text: "Reynolds lost his license" → Write: "[[Michael Reynolds]] lost his license"
+   - Text: "Einstein proved it" → Write: "[[Albert Einstein]] proved it"
+   - ❌ NEVER just "[[Reynolds]]" or "[[Einstein]]" - always use full identifiable name
+
 3. **DO NOT hyperlink**:
    - Generic adjectives or verbs
    - Bare numbers without context (no "[[1929]]" by itself)
    - Common words like "time", "place", "people"
-   - Generic professions without names`;
+   - Generic professions without names
+   - Generic institutional phrases like "Harvard researchers", "MIT scientists", "NASA engineers" (too vague - who specifically?)`;
 
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
@@ -212,6 +218,8 @@ CRITICAL HYPERLINK RULES - FOLLOW THESE STRICTLY:
       /\[\[Battle\]\]/gi,
       /\[\[\d{4}\]\]/g, // Bare years like [[1929]]
       /\[\[\d+\]\]/g, // Any bare number
+      /\[\[[A-Z][a-z]+\]\]/g, // Single capitalized words (likely last names like "Reynolds")
+      /\[\[[A-Z][a-z]+ (researchers?|scientists?|studies?|team|professors?|experts?|engineers?|doctors?|officials?)\]\]/gi, // "Harvard researchers", "MIT scientists", etc.
     ];
 
     // Remove the brackets from generic terms (leave the text, remove hyperlink)
@@ -262,7 +270,7 @@ LENGTH REQUIREMENTS:
 Make tangents SURPRISING and keep them SHORT!`;
 
     const suggestionsMessage = await anthropic.messages.create({
-      model: 'claude-3-5-haiku-20241022',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 256,
       messages: [{ role: 'user', content: suggestionsPrompt }]
     });
@@ -348,7 +356,7 @@ EXAMPLES:
 Write a shocking Quick Card for "${term}" - NO QUESTIONS, just drama:`;
 
     const message = await anthropic.messages.create({
-      model: 'claude-3-5-haiku-20241022',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 256,
       messages: [{ role: 'user', content: prompt }]
     });
@@ -414,7 +422,7 @@ EXAMPLES of good obscure topics by domain:
 Return ONLY the topic name - no explanation, no quotes, just 1-3 words.`;
 
     const message = await anthropic.messages.create({
-      model: 'claude-3-5-haiku-20241022',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 50,
       temperature: 1.0,
       messages: [{ role: 'user', content: prompt }]
@@ -450,7 +458,7 @@ A: [answer 2]
 Make the questions test understanding, not just memorization. Cover different aspects of the content.`;
 
     const message = await anthropic.messages.create({
-      model: 'claude-3-5-haiku-20241022',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 1500,
       messages: [
         { role: 'user', content: prompt }

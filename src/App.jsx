@@ -174,60 +174,62 @@ function App() {
             Start Learning
           </h1>
 
-          {/* Surprise Me button - centered below title */}
-          <button
-            type="button"
-            onClick={handleSurpriseMe}
-            disabled={loading}
-            style={{
-              marginTop: '1.5rem',
-              marginBottom: '2.5rem',
-              padding: '1.25rem 3.5rem',
-              fontSize: '1.5rem'
-            }}
-            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold rounded-2xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-          >
-            ✨ Surprise Me!
-          </button>
+          {/* Loading indicator - show when loading */}
+          {loading && (
+            <div className="my-8">
+              <div className="flex justify-center mb-3">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+              </div>
+              <p className="text-indigo-600 font-medium">{progress?.message || 'Loading...'}</p>
+            </div>
+          )}
+
+          {/* Surprise Me button - centered below title (hide when loading) */}
+          {!loading && (
+            <button
+              type="button"
+              onClick={handleSurpriseMe}
+              disabled={loading}
+              style={{
+                marginTop: '1.5rem',
+                marginBottom: '2.5rem',
+                padding: '1.25rem 3.5rem',
+                fontSize: '1.5rem'
+              }}
+              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold rounded-2xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            >
+              ✨ Surprise Me!
+            </button>
+          )}
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="flex gap-3 items-center justify-center">
-            <input
-              type="text"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              placeholder="Search anything!"
-              className="w-72 px-6 py-4 text-lg border-2 border-gray-300 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all duration-200 shadow-sm"
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-2xl"
-            >
-              ↵
-            </button>
-          </div>
+        {/* Hide search form when loading */}
+        {!loading && (
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="flex gap-3 items-center justify-center">
+              <input
+                type="text"
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                placeholder="Search anything!"
+                className="w-72 px-6 py-4 text-lg border-2 border-gray-300 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all duration-200 shadow-sm"
+              />
+              <button
+                type="submit"
+                disabled={loading}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-2xl"
+              >
+                ↵
+              </button>
+            </div>
 
-          {progress && (
-            <div className="bg-white rounded-xl shadow-md p-8">
-              <div className="text-center">
-                <div className="text-lg font-medium text-indigo-600 mb-4">
-                  {progress.message}
-                </div>
-                <div className="flex justify-center">
-                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
-                </div>
+            {error && (
+              <div className="text-red-600 text-sm text-center bg-red-50 p-4 rounded-xl border border-red-200">
+                {error}
               </div>
-            </div>
-          )}
-
-          {error && (
-            <div className="text-red-600 text-sm text-center bg-red-50 p-4 rounded-xl border border-red-200">
-              {error}
-            </div>
-          )}
-        </form>
+            )}
+          </form>
+        )}
       </div>
     </div>
   )
