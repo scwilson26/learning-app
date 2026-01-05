@@ -259,13 +259,9 @@ Return ONLY a JSON object in this exact format (no markdown, no explanation):
 }
 
 LENGTH REQUIREMENTS:
-- Prefer single words when possible: "Mars", "Octopuses", "Placebos", "Vikings", "Memes"
-- Use 2-3 words for proper nouns and named events: "Tulip Mania", "World War II", "French Revolution"
-- Avoid long descriptive phrases
-
-✅ GREAT (1 word): "Mars", "Octopuses", "Placebos", "Vikings", "Samurai", "Concrete"
-✅ GOOD (2-3 words for proper names): "Tulip Mania", "Roman Empire", "World War II", "Cargo Cults"
-❌ TOO LONG: "Martian surface geology", "The history of octopus intelligence", "Ancient Roman building techniques"
+- 1 word is ideal
+- 2-3 words okay for proper nouns/events
+- Never use long descriptive phrases
 
 Make tangents SURPRISING and keep them SHORT!`;
 
@@ -389,37 +385,42 @@ export async function generateSurpriseTopic() {
   try {
     // Pick a random domain to force variety
     const domains = [
-      'History', 'Art', 'Architecture', 'Music', 'Sports', 'Food', 'Fashion',
-      'Geography', 'Anthropology', 'Archaeology', 'Philosophy', 'Economics',
-      'Engineering', 'Mathematics', 'Linguistics', 'Medicine', 'Meteorology',
-      'Geology', 'Paleontology', 'Botany', 'Culture', 'Technology'
+      // Wide variety of domains - from academic to pop culture to weird niches
+      'Ancient Civilizations', 'Modern Inventions', 'Unsolved Mysteries', 'Failed Products',
+      'Weird Laws', 'Urban Legends', 'Conspiracy Theories', 'Cults', 'Scams & Heists',
+      'Disasters', 'Medical Oddities', 'Cryptids & Myths', 'Lost Cities', 'Abandoned Places',
+      'Extreme Sports', 'Competitive Eating', 'Board Games', 'Video Games', 'Toys',
+      'Fast Food', 'Street Food', 'Fermented Foods', 'Banned Foods', 'Food Scandals',
+      'One-Hit Wonders', 'Musical Instruments', 'Dance Styles', 'Subcultures', 'Fandoms',
+      'Serial Killers', 'Spies & Espionage', 'Pirates', 'Outlaws', 'Assassinations',
+      'Space Exploration', 'Deep Sea', 'Caves', 'Deserts', 'Islands',
+      'Bridges', 'Skyscrapers', 'Bunkers', 'Prisons', 'Theme Parks',
+      'Weapons', 'Poisons', 'Viruses', 'Parasites', 'Fungi',
+      'Optical Illusions', 'Magic Tricks', 'Puzzles', 'Riddles', 'Paradoxes',
+      'Slang', 'Dead Languages', 'Symbols', 'Flags', 'Currencies',
+      'Superstitions', 'Rituals', 'Taboos', 'Etiquette', 'Traditions',
+      'Internet Culture', 'Memes', 'Viral Moments', 'Hoaxes', 'Pranks',
+      'Movie Props', 'Special Effects', 'Stunts', 'Voice Acting', 'Animation',
+      'Sports Scandals', 'Doping', 'Mascots', 'Rivalries', 'Underdog Stories',
+      'Royalty', 'Dictators', 'Revolutionaries', 'Inventors', 'Explorers',
+      'Fossils', 'Extinction Events', 'Ice Ages', 'Volcanoes', 'Earthquakes',
+      'Sleep', 'Dreams', 'Memory', 'Phobias', 'Addictions',
+      'Tattoos', 'Body Modification', 'Cosmetic Surgery', 'Hair', 'Makeup',
+      'Cocktails', 'Coffee', 'Tea', 'Beer', 'Wine',
+      'Candy', 'Chocolate', 'Ice Cream', 'Cheese', 'Bread',
+      'Cars', 'Motorcycles', 'Trains', 'Ships', 'Aircraft',
+      'Robots', 'AI', 'Hacking', 'Encryption', 'Surveillance'
     ];
     const randomDomain = domains[Math.floor(Math.random() * domains.length)];
 
-    const prompt = `You are generating a random fascinating topic for someone to learn about.
+    const prompt = `Generate ONE fascinating topic related to: ${randomDomain}
 
-DOMAIN FOCUS: ${randomDomain}
-Pick a surprising, unusual, or counterintuitive topic from this domain.
+RULES:
+1. Pick something specific and surprising - not the obvious choice
+2. Make it something that makes people go "wait, what?!"
+3. Keep it short: 1-3 words max
 
-CRITICAL RULES:
-1. Must be from the ${randomDomain} domain
-2. Pick something OBSCURE and unexpected - not the obvious popular topics
-3. Keep it short - prefer 1 word, but use 2-3 words for proper nouns/events
-
-LENGTH REQUIREMENTS:
-✅ GREAT (1 word): "Placebos", "Samurai", "Concrete", "Tulips", "Vikings", "Bananas"
-✅ GOOD (2-3 words for proper names): "Tulip Mania", "Cargo Cults", "Roman Empire", "Emu War"
-❌ TOO LONG: "The history of ancient warfare", "Roman concrete technology"
-
-EXAMPLES of good obscure topics by domain:
-- History: "Emu War", "Defenestration", "Tulip Mania"
-- Architecture: "Brutalism", "Earthships", "Geodesic Domes"
-- Music: "Theremin", "Gamelan", "Yodeling"
-- Food: "Surströmming", "Hákarl", "Casu Marzu"
-- Geography: "Enclaves", "Exclaves", "Microstates"
-- Medicine: "Trepanation", "Lobotomy", "Leeches"
-
-Return ONLY the topic name - no explanation, no quotes, just 1-3 words.`;
+Return ONLY the topic name, nothing else.`;
 
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',

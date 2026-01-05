@@ -3,6 +3,9 @@ import { generateQuickCard } from '../services/claude'
 
 // Helper function to render text with [[hyperlinks]]
 function renderContent(text, onLinkClick) {
+  // Strip ** markdown (we handle bold via CSS instead)
+  text = text.replace(/\*\*/g, '');
+
   const parts = text.split(/(\[\[.*?\]\])/g);
 
   return parts.map((part, i) => {
@@ -333,28 +336,19 @@ export default function LearnScreen({
         </div>
       )}
 
-      {/* Loading overlay for quick cards - MOVED OUTSIDE CONTAINER */}
+      {/* Loading indicator for quick cards - subtle version */}
       {loadingCard && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-40">
-          <div className="bg-white rounded-lg p-6 shadow-xl">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-          </div>
+        <div className="fixed bottom-4 right-4 bg-white rounded-lg p-3 shadow-lg z-40 flex items-center gap-2">
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600"></div>
+          <span className="text-sm text-gray-600">Loading...</span>
         </div>
       )}
 
-      {/* Loading overlay for "Go Deeper" navigation - MOVED OUTSIDE CONTAINER */}
+      {/* Loading indicator for "Go Deeper" navigation - subtle version */}
       {loading && progress && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 shadow-2xl max-w-md">
-            <div className="text-center">
-              <div className="text-lg font-medium text-indigo-600 mb-4">
-                {progress.message}
-              </div>
-              <div className="flex justify-center">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
-              </div>
-            </div>
-          </div>
+        <div className="fixed bottom-4 right-4 bg-white rounded-lg p-3 shadow-lg z-50 flex items-center gap-2">
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600"></div>
+          <span className="text-sm text-gray-600">{progress.message}</span>
         </div>
       )}
 
