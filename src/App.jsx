@@ -5,14 +5,44 @@ import ReviewScreen from './components/ReviewScreen'
 import CardLibrary from './components/CardLibrary'
 
 function App() {
-  const [screen, setScreen] = useState('home') // 'home', 'learn', 'review', or 'library'
-  const [topic, setTopic] = useState('')
+  // Load saved state from localStorage on initial render
+  const getSavedState = () => {
+    try {
+      const saved = localStorage.getItem('appState')
+      if (saved) {
+        return JSON.parse(saved)
+      }
+    } catch (e) {
+      console.error('Error loading saved state:', e)
+    }
+    return null
+  }
+
+  const savedState = getSavedState()
+
+  const [screen, setScreen] = useState(savedState?.screen || 'home')
+  const [topic, setTopic] = useState(savedState?.topic || '')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [learnData, setLearnData] = useState(null) // { topic, hook, content, hyperlinks }
+  const [learnData, setLearnData] = useState(savedState?.learnData || null)
   const [cardStats, setCardStats] = useState({ total: 0, dueToday: 0 })
   const [progress, setProgress] = useState(null)
-  const [breadcrumbs, setBreadcrumbs] = useState([]) // Track user's journey: [{topic, hook, content, hyperlinks}, ...]
+  const [breadcrumbs, setBreadcrumbs] = useState(savedState?.breadcrumbs || [])
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    if (screen === 'learn' && learnData) {
+      localStorage.setItem('appState', JSON.stringify({
+        screen,
+        topic,
+        learnData,
+        breadcrumbs
+      }))
+    } else if (screen === 'home') {
+      // Clear saved state when returning home
+      localStorage.removeItem('appState')
+    }
+  }, [screen, topic, learnData, breadcrumbs])
 
   useEffect(() => {
     // Calculate card statistics
@@ -121,6 +151,9 @@ function App() {
   }
 
   const handleBreadcrumbClick = (index) => {
+    // Don't do anything if clicking the current (last) breadcrumb
+    if (index === breadcrumbs.length - 1) return
+
     // Jump back to a previous topic in the journey
     const selectedData = breadcrumbs[index]
     setLearnData(selectedData)
