@@ -28,6 +28,7 @@ function App() {
   const [cardStats, setCardStats] = useState({ total: 0, dueToday: 0 })
   const [progress, setProgress] = useState(null)
   const [breadcrumbs, setBreadcrumbs] = useState(savedState?.breadcrumbs || [])
+  const [currentIndex, setCurrentIndex] = useState(savedState?.currentIndex ?? (savedState?.breadcrumbs?.length - 1 || 0))
 
   // Save state to localStorage whenever it changes
   useEffect(() => {
@@ -36,13 +37,14 @@ function App() {
         screen,
         topic,
         learnData,
-        breadcrumbs
+        breadcrumbs,
+        currentIndex
       }))
     } else if (screen === 'home') {
       // Clear saved state when returning home
       localStorage.removeItem('appState')
     }
-  }, [screen, topic, learnData, breadcrumbs])
+  }, [screen, topic, learnData, breadcrumbs, currentIndex])
 
   useEffect(() => {
     // Calculate card statistics
@@ -127,6 +129,7 @@ function App() {
     setTopic('')
     setLearnData(null)
     setBreadcrumbs([])
+    setCurrentIndex(0)
   }
 
   const handleGoDeeper = async (term) => {
@@ -139,8 +142,13 @@ function App() {
       })
       const newData = { topic: term, hook, content, hyperlinks, suggestions }
       setLearnData(newData)
-      // Add to breadcrumb trail
-      setBreadcrumbs(prev => [...prev, newData])
+      // If we're in the middle of history, branch from current point
+      // Otherwise just append to the end
+      setBreadcrumbs(prev => {
+        const newBreadcrumbs = [...prev.slice(0, currentIndex + 1), newData]
+        return newBreadcrumbs
+      })
+      setCurrentIndex(prev => prev + 1)
       setProgress(null)
     } catch (err) {
       setError(err.message)
@@ -151,14 +159,13 @@ function App() {
   }
 
   const handleBreadcrumbClick = (index) => {
-    // Don't do anything if clicking the current (last) breadcrumb
-    if (index === breadcrumbs.length - 1) return
+    // Don't do anything if clicking the current breadcrumb
+    if (index === currentIndex) return
 
-    // Jump back to a previous topic in the journey
+    // Jump to that topic (no reloading, just switch view)
     const selectedData = breadcrumbs[index]
     setLearnData(selectedData)
-    // Trim breadcrumbs to this point
-    setBreadcrumbs(prev => prev.slice(0, index + 1))
+    setCurrentIndex(index)
   }
 
   const handleGoToReview = () => {
@@ -179,6 +186,7 @@ function App() {
         hyperlinks={learnData.hyperlinks}
         suggestions={learnData.suggestions || { related: [], tangents: [] }}
         breadcrumbs={breadcrumbs}
+        currentIndex={currentIndex}
         onBack={handleBackToHome}
         onGoDeeper={handleGoDeeper}
         onBreadcrumbClick={handleBreadcrumbClick}

@@ -61,6 +61,7 @@ export default function LearnScreen({
   hyperlinks,
   suggestions = { related: [], tangents: [] },
   breadcrumbs = [],
+  currentIndex = 0,
   onBack,
   onGoDeeper,
   onBreadcrumbClick,
@@ -123,7 +124,7 @@ export default function LearnScreen({
                   <button
                     onClick={() => onBreadcrumbClick(index)}
                     className={`px-3 py-1 rounded-full transition-colors ${
-                      index === breadcrumbs.length - 1
+                      index === currentIndex
                         ? 'bg-indigo-600 text-white font-semibold'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
