@@ -70,19 +70,28 @@ export async function generateArticleBody(topic, hook, quickCardText = null) {
 BODY (6-8 VERY SHORT paragraphs):
 Write like an AUDIOBOOK NARRATOR - engaging, conversational, easy to read aloud.
 
-WRITING STYLE - CRITICAL:
+READING LEVEL - CRITICAL:
+Write for a 10-year-old. Use simple, everyday words. MAX 15 words per sentence.
+- ❌ "subsequently" → ✅ "then"
+- ❌ "commenced" → ✅ "started"
+- ❌ "utilized" → ✅ "used"
+- ❌ "approximately" → ✅ "about"
+- ❌ "facilitate" → ✅ "help"
+- ❌ "demonstrate" → ✅ "show"
+- ❌ "phenomenon" → ✅ describe it simply
+If you wouldn't say it to a kid, don't write it.
+
+WRITING STYLE:
 - Just tell the story. No analysis. No commentary. Just WHAT HAPPENED.
 - Short, punchy sentences. One idea per sentence.
-- Active voice, not passive ("Washington freed his slaves" not "slaves were freed by Washington")
-- Simple words. If a 5th grader wouldn't understand it, don't use it.
+- Active voice ("Washington freed his slaves" not "slaves were freed")
 - **Use past tense for historical events**
-- NO explaining why things matter - just state the facts and move on
 
-BANNED WORDS/PHRASES (never use these):
-❌ "contradiction", "defined", "unprecedented", "significance", "notably"
+BANNED WORDS/PHRASES:
+❌ "contradiction", "unprecedented", "significance", "notably", "paradigm"
+❌ "furthermore", "moreover", "however", "nevertheless", "consequently"
 ❌ "His brilliance lay in...", "The key was...", "This would prove to be..."
-❌ Any sentence that starts with "It was..." or "There was..."
-❌ "turned X into Y" (too analytical - just say what happened)
+❌ Any sentence starting with "It was..." or "There was..."
 
 PARAGRAPH STRUCTURE:
 - 2-3 sentences max per paragraph
@@ -258,19 +267,28 @@ FIRST sentence = shocking/weird/fascinating fact. SECOND sentence = what we're t
 BODY (6-8 VERY SHORT paragraphs):
 Write like an AUDIOBOOK NARRATOR - engaging, conversational, easy to read aloud.
 
-WRITING STYLE - CRITICAL:
+READING LEVEL - CRITICAL:
+Write for a 10-year-old. Use simple, everyday words. MAX 15 words per sentence.
+- ❌ "subsequently" → ✅ "then"
+- ❌ "commenced" → ✅ "started"
+- ❌ "utilized" → ✅ "used"
+- ❌ "approximately" → ✅ "about"
+- ❌ "facilitate" → ✅ "help"
+- ❌ "demonstrate" → ✅ "show"
+- ❌ "phenomenon" → ✅ describe it simply
+If you wouldn't say it to a kid, don't write it.
+
+WRITING STYLE:
 - Just tell the story. No analysis. No commentary. Just WHAT HAPPENED.
 - Short, punchy sentences. One idea per sentence.
-- Active voice, not passive ("Washington freed his slaves" not "slaves were freed by Washington")
-- Simple words. If a 5th grader wouldn't understand it, don't use it.
+- Active voice ("Washington freed his slaves" not "slaves were freed")
 - **Use past tense for historical events**
-- NO explaining why things matter - just state the facts and move on
 
-BANNED WORDS/PHRASES (never use these):
-❌ "contradiction", "defined", "unprecedented", "significance", "notably"
+BANNED WORDS/PHRASES:
+❌ "contradiction", "unprecedented", "significance", "notably", "paradigm"
+❌ "furthermore", "moreover", "however", "nevertheless", "consequently"
 ❌ "His brilliance lay in...", "The key was...", "This would prove to be..."
-❌ Any sentence that starts with "It was..." or "There was..."
-❌ "turned X into Y" (too analytical - just say what happened)
+❌ Any sentence starting with "It was..." or "There was..."
 
 TONE EXAMPLES:
 ❌ BAD: "His brilliance lay in keeping the Continental Army alive through brutal winters"
@@ -455,7 +473,7 @@ WRITING STYLE - CRITICAL:
 - MAXIMUM 2 sentences. No more. Ever.
 - Lead with the WEIRDEST, most shocking fact ABOUT "${term}"
 - **Use past tense for historical events**
-- Simple words, punchy sentences
+- Simple words a 10-year-old would understand. MAX 15 words per sentence.
 - NO context-setting or explanations
 - Just state the shocking facts and STOP
 
@@ -692,13 +710,20 @@ ${existingContent}
 NOW WRITE Part ${partNumber}: ${part.title}
 ${part.instructions}
 
-WRITING STYLE - SAME AS BEFORE:
+READING LEVEL - CRITICAL:
+Write for a 10-year-old. Use simple, everyday words. MAX 15 words per sentence.
+- ❌ "subsequently" → ✅ "then"
+- ❌ "commenced" → ✅ "started"
+- ❌ "approximately" → ✅ "about"
+- ❌ "demonstrate" → ✅ "show"
+If you wouldn't say it to a kid, don't write it.
+
+WRITING STYLE:
 - Just tell the story. No analysis. No commentary.
 - Short, punchy sentences. One idea per sentence.
-- Active voice, simple words
+- Active voice
 - **Use past tense for historical events**
 - 2-3 sentences per paragraph
-- End with hooks that create curiosity
 
 START WITH A SECTION HEADER:
 Use ## format, make it intriguing. Example: "## ${part.title}" or something more creative.
@@ -716,9 +741,10 @@ Use EXACTLY [[double brackets]] around hyperlinks.
 - Full names: "[[Albert Einstein]]" not "[[Einstein]]"
 
 BANNED WORDS/PHRASES:
-❌ "contradiction", "defined", "unprecedented", "significance", "notably"
+❌ "contradiction", "unprecedented", "significance", "notably", "paradigm"
+❌ "furthermore", "moreover", "however", "nevertheless", "consequently"
 ❌ "His brilliance lay in...", "The key was...", "This would prove to be..."
-❌ Any sentence that starts with "It was..." or "There was..."
+❌ Any sentence starting with "It was..." or "There was..."
 
 Write Part ${partNumber} now:`;
 
