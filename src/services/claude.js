@@ -108,10 +108,16 @@ EXAMPLES:
 - "We still can't figure out how to make Roman concrete - and theirs gets stronger with time while ours crumbles."
   (Hook grabs you → you already know what concrete is from context)
 
-- "A single street corner can make you feel anxious, nostalgic, or mysteriously energized - and nobody can explain why. This is psychogeography: the study of how places mess with our emotions."
-  (Hook grabs you → definition explains the weird fact)
+- "A single street corner can make you feel anxious, nostalgic, or mysteriously energized - and nobody can explain why. Psychogeography tries to explain how places mess with our emotions."
+  (Hook grabs you → flows naturally into the topic)
 
 FIRST sentence = shocking/weird/fascinating fact. SECOND sentence = what we're talking about (if needed).
+
+❌ NEVER USE THESE FORMULAIC PATTERNS:
+- "This is [topic]:" or "This is [topic] -" (too textbook-y)
+- "Welcome to the world of..."
+- "[Topic] is the study of..."
+- Any sentence that sounds like a dictionary definition
 
 BODY (6-8 VERY SHORT paragraphs):
 Write like an AUDIOBOOK NARRATOR - engaging, conversational, easy to read aloud.
@@ -297,18 +303,20 @@ Make tangents SURPRISING and keep them SHORT!`;
 /**
  * Generate a Quick Card (2-3 sentences) for a hyperlinked term
  * @param {string} term - The term to explain
- * @param {string} context - The topic/context where this term appeared
  * @returns {Promise<{text: string, hyperlinks: Array<string>}>}
  */
-export async function generateQuickCard(term, context = '') {
+export async function generateQuickCard(term) {
   try {
-    const prompt = `Write a Quick Card about "${term}"${context ? ` in the context of ${context}` : ''}.
+    const prompt = `Write a Quick Card about "${term}".
+
+CRITICAL: Focus ONLY on "${term}" itself - its most fascinating facts, history, or characteristics.
+Do NOT focus on how it relates to any other topic. The reader wants to learn about "${term}" specifically.
 
 GOAL: Make them go "WHAT?!" and immediately click "Go Deeper"
 
 WRITING STYLE - CRITICAL:
 - Exactly 2-3 SHORT sentences
-- Lead with the WEIRDEST, most shocking fact
+- Lead with the WEIRDEST, most shocking fact ABOUT "${term}"
 - **Use past tense for historical events**
 - Simple words, punchy sentences
 - NO context-setting or explanations

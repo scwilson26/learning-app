@@ -11,7 +11,12 @@ function renderContent(text, onLinkClick) {
   return parts.map((part, i) => {
     // Check if this is a hyperlink
     if (part.startsWith('[[') && part.endsWith(']]')) {
-      const term = part.slice(2, -2);
+      let term = part.slice(2, -2);
+
+      // Handle wiki-style links like [[display|target]] - just use the first part
+      if (term.includes('|')) {
+        term = term.split('|')[0];
+      }
 
       return (
         <span
