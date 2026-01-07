@@ -8,11 +8,12 @@ const anthropic = new Anthropic({
 /**
  * Generate just the hook/opening for an article (fast, ~1-2 sentences)
  * @param {string} topic - The topic to explore
+ * @param {string} quickCardText - Optional Quick Card text to build upon
  * @returns {Promise<{hook: string}>}
  */
-export async function generateArticleHook(topic) {
+export async function generateArticleHook(topic, quickCardText = null) {
   try {
-    const prompt = `Write a 1-2 sentence OPENING HOOK about "${topic}" that makes readers desperate to learn more.
+    let prompt = `Write a 1-2 sentence OPENING HOOK about "${topic}" that makes readers desperate to learn more.
 
 CRITICAL: Start with a shocking fact FIRST, then weave in what it is.
 
@@ -29,6 +30,16 @@ EXAMPLES:
 - "We still can't figure out how to make Roman concrete - and theirs gets stronger with time while ours crumbles."
 
 Write ONLY the hook - 1-2 sentences max. No title, no body, just the hook.`;
+
+    // If we have Quick Card context, incorporate it
+    if (quickCardText) {
+      prompt += `
+
+IMPORTANT: The reader just saw this preview and clicked to learn more:
+"${quickCardText}"
+
+Your hook MUST connect to or expand on this preview. Don't repeat it word-for-word, but make sure the reader feels like they're getting the deeper story they were promised.`;
+    }
 
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
@@ -47,11 +58,12 @@ Write ONLY the hook - 1-2 sentences max. No title, no body, just the hook.`;
  * Generate the body of an article (after hook is already shown)
  * @param {string} topic - The topic to explore
  * @param {string} hook - The hook that was already generated
+ * @param {string} quickCardText - Optional Quick Card text that prompted this article
  * @returns {Promise<{content: string, hyperlinks: Array<string>, suggestions: Object}>}
  */
-export async function generateArticleBody(topic, hook) {
+export async function generateArticleBody(topic, hook, quickCardText = null) {
   try {
-    const prompt = `Continue writing a SHORT article about "${topic}" after this opening hook:
+    let prompt = `Continue writing a SHORT article about "${topic}" after this opening hook:
 
 "${hook}"
 
@@ -101,6 +113,16 @@ CRITICAL HYPERLINK RULES:
 
 Write ONLY the body paragraphs - do NOT repeat the hook.`;
 
+    // If we have Quick Card context, make sure the article delivers on that promise
+    if (quickCardText) {
+      prompt += `
+
+IMPORTANT CONTEXT: The reader clicked "Go Deeper" after seeing this Quick Card preview:
+"${quickCardText}"
+
+Your article MUST elaborate on and explain the facts mentioned in that preview. The reader is expecting to learn MORE about what they just read. Don't ignore it - make it central to your article.`;
+    }
+
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1800,
@@ -129,29 +151,33 @@ Write ONLY the body paragraphs - do NOT repeat the hook.`;
       content = content.replace(pattern, (match) => match.slice(2, -2));
     });
 
+    // Fix quotation marks around hyperlinks - move quotes inside brackets
+    // "[[term]]" → [["term"]]  (quotes should be inside if present)
+    // But actually, we just want to remove the outer quotes entirely for cleaner rendering
+    content = content.replace(/"(\[\[[^\]]+\]\])"/g, '$1');  // "[[term]]" → [[term]]
+    content = content.replace(/'(\[\[[^\]]+\]\])'/g, '$1');  // '[[term]]' → [[term]]
+    content = content.replace(/"(\[\[[^\]]+\]\])/g, '$1');   // "[[term]] → [[term]]
+    content = content.replace(/(\[\[[^\]]+\]\])"/g, '$1');   // [[term]]" → [[term]]
+    content = content.replace(/'(\[\[[^\]]+\]\])/g, '$1');   // '[[term]] → [[term]]
+    content = content.replace(/(\[\[[^\]]+\]\])'/g, '$1');   // [[term]]' → [[term]]
+
     // Extract hyperlinks
     const hyperlinkMatches = content.match(/\[\[([^\]]+)\]\]/g) || [];
     const hyperlinks = [...new Set(hyperlinkMatches.map(match => match.slice(2, -2)))];
 
-    // Generate suggestions
-    const suggestionsPrompt = `Based on the article about "${topic}", suggest topics for "Where to next?"
+    // Generate suggestions - 6 rabbit hole options
+    const suggestionsPrompt = `Based on the article about "${topic}", suggest 6 topics for "Where to next?" (the rabbit hole continues!)
 
-Generate TWO categories:
+Generate 6 DIVERSE topics mixing:
+- Key people/places/events from the story (the protagonist, turning points)
+- Surprising cross-domain connections ("I never thought about THAT!")
+- Deeper dives into fascinating details mentioned
 
-1. RELATED (2-3 topics): The MAIN CHARACTERS and PIVOTAL EVENTS of the story
-   - ONLY suggest people/places/events that are CENTRAL to the narrative
-   - Ask: "Is this a main character or just mentioned in passing?"
-   - ❌ DON'T suggest every person mentioned - skip background figures
-   - ✅ DO suggest: the protagonist, the key turning point, what happens next
-   - Example for "Chocolate Warfare": "Brother Francisco Valdez" (started it), "Battle of Cacao Bay" (climax), "Treaty of Sweet Peace" (resolution)
-   - Example for "Pac-Man Ghost AI": "Toru Iwatani" (creator), "Ghost Personalities" (core mechanic)
-
-2. TANGENTS (2-3 topics): Surprising cross-domain connections
-   - "I never thought about THAT connection!"
-   - Bridge to completely different fields
-   - Example for "Pac-Man Ghost AI": "Predator Psychology", "Military Flanking Tactics"
-
-CRITICAL: Related = continue THIS story. Tangents = jump to something unexpected.
+RULES:
+- Make each topic feel like clicking it will reveal something amazing
+- Mix it up: some continue the story, some jump sideways
+- 1-3 words per topic - keep them SHORT!
+- NO generic topics - be SPECIFIC
 
 Article context:
 ${content.substring(0, 500)}
@@ -159,10 +185,8 @@ ${content.substring(0, 500)}
 Return ONLY a JSON object in this exact format (no markdown, no explanation):
 {
   "related": ["Topic 1", "Topic 2", "Topic 3"],
-  "tangents": ["Topic 1", "Topic 2", "Topic 3"]
-}
-
-LENGTH: 1-3 words per topic. Keep them SHORT!`;
+  "tangents": ["Topic 4", "Topic 5", "Topic 6"]
+}`;
 
     const suggestionsMessage = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
@@ -348,24 +372,32 @@ CRITICAL HYPERLINK RULES - FOLLOW THESE STRICTLY:
       });
     });
 
+    // Fix quotation marks around hyperlinks - remove quotes that wrap hyperlinks
+    content = content.replace(/"(\[\[[^\]]+\]\])"/g, '$1');  // "[[term]]" → [[term]]
+    content = content.replace(/'(\[\[[^\]]+\]\])'/g, '$1');  // '[[term]]' → [[term]]
+    content = content.replace(/"(\[\[[^\]]+\]\])/g, '$1');   // "[[term]] → [[term]]
+    content = content.replace(/(\[\[[^\]]+\]\])"/g, '$1');   // [[term]]" → [[term]]
+    content = content.replace(/'(\[\[[^\]]+\]\])/g, '$1');   // '[[term]] → [[term]]
+    content = content.replace(/(\[\[[^\]]+\]\])'/g, '$1');   // [[term]]' → [[term]]
+
     // Extract hyperlinks from [[term]] format (after filtering)
     const hyperlinkMatches = content.match(/\[\[([^\]]+)\]\]/g) || [];
     const hyperlinks = [...new Set(hyperlinkMatches.map(match => match.slice(2, -2)))];
 
-    // Generate "Where to next?" suggestions
+    // Generate "Where to next?" suggestions - 6 rabbit hole options
     onProgress('Finding connections...');
-    const suggestionsPrompt = `Based on the article about "${topic}", suggest topics for "Where to next?"
+    const suggestionsPrompt = `Based on the article about "${topic}", suggest 6 topics for "Where to next?" (the rabbit hole continues!)
 
-Generate TWO categories:
+Generate 6 DIVERSE topics mixing:
+- Key people/places/events from the story (the protagonist, turning points)
+- Surprising cross-domain connections ("I never thought about THAT!")
+- Deeper dives into fascinating details mentioned
 
-1. RELATED (2-3 topics): Direct, logical next steps
-   - Should be closely connected to the main topic
-   - Natural continuations or deep dives
-
-2. TANGENTS (2-3 topics): Unexpected but fascinating jumps
-   - Surprising connections that make you go "huh!"
-   - Can bridge to completely different domains
-   - The "Wikipedia rabbit hole" effect
+RULES:
+- Make each topic feel like clicking it will reveal something amazing
+- Mix it up: some continue the story, some jump sideways
+- 1-3 words per topic - keep them SHORT!
+- NO generic topics - be SPECIFIC
 
 Article context:
 ${content.substring(0, 500)}
@@ -373,15 +405,8 @@ ${content.substring(0, 500)}
 Return ONLY a JSON object in this exact format (no markdown, no explanation):
 {
   "related": ["Topic 1", "Topic 2", "Topic 3"],
-  "tangents": ["Topic 1", "Topic 2", "Topic 3"]
-}
-
-LENGTH REQUIREMENTS:
-- 1 word is ideal
-- 2-3 words okay for proper nouns/events
-- Never use long descriptive phrases
-
-Make tangents SURPRISING and keep them SHORT!`;
+  "tangents": ["Topic 4", "Topic 5", "Topic 6"]
+}`;
 
     const suggestionsMessage = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
@@ -427,7 +452,7 @@ Do NOT focus on how it relates to any other topic. The reader wants to learn abo
 GOAL: Make them go "WHAT?!" and immediately click "Go Deeper"
 
 WRITING STYLE - CRITICAL:
-- Exactly 2-3 SHORT sentences
+- MAXIMUM 2 sentences. No more. Ever.
 - Lead with the WEIRDEST, most shocking fact ABOUT "${term}"
 - **Use past tense for historical events**
 - Simple words, punchy sentences
@@ -486,6 +511,14 @@ Write a shocking Quick Card for "${term}" - NO QUESTIONS, just drama:`;
     text = text.replace(/^[Qq]uick [Cc]ard:[:\s]+/i, '');
     text = text.trim();
 
+    // Fix quotation marks around hyperlinks - remove quotes that wrap hyperlinks
+    text = text.replace(/"(\[\[[^\]]+\]\])"/g, '$1');  // "[[term]]" → [[term]]
+    text = text.replace(/'(\[\[[^\]]+\]\])'/g, '$1');  // '[[term]]' → [[term]]
+    text = text.replace(/"(\[\[[^\]]+\]\])/g, '$1');   // "[[term]] → [[term]]
+    text = text.replace(/(\[\[[^\]]+\]\])"/g, '$1');   // [[term]]" → [[term]]
+    text = text.replace(/'(\[\[[^\]]+\]\])/g, '$1');   // '[[term]] → [[term]]
+    text = text.replace(/(\[\[[^\]]+\]\])'/g, '$1');   // [[term]]' → [[term]]
+
     // Extract hyperlinks
     const hyperlinkMatches = text.match(/\[\[([^\]]+)\]\]/g) || [];
     const hyperlinks = [...new Set(hyperlinkMatches.map(match => match.slice(2, -2)))];
@@ -494,6 +527,30 @@ Write a shocking Quick Card for "${term}" - NO QUESTIONS, just drama:`;
   } catch (error) {
     console.error('Error generating quick card:', error);
     throw new Error('Failed to generate quick card');
+  }
+}
+
+// Track recent surprise topics to avoid repeats
+const RECENT_TOPICS_KEY = 'recentSurpriseTopics';
+const MAX_RECENT_TOPICS = 30;
+
+function getRecentTopics() {
+  try {
+    const saved = localStorage.getItem(RECENT_TOPICS_KEY);
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+}
+
+function addRecentTopic(topic) {
+  try {
+    const recent = getRecentTopics();
+    // Add to front, remove duplicates, keep max size
+    const updated = [topic, ...recent.filter(t => t.toLowerCase() !== topic.toLowerCase())].slice(0, MAX_RECENT_TOPICS);
+    localStorage.setItem(RECENT_TOPICS_KEY, JSON.stringify(updated));
+  } catch (e) {
+    console.error('Error saving recent topic:', e);
   }
 }
 
@@ -512,10 +569,10 @@ export async function generateSurpriseTopic() {
       'Extreme Sports', 'Competitive Eating', 'Board Games', 'Video Games', 'Toys',
       'Fast Food', 'Street Food', 'Fermented Foods', 'Banned Foods', 'Food Scandals',
       'One-Hit Wonders', 'Musical Instruments', 'Dance Styles', 'Subcultures', 'Fandoms',
-      'Serial Killers', 'Spies & Espionage', 'Pirates', 'Outlaws', 'Assassinations',
+      'Spies & Espionage', 'Pirates', 'Outlaws', 'Heists',
       'Space Exploration', 'Deep Sea', 'Caves', 'Deserts', 'Islands',
       'Bridges', 'Skyscrapers', 'Bunkers', 'Prisons', 'Theme Parks',
-      'Weapons', 'Poisons', 'Viruses', 'Parasites', 'Fungi',
+      'Weapons', 'Poisons', 'Microbes', 'Symbiosis', 'Bioluminescence',
       'Optical Illusions', 'Magic Tricks', 'Puzzles', 'Riddles', 'Paradoxes',
       'Slang', 'Dead Languages', 'Symbols', 'Flags', 'Currencies',
       'Superstitions', 'Rituals', 'Taboos', 'Etiquette', 'Traditions',
@@ -523,22 +580,36 @@ export async function generateSurpriseTopic() {
       'Movie Props', 'Special Effects', 'Stunts', 'Voice Acting', 'Animation',
       'Sports Scandals', 'Doping', 'Mascots', 'Rivalries', 'Underdog Stories',
       'Royalty', 'Dictators', 'Revolutionaries', 'Inventors', 'Explorers',
-      'Fossils', 'Extinction Events', 'Ice Ages', 'Volcanoes', 'Earthquakes',
+      'Fossils', 'Extinction Events', 'Ice Ages', 'Geology', 'Meteorology',
       'Sleep', 'Dreams', 'Memory', 'Phobias', 'Addictions',
-      'Tattoos', 'Body Modification', 'Cosmetic Surgery', 'Hair', 'Makeup',
+      'Tattoos', 'Body Modification', 'Fashion History', 'Makeup', 'Perfume',
       'Cocktails', 'Coffee', 'Tea', 'Beer', 'Wine',
       'Candy', 'Chocolate', 'Ice Cream', 'Cheese', 'Bread',
       'Cars', 'Motorcycles', 'Trains', 'Ships', 'Aircraft',
-      'Robots', 'AI', 'Hacking', 'Encryption', 'Surveillance'
+      'Robots', 'AI', 'Hacking', 'Encryption', 'Surveillance',
+      'Architecture', 'Furniture', 'Typography', 'Color Theory', 'Maps',
+      'Clocks', 'Calendars', 'Measurement', 'Numbers', 'Zero',
+      'Twins', 'Feral Children', 'Prodigies', 'Imposters', 'Amnesia',
+      'Cemeteries', 'Mummies', 'Relics', 'Tombs', 'Afterlife Beliefs',
+      'Circuses', 'Sideshows', 'Carnivals', 'Street Performers', 'Vaudeville',
+      'Duels', 'Feuds', 'Vendettas', 'Honor Codes', 'Secret Societies'
     ];
     const randomDomain = domains[Math.floor(Math.random() * domains.length)];
+
+    // Get recent topics to avoid
+    const recentTopics = getRecentTopics();
+    const avoidList = recentTopics.length > 0
+      ? `\n\nDO NOT suggest any of these (already shown recently):\n${recentTopics.slice(0, 15).join(', ')}`
+      : '';
 
     const prompt = `Generate ONE fascinating topic related to: ${randomDomain}
 
 RULES:
-1. Pick something specific and surprising - not the obvious choice
+1. Pick something OBSCURE and surprising - avoid the famous/obvious examples
 2. Make it something that makes people go "wait, what?!"
 3. Keep it short: 1-3 words max
+4. NO generic topics like "Lightning", "Earthquakes", "Volcanoes" - pick SPECIFIC events or phenomena
+5. Avoid "zombie" anything, "mind control", and other overused "fascinating fact" tropes${avoidList}
 
 Return ONLY the topic name, nothing else.`;
 
@@ -549,10 +620,152 @@ Return ONLY the topic name, nothing else.`;
       messages: [{ role: 'user', content: prompt }]
     });
 
-    return message.content[0].text.trim();
+    const topic = message.content[0].text.trim();
+
+    // Save to recent topics
+    addRecentTopic(topic);
+
+    return topic;
   } catch (error) {
     console.error('Error generating surprise topic:', error);
     throw new Error('Failed to generate surprise topic');
+  }
+}
+
+/**
+ * Generate article continuation (Part 2, 3, or 4)
+ * @param {string} topic - The topic being explored
+ * @param {string} existingContent - All content generated so far (hook + body + any continuations)
+ * @param {number} partNumber - Which part we're generating (2, 3, or 4)
+ * @returns {Promise<{content: string, hyperlinks: Array<string>}>}
+ */
+export async function generateArticleContinuation(topic, existingContent, partNumber) {
+  try {
+    // Define what each part focuses on
+    const partFocus = {
+      2: {
+        title: 'The Details',
+        description: 'Specific examples, direct quotes from people involved, exact numbers/dates/statistics, the mechanics of how it actually worked',
+        instructions: `Focus on SPECIFICS:
+- Real quotes from people involved (use their actual words)
+- Exact numbers, dates, measurements, statistics
+- Step-by-step mechanics: HOW did this actually work?
+- Specific examples and case studies
+- Primary sources and eyewitness accounts`
+      },
+      3: {
+        title: 'The Deeper Story',
+        description: 'Controversies, misconceptions, what most people get wrong, the aftermath, unintended consequences',
+        instructions: `Focus on the HIDDEN STORY:
+- What do most people get WRONG about this?
+- Controversies and debates among experts
+- Unintended consequences and ripple effects
+- The aftermath: what happened next?
+- Dark sides or problematic aspects
+- Myths vs reality`
+      },
+      4: {
+        title: 'The Connections',
+        description: 'How this influenced other things, modern relevance, surprising connections to other topics, the bigger picture',
+        instructions: `Focus on CONNECTIONS:
+- How did this influence other fields/events/ideas?
+- Surprising connections to seemingly unrelated topics
+- Modern relevance: why does this still matter today?
+- The bigger picture: what does this tell us about humanity/nature/society?
+- Pop culture references and modern parallels
+- What came next: legacy and ongoing impact`
+      }
+    };
+
+    const part = partFocus[partNumber];
+    if (!part) {
+      throw new Error(`Invalid part number: ${partNumber}`);
+    }
+
+    const prompt = `Continue writing about "${topic}" - this is Part ${partNumber}: ${part.title}
+
+THE READER HAS ALREADY READ THIS:
+---
+${existingContent}
+---
+
+NOW WRITE Part ${partNumber}: ${part.title}
+${part.instructions}
+
+WRITING STYLE - SAME AS BEFORE:
+- Just tell the story. No analysis. No commentary.
+- Short, punchy sentences. One idea per sentence.
+- Active voice, simple words
+- **Use past tense for historical events**
+- 2-3 sentences per paragraph
+- End with hooks that create curiosity
+
+START WITH A SECTION HEADER:
+Use ## format, make it intriguing. Example: "## ${part.title}" or something more creative.
+
+CRITICAL:
+- Do NOT repeat information already covered
+- Build on what came before - assume the reader remembers it
+- Add NEW information, examples, quotes, connections
+- Write 4-6 SHORT paragraphs (this is a continuation, not a full article)
+
+HYPERLINKS - CRITICAL FORMAT:
+Use EXACTLY [[double brackets]] around hyperlinks.
+- 3-6 new hyperlinks in this section
+- Link specific nouns (people, places, events, concepts)
+- Full names: "[[Albert Einstein]]" not "[[Einstein]]"
+
+BANNED WORDS/PHRASES:
+❌ "contradiction", "defined", "unprecedented", "significance", "notably"
+❌ "His brilliance lay in...", "The key was...", "This would prove to be..."
+❌ Any sentence that starts with "It was..." or "There was..."
+
+Write Part ${partNumber} now:`;
+
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1200,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    let content = message.content[0].text;
+
+    // Filter out generic/ambiguous hyperlinks (same as in generateArticleBody)
+    const genericPatterns = [
+      /\[\[(British|American|French|German|Russian|Chinese|Japanese) (Ambassador|President|General|King|Queen|Emperor|Minister|Senator|Representative)\]\]/gi,
+      /\[\[(the )?(Ambassador|President|General|Minister|King|Queen|Emperor|Senator|Representative)\]\]/gi,
+      /\[\[Old City\]\]/gi,
+      /\[\[Temple\]\]/gi,
+      /\[\[Revolution\]\]/gi,
+      /\[\[War\]\]/gi,
+      /\[\[Empire\]\]/gi,
+      /\[\[Battle\]\]/gi,
+      /\[\[\d{4}\]\]/g,
+      /\[\[\d+\]\]/g,
+      /\[\[[A-Z][a-z]+\]\]/g,
+      /\[\[[A-Z][a-z]+ (researchers?|scientists?|studies?|team|professors?|experts?|engineers?|doctors?|officials?)\]\]/gi,
+    ];
+
+    genericPatterns.forEach(pattern => {
+      content = content.replace(pattern, (match) => match.slice(2, -2));
+    });
+
+    // Fix quotation marks around hyperlinks
+    content = content.replace(/"(\[\[[^\]]+\]\])"/g, '$1');
+    content = content.replace(/'(\[\[[^\]]+\]\])'/g, '$1');
+    content = content.replace(/"(\[\[[^\]]+\]\])/g, '$1');
+    content = content.replace(/(\[\[[^\]]+\]\])"/g, '$1');
+    content = content.replace(/'(\[\[[^\]]+\]\])/g, '$1');
+    content = content.replace(/(\[\[[^\]]+\]\])'/g, '$1');
+
+    // Extract hyperlinks
+    const hyperlinkMatches = content.match(/\[\[([^\]]+)\]\]/g) || [];
+    const hyperlinks = [...new Set(hyperlinkMatches.map(match => match.slice(2, -2)))];
+
+    return { content, hyperlinks };
+  } catch (error) {
+    console.error('Error generating article continuation:', error);
+    throw new Error('Failed to generate article continuation');
   }
 }
 

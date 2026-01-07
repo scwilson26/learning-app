@@ -68,11 +68,14 @@ export default function LearnScreen({
   suggestions = { related: [], tangents: [] },
   breadcrumbs = [],
   currentIndex = 0,
+  currentPart = 1,
   onBack,
   onGoDeeper,
   onBreadcrumbClick,
+  onKeepReading,
   loading,
-  progress
+  progress,
+  loadingContinuation
 }) {
   const [quickCard, setQuickCard] = useState(null) // { term, text, hyperlinks }
   const [loadingCard, setLoadingCard] = useState(false)
@@ -96,8 +99,10 @@ export default function LearnScreen({
   }
 
   const handleGoDeeper = (term) => {
+    // Pass the Quick Card text so the article can build on it
+    const cardText = quickCard?.text || null
     setQuickCard(null)
-    onGoDeeper(term)
+    onGoDeeper(term, cardText)
   }
 
   const handleSuggestionClick = async (term) => {
@@ -206,46 +211,64 @@ export default function LearnScreen({
               <span className="text-gray-500">Loading more...</span>
             </div>
           )}
+
+          {/* Keep Reading button - shows when content is loaded and not at max parts */}
+          {content && currentPart < 4 && (
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <button
+                onClick={onKeepReading}
+                disabled={loadingContinuation}
+                className="w-full bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600 text-white font-bold py-4 px-6 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-3"
+              >
+                {loadingContinuation ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    <span>Loading more...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>📖 Keep Reading</span>
+                    <span className="text-sm opacity-80">
+                      (Part {currentPart + 1} of 4)
+                    </span>
+                  </>
+                )}
+              </button>
+              <p className="text-center text-sm text-gray-500 mt-2">
+                {currentPart === 1 && 'Next: The Details — examples, quotes, numbers'}
+                {currentPart === 2 && 'Next: The Deeper Story — controversies, misconceptions'}
+                {currentPart === 3 && 'Next: The Connections — influence, modern relevance'}
+              </p>
+            </div>
+          )}
+
+          {/* Completed indicator when at part 4 */}
+          {content && currentPart === 4 && (
+            <div className="mt-8 pt-6 border-t border-gray-200 text-center">
+              <div className="text-2xl mb-2">🎓</div>
+              <p className="text-gray-600 font-medium">You've read the complete deep-dive!</p>
+              <p className="text-sm text-gray-500 mt-1">Explore related topics below or start a new adventure</p>
+            </div>
+          )}
         </div>
 
         {/* Where to next? section */}
         {(suggestions.related.length > 0 || suggestions.tangents.length > 0) && (
           <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-            <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4">🎯 Where to next?</h2>
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4">🐇 Where to next?</h2>
 
-            {suggestions.related.length > 0 && (
-              <div className="mb-4">
-                <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">Related</h3>
-                <div className="flex flex-wrap gap-2">
-                  {suggestions.related.map((suggestedTopic, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => handleSuggestionClick(suggestedTopic)}
-                      className="px-4 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-medium rounded-lg transition-colors"
-                    >
-                      {suggestedTopic}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {suggestions.tangents.length > 0 && (
-              <div className="mb-4">
-                <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">Tangents</h3>
-                <div className="flex flex-wrap gap-2">
-                  {suggestions.tangents.map((suggestedTopic, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => handleSuggestionClick(suggestedTopic)}
-                      className="px-4 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 font-medium rounded-lg transition-colors"
-                    >
-                      {suggestedTopic}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* Combined suggestions - Rabbit Hole options */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {[...suggestions.related, ...suggestions.tangents].slice(0, 6).map((suggestedTopic, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleSuggestionClick(suggestedTopic)}
+                  className="px-4 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-medium rounded-lg transition-colors"
+                >
+                  {suggestedTopic}
+                </button>
+              ))}
+            </div>
 
             {/* Surprise Me button */}
             <div className="pt-4 border-t border-gray-200">

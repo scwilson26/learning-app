@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { generateArticleHook, generateArticleBody, generateSurpriseTopic } from './services/claude'
+import { generateArticleHook, generateArticleBody, generateSurpriseTopic, generateArticleContinuation } from './services/claude'
 import { recordArticleRead, recordSurpriseMeClick, resetSession, loadStats, saveJourney, loadJourneys } from './services/stats'
 import LearnScreen from './components/LearnScreen'
 import ReviewScreen from './components/ReviewScreen'
@@ -20,6 +20,8 @@ function App() {
   const [totalTopics, setTotalTopics] = useState(0)
   const [recentJourneys, setRecentJourneys] = useState([])
   const [currentJourneyId, setCurrentJourneyId] = useState(null)
+  const [currentPart, setCurrentPart] = useState(1)
+  const [loadingContinuation, setLoadingContinuation] = useState(false)
 
   // Restore saved state from localStorage on mount (fixes mobile Safari)
   useEffect(() => {
@@ -112,6 +114,7 @@ function App() {
         setLearnData(partialData)
         setBreadcrumbs([partialData])
         setCurrentIndex(0)
+        setCurrentPart(1)
         setScreen('learn')
         setProgress({ message: 'Loading more...' })
 
@@ -161,6 +164,7 @@ function App() {
       setLearnData(partialData)
       setBreadcrumbs([partialData])
       setCurrentIndex(0)
+      setCurrentPart(1)
       setScreen('learn')
       setProgress({ message: 'Loading more...' })
 
@@ -195,26 +199,28 @@ function App() {
     setLearnData(null)
     setBreadcrumbs([])
     setCurrentIndex(0)
+    setCurrentPart(1)
     setCurrentJourneyId(null)
   }
 
-  const handleGoDeeper = async (term) => {
+  const handleGoDeeper = async (term, quickCardText = null) => {
     setLoading(true)
     setProgress({ message: 'Crafting your story...' })
 
     try {
-      // Step 1: Get hook quickly and show it
-      const { hook } = await generateArticleHook(term)
+      // Step 1: Get hook quickly and show it (pass Quick Card context if available)
+      const { hook } = await generateArticleHook(term, quickCardText)
       const partialData = { topic: term, hook, content: null, hyperlinks: [], suggestions: { related: [], tangents: [] } }
       setLearnData(partialData)
       // If we're in the middle of history, branch from current point
       setBreadcrumbs(prev => [...prev.slice(0, currentIndex + 1), partialData])
       setCurrentIndex(prev => prev + 1)
+      setCurrentPart(1) // Reset to part 1 for new topic
       setProgress({ message: 'Loading more...' })
       window.scrollTo(0, 0)
 
-      // Step 2: Get body in background while user reads hook
-      const { content, hyperlinks, suggestions } = await generateArticleBody(term, hook)
+      // Step 2: Get body in background while user reads hook (pass Quick Card context)
+      const { content, hyperlinks, suggestions } = await generateArticleBody(term, hook, quickCardText)
       const fullData = { topic: term, hook, content, hyperlinks, suggestions }
       setLearnData(fullData)
       // Update breadcrumbs with full data
@@ -236,6 +242,47 @@ function App() {
     }
   }
 
+  const handleKeepReading = async () => {
+    if (currentPart >= 4 || loadingContinuation || !learnData) return
+
+    setLoadingContinuation(true)
+    try {
+      const nextPart = currentPart + 1
+      // Build the full existing content (hook + body)
+      const existingContent = `${learnData.hook}\n\n${learnData.content}`
+
+      const { content: newContent, hyperlinks: newHyperlinks } = await generateArticleContinuation(
+        learnData.topic,
+        existingContent,
+        nextPart
+      )
+
+      // Append new content to existing content
+      const updatedContent = `${learnData.content}\n\n${newContent}`
+      const updatedHyperlinks = [...(learnData.hyperlinks || []), ...newHyperlinks]
+
+      const updatedData = {
+        ...learnData,
+        content: updatedContent,
+        hyperlinks: updatedHyperlinks
+      }
+
+      setLearnData(updatedData)
+      setCurrentPart(nextPart)
+
+      // Update breadcrumbs with the updated data
+      setBreadcrumbs(prev => {
+        const newBreadcrumbs = [...prev]
+        newBreadcrumbs[currentIndex] = updatedData
+        return newBreadcrumbs
+      })
+    } catch (err) {
+      console.error('Error loading continuation:', err)
+    } finally {
+      setLoadingContinuation(false)
+    }
+  }
+
   const handleBreadcrumbClick = (index) => {
     // Don't do anything if clicking the current breadcrumb
     if (index === currentIndex) return
@@ -244,6 +291,8 @@ function App() {
     const selectedData = breadcrumbs[index]
     setLearnData(selectedData)
     setCurrentIndex(index)
+    // Reset to part 1 when switching topics (each topic has its own depth)
+    setCurrentPart(selectedData.currentPart || 1)
     window.scrollTo(0, 0)
   }
 
@@ -275,11 +324,14 @@ function App() {
         suggestions={learnData.suggestions || { related: [], tangents: [] }}
         breadcrumbs={breadcrumbs}
         currentIndex={currentIndex}
+        currentPart={currentPart}
         onBack={handleBackToHome}
         onGoDeeper={handleGoDeeper}
         onBreadcrumbClick={handleBreadcrumbClick}
+        onKeepReading={handleKeepReading}
         loading={loading}
         progress={progress}
+        loadingContinuation={loadingContinuation}
       />
     )
   }
