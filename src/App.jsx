@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
-import { generateFullArticle, generateSurpriseTopic } from './services/claude'
+import { generateArticleHook, generateArticleBody, generateSurpriseTopic } from './services/claude'
+import { recordArticleRead, recordSurpriseMeClick, resetSession, loadStats, saveJourney, loadJourneys } from './services/stats'
 import LearnScreen from './components/LearnScreen'
 import ReviewScreen from './components/ReviewScreen'
 import CardLibrary from './components/CardLibrary'
+import LoadingFacts from './components/LoadingFacts'
 
 function App() {
   const [screen, setScreen] = useState('home')
@@ -15,6 +17,9 @@ function App() {
   const [breadcrumbs, setBreadcrumbs] = useState([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [hasHydrated, setHasHydrated] = useState(false)
+  const [totalTopics, setTotalTopics] = useState(0)
+  const [recentJourneys, setRecentJourneys] = useState([])
+  const [currentJourneyId, setCurrentJourneyId] = useState(null)
 
   // Restore saved state from localStorage on mount (fixes mobile Safari)
   useEffect(() => {
@@ -32,6 +37,13 @@ function App() {
       console.error('Error loading saved state:', e)
     }
     setHasHydrated(true)
+
+    // Load total topics count
+    const stats = loadStats()
+    setTotalTopics(stats.totalArticlesRead)
+
+    // Load recent journeys
+    setRecentJourneys(loadJourneys())
   }, [])
 
   // Save state to localStorage whenever it changes (only after hydration)
@@ -83,17 +95,36 @@ function App() {
       setLoading(true)
       setError(null)
       setProgress({ message: 'Crafting your story...' })
+      const startTime = Date.now()
 
       try {
-        const { hook, content, hyperlinks, suggestions } = await generateFullArticle(topic, (message) => {
-          setProgress({ message })
-        })
-        const newData = { topic, hook, content, hyperlinks, suggestions }
-        setLearnData(newData)
-        // Start new journey - reset breadcrumbs and add first topic
-        setBreadcrumbs([newData])
-        setProgress(null)
+        // Step 1: Get hook quickly and show it
+        const { hook } = await generateArticleHook(topic)
+
+        // Ensure minimum 2.5 seconds of fun facts display
+        const elapsed = Date.now() - startTime
+        const minDisplayTime = 2500
+        if (elapsed < minDisplayTime) {
+          await new Promise(resolve => setTimeout(resolve, minDisplayTime - elapsed))
+        }
+
+        const partialData = { topic, hook, content: null, hyperlinks: [], suggestions: { related: [], tangents: [] } }
+        setLearnData(partialData)
+        setBreadcrumbs([partialData])
+        setCurrentIndex(0)
         setScreen('learn')
+        setProgress({ message: 'Loading more...' })
+
+        // Step 2: Get body in background while user reads hook
+        const { content, hyperlinks, suggestions } = await generateArticleBody(topic, hook)
+        const fullData = { topic, hook, content, hyperlinks, suggestions }
+        setLearnData(fullData)
+        setBreadcrumbs([fullData])
+
+        // Track stats (new search = new chain)
+        const stats = recordArticleRead(topic, false)
+        setTotalTopics(stats.totalArticlesRead)
+        setProgress(null)
       } catch (err) {
         setError(err.message)
         setProgress(null)
@@ -107,21 +138,42 @@ function App() {
     setLoading(true)
     setError(null)
     setProgress({ message: 'Finding something fascinating...' })
+    const startTime = Date.now()
 
     try {
+      // Track Surprise Me click
+      recordSurpriseMeClick()
       // Generate a random topic (don't show it yet!)
       const randomTopic = await generateSurpriseTopic()
 
-      // Immediately load the article
+      // Step 1: Get hook quickly and show it
       setProgress({ message: 'Crafting your story...' })
-      const { hook, content, hyperlinks, suggestions } = await generateFullArticle(randomTopic, (message) => {
-        setProgress({ message })
-      })
-      const newData = { topic: randomTopic, hook, content, hyperlinks, suggestions }
-      setLearnData(newData)
-      setBreadcrumbs([newData])
-      setProgress(null)
+      const { hook } = await generateArticleHook(randomTopic)
+
+      // Ensure minimum 2.5 seconds of fun facts display
+      const elapsed = Date.now() - startTime
+      const minDisplayTime = 2500
+      if (elapsed < minDisplayTime) {
+        await new Promise(resolve => setTimeout(resolve, minDisplayTime - elapsed))
+      }
+
+      const partialData = { topic: randomTopic, hook, content: null, hyperlinks: [], suggestions: { related: [], tangents: [] } }
+      setLearnData(partialData)
+      setBreadcrumbs([partialData])
+      setCurrentIndex(0)
       setScreen('learn')
+      setProgress({ message: 'Loading more...' })
+
+      // Step 2: Get body in background while user reads hook
+      const { content, hyperlinks, suggestions } = await generateArticleBody(randomTopic, hook)
+      const fullData = { topic: randomTopic, hook, content, hyperlinks, suggestions }
+      setLearnData(fullData)
+      setBreadcrumbs([fullData])
+
+      // Track stats (Surprise Me = new chain)
+      const stats = recordArticleRead(randomTopic, false)
+      setTotalTopics(stats.totalArticlesRead)
+      setProgress(null)
     } catch (err) {
       setError(err.message)
       setProgress(null)
@@ -131,11 +183,19 @@ function App() {
   }
 
   const handleBackToHome = () => {
+    // Save the current journey before leaving
+    if (breadcrumbs.length > 0) {
+      saveJourney(breadcrumbs, currentIndex)
+      setRecentJourneys(loadJourneys())
+    }
+    // Bank the session stats
+    resetSession()
     setScreen('home')
     setTopic('')
     setLearnData(null)
     setBreadcrumbs([])
     setCurrentIndex(0)
+    setCurrentJourneyId(null)
   }
 
   const handleGoDeeper = async (term) => {
@@ -143,21 +203,31 @@ function App() {
     setProgress({ message: 'Crafting your story...' })
 
     try {
-      const { hook, content, hyperlinks, suggestions } = await generateFullArticle(term, (message) => {
-        setProgress({ message })
-      })
-      const newData = { topic: term, hook, content, hyperlinks, suggestions }
-      setLearnData(newData)
+      // Step 1: Get hook quickly and show it
+      const { hook } = await generateArticleHook(term)
+      const partialData = { topic: term, hook, content: null, hyperlinks: [], suggestions: { related: [], tangents: [] } }
+      setLearnData(partialData)
       // If we're in the middle of history, branch from current point
-      // Otherwise just append to the end
+      setBreadcrumbs(prev => [...prev.slice(0, currentIndex + 1), partialData])
+      setCurrentIndex(prev => prev + 1)
+      setProgress({ message: 'Loading more...' })
+      window.scrollTo(0, 0)
+
+      // Step 2: Get body in background while user reads hook
+      const { content, hyperlinks, suggestions } = await generateArticleBody(term, hook)
+      const fullData = { topic: term, hook, content, hyperlinks, suggestions }
+      setLearnData(fullData)
+      // Update breadcrumbs with full data
       setBreadcrumbs(prev => {
-        const newBreadcrumbs = [...prev.slice(0, currentIndex + 1), newData]
+        const newBreadcrumbs = [...prev]
+        newBreadcrumbs[newBreadcrumbs.length - 1] = fullData
         return newBreadcrumbs
       })
-      setCurrentIndex(prev => prev + 1)
+
+      // Track stats (going deeper = continuing chain)
+      const stats = recordArticleRead(term, true)
+      setTotalTopics(stats.totalArticlesRead)
       setProgress(null)
-      // Scroll to top when new article loads
-      window.scrollTo(0, 0)
     } catch (err) {
       setError(err.message)
       setProgress(null)
@@ -183,6 +253,15 @@ function App() {
 
   const handleGoToLibrary = () => {
     setScreen('library')
+  }
+
+  const handleResumeJourney = (journey) => {
+    // Restore the journey state
+    setBreadcrumbs(journey.breadcrumbs)
+    setCurrentIndex(journey.currentIndex)
+    setLearnData(journey.breadcrumbs[journey.currentIndex])
+    setCurrentJourneyId(journey.id)
+    setScreen('learn')
   }
 
   // Show Learn screen if we're on it
@@ -224,15 +303,15 @@ function App() {
             Start Learning
           </h1>
 
-          {/* Loading indicator - show when loading */}
-          {loading && (
-            <div className="my-8">
-              <div className="flex justify-center mb-3">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
-              </div>
-              <p className="text-indigo-600 font-medium">{progress?.message || 'Loading...'}</p>
-            </div>
+          {/* Total topics counter - only show if they've explored something */}
+          {totalTopics > 0 && !loading && (
+            <p className="text-gray-500 text-sm mb-2">
+              🧠 {totalTopics} topic{totalTopics === 1 ? '' : 's'} explored
+            </p>
           )}
+
+          {/* Fun facts loading screen */}
+          {loading && <LoadingFacts />}
 
           {/* Surprise Me button - centered below title (hide when loading) */}
           {!loading && (
@@ -279,6 +358,25 @@ function App() {
               </div>
             )}
           </form>
+        )}
+
+        {/* Recent Journeys - show below search when not loading */}
+        {!loading && recentJourneys.length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 text-center">Recent</h2>
+            <div className="space-y-2">
+              {recentJourneys.map((journey) => (
+                <button
+                  key={journey.id}
+                  onClick={() => handleResumeJourney(journey)}
+                  className="w-full text-left px-4 py-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 border border-gray-200 hover:border-indigo-300 flex justify-between items-center"
+                >
+                  <span className="font-medium text-gray-800">{journey.firstTopic}</span>
+                  <span className="text-sm text-gray-500">{journey.depth} deep</span>
+                </button>
+              ))}
+            </div>
+          </div>
         )}
       </div>
     </div>

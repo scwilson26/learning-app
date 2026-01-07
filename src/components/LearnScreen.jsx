@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { generateQuickCard } from '../services/claude'
+import { recordHyperlinkClick, recordQuickCardView, recordSurpriseMeClick } from '../services/stats'
 
 // Helper function to render text with [[hyperlinks]]
 function renderContent(text, onLinkClick) {
@@ -77,9 +78,11 @@ export default function LearnScreen({
   const [loadingCard, setLoadingCard] = useState(false)
 
   const handleLinkClick = async (term) => {
+    recordHyperlinkClick()
     setLoadingCard(true)
     try {
       const cardData = await generateQuickCard(term)
+      recordQuickCardView()
       setQuickCard({ term, ...cardData })
     } catch (error) {
       console.error('Error loading quick card:', error)
@@ -99,9 +102,11 @@ export default function LearnScreen({
 
   const handleSuggestionClick = async (term) => {
     // Show Quick Card preview first
+    recordHyperlinkClick()
     setLoadingCard(true)
     try {
       const cardData = await generateQuickCard(term)
+      recordQuickCardView()
       setQuickCard({ term, ...cardData })
     } catch (error) {
       console.error('Error loading quick card:', error)
@@ -111,6 +116,7 @@ export default function LearnScreen({
   }
 
   const handleSurpriseMe = async () => {
+    recordSurpriseMeClick()
     // Import the function at runtime
     const { generateSurpriseTopic } = await import('../services/claude')
     const randomTopic = await generateSurpriseTopic()
@@ -170,29 +176,36 @@ export default function LearnScreen({
             {renderContent(hook, handleLinkClick)}
           </p>
 
-          {/* Body content - render paragraphs */}
-          <div className="space-y-3 md:space-y-4 text-gray-800 leading-relaxed text-base md:text-lg">
-            {content.split('\n\n').map((paragraph, idx) => {
-              // Skip empty paragraphs
-              if (!paragraph.trim()) return null;
+          {/* Body content - render paragraphs (or loading state) */}
+          {content ? (
+            <div className="space-y-3 md:space-y-4 text-gray-800 leading-relaxed text-base md:text-lg">
+              {content.split('\n\n').map((paragraph, idx) => {
+                // Skip empty paragraphs
+                if (!paragraph.trim()) return null;
 
-              // Check if this is a header
-              if (paragraph.trim().startsWith('## ')) {
-                const headerText = paragraph.trim().slice(3);
+                // Check if this is a header
+                if (paragraph.trim().startsWith('## ')) {
+                  const headerText = paragraph.trim().slice(3);
+                  return (
+                    <h2 key={idx} className="text-xl md:text-2xl font-bold mt-6 md:mt-8 mb-3 md:mb-4 text-gray-900">
+                      {renderContent(headerText, handleLinkClick)}
+                    </h2>
+                  );
+                }
+
                 return (
-                  <h2 key={idx} className="text-xl md:text-2xl font-bold mt-6 md:mt-8 mb-3 md:mb-4 text-gray-900">
-                    {renderContent(headerText, handleLinkClick)}
-                  </h2>
+                  <p key={idx} className="mb-4">
+                    {renderContent(paragraph, handleLinkClick)}
+                  </p>
                 );
-              }
-
-              return (
-                <p key={idx} className="mb-4">
-                  {renderContent(paragraph, handleLinkClick)}
-                </p>
-              );
-            })}
-          </div>
+              })}
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 py-8">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
+              <span className="text-gray-500">Loading more...</span>
+            </div>
+          )}
         </div>
 
         {/* Where to next? section */}

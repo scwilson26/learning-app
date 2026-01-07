@@ -6,71 +6,183 @@ const anthropic = new Anthropic({
 });
 
 /**
- * Generate learning content about a topic
- * @param {string} topic - The topic to learn about
- * @param {string} mode - 'deeper' or 'tangent'
- * @param {string} context - Previous content for context
- * @returns {Promise<string>} Generated content
+ * Generate just the hook/opening for an article (fast, ~1-2 sentences)
+ * @param {string} topic - The topic to explore
+ * @returns {Promise<{hook: string}>}
  */
-export async function generateContent(topic, mode = 'initial', context = '') {
+export async function generateArticleHook(topic) {
   try {
-    let prompt;
+    const prompt = `Write a 1-2 sentence OPENING HOOK about "${topic}" that makes readers desperate to learn more.
 
-    if (mode === 'initial') {
-      prompt = `Explain "${topic}" in clear, accessible language.
+CRITICAL: Start with a shocking fact FIRST, then weave in what it is.
 
-Write 2-3 concise paragraphs:
-- Use straightforward language and clear explanations
-- Keep sentences relatively short
-- Include an interesting example or detail
-- Aim for clarity over complexity
+❌ NEVER use generic openings like:
+- "Imagine a time when..."
+- "Picture a world where..."
+- "In a time before..."
 
-IMPORTANT:
-- Write at an accessible reading level (similar to quality journalism)
-- Avoid unnecessary jargon, but don't dumb it down
-- Be informative and engaging, not overly casual
-- Do NOT use phrases like "super cool" or overly informal language
-- Do NOT ask questions like "Would you like me to elaborate?"`;
-    } else if (mode === 'deeper') {
-      prompt = `The user is learning about this topic:
+✅ ALWAYS start with: [Mind-blowing fact that naturally reveals what this is]
 
-${context}
+EXAMPLES:
+- "The Praetorian Guard was supposed to protect Roman emperors. Instead, they murdered more emperors than they saved."
+- "Aboriginal songs can navigate 40,000 miles of Australian desert with perfect accuracy - no maps, no roads, no landmarks."
+- "We still can't figure out how to make Roman concrete - and theirs gets stronger with time while ours crumbles."
 
-Provide more depth and detail. Write 2-3 concise paragraphs with additional information.
-
-IMPORTANT:
-- Use clear, straightforward language
-- Break down complex ideas logically
-- Keep sentences manageable
-- Be informative but accessible
-- Do NOT ask questions or prompt for user input.`;
-    } else if (mode === 'tangent') {
-      prompt = `Context:
-
-${context}
-
-Explore an interesting related topic - a surprising connection or related concept. Write 2-3 concise paragraphs.
-
-IMPORTANT:
-- Use clear, engaging language
-- Keep it informative but accessible
-- Make the connection interesting
-- Avoid overly casual or informal tone
-- Do NOT ask questions or prompt for user input.`;
-    }
+Write ONLY the hook - 1-2 sentences max. No title, no body, just the hook.`;
 
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
-      messages: [
-        { role: 'user', content: prompt }
-      ]
+      max_tokens: 200,
+      messages: [{ role: 'user', content: prompt }]
     });
 
-    return message.content[0].text;
+    return { hook: message.content[0].text.trim() };
   } catch (error) {
-    console.error('Error calling Claude API:', error);
-    throw new Error('Failed to generate content. Please check your API key and try again.');
+    console.error('Error generating hook:', error);
+    throw new Error('Failed to generate hook');
+  }
+}
+
+/**
+ * Generate the body of an article (after hook is already shown)
+ * @param {string} topic - The topic to explore
+ * @param {string} hook - The hook that was already generated
+ * @returns {Promise<{content: string, hyperlinks: Array<string>, suggestions: Object}>}
+ */
+export async function generateArticleBody(topic, hook) {
+  try {
+    const prompt = `Continue writing a SHORT article about "${topic}" after this opening hook:
+
+"${hook}"
+
+BODY (6-8 VERY SHORT paragraphs):
+Write like an AUDIOBOOK NARRATOR - engaging, conversational, easy to read aloud.
+
+WRITING STYLE - CRITICAL:
+- Just tell the story. No analysis. No commentary. Just WHAT HAPPENED.
+- Short, punchy sentences. One idea per sentence.
+- Active voice, not passive ("Washington freed his slaves" not "slaves were freed by Washington")
+- Simple words. If a 5th grader wouldn't understand it, don't use it.
+- **Use past tense for historical events**
+- NO explaining why things matter - just state the facts and move on
+
+BANNED WORDS/PHRASES (never use these):
+❌ "contradiction", "defined", "unprecedented", "significance", "notably"
+❌ "His brilliance lay in...", "The key was...", "This would prove to be..."
+❌ Any sentence that starts with "It was..." or "There was..."
+❌ "turned X into Y" (too analytical - just say what happened)
+
+PARAGRAPH STRUCTURE:
+- 2-3 sentences max per paragraph
+- End with hooks that create curiosity
+- Leave gaps - don't explain everything
+- Make facts surprising or counterintuitive
+
+SECTION HEADERS:
+Use 1-2 headers that create curiosity (use ## markdown format).
+- Make them intriguing but not clickbait
+
+HYPERLINKS - CRITICAL FORMAT:
+Use EXACTLY [[double brackets]] around hyperlinks. NOT single brackets [term]. ONLY [[term]].
+
+HYPERLINK STRATEGY:
+- Aim for 5-10 hyperlinks per article
+- Each link should make the reader think "huh, I never thought about that"
+- Prioritize specificity: "[[Cloaca Maxima]]" over "sewers"
+- Only link the FIRST mention of each term
+- Ask: "Would I click this at 2 AM down a rabbit hole?" If no, skip it
+
+CRITICAL HYPERLINK RULES:
+1. **ONLY hyperlink NOUNS** (people, places, things, events, concepts)
+2. **Make hyperlinks SPECIFIC and UNAMBIGUOUS**:
+   - ❌ NEVER: "[[Old City]]" → ✅ ALWAYS: "[[Old City of Jerusalem]]"
+   - ❌ NEVER: "[[Revolution]]" → ✅ ALWAYS: "[[French Revolution]]"
+   - Full names for people: "[[Albert Einstein]]" not "[[Einstein]]"
+
+Write ONLY the body paragraphs - do NOT repeat the hook.`;
+
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1800,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    let content = message.content[0].text;
+
+    // Filter out generic/ambiguous hyperlinks
+    const genericPatterns = [
+      /\[\[(British|American|French|German|Russian|Chinese|Japanese) (Ambassador|President|General|King|Queen|Emperor|Minister|Senator|Representative)\]\]/gi,
+      /\[\[(the )?(Ambassador|President|General|Minister|King|Queen|Emperor|Senator|Representative)\]\]/gi,
+      /\[\[Old City\]\]/gi,
+      /\[\[Temple\]\]/gi,
+      /\[\[Revolution\]\]/gi,
+      /\[\[War\]\]/gi,
+      /\[\[Empire\]\]/gi,
+      /\[\[Battle\]\]/gi,
+      /\[\[\d{4}\]\]/g,
+      /\[\[\d+\]\]/g,
+      /\[\[[A-Z][a-z]+\]\]/g,
+      /\[\[[A-Z][a-z]+ (researchers?|scientists?|studies?|team|professors?|experts?|engineers?|doctors?|officials?)\]\]/gi,
+    ];
+
+    genericPatterns.forEach(pattern => {
+      content = content.replace(pattern, (match) => match.slice(2, -2));
+    });
+
+    // Extract hyperlinks
+    const hyperlinkMatches = content.match(/\[\[([^\]]+)\]\]/g) || [];
+    const hyperlinks = [...new Set(hyperlinkMatches.map(match => match.slice(2, -2)))];
+
+    // Generate suggestions
+    const suggestionsPrompt = `Based on the article about "${topic}", suggest topics for "Where to next?"
+
+Generate TWO categories:
+
+1. RELATED (2-3 topics): The MAIN CHARACTERS and PIVOTAL EVENTS of the story
+   - ONLY suggest people/places/events that are CENTRAL to the narrative
+   - Ask: "Is this a main character or just mentioned in passing?"
+   - ❌ DON'T suggest every person mentioned - skip background figures
+   - ✅ DO suggest: the protagonist, the key turning point, what happens next
+   - Example for "Chocolate Warfare": "Brother Francisco Valdez" (started it), "Battle of Cacao Bay" (climax), "Treaty of Sweet Peace" (resolution)
+   - Example for "Pac-Man Ghost AI": "Toru Iwatani" (creator), "Ghost Personalities" (core mechanic)
+
+2. TANGENTS (2-3 topics): Surprising cross-domain connections
+   - "I never thought about THAT connection!"
+   - Bridge to completely different fields
+   - Example for "Pac-Man Ghost AI": "Predator Psychology", "Military Flanking Tactics"
+
+CRITICAL: Related = continue THIS story. Tangents = jump to something unexpected.
+
+Article context:
+${content.substring(0, 500)}
+
+Return ONLY a JSON object in this exact format (no markdown, no explanation):
+{
+  "related": ["Topic 1", "Topic 2", "Topic 3"],
+  "tangents": ["Topic 1", "Topic 2", "Topic 3"]
+}
+
+LENGTH: 1-3 words per topic. Keep them SHORT!`;
+
+    const suggestionsMessage = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 256,
+      messages: [{ role: 'user', content: suggestionsPrompt }]
+    });
+
+    let suggestions = { related: [], tangents: [] };
+    try {
+      const suggestionsText = suggestionsMessage.content[0].text.trim();
+      const jsonText = suggestionsText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+      suggestions = JSON.parse(jsonText);
+    } catch (e) {
+      console.error('Failed to parse suggestions:', e);
+    }
+
+    return { content, hyperlinks, suggestions };
+  } catch (error) {
+    console.error('Error generating article body:', error);
+    throw new Error('Failed to generate article body');
   }
 }
 
