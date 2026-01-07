@@ -5,33 +5,39 @@ import ReviewScreen from './components/ReviewScreen'
 import CardLibrary from './components/CardLibrary'
 
 function App() {
-  // Load saved state from localStorage on initial render
-  const getSavedState = () => {
+  const [screen, setScreen] = useState('home')
+  const [topic, setTopic] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [learnData, setLearnData] = useState(null)
+  const [cardStats, setCardStats] = useState({ total: 0, dueToday: 0 })
+  const [progress, setProgress] = useState(null)
+  const [breadcrumbs, setBreadcrumbs] = useState([])
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [hasHydrated, setHasHydrated] = useState(false)
+
+  // Restore saved state from localStorage on mount (fixes mobile Safari)
+  useEffect(() => {
     try {
       const saved = localStorage.getItem('appState')
       if (saved) {
-        return JSON.parse(saved)
+        const savedState = JSON.parse(saved)
+        if (savedState?.screen) setScreen(savedState.screen)
+        if (savedState?.topic) setTopic(savedState.topic)
+        if (savedState?.learnData) setLearnData(savedState.learnData)
+        if (savedState?.breadcrumbs) setBreadcrumbs(savedState.breadcrumbs)
+        if (savedState?.currentIndex !== undefined) setCurrentIndex(savedState.currentIndex)
       }
     } catch (e) {
       console.error('Error loading saved state:', e)
     }
-    return null
-  }
+    setHasHydrated(true)
+  }, [])
 
-  const savedState = getSavedState()
-
-  const [screen, setScreen] = useState(savedState?.screen || 'home')
-  const [topic, setTopic] = useState(savedState?.topic || '')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [learnData, setLearnData] = useState(savedState?.learnData || null)
-  const [cardStats, setCardStats] = useState({ total: 0, dueToday: 0 })
-  const [progress, setProgress] = useState(null)
-  const [breadcrumbs, setBreadcrumbs] = useState(savedState?.breadcrumbs || [])
-  const [currentIndex, setCurrentIndex] = useState(savedState?.currentIndex ?? (savedState?.breadcrumbs?.length - 1 || 0))
-
-  // Save state to localStorage whenever it changes
+  // Save state to localStorage whenever it changes (only after hydration)
   useEffect(() => {
+    if (!hasHydrated) return // Don't save until we've loaded existing state
+
     if (screen === 'learn' && learnData) {
       localStorage.setItem('appState', JSON.stringify({
         screen,
@@ -44,7 +50,7 @@ function App() {
       // Clear saved state when returning home
       localStorage.removeItem('appState')
     }
-  }, [screen, topic, learnData, breadcrumbs, currentIndex])
+  }, [hasHydrated, screen, topic, learnData, breadcrumbs, currentIndex])
 
   useEffect(() => {
     // Calculate card statistics
@@ -150,6 +156,8 @@ function App() {
       })
       setCurrentIndex(prev => prev + 1)
       setProgress(null)
+      // Scroll to top when new article loads
+      window.scrollTo(0, 0)
     } catch (err) {
       setError(err.message)
       setProgress(null)
@@ -166,6 +174,7 @@ function App() {
     const selectedData = breadcrumbs[index]
     setLearnData(selectedData)
     setCurrentIndex(index)
+    window.scrollTo(0, 0)
   }
 
   const handleGoToReview = () => {

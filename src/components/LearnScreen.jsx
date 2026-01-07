@@ -44,7 +44,7 @@ function renderContent(text, onLinkClick) {
     if (part.trim().startsWith('## ')) {
       const headerText = part.trim().slice(3);
       return (
-        <h2 key={i} className="text-2xl font-bold mt-8 mb-4 text-gray-900">
+        <h2 key={i} className="text-xl md:text-2xl font-bold mt-6 md:mt-8 mb-3 md:mb-4 text-gray-900">
           {headerText}
         </h2>
       );
@@ -156,17 +156,17 @@ export default function LearnScreen({
         </div>
 
         {/* Content area */}
-        <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
+        <div className="bg-white rounded-lg shadow-lg p-5 md:p-8 mb-6">
           {/* Title */}
-          <h1 className="text-3xl font-bold mb-6 text-gray-900">{topic}</h1>
+          <h1 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6 text-gray-900">{topic}</h1>
 
           {/* Hook paragraph - larger, bold */}
-          <p className="text-xl font-semibold mb-6 text-gray-900 leading-relaxed">
+          <p className="text-base md:text-lg font-semibold mb-4 md:mb-6 text-gray-900 leading-relaxed">
             {renderContent(hook, handleLinkClick)}
           </p>
 
           {/* Body content - render paragraphs */}
-          <div className="space-y-4 text-gray-800 leading-relaxed text-lg">
+          <div className="space-y-3 md:space-y-4 text-gray-800 leading-relaxed text-base md:text-lg">
             {content.split('\n\n').map((paragraph, idx) => {
               // Skip empty paragraphs
               if (!paragraph.trim()) return null;
@@ -175,7 +175,7 @@ export default function LearnScreen({
               if (paragraph.trim().startsWith('## ')) {
                 const headerText = paragraph.trim().slice(3);
                 return (
-                  <h2 key={idx} className="text-2xl font-bold mt-8 mb-4 text-gray-900">
+                  <h2 key={idx} className="text-xl md:text-2xl font-bold mt-6 md:mt-8 mb-3 md:mb-4 text-gray-900">
                     {renderContent(headerText, handleLinkClick)}
                   </h2>
                 );
@@ -193,7 +193,7 @@ export default function LearnScreen({
         {/* Where to next? section */}
         {(suggestions.related.length > 0 || suggestions.tangents.length > 0) && (
           <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">🎯 Where to next?</h2>
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4">🎯 Where to next?</h2>
 
             {suggestions.related.length > 0 && (
               <div className="mb-4">
