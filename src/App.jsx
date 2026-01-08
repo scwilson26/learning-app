@@ -100,16 +100,15 @@ function App() {
       const startTime = Date.now()
 
       try {
-        // Step 1: Get hook quickly and show it
-        const { hook } = await generateArticleHook(topic)
+        // Step 1: Get hook AND start minimum timer in parallel
+        const minDisplayTime = 5000 // 2 facts at ~2.5 seconds each
+        const [hookResult] = await Promise.all([
+          generateArticleHook(topic),
+          new Promise(resolve => setTimeout(resolve, minDisplayTime))
+        ])
+        const { hook } = hookResult
 
-        // Ensure minimum 2.5 seconds of fun facts display
-        const elapsed = Date.now() - startTime
-        const minDisplayTime = 2500
-        if (elapsed < minDisplayTime) {
-          await new Promise(resolve => setTimeout(resolve, minDisplayTime - elapsed))
-        }
-
+        // Step 2: Show hook immediately, start body loading
         const partialData = { topic, hook, content: null, hyperlinks: [], suggestions: { related: [], tangents: [] } }
         setLearnData(partialData)
         setBreadcrumbs([partialData])
@@ -118,7 +117,7 @@ function App() {
         setScreen('learn')
         setProgress({ message: 'Loading more...' })
 
-        // Step 2: Get body in background while user reads hook
+        // Step 3: Get body (already started conceptually, now we await it)
         const { content, hyperlinks, suggestions } = await generateArticleBody(topic, hook)
         const fullData = { topic, hook, content, hyperlinks, suggestions }
         setLearnData(fullData)
@@ -146,20 +145,19 @@ function App() {
     try {
       // Track Surprise Me click
       recordSurpriseMeClick()
-      // Generate a random topic (don't show it yet!)
-      const randomTopic = await generateSurpriseTopic()
 
-      // Step 1: Get hook quickly and show it
+      // Step 1: Generate topic AND start minimum timer in parallel
+      const minDisplayTime = 5000 // 2 facts at ~2.5 seconds each
+      const [randomTopic] = await Promise.all([
+        generateSurpriseTopic(),
+        new Promise(resolve => setTimeout(resolve, minDisplayTime))
+      ])
+
+      // Step 2: Get hook (facts already shown for 5s, so show hook ASAP)
       setProgress({ message: 'Crafting your story...' })
       const { hook } = await generateArticleHook(randomTopic)
 
-      // Ensure minimum 2.5 seconds of fun facts display
-      const elapsed = Date.now() - startTime
-      const minDisplayTime = 2500
-      if (elapsed < minDisplayTime) {
-        await new Promise(resolve => setTimeout(resolve, minDisplayTime - elapsed))
-      }
-
+      // Step 3: Show hook immediately, start body loading
       const partialData = { topic: randomTopic, hook, content: null, hyperlinks: [], suggestions: { related: [], tangents: [] } }
       setLearnData(partialData)
       setBreadcrumbs([partialData])
@@ -168,7 +166,7 @@ function App() {
       setScreen('learn')
       setProgress({ message: 'Loading more...' })
 
-      // Step 2: Get body in background while user reads hook
+      // Step 4: Get body in background while user reads hook
       const { content, hyperlinks, suggestions } = await generateArticleBody(randomTopic, hook)
       const fullData = { topic: randomTopic, hook, content, hyperlinks, suggestions }
       setLearnData(fullData)
@@ -257,8 +255,8 @@ function App() {
         nextPart
       )
 
-      // Append new content to existing content
-      const updatedContent = `${learnData.content}\n\n${newContent}`
+      // Append new content with a part divider marker
+      const updatedContent = `${learnData.content}\n\n---PART-${nextPart}---\n\n${newContent}`
       const updatedHyperlinks = [...(learnData.hyperlinks || []), ...newHyperlinks]
 
       const updatedData = {

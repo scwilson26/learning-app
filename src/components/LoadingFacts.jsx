@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 
-// Fun facts to show while loading - shuffled to avoid repeats
+// Fun facts to show while loading
 const funFacts = [
   // Original facts
   "Honey never spoils. Archaeologists found 3,000-year-old honey in Egyptian tombs that was still edible.",
@@ -123,20 +123,57 @@ const funFacts = [
   "A group of porcupines is called a 'prickle.'",
 ]
 
-// Fisher-Yates shuffle to randomize array
-function shuffleArray(array) {
-  const shuffled = [...array]
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+const RECENT_FACTS_KEY = 'recentFacts'
+const HISTORY_SIZE = 20 // Remember last 20 facts to avoid repeats
+
+// Get a random fact that hasn't been shown recently
+function getRandomFact() {
+  let recentIndices = []
+  try {
+    const saved = localStorage.getItem(RECENT_FACTS_KEY)
+    if (saved) recentIndices = JSON.parse(saved)
+  } catch (e) {
+    // Ignore localStorage errors
   }
-  return shuffled
+
+  // Get available indices (not recently shown)
+  let available = []
+  for (let i = 0; i < funFacts.length; i++) {
+    if (!recentIndices.includes(i)) {
+      available.push(i)
+    }
+  }
+
+  // If we've shown too many, reset but keep last few
+  if (available.length === 0) {
+    recentIndices = recentIndices.slice(-5)
+    available = []
+    for (let i = 0; i < funFacts.length; i++) {
+      if (!recentIndices.includes(i)) {
+        available.push(i)
+      }
+    }
+  }
+
+  // Pick random from available
+  const randomIdx = available[Math.floor(Math.random() * available.length)]
+
+  // Save to history
+  recentIndices.push(randomIdx)
+  if (recentIndices.length > HISTORY_SIZE) {
+    recentIndices = recentIndices.slice(-HISTORY_SIZE)
+  }
+  try {
+    localStorage.setItem(RECENT_FACTS_KEY, JSON.stringify(recentIndices))
+  } catch (e) {
+    // Ignore localStorage errors
+  }
+
+  return funFacts[randomIdx]
 }
 
 export default function LoadingFacts() {
-  // Create a shuffled queue of facts on mount - guarantees no repeats until all shown
-  const shuffledFacts = useRef(shuffleArray(funFacts))
-  const [factIndex, setFactIndex] = useState(0)
+  const [currentFact, setCurrentFact] = useState(() => getRandomFact())
   const [fadeIn, setFadeIn] = useState(true)
 
   useEffect(() => {
@@ -146,15 +183,7 @@ export default function LoadingFacts() {
 
       // After fade out, change fact and fade in
       setTimeout(() => {
-        setFactIndex(prev => {
-          const next = prev + 1
-          // If we've shown all facts, reshuffle and start over
-          if (next >= shuffledFacts.current.length) {
-            shuffledFacts.current = shuffleArray(funFacts)
-            return 0
-          }
-          return next
-        })
+        setCurrentFact(getRandomFact())
         setFadeIn(true)
       }, 300)
     }, 3500)
@@ -173,7 +202,7 @@ export default function LoadingFacts() {
       >
         <p className="text-gray-600 text-sm mb-2">Did you know?</p>
         <p className="text-gray-800 font-medium leading-relaxed px-4">
-          {shuffledFacts.current[factIndex]}
+          {currentFact}
         </p>
       </div>
     </div>

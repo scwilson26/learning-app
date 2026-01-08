@@ -35,10 +35,14 @@ Write ONLY the hook - 1-2 sentences max. No title, no body, just the hook.`;
     if (quickCardText) {
       prompt += `
 
-IMPORTANT: The reader just saw this preview and clicked to learn more:
+CONTEXT: The reader saw this Quick Card preview and clicked "Go Deeper":
 "${quickCardText}"
 
-Your hook MUST connect to or expand on this preview. Don't repeat it word-for-word, but make sure the reader feels like they're getting the deeper story they were promised.`;
+IMPORTANT: Cover the FULL BREADTH of "${topic}" - not just the example from the preview!
+- The Quick Card might have mentioned ONE example (like Derinkuyu for "Underground Cities")
+- Your article must cover the WHOLE topic, with MULTIPLE examples
+- Don't repeat the Quick Card fact word-for-word, but DO assume they know it
+- Start with something NEW that expands their understanding`;
     }
 
     const message = await anthropic.messages.create({
@@ -70,6 +74,18 @@ export async function generateArticleBody(topic, hook, quickCardText = null) {
 BODY (6-8 VERY SHORT paragraphs):
 Write like an AUDIOBOOK NARRATOR - engaging, conversational, easy to read aloud.
 
+FIRST PARAGRAPH RULE - CRITICAL:
+The FIRST paragraph after the hook MUST ground the reader on WHY this topic matters.
+Ask yourself: "Would someone with ZERO background understand why anyone cares about this?"
+If not, your first paragraph must answer: "Why does this exist? What problem does it solve?"
+
+Examples:
+- Seed vault? → "Crops fail. Diseases wipe out harvests. If we lose a type of wheat, it's gone forever. Unless someone saved the seeds."
+- Roman concrete? → "Our buildings crack after 50 years. Roman buildings have lasted 2,000. We still don't know their secret."
+- Praetorian Guard? → "Roman emperors needed bodyguards. They picked the best soldiers. Then those soldiers realized THEY had all the weapons."
+
+Don't assume the reader knows WHY something is interesting. Tell them.
+
 READING LEVEL - CRITICAL:
 Write for a 10-year-old. Use simple, everyday words. MAX 15 words per sentence.
 - ❌ "subsequently" → ✅ "then"
@@ -92,12 +108,35 @@ BANNED WORDS/PHRASES:
 ❌ "furthermore", "moreover", "however", "nevertheless", "consequently"
 ❌ "His brilliance lay in...", "The key was...", "This would prove to be..."
 ❌ Any sentence starting with "It was..." or "There was..."
+❌ NEVER use headers containing "Why This/It Matters/Mattered" in ANY form - just write naturally
 
 PARAGRAPH STRUCTURE:
 - 2-3 sentences max per paragraph
-- End with hooks that create curiosity
-- Leave gaps - don't explain everything
 - Make facts surprising or counterintuitive
+
+FINAL PARAGRAPH RULE - CRITICAL:
+The LAST paragraph must give CLOSURE. The reader should think "I get it now" and feel confident explaining this topic to a friend.
+- Do NOT end on a cliffhanger or unanswered question
+- Do NOT ask "But how did they...?" without answering it
+- DO wrap up the core idea in a satisfying way
+- The Deep Dive is for EXTRA depth, not for finishing the story
+
+❌ BAD: "But how did ninjas actually train? And who were the most famous ones?" (leaves reader hanging)
+✅ GOOD: "That's what ninjas really were - spies and saboteurs who won through deception, not combat." (closure)
+
+The reader should be able to stop here and feel satisfied. Deep Dive is a bonus, not a requirement.
+
+GROUNDING SHOCKING FACTS - CRITICAL:
+For every "wow" fact, ask: would someone who knows NOTHING about this understand WHY it's wow?
+If not, add ONE sentence of context BEFORE the fact so it lands.
+
+Structure: Setup (brief context) → Shocking fact → Let it breathe
+
+❌ BAD: "Police found thousands of hand-drawn frames showing victims' final moments."
+✅ GOOD: "Animation requires 24 drawings for each second of film. Police found 14,400 hand-drawn frames in his studio. Each one traced by hand from real footage."
+
+❌ BAD: "The ship carried 7 tons of gold."
+✅ GOOD: "A single gold bar weighs 27 pounds. The ship carried 7 tons - enough to fill a school bus."
 
 SECTION HEADERS:
 Use 1-2 headers that create curiosity (use ## markdown format).
@@ -122,14 +161,18 @@ CRITICAL HYPERLINK RULES:
 
 Write ONLY the body paragraphs - do NOT repeat the hook.`;
 
-    // If we have Quick Card context, make sure the article delivers on that promise
+    // If we have Quick Card context, make sure the article covers the FULL topic
     if (quickCardText) {
       prompt += `
 
-IMPORTANT CONTEXT: The reader clicked "Go Deeper" after seeing this Quick Card preview:
+CONTEXT: The reader saw this Quick Card and clicked "Go Deeper":
 "${quickCardText}"
 
-Your article MUST elaborate on and explain the facts mentioned in that preview. The reader is expecting to learn MORE about what they just read. Don't ignore it - make it central to your article.`;
+CRITICAL - COVER THE FULL TOPIC:
+- The Quick Card mentioned ONE specific example. Your article must cover MANY examples.
+- If they clicked on "Underground Cities" and saw Derinkuyu, talk about underground cities WORLDWIDE - Cappadocia, Cu Chi tunnels, Paris catacombs, Beijing tunnels, etc.
+- The reader wants to understand the WHOLE phenomenon, not just the single example they previewed.
+- Assume they know the Quick Card fact. Start with something NEW that broadens their view.`;
     }
 
     const message = await anthropic.messages.create({
@@ -175,26 +218,37 @@ Your article MUST elaborate on and explain the facts mentioned in that preview. 
     const hyperlinks = [...new Set(hyperlinkMatches.map(match => match.slice(2, -2)))];
 
     // Generate suggestions - 6 rabbit hole options
-    const suggestionsPrompt = `Based on the article about "${topic}", suggest 6 topics for "Where to next?" (the rabbit hole continues!)
+    const suggestionsPrompt = `Based on the article about "${topic}", suggest 6 SPECIFIC rabbit holes.
 
-Generate 6 DIVERSE topics mixing:
-- Key people/places/events from the story (the protagonist, turning points)
-- Surprising cross-domain connections ("I never thought about THAT!")
-- Deeper dives into fascinating details mentioned
+THE RABBIT HOLE TEST:
+Each suggestion must be a SPECIFIC thing with a STORY behind it.
+Ask yourself: "Would clicking this reveal a surprising story?"
+
+❌ BAD (too abstract/obvious):
+- "Failure Rates" (boring concept)
+- "Venture Capital" (too obvious if reading about startups)
+- "Rejection Psychology" (abstract, no story)
+- "Medieval Weapons" (generic category)
+
+✅ GOOD (specific + story-worthy):
+- "Theranos" (specific company with wild story)
+- "PayPal Mafia" (specific group, unexpected connections)
+- "The Traitorous Eight" (specific event with drama)
+- "Hattori Hanzo" (specific person with legend)
 
 RULES:
-- Make each topic feel like clicking it will reveal something amazing
-- Mix it up: some continue the story, some jump sideways
-- 1-3 words per topic - keep them SHORT!
-- NO generic topics - be SPECIFIC
+1. NAMED THINGS ONLY - specific people, companies, events, places, inventions
+2. BUILT-IN INTRIGUE - the name itself should hint at a story
+3. 1-3 words max - keep them SHORT
+4. Mix of: 3 that continue the story + 3 unexpected sideways jumps
 
 Article context:
 ${content.substring(0, 500)}
 
-Return ONLY a JSON object in this exact format (no markdown, no explanation):
+Return ONLY a JSON object (no markdown):
 {
-  "related": ["Topic 1", "Topic 2", "Topic 3"],
-  "tangents": ["Topic 4", "Topic 5", "Topic 6"]
+  "related": ["Specific Thing 1", "Specific Thing 2", "Specific Thing 3"],
+  "tangents": ["Unexpected Thing 4", "Unexpected Thing 5", "Unexpected Thing 6"]
 }`;
 
     const suggestionsMessage = await anthropic.messages.create({
@@ -267,6 +321,18 @@ FIRST sentence = shocking/weird/fascinating fact. SECOND sentence = what we're t
 BODY (6-8 VERY SHORT paragraphs):
 Write like an AUDIOBOOK NARRATOR - engaging, conversational, easy to read aloud.
 
+FIRST PARAGRAPH RULE - CRITICAL:
+The FIRST paragraph after the hook MUST ground the reader on WHY this topic matters.
+Ask yourself: "Would someone with ZERO background understand why anyone cares about this?"
+If not, your first paragraph must answer: "Why does this exist? What problem does it solve?"
+
+Examples:
+- Seed vault? → "Crops fail. Diseases wipe out harvests. If we lose a type of wheat, it's gone forever. Unless someone saved the seeds."
+- Roman concrete? → "Our buildings crack after 50 years. Roman buildings have lasted 2,000. We still don't know their secret."
+- Praetorian Guard? → "Roman emperors needed bodyguards. They picked the best soldiers. Then those soldiers realized THEY had all the weapons."
+
+Don't assume the reader knows WHY something is interesting. Tell them.
+
 READING LEVEL - CRITICAL:
 Write for a 10-year-old. Use simple, everyday words. MAX 15 words per sentence.
 - ❌ "subsequently" → ✅ "then"
@@ -306,8 +372,18 @@ TONE EXAMPLES:
 PARAGRAPH STRUCTURE:
 - 2-3 sentences max per paragraph
 - End with hooks that create curiosity
-- Leave gaps - don't explain everything
 - Make facts surprising or counterintuitive
+
+GROUNDING SHOCKING FACTS - CRITICAL:
+For every "wow" fact, ask: would someone who knows NOTHING about this understand WHY it's wow?
+If not, add ONE sentence of context BEFORE the fact so it lands.
+
+Structure: Setup (brief context) → Shocking fact → Let it breathe
+
+❌ BAD: "The reactor released 400 times more radiation than Hiroshima."
+✅ GOOD: "The Hiroshima bomb killed 80,000 people instantly. Chernobyl released 400 times more radiation."
+
+Leave mystery about WHAT HAPPENS NEXT. But ground the reader on WHY SOMETHING MATTERS.
 
 SECTION HEADERS:
 Use 1-2 headers that create curiosity (use ## markdown format).
@@ -458,12 +534,17 @@ Return ONLY a JSON object in this exact format (no markdown, no explanation):
 /**
  * Generate a Quick Card (2-3 sentences) for a hyperlinked term
  * @param {string} term - The term to explain
+ * @param {string} context - Optional context (the current article topic) for disambiguation
  * @returns {Promise<{text: string, hyperlinks: Array<string>}>}
  */
-export async function generateQuickCard(term) {
+export async function generateQuickCard(term, context = null) {
   try {
-    const prompt = `Write a Quick Card about "${term}".
+    const contextHint = context
+      ? `\nCONTEXT FOR DISAMBIGUATION: The reader is currently reading about "${context}". If "${term}" is ambiguous (e.g., could be a person, place, movie, video game, etc.), pick the meaning most relevant to "${context}". For example, if reading about horror video games and clicking "Sweet Home", explain the video game, not the town in Oregon.\n`
+      : '';
 
+    const prompt = `Write a Quick Card about "${term}".
+${contextHint}
 CRITICAL: Focus ONLY on "${term}" itself - its most fascinating facts, history, or characteristics.
 Do NOT focus on how it relates to any other topic. The reader wants to learn about "${term}" specifically.
 
@@ -495,8 +576,20 @@ BANNED PHRASES - ABSOLUTELY NEVER USE THESE:
 
 START IMMEDIATELY WITH THE FACTS. No introductions. No preamble.
 
-HYPERLINKS - FORMAT:
-Use EXACTLY [[double brackets]] around 1-3 hyperlinks. Keep them simple.
+HYPERLINKS - BE VERY SELECTIVE:
+Use EXACTLY [[double brackets]]. Include AT MOST 1-2 hyperlinks, and ONLY if they're:
+- A SPECIFIC person, place, event, or thing with its own fascinating story
+- Something the reader would ACTUALLY want to rabbit-hole into
+
+❌ BAD hyperlinks (too generic, would loop back):
+- [[underground city]] (generic category)
+- [[airflow]] (too abstract)
+- [[ancient engineers]] (vague group)
+
+✅ GOOD hyperlinks (specific, story-worthy):
+- [[Derinkuyu]] (specific place with a story)
+- [[193 CE]] (specific event)
+- [[Linear B]] (specific thing with mystery)
 
 EXAMPLES:
 
@@ -550,7 +643,7 @@ Write a shocking Quick Card for "${term}" - NO QUESTIONS, just drama:`;
 
 // Track recent surprise topics to avoid repeats
 const RECENT_TOPICS_KEY = 'recentSurpriseTopics';
-const MAX_RECENT_TOPICS = 30;
+const MAX_RECENT_TOPICS = 100; // Remember more topics
 
 function getRecentTopics() {
   try {
@@ -564,8 +657,14 @@ function getRecentTopics() {
 function addRecentTopic(topic) {
   try {
     const recent = getRecentTopics();
-    // Add to front, remove duplicates, keep max size
-    const updated = [topic, ...recent.filter(t => t.toLowerCase() !== topic.toLowerCase())].slice(0, MAX_RECENT_TOPICS);
+    // Normalize: lowercase, trim
+    const normalized = topic.toLowerCase().trim();
+    // Add to front, remove similar entries (partial match), keep max size
+    const updated = [topic, ...recent.filter(t => {
+      const tNorm = t.toLowerCase().trim();
+      // Remove if exact match or one contains the other
+      return tNorm !== normalized && !tNorm.includes(normalized) && !normalized.includes(tNorm);
+    })].slice(0, MAX_RECENT_TOPICS);
     localStorage.setItem(RECENT_TOPICS_KEY, JSON.stringify(updated));
   } catch (e) {
     console.error('Error saving recent topic:', e);
@@ -614,10 +713,10 @@ export async function generateSurpriseTopic() {
     ];
     const randomDomain = domains[Math.floor(Math.random() * domains.length)];
 
-    // Get recent topics to avoid
+    // Get recent topics to avoid - show more to Claude so it doesn't repeat
     const recentTopics = getRecentTopics();
     const avoidList = recentTopics.length > 0
-      ? `\n\nDO NOT suggest any of these (already shown recently):\n${recentTopics.slice(0, 15).join(', ')}`
+      ? `\n\nDO NOT suggest any of these (already shown recently):\n${recentTopics.slice(0, 40).join(', ')}`
       : '';
 
     const prompt = `Generate ONE fascinating topic related to: ${randomDomain}
@@ -659,56 +758,43 @@ Return ONLY the topic name, nothing else.`;
  */
 export async function generateArticleContinuation(topic, existingContent, partNumber) {
   try {
-    // Define what each part focuses on
-    const partFocus = {
-      2: {
-        title: 'The Details',
-        description: 'Specific examples, direct quotes from people involved, exact numbers/dates/statistics, the mechanics of how it actually worked',
-        instructions: `Focus on SPECIFICS:
-- Real quotes from people involved (use their actual words)
-- Exact numbers, dates, measurements, statistics
-- Step-by-step mechanics: HOW did this actually work?
-- Specific examples and case studies
-- Primary sources and eyewitness accounts`
-      },
-      3: {
-        title: 'The Deeper Story',
-        description: 'Controversies, misconceptions, what most people get wrong, the aftermath, unintended consequences',
-        instructions: `Focus on the HIDDEN STORY:
-- What do most people get WRONG about this?
-- Controversies and debates among experts
-- Unintended consequences and ripple effects
-- The aftermath: what happened next?
-- Dark sides or problematic aspects
-- Myths vs reality`
-      },
-      4: {
-        title: 'The Connections',
-        description: 'How this influenced other things, modern relevance, surprising connections to other topics, the bigger picture',
-        instructions: `Focus on CONNECTIONS:
-- How did this influence other fields/events/ideas?
-- Surprising connections to seemingly unrelated topics
-- Modern relevance: why does this still matter today?
-- The bigger picture: what does this tell us about humanity/nature/society?
-- Pop culture references and modern parallels
-- What came next: legacy and ongoing impact`
-      }
-    };
-
-    const part = partFocus[partNumber];
-    if (!part) {
-      throw new Error(`Invalid part number: ${partNumber}`);
-    }
-
-    const prompt = `Continue writing about "${topic}" - this is Part ${partNumber}: ${part.title}
+    // Build adaptive prompt based on topic type
+    const prompt = `Continue writing about "${topic}" - this is Part ${partNumber} of 4.
 
 THE READER HAS ALREADY READ THIS:
 ---
 ${existingContent}
 ---
 
-NOW WRITE Part ${partNumber}: ${part.title}
-${part.instructions}
+TOPIC-ADAPTIVE COVERAGE:
+First, identify what type of topic "${topic}" is, then write the appropriate content for Part ${partNumber}.
+
+**If it's a PERSON or GROUP (ninja, samurai, pirates, Einstein, etc.):**
+- Part 2: What did they actually DO? Daily life, methods, skills, training, tools/weapons
+- Part 3: Famous examples, key figures, major events, timeline of when they existed
+- Part 4: Myths vs reality, pop culture depictions, modern legacy, why people still care
+
+**If it's a CONCEPT or PHENOMENON (black holes, gravity, inflation, etc.):**
+- Part 2: How does it WORK? The mechanics, the science, step-by-step explanation
+- Part 3: Types/variations, discovery history, key scientists, major breakthroughs
+- Part 4: Open questions, modern research, real-world applications, why it matters
+
+**If it's an EVENT (French Revolution, moon landing, Titanic, etc.):**
+- Part 2: Key players and factions, the buildup, what led to it
+- Part 3: Timeline of major moments, turning points, what actually happened
+- Part 4: Aftermath, what people get wrong, lasting impact, modern parallels
+
+**If it's a THING or INVENTION (Roman concrete, printing press, iPhone, etc.):**
+- Part 2: How was it made? The process, ingredients, engineering
+- Part 3: Where/how it was used, famous examples, who made it
+- Part 4: Why it matters, what it replaced, legacy, modern versions
+
+**If it's a PLACE (Pompeii, Area 51, Amazon rainforest, etc.):**
+- Part 2: What's actually there? Geography, layout, key features
+- Part 3: History and major events that happened there
+- Part 4: Modern status, why people visit/study it, mysteries remaining
+
+NOW WRITE Part ${partNumber} using the appropriate focus for "${topic}".
 
 READING LEVEL - CRITICAL:
 Write for a 10-year-old. Use simple, everyday words. MAX 15 words per sentence.
@@ -725,8 +811,17 @@ WRITING STYLE:
 - **Use past tense for historical events**
 - 2-3 sentences per paragraph
 
+GROUNDING FACTS - CRITICAL:
+For every "wow" fact, ask: would someone who knows NOTHING about this understand WHY it's wow?
+If not, add ONE sentence of context BEFORE the fact so it lands.
+
+Structure: Setup (brief context) → Shocking fact → Let it breathe
+
+❌ BAD: "The company lost $2 billion in a single day."
+✅ GOOD: "Apple was worth $3 trillion. It lost $2 billion in a single day - more than most companies are worth."
+
 START WITH A SECTION HEADER:
-Use ## format, make it intriguing. Example: "## ${part.title}" or something more creative.
+Use ## format, make it intriguing and relevant to what Part ${partNumber} covers for this topic type.
 
 CRITICAL:
 - Do NOT repeat information already covered

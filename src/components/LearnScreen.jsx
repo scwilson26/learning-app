@@ -84,7 +84,8 @@ export default function LearnScreen({
     recordHyperlinkClick()
     setLoadingCard(true)
     try {
-      const cardData = await generateQuickCard(term)
+      // Pass current topic for disambiguation context
+      const cardData = await generateQuickCard(term, topic)
       recordQuickCardView()
       setQuickCard({ term, ...cardData })
     } catch (error) {
@@ -110,7 +111,8 @@ export default function LearnScreen({
     recordHyperlinkClick()
     setLoadingCard(true)
     try {
-      const cardData = await generateQuickCard(term)
+      // Pass current topic for disambiguation context
+      const cardData = await generateQuickCard(term, topic)
       recordQuickCardView()
       setQuickCard({ term, ...cardData })
     } catch (error) {
@@ -188,6 +190,21 @@ export default function LearnScreen({
                 // Skip empty paragraphs
                 if (!paragraph.trim()) return null;
 
+                // Check for part divider marker
+                const partMatch = paragraph.trim().match(/^---PART-(\d)---$/);
+                if (partMatch) {
+                  const partNum = partMatch[1];
+                  return (
+                    <div key={idx} className="flex items-center gap-4 my-8 md:my-10">
+                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-indigo-300 to-transparent"></div>
+                      <span className="text-sm font-semibold text-indigo-500 uppercase tracking-wider">
+                        Part {partNum}
+                      </span>
+                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-indigo-300 to-transparent"></div>
+                    </div>
+                  );
+                }
+
                 // Check if this is a header
                 if (paragraph.trim().startsWith('## ')) {
                   const headerText = paragraph.trim().slice(3);
@@ -212,7 +229,7 @@ export default function LearnScreen({
             </div>
           )}
 
-          {/* Keep Reading button - shows when content is loaded and not at max parts */}
+          {/* Deep Dive button - shows when content is loaded and not at max parts */}
           {content && currentPart < 4 && (
             <div className="mt-8 pt-6 border-t border-gray-200">
               <button
@@ -227,18 +244,13 @@ export default function LearnScreen({
                   </>
                 ) : (
                   <>
-                    <span>📖 Keep Reading</span>
+                    <span>🤿 Deep Dive</span>
                     <span className="text-sm opacity-80">
                       (Part {currentPart + 1} of 4)
                     </span>
                   </>
                 )}
               </button>
-              <p className="text-center text-sm text-gray-500 mt-2">
-                {currentPart === 1 && 'Next: The Details — examples, quotes, numbers'}
-                {currentPart === 2 && 'Next: The Deeper Story — controversies, misconceptions'}
-                {currentPart === 3 && 'Next: The Connections — influence, modern relevance'}
-              </p>
             </div>
           )}
 
