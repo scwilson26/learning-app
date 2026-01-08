@@ -5,6 +5,7 @@ import LearnScreen from './components/LearnScreen'
 import ReviewScreen from './components/ReviewScreen'
 import CardLibrary from './components/CardLibrary'
 import LoadingFacts from './components/LoadingFacts'
+import CategoryFilter, { getSavedCategories, saveCategories } from './components/CategoryFilter'
 
 function App() {
   const [screen, setScreen] = useState('home')
@@ -22,6 +23,7 @@ function App() {
   const [currentJourneyId, setCurrentJourneyId] = useState(null)
   const [currentPart, setCurrentPart] = useState(1)
   const [loadingContinuation, setLoadingContinuation] = useState(false)
+  const [selectedCategories, setSelectedCategories] = useState(() => getSavedCategories())
 
   // Restore saved state from localStorage on mount (fixes mobile Safari)
   useEffect(() => {
@@ -97,36 +99,35 @@ function App() {
       setLoading(true)
       setError(null)
       setProgress({ message: 'Crafting your story...' })
-      const startTime = Date.now()
 
       try {
-        // Step 1: Get hook AND start minimum timer in parallel
-        const minDisplayTime = 5000 // 2 facts at ~2.5 seconds each
-        const [hookResult] = await Promise.all([
-          generateArticleHook(topic),
-          new Promise(resolve => setTimeout(resolve, minDisplayTime))
-        ])
-        const { hook } = hookResult
+        // Get hook first (fast with Haiku)
+        const { hook } = await generateArticleHook(topic)
 
-        // Step 2: Show hook immediately, start body loading
-        const partialData = { topic, hook, content: null, hyperlinks: [], suggestions: { related: [], tangents: [] } }
+        // Show hook immediately and switch to learn screen
+        const partialData = { topic, hook, content: '', hyperlinks: [], suggestions: { related: [], tangents: [] } }
         setLearnData(partialData)
         setBreadcrumbs([partialData])
         setCurrentIndex(0)
         setCurrentPart(1)
         setScreen('learn')
-        setProgress({ message: 'Loading more...' })
+        setProgress(null)
 
-        // Step 3: Get body (already started conceptually, now we await it)
-        const { content, hyperlinks, suggestions } = await generateArticleBody(topic, hook)
-        const fullData = { topic, hook, content, hyperlinks, suggestions }
+        // Stream body content - updates appear in real-time
+        let currentHook = hook
+        const { content, hyperlinks, suggestions } = await generateArticleBody(topic, null, (streamedContent) => {
+          // Update content as it streams in
+          setLearnData(prev => ({ ...prev, content: streamedContent }))
+        }, selectedCategories)
+
+        // Final update with suggestions
+        const fullData = { topic, hook: currentHook, content, hyperlinks, suggestions }
         setLearnData(fullData)
         setBreadcrumbs([fullData])
 
         // Track stats (new search = new chain)
         const stats = recordArticleRead(topic, false)
         setTotalTopics(stats.totalArticlesRead)
-        setProgress(null)
       } catch (err) {
         setError(err.message)
         setProgress(null)
@@ -140,42 +141,41 @@ function App() {
     setLoading(true)
     setError(null)
     setProgress({ message: 'Finding something fascinating...' })
-    const startTime = Date.now()
 
     try {
       // Track Surprise Me click
       recordSurpriseMeClick()
 
-      // Step 1: Generate topic AND start minimum timer in parallel
-      const minDisplayTime = 5000 // 2 facts at ~2.5 seconds each
-      const [randomTopic] = await Promise.all([
-        generateSurpriseTopic(),
-        new Promise(resolve => setTimeout(resolve, minDisplayTime))
-      ])
+      // Step 1: Generate topic ASAP (filtered by selected categories)
+      const randomTopic = await generateSurpriseTopic(selectedCategories)
 
-      // Step 2: Get hook (facts already shown for 5s, so show hook ASAP)
+      // Step 2: Get hook (fast with Haiku)
       setProgress({ message: 'Crafting your story...' })
       const { hook } = await generateArticleHook(randomTopic)
 
-      // Step 3: Show hook immediately, start body loading
-      const partialData = { topic: randomTopic, hook, content: null, hyperlinks: [], suggestions: { related: [], tangents: [] } }
+      // Show hook immediately and switch to learn screen
+      const partialData = { topic: randomTopic, hook, content: '', hyperlinks: [], suggestions: { related: [], tangents: [] } }
       setLearnData(partialData)
       setBreadcrumbs([partialData])
       setCurrentIndex(0)
       setCurrentPart(1)
       setScreen('learn')
-      setProgress({ message: 'Loading more...' })
+      setProgress(null)
 
-      // Step 4: Get body in background while user reads hook
-      const { content, hyperlinks, suggestions } = await generateArticleBody(randomTopic, hook)
-      const fullData = { topic: randomTopic, hook, content, hyperlinks, suggestions }
+      // Stream body content - updates appear in real-time
+      let currentHook = hook
+      const { content, hyperlinks, suggestions } = await generateArticleBody(randomTopic, null, (streamedContent) => {
+        setLearnData(prev => ({ ...prev, content: streamedContent }))
+      }, selectedCategories)
+
+      // Final update with suggestions
+      const fullData = { topic: randomTopic, hook: currentHook, content, hyperlinks, suggestions }
       setLearnData(fullData)
       setBreadcrumbs([fullData])
 
       // Track stats (Surprise Me = new chain)
       const stats = recordArticleRead(randomTopic, false)
       setTotalTopics(stats.totalArticlesRead)
-      setProgress(null)
     } catch (err) {
       setError(err.message)
       setProgress(null)
@@ -206,20 +206,25 @@ function App() {
     setProgress({ message: 'Crafting your story...' })
 
     try {
-      // Step 1: Get hook quickly and show it (pass Quick Card context if available)
+      // Get hook first (fast with Haiku)
       const { hook } = await generateArticleHook(term, quickCardText)
-      const partialData = { topic: term, hook, content: null, hyperlinks: [], suggestions: { related: [], tangents: [] } }
+      const partialData = { topic: term, hook, content: '', hyperlinks: [], suggestions: { related: [], tangents: [] } }
       setLearnData(partialData)
       // If we're in the middle of history, branch from current point
       setBreadcrumbs(prev => [...prev.slice(0, currentIndex + 1), partialData])
       setCurrentIndex(prev => prev + 1)
       setCurrentPart(1) // Reset to part 1 for new topic
-      setProgress({ message: 'Loading more...' })
+      setProgress(null)
       window.scrollTo(0, 0)
 
-      // Step 2: Get body in background while user reads hook (pass Quick Card context)
-      const { content, hyperlinks, suggestions } = await generateArticleBody(term, hook, quickCardText)
-      const fullData = { topic: term, hook, content, hyperlinks, suggestions }
+      // Stream body content - updates appear in real-time
+      let currentHook = hook
+      const { content, hyperlinks, suggestions } = await generateArticleBody(term, quickCardText, (streamedContent) => {
+        setLearnData(prev => ({ ...prev, content: streamedContent }))
+      }, selectedCategories)
+
+      // Final update with suggestions
+      const fullData = { topic: term, hook: currentHook, content, hyperlinks, suggestions }
       setLearnData(fullData)
       // Update breadcrumbs with full data
       setBreadcrumbs(prev => {
@@ -231,7 +236,6 @@ function App() {
       // Track stats (going deeper = continuing chain)
       const stats = recordArticleRead(term, true)
       setTotalTopics(stats.totalArticlesRead)
-      setProgress(null)
     } catch (err) {
       setError(err.message)
       setProgress(null)
@@ -249,14 +253,25 @@ function App() {
       // Build the full existing content (hook + body)
       const existingContent = `${learnData.hook}\n\n${learnData.content}`
 
+      // Store the base content before streaming starts
+      const baseContent = learnData.content
+      const partDivider = `\n\n---PART-${nextPart}---\n\n`
+
       const { content: newContent, hyperlinks: newHyperlinks } = await generateArticleContinuation(
         learnData.topic,
         existingContent,
-        nextPart
+        nextPart,
+        // Streaming callback - update content as it comes in
+        (streamedContent) => {
+          setLearnData(prev => ({
+            ...prev,
+            content: baseContent + partDivider + streamedContent
+          }))
+        }
       )
 
-      // Append new content with a part divider marker
-      const updatedContent = `${learnData.content}\n\n---PART-${nextPart}---\n\n${newContent}`
+      // Final update with complete content and hyperlinks
+      const updatedContent = baseContent + partDivider + newContent
       const updatedHyperlinks = [...(learnData.hyperlinks || []), ...newHyperlinks]
 
       const updatedData = {
@@ -311,6 +326,11 @@ function App() {
     setScreen('learn')
   }
 
+  const handleCategoriesChange = (newCategories) => {
+    setSelectedCategories(newCategories)
+    saveCategories(newCategories)
+  }
+
   // Show Learn screen if we're on it
   if (screen === 'learn' && learnData) {
     return (
@@ -330,6 +350,7 @@ function App() {
         loading={loading}
         progress={progress}
         loadingContinuation={loadingContinuation}
+        selectedCategories={selectedCategories}
       />
     )
   }
@@ -381,6 +402,16 @@ function App() {
             </button>
           )}
         </div>
+
+        {/* Category Filter - show above search when not loading */}
+        {!loading && (
+          <div className="mb-6">
+            <CategoryFilter
+              selectedCategories={selectedCategories}
+              onCategoriesChange={handleCategoriesChange}
+            />
+          </div>
+        )}
 
         {/* Hide search form when loading */}
         {!loading && (

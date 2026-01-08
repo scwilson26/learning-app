@@ -46,7 +46,7 @@ IMPORTANT: Cover the FULL BREADTH of "${topic}" - not just the example from the 
     }
 
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-3-5-haiku-20241022',  // Haiku for faster hook generation
       max_tokens: 200,
       messages: [{ role: 'user', content: prompt }]
     });
@@ -59,17 +59,18 @@ IMPORTANT: Cover the FULL BREADTH of "${topic}" - not just the example from the 
 }
 
 /**
- * Generate the body of an article (after hook is already shown)
+ * Generate the body of an article with streaming support
  * @param {string} topic - The topic to explore
- * @param {string} hook - The hook that was already generated
  * @param {string} quickCardText - Optional Quick Card text that prompted this article
+ * @param {Function} onChunk - Callback for streaming chunks (receives accumulated text)
+ * @param {string[]} categoryIds - Optional array of category IDs to constrain suggestions
  * @returns {Promise<{content: string, hyperlinks: Array<string>, suggestions: Object}>}
  */
-export async function generateArticleBody(topic, hook, quickCardText = null) {
+export async function generateArticleBody(topic, quickCardText = null, onChunk = null, categoryIds = null) {
   try {
-    let prompt = `Continue writing a SHORT article about "${topic}" after this opening hook:
+    let prompt = `Write the BODY of a SHORT article about "${topic}".
 
-"${hook}"
+NOTE: A separate hook/opening has already been written. Write ONLY the body content that comes AFTER the hook.
 
 BODY (6-8 VERY SHORT paragraphs):
 Write like an AUDIOBOOK NARRATOR - engaging, conversational, easy to read aloud.
@@ -175,13 +176,31 @@ CRITICAL - COVER THE FULL TOPIC:
 - Assume they know the Quick Card fact. Start with something NEW that broadens their view.`;
     }
 
-    const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1800,
-      messages: [{ role: 'user', content: prompt }]
-    });
+    let content = '';
 
-    let content = message.content[0].text;
+    // Use streaming if onChunk callback is provided
+    if (onChunk) {
+      const stream = await anthropic.messages.stream({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1800,
+        messages: [{ role: 'user', content: prompt }]
+      });
+
+      for await (const event of stream) {
+        if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+          content += event.delta.text;
+          onChunk(content);
+        }
+      }
+    } else {
+      // Non-streaming fallback
+      const message = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1800,
+        messages: [{ role: 'user', content: prompt }]
+      });
+      content = message.content[0].text;
+    }
 
     // Filter out generic/ambiguous hyperlinks
     const genericPatterns = [
@@ -217,38 +236,56 @@ CRITICAL - COVER THE FULL TOPIC:
     const hyperlinkMatches = content.match(/\[\[([^\]]+)\]\]/g) || [];
     const hyperlinks = [...new Set(hyperlinkMatches.map(match => match.slice(2, -2)))];
 
+    // Build category constraint for suggestions if categories are specified
+    let categoryConstraint = '';
+    if (categoryIds && categoryIds.length > 0 && categoryIds.length < Object.keys(TOPIC_CATEGORIES).length) {
+      const categoryNames = categoryIds
+        .filter(id => TOPIC_CATEGORIES[id])
+        .map(id => TOPIC_CATEGORIES[id].name);
+      categoryConstraint = `
+CATEGORY CONSTRAINT - CRITICAL:
+The user wants to stay within these topics: ${categoryNames.join(', ')}
+ALL suggestions MUST fit within these categories. Do NOT suggest topics outside these areas.
+`;
+    }
+
     // Generate suggestions - 6 rabbit hole options
-    const suggestionsPrompt = `Based on the article about "${topic}", suggest 6 SPECIFIC rabbit holes.
+    const suggestionsPrompt = `Based on the article about "${topic}", suggest 6 rabbit holes.
+${categoryConstraint}
+MIX ACCESSIBILITY WITH DEPTH:
+You need TWO types of suggestions:
 
-THE RABBIT HOLE TEST:
-Each suggestion must be a SPECIFIC thing with a STORY behind it.
-Ask yourself: "Would clicking this reveal a surprising story?"
+TYPE 1 - "CROWD PLEASERS" (first 3):
+Famous topics a curious teenager would recognize. Think "dinner party conversation" topics.
+- Major historical events, famous people, well-known places
+- Things people have HEARD of but don't know the full story
 
-❌ BAD (too abstract/obvious):
-- "Failure Rates" (boring concept)
-- "Venture Capital" (too obvious if reading about startups)
-- "Rejection Psychology" (abstract, no story)
-- "Medieval Weapons" (generic category)
+TYPE 2 - "DEEP CUTS" (last 3):
+Specific, fascinating things that reward the curious.
+- Lesser-known but story-worthy specifics from the article
+- The kind of thing that makes someone say "wait, what's THAT?"
 
-✅ GOOD (specific + story-worthy):
-- "Theranos" (specific company with wild story)
-- "PayPal Mafia" (specific group, unexpected connections)
-- "The Traitorous Eight" (specific event with drama)
-- "Hattori Hanzo" (specific person with legend)
+❌ BAD suggestions:
+- Too obscure: "Karahan Tepe", "Antikythera Mechanism" (nobody knows these)
+- Too generic: "Ancient History", "Science", "Technology" (boring)
+- Too abstract: "Human Psychology", "Economic Systems" (no story)
+
+✅ GOOD suggestions:
+- Crowd pleasers: "Julius Caesar", "Ancient Egypt", "The Colosseum"
+- Deep cuts: "Roman Concrete", "Praetorian Guard", "Hadrian's Wall"
 
 RULES:
-1. NAMED THINGS ONLY - specific people, companies, events, places, inventions
-2. BUILT-IN INTRIGUE - the name itself should hint at a story
-3. 1-3 words max - keep them SHORT
-4. Mix of: 3 that continue the story + 3 unexpected sideways jumps
+1. 1-4 words max per suggestion
+2. First 3 = things most people have heard of
+3. Last 3 = specific gems from the article that reward curiosity
 
 Article context:
 ${content.substring(0, 500)}
 
 Return ONLY a JSON object (no markdown):
 {
-  "related": ["Specific Thing 1", "Specific Thing 2", "Specific Thing 3"],
-  "tangents": ["Unexpected Thing 4", "Unexpected Thing 5", "Unexpected Thing 6"]
+  "related": ["Famous Topic 1", "Famous Topic 2", "Famous Topic 3"],
+  "tangents": ["Specific Gem 1", "Specific Gem 2", "Specific Gem 3"]
 }`;
 
     const suggestionsMessage = await anthropic.messages.create({
@@ -672,68 +709,182 @@ function addRecentTopic(topic) {
 }
 
 /**
- * Generate a random surprising topic
+ * Wikipedia Vital Articles Level 4 categories
+ * These contain ~10,000 of the most important/notable articles - the "crowd pleasers"
+ */
+export const TOPIC_CATEGORIES = {
+  arts: {
+    name: 'Arts',
+    emoji: '🎨',
+    page: 'Wikipedia:Vital_articles/Level/4/Arts',
+  },
+  biology: {
+    name: 'Biology & Health',
+    emoji: '🧬',
+    page: 'Wikipedia:Vital_articles/Level/4/Biology_and_health_sciences',
+  },
+  everyday: {
+    name: 'Everyday Life',
+    emoji: '☕',
+    page: 'Wikipedia:Vital_articles/Level/4/Everyday_life',
+  },
+  geography: {
+    name: 'Geography',
+    emoji: '🌍',
+    page: 'Wikipedia:Vital_articles/Level/4/Geography',
+  },
+  history: {
+    name: 'History',
+    emoji: '📜',
+    page: 'Wikipedia:Vital_articles/Level/4/History',
+  },
+  mathematics: {
+    name: 'Mathematics',
+    emoji: '🔢',
+    page: 'Wikipedia:Vital_articles/Level/4/Mathematics',
+  },
+  people: {
+    name: 'People',
+    emoji: '👤',
+    page: 'Wikipedia:Vital_articles/Level/4/People',
+  },
+  philosophy: {
+    name: 'Philosophy & Religion',
+    emoji: '🧘',
+    page: 'Wikipedia:Vital_articles/Level/4/Philosophy_and_religion',
+  },
+  physics: {
+    name: 'Physical Sciences',
+    emoji: '⚛️',
+    page: 'Wikipedia:Vital_articles/Level/4/Physical_sciences',
+  },
+  society: {
+    name: 'Society',
+    emoji: '🏛️',
+    page: 'Wikipedia:Vital_articles/Level/4/Society_and_social_sciences',
+  },
+  technology: {
+    name: 'Technology',
+    emoji: '💻',
+    page: 'Wikipedia:Vital_articles/Level/4/Technology',
+  },
+};
+
+// For backwards compatibility
+const VITAL_ARTICLE_PAGES = Object.values(TOPIC_CATEGORIES).map(c => c.page);
+
+/**
+ * Fetch random articles from Wikipedia's Vital Articles Level 4 list
+ * These are ~10,000 of the most important articles - the "crowd pleasers"
+ * @param {number} count - Number of random titles to fetch
+ * @param {string[]} categoryIds - Optional array of category IDs to filter by (e.g., ['history', 'people'])
+ * @returns {Promise<string[]>} Array of random Wikipedia article titles
+ */
+async function fetchRandomVitalArticles(count = 30, categoryIds = null) {
+  try {
+    // Get pages to fetch from (filtered by categories if specified)
+    let pagesToUse = VITAL_ARTICLE_PAGES;
+    if (categoryIds && categoryIds.length > 0) {
+      pagesToUse = categoryIds
+        .filter(id => TOPIC_CATEGORIES[id])
+        .map(id => TOPIC_CATEGORIES[id].page);
+    }
+
+    if (pagesToUse.length === 0) {
+      pagesToUse = VITAL_ARTICLE_PAGES; // Fallback to all if no valid categories
+    }
+
+    // Pick a random sub-page to fetch from
+    const randomPage = pagesToUse[Math.floor(Math.random() * pagesToUse.length)];
+
+    // Fetch article links from that page
+    const response = await fetch(
+      `https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(randomPage)}&prop=links&format=json&origin=*`
+    );
+    const data = await response.json();
+
+    if (!data.parse?.links) {
+      throw new Error('Failed to parse Wikipedia response');
+    }
+
+    // Filter to only article namespace (ns=0) and extract titles
+    const articles = data.parse.links
+      .filter(link => link.ns === 0)
+      .map(link => link['*']);
+
+    if (articles.length === 0) {
+      throw new Error('No articles found');
+    }
+
+    // Shuffle and pick random subset
+    const shuffled = articles.sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, count);
+  } catch (error) {
+    console.error('Error fetching vital articles:', error);
+    // Fallback to random Wikipedia if vital articles fail
+    return fetchRandomWikipediaTitles(count);
+  }
+}
+
+/**
+ * Fallback: Fetch random Wikipedia article titles (pure random)
+ * @param {number} count - Number of random titles to fetch
+ * @returns {Promise<string[]>} Array of random Wikipedia article titles
+ */
+async function fetchRandomWikipediaTitles(count = 10) {
+  // Fetch multiple random articles in parallel
+  const fetches = Array(count).fill(null).map(() =>
+    fetch('https://en.wikipedia.org/api/rest_v1/page/random/summary')
+      .then(res => res.json())
+      .then(data => data.title)
+      .catch(() => null)
+  );
+
+  const results = await Promise.all(fetches);
+  return results.filter(title => title !== null);
+}
+
+/**
+ * Generate a random surprising topic using Wikipedia + Claude hybrid approach
+ * Fetches random Wikipedia titles and has Claude pick the most fascinating one
+ * @param {string[]} categoryIds - Optional array of category IDs to filter by
  * @returns {Promise<string>} A fascinating topic to explore
  */
-export async function generateSurpriseTopic() {
+export async function generateSurpriseTopic(categoryIds = null) {
   try {
-    // Pick a random domain to force variety
-    const domains = [
-      // Wide variety of domains - from academic to pop culture to weird niches
-      'Ancient Civilizations', 'Modern Inventions', 'Unsolved Mysteries', 'Failed Products',
-      'Weird Laws', 'Urban Legends', 'Conspiracy Theories', 'Cults', 'Scams & Heists',
-      'Disasters', 'Medical Oddities', 'Cryptids & Myths', 'Lost Cities', 'Abandoned Places',
-      'Extreme Sports', 'Competitive Eating', 'Board Games', 'Video Games', 'Toys',
-      'Fast Food', 'Street Food', 'Fermented Foods', 'Banned Foods', 'Food Scandals',
-      'One-Hit Wonders', 'Musical Instruments', 'Dance Styles', 'Subcultures', 'Fandoms',
-      'Spies & Espionage', 'Pirates', 'Outlaws', 'Heists',
-      'Space Exploration', 'Deep Sea', 'Caves', 'Deserts', 'Islands',
-      'Bridges', 'Skyscrapers', 'Bunkers', 'Prisons', 'Theme Parks',
-      'Weapons', 'Poisons', 'Microbes', 'Symbiosis', 'Bioluminescence',
-      'Optical Illusions', 'Magic Tricks', 'Puzzles', 'Riddles', 'Paradoxes',
-      'Slang', 'Dead Languages', 'Symbols', 'Flags', 'Currencies',
-      'Superstitions', 'Rituals', 'Taboos', 'Etiquette', 'Traditions',
-      'Internet Culture', 'Memes', 'Viral Moments', 'Hoaxes', 'Pranks',
-      'Movie Props', 'Special Effects', 'Stunts', 'Voice Acting', 'Animation',
-      'Sports Scandals', 'Doping', 'Mascots', 'Rivalries', 'Underdog Stories',
-      'Royalty', 'Dictators', 'Revolutionaries', 'Inventors', 'Explorers',
-      'Fossils', 'Extinction Events', 'Ice Ages', 'Geology', 'Meteorology',
-      'Sleep', 'Dreams', 'Memory', 'Phobias', 'Addictions',
-      'Tattoos', 'Body Modification', 'Fashion History', 'Makeup', 'Perfume',
-      'Cocktails', 'Coffee', 'Tea', 'Beer', 'Wine',
-      'Candy', 'Chocolate', 'Ice Cream', 'Cheese', 'Bread',
-      'Cars', 'Motorcycles', 'Trains', 'Ships', 'Aircraft',
-      'Robots', 'AI', 'Hacking', 'Encryption', 'Surveillance',
-      'Architecture', 'Furniture', 'Typography', 'Color Theory', 'Maps',
-      'Clocks', 'Calendars', 'Measurement', 'Numbers', 'Zero',
-      'Twins', 'Feral Children', 'Prodigies', 'Imposters', 'Amnesia',
-      'Cemeteries', 'Mummies', 'Relics', 'Tombs', 'Afterlife Beliefs',
-      'Circuses', 'Sideshows', 'Carnivals', 'Street Performers', 'Vaudeville',
-      'Duels', 'Feuds', 'Vendettas', 'Honor Codes', 'Secret Societies'
-    ];
-    const randomDomain = domains[Math.floor(Math.random() * domains.length)];
+    // Fetch 30 random titles from Wikipedia's Vital Articles (curated notable articles)
+    const wikipediaTitles = await fetchRandomVitalArticles(30, categoryIds);
 
-    // Get recent topics to avoid - show more to Claude so it doesn't repeat
+    if (wikipediaTitles.length === 0) {
+      throw new Error('Failed to fetch Wikipedia titles');
+    }
+
+    // Get recent topics to avoid
     const recentTopics = getRecentTopics();
     const avoidList = recentTopics.length > 0
-      ? `\n\nDO NOT suggest any of these (already shown recently):\n${recentTopics.slice(0, 40).join(', ')}`
+      ? `\n\nDO NOT pick any of these (already shown recently):\n${recentTopics.slice(0, 40).join(', ')}`
       : '';
 
-    const prompt = `Generate ONE fascinating topic related to: ${randomDomain}
+    const prompt = `Here are ${wikipediaTitles.length} random Wikipedia article titles:
+
+${wikipediaTitles.map((t, i) => `${i + 1}. ${t}`).join('\n')}
+
+Pick the ONE that would make the most fascinating, surprising article to read about. Consider:
+- Which has the most "wait, what?!" factor
+- Which would make someone curious to learn more
+- Which is unusual or unexpected
 
 RULES:
-1. Pick something OBSCURE and surprising - avoid the famous/obvious examples
-2. Make it something that makes people go "wait, what?!"
-3. Keep it short: 1-3 words max
-4. NO generic topics like "Lightning", "Earthquakes", "Volcanoes" - pick SPECIFIC events or phenomena
-5. Avoid "zombie" anything, "mind control", and other overused "fascinating fact" tropes${avoidList}
+1. Pick from the list above - don't make up your own topic
+2. Return ONLY the exact title as written (you can shorten overly long titles)
+3. Skip anything boring, generic, or too technical${avoidList}
 
-Return ONLY the topic name, nothing else.`;
+If none are good, pick the least boring one. Return ONLY the topic name.`;
 
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 50,
-      temperature: 1.0,
+      max_tokens: 100,
+      temperature: 0.7,
       messages: [{ role: 'user', content: prompt }]
     });
 
@@ -750,13 +901,14 @@ Return ONLY the topic name, nothing else.`;
 }
 
 /**
- * Generate article continuation (Part 2, 3, or 4)
+ * Generate article continuation (Part 2, 3, or 4) with streaming support
  * @param {string} topic - The topic being explored
  * @param {string} existingContent - All content generated so far (hook + body + any continuations)
  * @param {number} partNumber - Which part we're generating (2, 3, or 4)
+ * @param {Function} onChunk - Callback for streaming chunks (receives accumulated text)
  * @returns {Promise<{content: string, hyperlinks: Array<string>}>}
  */
-export async function generateArticleContinuation(topic, existingContent, partNumber) {
+export async function generateArticleContinuation(topic, existingContent, partNumber, onChunk = null) {
   try {
     // Build adaptive prompt based on topic type
     const prompt = `Continue writing about "${topic}" - this is Part ${partNumber} of 4.
@@ -843,13 +995,31 @@ BANNED WORDS/PHRASES:
 
 Write Part ${partNumber} now:`;
 
-    const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1200,
-      messages: [{ role: 'user', content: prompt }]
-    });
+    let content = '';
 
-    let content = message.content[0].text;
+    // Use streaming if onChunk callback is provided
+    if (onChunk) {
+      const stream = await anthropic.messages.stream({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1200,
+        messages: [{ role: 'user', content: prompt }]
+      });
+
+      for await (const event of stream) {
+        if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+          content += event.delta.text;
+          onChunk(content);
+        }
+      }
+    } else {
+      // Non-streaming fallback
+      const message = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1200,
+        messages: [{ role: 'user', content: prompt }]
+      });
+      content = message.content[0].text;
+    }
 
     // Filter out generic/ambiguous hyperlinks (same as in generateArticleBody)
     const genericPatterns = [

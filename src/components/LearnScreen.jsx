@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { generateQuickCard } from '../services/claude'
 import { recordHyperlinkClick, recordQuickCardView, recordSurpriseMeClick } from '../services/stats'
+import LoadingFacts from './LoadingFacts'
 
 // Helper function to render text with [[hyperlinks]]
 function renderContent(text, onLinkClick) {
@@ -75,10 +76,17 @@ export default function LearnScreen({
   onKeepReading,
   loading,
   progress,
-  loadingContinuation
+  loadingContinuation,
+  selectedCategories = null
 }) {
   const [quickCard, setQuickCard] = useState(null) // { term, text, hyperlinks }
   const [loadingCard, setLoadingCard] = useState(false)
+  const [loadingSurprise, setLoadingSurprise] = useState(false)
+
+  // Reset loadingSurprise when topic changes (new article has loaded)
+  useEffect(() => {
+    setLoadingSurprise(false)
+  }, [topic])
 
   const handleLinkClick = async (term) => {
     recordHyperlinkClick()
@@ -124,9 +132,13 @@ export default function LearnScreen({
 
   const handleSurpriseMe = async () => {
     recordSurpriseMeClick()
+    setLoadingSurprise(true)
     // Import the function at runtime
     const { generateSurpriseTopic } = await import('../services/claude')
-    const randomTopic = await generateSurpriseTopic()
+    // Pass selected categories to filter surprise topics
+    const randomTopic = await generateSurpriseTopic(selectedCategories)
+    // Don't reset loadingSurprise - the component will re-render with new topic
+    // and the overlay will naturally disappear when the hook shows
     onGoDeeper(randomTopic)
   }
 
@@ -184,7 +196,7 @@ export default function LearnScreen({
           </p>
 
           {/* Body content - render paragraphs (or loading state) */}
-          {content ? (
+          {content !== null && content !== undefined ? (
             <div className="space-y-3 md:space-y-4 text-gray-800 leading-relaxed text-base md:text-lg">
               {content.split('\n\n').map((paragraph, idx) => {
                 // Skip empty paragraphs
@@ -403,6 +415,19 @@ export default function LearnScreen({
         <div className="fixed bottom-4 right-4 bg-white rounded-lg p-3 shadow-lg z-50 flex items-center gap-2">
           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600"></div>
           <span className="text-sm text-gray-600">{progress.message}</span>
+        </div>
+      )}
+
+      {/* Full-screen loading overlay for Surprise Me */}
+      {/* Shows until topic changes (useEffect resets loadingSurprise) */}
+      {loadingSurprise && (
+        <div className="fixed inset-0 bg-gradient-to-br from-blue-50 to-indigo-100 z-[100000] flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">
+              Finding something fascinating...
+            </h2>
+            <LoadingFacts />
+          </div>
         </div>
       )}
 
