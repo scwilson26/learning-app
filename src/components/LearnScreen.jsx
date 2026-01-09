@@ -5,6 +5,8 @@ import LoadingFacts from './LoadingFacts'
 
 // Helper function to render text with [[hyperlinks]], **bold**, and bullet points
 function renderContent(text, onLinkClick) {
+  if (!text) return null;
+
   // Split by both hyperlinks and bold markers
   const parts = text.split(/(\[\[.*?\]\]|\*\*.*?\*\*)/g);
 
@@ -269,7 +271,7 @@ export default function LearnScreen({
 
                     return (
                       <div key={idx} className="bg-white rounded-xl shadow-lg p-6 md:p-8 mb-4 min-h-[70vh] flex flex-col justify-center">
-                        <div className="text-sm font-medium text-gray-500 mb-4">{topic} - {cardTitle}</div>
+                        <div className="text-base md:text-lg font-semibold text-indigo-600 mb-6">{topic} - {cardTitle}</div>
                         <div className="text-base md:text-lg text-gray-800 leading-relaxed space-y-3">
                           {contentLines.map((line, lineIdx) => {
                             // Check if it's a bullet point
