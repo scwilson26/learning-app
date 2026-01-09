@@ -44,7 +44,7 @@ export default function CardCarousel({ content, topic, onLinkClick }) {
   const cardBlocks = blocks.filter(b => b.type === 'card');
 
   return (
-    <div className="snap-y snap-mandatory">
+    <div className="snap-y snap-mandatory overflow-y-scroll h-screen hide-scrollbar -mx-4">
       {cardBlocks.map((block, idx) => {
         const cardText = block.content.join('\n');
         const cardMatch = cardText.trim().match(/^CARD:\s*(.+?)\n([\s\S]+)$/);
