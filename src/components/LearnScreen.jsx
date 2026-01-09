@@ -3,14 +3,22 @@ import { generateQuickCard } from '../services/claude'
 import { recordHyperlinkClick, recordQuickCardView, recordSurpriseMeClick } from '../services/stats'
 import LoadingFacts from './LoadingFacts'
 
-// Helper function to render text with [[hyperlinks]]
+// Helper function to render text with [[hyperlinks]], **bold**, and bullet points
 function renderContent(text, onLinkClick) {
-  // Strip ** markdown (we handle bold via CSS instead)
-  text = text.replace(/\*\*/g, '');
-
-  const parts = text.split(/(\[\[.*?\]\])/g);
+  // Split by both hyperlinks and bold markers
+  const parts = text.split(/(\[\[.*?\]\]|\*\*.*?\*\*)/g);
 
   return parts.map((part, i) => {
+    // Check if this is bold text
+    if (part.startsWith('**') && part.endsWith('**')) {
+      const boldText = part.slice(2, -2);
+      return (
+        <strong key={i} className="font-bold text-gray-900">
+          {boldText}
+        </strong>
+      );
+    }
+
     // Check if this is a hyperlink
     if (part.startsWith('[[') && part.endsWith(']]')) {
       let term = part.slice(2, -2);
@@ -219,12 +227,33 @@ export default function LearnScreen({
                 if (cardMatch) {
                   const cardTitle = cardMatch[1].trim();
                   const cardContent = cardMatch[2].trim();
+
+                  // Split content by newlines to handle bullet points
+                  const contentLines = cardContent.split('\n').filter(line => line.trim());
+
                   return (
                     <div key={idx} className="bg-white rounded-xl shadow-lg p-6 md:p-8 mb-4 min-h-[70vh] flex flex-col justify-center">
                       <div className="text-sm font-medium text-gray-500 mb-4">{topic} - {cardTitle}</div>
-                      <p className="text-base md:text-lg text-gray-800 leading-relaxed">
-                        {renderContent(cardContent, handleLinkClick)}
-                      </p>
+                      <div className="text-base md:text-lg text-gray-800 leading-relaxed space-y-3">
+                        {contentLines.map((line, lineIdx) => {
+                          // Check if it's a bullet point
+                          if (line.trim().startsWith('- ')) {
+                            const bulletText = line.trim().slice(2);
+                            return (
+                              <div key={lineIdx} className="flex gap-2">
+                                <span className="text-indigo-600 font-bold">•</span>
+                                <span>{renderContent(bulletText, handleLinkClick)}</span>
+                              </div>
+                            );
+                          }
+                          // Regular paragraph line
+                          return (
+                            <p key={lineIdx}>
+                              {renderContent(line, handleLinkClick)}
+                            </p>
+                          );
+                        })}
+                      </div>
                     </div>
                   );
                 }

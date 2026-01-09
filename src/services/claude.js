@@ -119,12 +119,12 @@ The guy was **Pharaoh Djoser's right-hand man**. He was an architect, doctor, pr
 CARD: Still Famous Today
 Imhotep mastered everything. He built pyramids, healed people, advised kings. Then he became a god after he died. Egyptians worshipped him for 2,000 years as the god of medicine and wisdom.
 
-Rules:
-- First card: Hook in bold + 3-4 sentences explaining basics
-- Other cards: 4-5 sentences each
-- Use **bold** for key phrases
-- Use bullet points (- item) when listing things
-- Make it scannable and easy to read
+Rules - FOLLOW THESE:
+- First card: Hook in **bold** + 5-6 sentences explaining basics
+- Other cards: 6-7 sentences each (make them FULL and substantial)
+- Use **bold** for 3-4 key phrases per card (numbers, names, important facts)
+- Use bullet points (- item) whenever you list things (dates, examples, features, steps)
+- Every card should feel substantial - fill the screen with good content
 
 WRITING STYLE:
 Write like you're texting a friend. Simple words. Short sentences.
@@ -978,11 +978,11 @@ They did this for years before seeing real battle.
 CARD: Daily Battles
 They fought mock battles against each other. The loser got punished with reduced rations. It kept everyone sharp. Officers watched every move and noted mistakes. Soldiers who messed up got extra duty or worse food.
 
-Rules:
-- Each card: 4-5 sentences
-- Use **bold** for key phrases
-- Use bullet points (- item) when listing things
-- Make it scannable and easy to read
+Rules - FOLLOW THESE:
+- Each card: 6-7 sentences (make them FULL and substantial)
+- Use **bold** for 3-4 key phrases per card (numbers, names, important facts)
+- Use bullet points (- item) whenever you list things (dates, examples, features, steps)
+- Every card should feel substantial - fill the screen with good content
 
 WRITING RULES:
 - Don't repeat what you already said
