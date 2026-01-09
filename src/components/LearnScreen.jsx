@@ -280,8 +280,8 @@ export default function LearnScreen({
                 };
 
                 // Render current card only
-                const currentBlock = cardBlocks[currentCardIndex];
-                if (!currentBlock) return null;
+                const selectedCard = cardBlocks[currentCardIndex];
+                if (!selectedCard) return null;
 
                 return (
                   <div
@@ -289,7 +289,7 @@ export default function LearnScreen({
                     onTouchEnd={handleTouchEnd}
                   >
                     {(() => {
-                      const block = currentBlock;
+                      const block = selectedCard;
                     const cardText = block.content.join('\n');
                     const cardMatch = cardText.trim().match(/^CARD:\s*(.+?)\n([\s\S]+)$/);
                     if (!cardMatch) return null;
