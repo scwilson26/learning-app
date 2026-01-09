@@ -44,28 +44,20 @@ export default function CardCarousel({ content, topic, onLinkClick }) {
   const cardBlocks = blocks.filter(b => b.type === 'card');
 
   return (
-    <div>
-      {/* Snap scroll container - now uses viewport height for smooth page scrolling */}
-      <div
-        className="snap-y snap-proximity hide-scrollbar"
-        style={{
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none',
-        }}
-      >
-        {cardBlocks.map((block, idx) => {
-          const cardText = block.content.join('\n');
-          const cardMatch = cardText.trim().match(/^CARD:\s*(.+?)\n([\s\S]+)$/);
-          if (!cardMatch) return null;
+    <div className="space-y-8">
+      {cardBlocks.map((block, idx) => {
+        const cardText = block.content.join('\n');
+        const cardMatch = cardText.trim().match(/^CARD:\s*(.+?)\n([\s\S]+)$/);
+        if (!cardMatch) return null;
 
-          const cardTitle = cardMatch[1].trim();
-          const cardContent = cardMatch[2].trim();
+        const cardTitle = cardMatch[1].trim();
+        const cardContent = cardMatch[2].trim();
 
-          return (
-            <div
-              key={idx}
-              className="snap-start min-h-[85vh] flex items-center justify-center px-4 py-12"
-            >
+        return (
+          <div
+            key={idx}
+            className="min-h-[70vh] flex items-center justify-center px-4 py-8"
+          >
               <div className="bg-white rounded-xl shadow-lg p-4 md:p-5 w-full max-w-xl max-h-[70vh] overflow-y-auto">
                 <div className="text-center mb-3">
                   <h1 className="text-lg md:text-xl font-bold text-gray-900 mb-2 capitalize">{topic}</h1>
@@ -78,7 +70,6 @@ export default function CardCarousel({ content, topic, onLinkClick }) {
             </div>
           );
         })}
-      </div>
     </div>
   );
 }

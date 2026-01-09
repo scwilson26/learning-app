@@ -4,9 +4,3 @@
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
-
-/* Enable smooth snap scrolling for page */
-html {
-  scroll-snap-type: y proximity;
-  scroll-behavior: smooth;
-}
