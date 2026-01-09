@@ -100,28 +100,25 @@ GOAL: After reading Part 1, the reader should think "OK, I understand WHAT this 
 
 This is an OVERVIEW, not a story. Explain what the topic is. Give them the basics.
 
-STRUCTURE (3-4 short paragraphs):
+FORMAT - CRITICAL:
+You MUST use this exact format for each paragraph:
 
-Each paragraph needs a short card title (2-4 words). Format like this:
+CARD: Ancient Superstar
+Imhotep was ancient Egypt's Leonardo da Vinci - but 2,000 years earlier. He lived around 2600 BC and basically invented being a Renaissance man.
 
-CARD: The Basics
-[Paragraph explaining what it is]
+CARD: Master of Everything
+The guy was Pharaoh Djoser's right-hand man. He was an architect, doctor, priest, and advisor all at once. Most people back then were lucky to master one skill.
 
-CARD: Where They Live
-[Paragraph about location or key fact]
+CARD: Still Famous Today
+Imhotep mastered everything. He built pyramids, healed people, advised kings. Then he became a god after he died.
 
-CARD: Why It Matters
-[Paragraph with interesting detail]
-
-Card titles should be:
-- 2-4 words max
-- Describe what THIS specific paragraph is about
-- Not generic - specific to the angle
+Rules for card titles:
+- Start each paragraph with "CARD: [2-4 word title]"
+- Title describes THAT specific paragraph
+- Be specific: "Ancient Superstar" not "Introduction"
 - Example: "Mama's Boys" not "Social Structure"
 
-First paragraph: What is it? Give a simple explanation.
-Middle paragraphs: Fill in key basics (2-3 facts).
-Last paragraph: One interesting detail that makes them curious.
+Write 3-4 paragraphs total.
 
 WRITING STYLE:
 Write like you're texting a friend. Simple words. Short sentences.
@@ -136,10 +133,6 @@ BANNED:
 
 ❌ BAD: "The ship carried 7 tons of gold."
 ✅ GOOD: "A single gold bar weighs 27 pounds. The ship carried 7 tons - enough to fill a school bus."
-
-SECTION HEADERS:
-Use 1-2 headers that create curiosity (use ## markdown format).
-- Make them intriguing but not clickbait
 
 HYPERLINKS - CRITICAL FORMAT:
 Use EXACTLY [[double brackets]] around hyperlinks. NOT single brackets [term]. ONLY [[term]].
@@ -966,26 +959,23 @@ Part 1 ends: "...only 15,000 left in the wild. What happens when they disappear?
 Part 2 Header: "Why They're Disappearing" ✅ (flows naturally)
 NOT: "How Bonobos Actually Live" ❌ (jarring jump)
 
-WRITING:
-- Write like you're texting a friend
-- Simple words, short sentences
-- 3-4 short paragraphs
-- Each paragraph needs a CARD title (2-4 words)
+FORMAT - CRITICAL:
+You MUST use this exact format for each paragraph:
 
-FORMAT each paragraph like this:
+CARD: Training Regimen
+Roman soldiers trained every single day. They practiced with wooden swords twice as heavy as real ones. This made actual combat feel easy.
 
-CARD: Title Here
-[Paragraph text]
+CARD: Daily Battles
+They fought mock battles against each other. The loser got punished with reduced rations. It kept everyone sharp.
 
-CARD: Another Title
-[Paragraph text]
+Rules for card titles:
+- Start each paragraph with "CARD: [2-4 word title]"
+- Title describes THAT specific paragraph
+- Be specific: "Daily Battles" not "Military Life"
 
-Card titles should be:
-- 2-4 words max
-- Specific to what THIS paragraph covers
-- Example: "Daily Battles" not "Military Life"
+Write 3-4 paragraphs total.
 
-RULES:
+WRITING RULES:
 - Don't repeat what you already said
 - Cover the Part ${partNumber} content from the guide above
 - ✅ Use: "started" "used" "showed"
