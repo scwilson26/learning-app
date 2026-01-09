@@ -334,6 +334,19 @@ export default function LearnScreen({
         </div>
       )}
 
+      {/* Fixed Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+        <div className="max-w-3xl mx-auto px-4 py-3">
+          <button
+            onClick={onBack}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+          >
+            <span>🏠</span>
+            <span>Home</span>
+          </button>
+        </div>
+      </div>
+
     </div>
   )
 }
