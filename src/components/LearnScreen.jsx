@@ -10,6 +10,11 @@ function renderContent(text, onLinkClick) {
   // Split by both hyperlinks and bold markers
   const parts = text.split(/(\[\[.*?\]\]|\*\*.*?\*\*)/g);
 
+  // Debug: log if we find brackets that aren't being split
+  if (text.includes('[[') && parts.length === 1) {
+    console.log('DEBUG: Found [[ but regex didnt split:', text);
+  }
+
   return parts.map((part, i) => {
     // Check if this is bold text
     if (part.startsWith('**') && part.endsWith('**')) {
