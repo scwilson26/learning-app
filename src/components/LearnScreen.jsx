@@ -270,9 +270,9 @@ export default function LearnScreen({
                   const contentLines = cardContent.split('\n').filter(line => line.trim());
 
                     return (
-                      <div key={idx} className="bg-white rounded-xl shadow-lg p-6 md:p-8 mb-4 min-h-[70vh] flex flex-col justify-center">
-                        <div className="text-xl md:text-2xl font-bold text-gray-900 mb-6">{topic} - {cardTitle}</div>
-                        <div className="text-base md:text-lg text-gray-800 leading-relaxed space-y-3">
+                      <div key={idx} className="bg-white rounded-xl shadow-lg p-6 md:p-8 mb-4 min-h-[60vh] flex flex-col justify-center">
+                        <div className="text-lg md:text-xl font-bold text-gray-900 mb-4">{topic} - {cardTitle}</div>
+                        <div className="text-sm md:text-base text-gray-800 leading-relaxed space-y-2">
                           {contentLines.map((line, lineIdx) => {
                             // Check if it's a bullet point
                             if (line.trim().startsWith('- ')) {
