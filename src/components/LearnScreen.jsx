@@ -194,8 +194,9 @@ export default function LearnScreen({
 
           {/* Hook Card */}
           {hook && (
-            <div className="bg-white rounded-xl shadow-md p-5 md:p-6 mb-4">
-              <p className="text-base md:text-lg font-semibold text-gray-900 leading-relaxed">
+            <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 mb-4 min-h-[70vh] flex flex-col justify-center">
+              <div className="text-sm font-medium text-gray-500 mb-4">{topic}</div>
+              <p className="text-lg md:text-xl font-semibold text-gray-900 leading-relaxed">
                 {renderContent(hook, handleLinkClick)}
               </p>
             </div>
@@ -223,7 +224,22 @@ export default function LearnScreen({
                   );
                 }
 
-                // Check if this is a header
+                // Check for CARD format
+                const cardMatch = paragraph.trim().match(/^CARD:\s*(.+?)\n([\s\S]+)$/);
+                if (cardMatch) {
+                  const cardTitle = cardMatch[1].trim();
+                  const cardContent = cardMatch[2].trim();
+                  return (
+                    <div key={idx} className="bg-white rounded-xl shadow-lg p-6 md:p-8 mb-4 min-h-[70vh] flex flex-col justify-center">
+                      <div className="text-sm font-medium text-gray-500 mb-4">{topic} - {cardTitle}</div>
+                      <p className="text-base md:text-lg text-gray-800 leading-relaxed">
+                        {renderContent(cardContent, handleLinkClick)}
+                      </p>
+                    </div>
+                  );
+                }
+
+                // Check if this is a header (old format fallback)
                 if (paragraph.trim().startsWith('## ')) {
                   const headerText = paragraph.trim().slice(3);
                   return (
@@ -235,9 +251,10 @@ export default function LearnScreen({
                   );
                 }
 
-                // Regular paragraph as card
+                // Regular paragraph as card (fallback for old format)
                 return (
-                  <div key={idx} className="bg-white rounded-xl shadow-md p-5 md:p-6">
+                  <div key={idx} className="bg-white rounded-xl shadow-lg p-6 md:p-8 mb-4 min-h-[70vh] flex flex-col justify-center">
+                    <div className="text-sm font-medium text-gray-500 mb-4">{topic}</div>
                     <p className="text-base md:text-lg text-gray-800 leading-relaxed">
                       {renderContent(paragraph, handleLinkClick)}
                     </p>

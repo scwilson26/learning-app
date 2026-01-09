@@ -102,20 +102,26 @@ This is an OVERVIEW, not a story. Explain what the topic is. Give them the basic
 
 STRUCTURE (3-4 short paragraphs):
 
+Each paragraph needs a short card title (2-4 words). Format like this:
+
+CARD: The Basics
+[Paragraph explaining what it is]
+
+CARD: Where They Live
+[Paragraph about location or key fact]
+
+CARD: Why It Matters
+[Paragraph with interesting detail]
+
+Card titles should be:
+- 2-4 words max
+- Describe what THIS specific paragraph is about
+- Not generic - specific to the angle
+- Example: "Mama's Boys" not "Social Structure"
+
 First paragraph: What is it? Give a simple explanation.
-- If it's a person/group: Who were they? What did they do?
-- If it's a place: Where is it? What's there?
-- If it's a thing/concept: What is it? How does it work?
-- If it's an event: What happened? When?
-
-Middle paragraphs: Fill in key basics.
-- Add 2-3 key facts that help them understand it
-- Keep it simple and clear
-- Don't tell stories yet - just explain
-
+Middle paragraphs: Fill in key basics (2-3 facts).
 Last paragraph: One interesting detail that makes them curious.
-- Something that hints there's more to learn
-- Don't ask questions - just state something intriguing
 
 WRITING STYLE:
 Write like you're texting a friend. Simple words. Short sentences.
@@ -964,7 +970,20 @@ WRITING:
 - Write like you're texting a friend
 - Simple words, short sentences
 - 3-4 short paragraphs
-- Start with a header (## format) that bridges from Part 1
+- Each paragraph needs a CARD title (2-4 words)
+
+FORMAT each paragraph like this:
+
+CARD: Title Here
+[Paragraph text]
+
+CARD: Another Title
+[Paragraph text]
+
+Card titles should be:
+- 2-4 words max
+- Specific to what THIS paragraph covers
+- Example: "Daily Battles" not "Military Life"
 
 RULES:
 - Don't repeat what you already said
