@@ -244,11 +244,6 @@ export default function LearnScreen({
 
         {/* Content area - Card Layout */}
         <div className="mb-6">
-          {/* Title Card */}
-          <div className="bg-white rounded-xl shadow-md p-5 md:p-6 mb-4">
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{topic}</h1>
-          </div>
-
           {/* Body content as cards (hook is now part of first card) */}
           {content !== null && content !== undefined ? (
             <div>
@@ -359,8 +354,11 @@ export default function LearnScreen({
                     return (
                       <div>
                         <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 mb-4 min-h-[60vh] flex flex-col justify-center">
-                          <div className="text-lg md:text-xl font-bold text-gray-900 mb-4">{topic} - {cardTitle}</div>
-                          <div className="text-sm md:text-base text-gray-800 leading-relaxed">
+                          <div className="text-center mb-6">
+                            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4 capitalize">{topic}</h1>
+                          </div>
+                          <div className="text-lg md:text-xl font-semibold text-gray-900 mb-4">{cardTitle}</div>
+                          <div className="text-sm md:text-base text-gray-800 leading-relaxed ml-4">
                             {renderContent(cardContent, handleLinkClick)}
                           </div>
                         </div>
