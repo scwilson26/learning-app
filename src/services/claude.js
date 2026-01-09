@@ -101,24 +101,30 @@ GOAL: After reading Part 1, the reader should think "OK, I understand WHAT this 
 This is an OVERVIEW, not a story. Explain what the topic is. Give them the basics.
 
 FORMAT - CRITICAL:
-You MUST use this exact format for each paragraph:
+You MUST use this exact format. Write 2-3 cards total (not including hook).
+
+First card combines the hook + first paragraph:
 
 CARD: Ancient Superstar
-Imhotep was ancient Egypt's Leonardo da Vinci - but 2,000 years earlier. He lived around 2600 BC and basically invented being a Renaissance man.
+**When philosophers argue, reality itself starts to crumble into wild, impossible pieces.**
+
+Al-Ghazali wrote this book in 1095 to absolutely destroy the Islamic philosophers. These guys were mixing Aristotle and Plato with Islam. Al-Ghazali thought they were ruining the faith with their fancy Greek logic. He went after them hard - calling out their contradictions one by one.
 
 CARD: Master of Everything
-The guy was Pharaoh Djoser's right-hand man. He was an architect, doctor, priest, and advisor all at once. Most people back then were lucky to master one skill.
+The guy was **Pharaoh Djoser's right-hand man**. He was an architect, doctor, priest, and advisor all at once. Most people back then were lucky to master one skill. Imhotep did it all:
+- Built the first pyramid (Step Pyramid at Saqqara)
+- Practiced medicine and surgery
+- Advised the pharaoh on everything
 
 CARD: Still Famous Today
-Imhotep mastered everything. He built pyramids, healed people, advised kings. Then he became a god after he died.
+Imhotep mastered everything. He built pyramids, healed people, advised kings. Then he became a god after he died. Egyptians worshipped him for 2,000 years as the god of medicine and wisdom.
 
-Rules for card titles:
-- Start each paragraph with "CARD: [2-4 word title]"
-- Title describes THAT specific paragraph
-- Be specific: "Ancient Superstar" not "Introduction"
-- Example: "Mama's Boys" not "Social Structure"
-
-Write 3-4 paragraphs total.
+Rules:
+- First card: Hook in bold + 3-4 sentences explaining basics
+- Other cards: 4-5 sentences each
+- Use **bold** for key phrases
+- Use bullet points (- item) when listing things
+- Make it scannable and easy to read
 
 WRITING STYLE:
 Write like you're texting a friend. Simple words. Short sentences.
@@ -960,20 +966,23 @@ Part 2 Header: "Why They're Disappearing" ✅ (flows naturally)
 NOT: "How Bonobos Actually Live" ❌ (jarring jump)
 
 FORMAT - CRITICAL:
-You MUST use this exact format for each paragraph:
+You MUST use this exact format. Write 2-3 cards total.
 
 CARD: Training Regimen
-Roman soldiers trained every single day. They practiced with wooden swords twice as heavy as real ones. This made actual combat feel easy.
+Roman soldiers trained **every single day**. They practiced with wooden swords twice as heavy as real ones. This made actual combat feel easy. The training was brutal:
+- March 20 miles in full armor
+- Build camps every night
+- Practice formations until perfect
+They did this for years before seeing real battle.
 
 CARD: Daily Battles
-They fought mock battles against each other. The loser got punished with reduced rations. It kept everyone sharp.
+They fought mock battles against each other. The loser got punished with reduced rations. It kept everyone sharp. Officers watched every move and noted mistakes. Soldiers who messed up got extra duty or worse food.
 
-Rules for card titles:
-- Start each paragraph with "CARD: [2-4 word title]"
-- Title describes THAT specific paragraph
-- Be specific: "Daily Battles" not "Military Life"
-
-Write 3-4 paragraphs total.
+Rules:
+- Each card: 4-5 sentences
+- Use **bold** for key phrases
+- Use bullet points (- item) when listing things
+- Make it scannable and easy to read
 
 WRITING RULES:
 - Don't repeat what you already said

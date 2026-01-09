@@ -192,17 +192,7 @@ export default function LearnScreen({
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{topic}</h1>
           </div>
 
-          {/* Hook Card */}
-          {hook && (
-            <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 mb-4 min-h-[70vh] flex flex-col justify-center">
-              <div className="text-sm font-medium text-gray-500 mb-4">{topic}</div>
-              <p className="text-lg md:text-xl font-semibold text-gray-900 leading-relaxed">
-                {renderContent(hook, handleLinkClick)}
-              </p>
-            </div>
-          )}
-
-          {/* Body content as cards */}
+          {/* Body content as cards (hook is now part of first card) */}
           {content !== null && content !== undefined ? (
             <div className="space-y-4">
               {content.split('\n\n').map((paragraph, idx) => {
