@@ -87,8 +87,8 @@ export default function LearnScreen({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 px-4 py-8">
-      <div className="max-w-3xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="max-w-3xl mx-auto px-4 py-8">
         {/* Breadcrumb Navigation */}
         {breadcrumbs.length > 0 && (
           <div className="bg-white rounded-lg shadow-sm mb-4 p-3 overflow-x-auto">
@@ -130,7 +130,7 @@ export default function LearnScreen({
         </div>
 
         {/* Content area - Card Layout */}
-        <div className="mb-6">
+        <div className="mb-6 pb-20">
           {content !== null && content !== undefined ? (
             <CardCarousel
               content={content}
