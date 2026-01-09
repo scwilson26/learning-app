@@ -165,6 +165,10 @@ CRITICAL HYPERLINK RULES:
    - If writing about "Africanized bee", do NOT link "[[Africanized bees]]", "[[African honeybees]]", "[[killer bees]]"
    - The reader is ALREADY reading about this topic - linking it is useless
    - Only link terms that take the reader to a DIFFERENT topic
+4. **NEVER hyperlink GENERIC CONCEPTS or BASIC TERMS related to the topic**:
+   - If writing about "Riemann Hypothesis", do NOT link "[[prime numbers]]", "[[zeta function]]", "[[mathematics]]"
+   - If writing about "Roman aqueducts", do NOT link "[[water]]", "[[engineering]]", "[[stone]]"
+   - Only link SPECIFIC people, places, or events with their own story: "[[Bernhard Riemann]]", "[[Aqua Claudia]]"
 
 Write ONLY the body paragraphs - do NOT repeat the hook.`;
 
@@ -222,6 +226,15 @@ CRITICAL - COVER THE FULL TOPIC:
       /\[\[\d+\]\]/g,
       /\[\[[A-Z][a-z]+\]\]/g,
       /\[\[[A-Z][a-z]+ (researchers?|scientists?|studies?|team|professors?|experts?|engineers?|doctors?|officials?)\]\]/gi,
+      // Generic math/science terms that are too broad
+      /\[\[prime numbers?\]\]/gi,
+      /\[\[mathematics?\]\]/gi,
+      /\[\[zeta function\]\]/gi,
+      /\[\[cryptography\]\]/gi,
+      /\[\[water\]\]/gi,
+      /\[\[engineering\]\]/gi,
+      /\[\[stone\]\]/gi,
+      /\[\[architecture\]\]/gi,
     ];
 
     genericPatterns.forEach(pattern => {
@@ -486,7 +499,12 @@ CRITICAL HYPERLINK RULES - FOLLOW THESE STRICTLY:
    - Bare numbers without context (no "[[1929]]" by itself)
    - Common words like "time", "place", "people"
    - Generic professions without names
-   - Generic institutional phrases like "Harvard researchers", "MIT scientists", "NASA engineers" (too vague - who specifically?)`;
+   - Generic institutional phrases like "Harvard researchers", "MIT scientists", "NASA engineers" (too vague - who specifically?)
+
+4. **NEVER hyperlink GENERIC CONCEPTS or BASIC TERMS related to the topic**:
+   - If writing about "Riemann Hypothesis", do NOT link "[[prime numbers]]", "[[zeta function]]", "[[mathematics]]"
+   - If writing about "Roman aqueducts", do NOT link "[[water]]", "[[engineering]]", "[[stone]]"
+   - Only link SPECIFIC people, places, or events with their own story: "[[Bernhard Riemann]]", "[[Aqua Claudia]]"`;
 
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
@@ -510,6 +528,15 @@ CRITICAL HYPERLINK RULES - FOLLOW THESE STRICTLY:
       /\[\[\d+\]\]/g, // Any bare number
       /\[\[[A-Z][a-z]+\]\]/g, // Single capitalized words (likely last names like "Reynolds")
       /\[\[[A-Z][a-z]+ (researchers?|scientists?|studies?|team|professors?|experts?|engineers?|doctors?|officials?)\]\]/gi, // "Harvard researchers", "MIT scientists", etc.
+      // Generic math/science terms that are too broad
+      /\[\[prime numbers?\]\]/gi,
+      /\[\[mathematics?\]\]/gi,
+      /\[\[zeta function\]\]/gi,
+      /\[\[cryptography\]\]/gi,
+      /\[\[water\]\]/gi,
+      /\[\[engineering\]\]/gi,
+      /\[\[stone\]\]/gi,
+      /\[\[architecture\]\]/gi,
     ];
 
     // Remove the brackets from generic terms (leave the text, remove hyperlink)
