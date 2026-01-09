@@ -103,28 +103,36 @@ This is an OVERVIEW, not a story. Explain what the topic is. Give them the basic
 FORMAT - CRITICAL:
 You MUST use this exact format. Write 2-3 cards total (not including hook).
 
-First card combines the hook + first paragraph:
+STRUCTURE FOR EACH CARD:
+1. Opening line or two (sets up the topic)
+2. Bullets with key facts (3-5 bullets)
+3. Closing line (ties it together or adds context)
 
-CARD: Ancient Superstar
-**When philosophers argue, reality itself starts to crumble into wild, impossible pieces.**
+CARD: Sky God of the Steppes
+**Tengri was the supreme sky god worshipped across Central Asia for over a thousand years.**
 
-Al-Ghazali wrote this book in 1095 to absolutely destroy the Islamic philosophers. These guys were mixing Aristotle and Plato with Islam. Al-Ghazali thought they were ruining the faith with their fancy Greek logic. He went after them hard - calling out their contradictions one by one.
+This wasn't some local deity:
+- Ruled from **Mongolia to Turkey**
+- Controlled weather, fate, and the rise and fall of empires
+- Name literally means "sky" or "heaven" in old Turkic
+- Nomadic tribes like the Mongols, Turks, and Hungarians all looked up and saw their chief god
+
+When **Genghis Khan** conquered half the world, he said Tengri gave him permission.
 
 CARD: Master of Everything
-The guy was **Pharaoh Djoser's right-hand man**. He was an architect, doctor, priest, and advisor all at once. Most people back then were lucky to master one skill. Imhotep did it all:
+**Imhotep was Pharaoh Djoser's right-hand man** around 2600 BC. He did it all:
 - Built the first pyramid (Step Pyramid at Saqqara)
 - Practiced medicine and surgery
+- Served as high priest
 - Advised the pharaoh on everything
 
-CARD: Still Famous Today
-Imhotep mastered everything. He built pyramids, healed people, advised kings. Then he became a god after he died. Egyptians worshipped him for 2,000 years as the god of medicine and wisdom.
+Most people back then were lucky to master one skill. Imhotep mastered them all.
 
 Rules - FOLLOW THESE:
-- First card: Hook in **bold** + 5-6 sentences explaining basics
-- Other cards: 6-7 sentences each (make them FULL and substantial)
-- Use **bold** for 3-4 key phrases per card (numbers, names, important facts)
-- Use bullet points (- item) whenever you list things (dates, examples, features, steps)
-- Every card should feel substantial - fill the screen with good content
+- Each card: 1-2 opening sentences, 3-5 bullets, 1 closing sentence
+- Use **bold** for key numbers, names, and dramatic facts
+- Bullets should be punchy - one fact per bullet
+- Make it scannable and easy to read
 
 WRITING STYLE:
 Write like you're texting a friend. Simple words. Short sentences.
@@ -968,21 +976,34 @@ NOT: "How Bonobos Actually Live" ❌ (jarring jump)
 FORMAT - CRITICAL:
 You MUST use this exact format. Write 2-3 cards total.
 
+STRUCTURE FOR EACH CARD:
+1. Opening line or two (sets up the topic)
+2. Bullets with key facts (3-5 bullets)
+3. Closing line (ties it together or adds context)
+
 CARD: Training Regimen
-Roman soldiers trained **every single day**. They practiced with wooden swords twice as heavy as real ones. This made actual combat feel easy. The training was brutal:
-- March 20 miles in full armor
-- Build camps every night
-- Practice formations until perfect
+Roman soldiers trained **every single day**. The training was brutal:
+- Marched **20 miles** in full armor
+- Built fortified camps every single night
+- Practiced with wooden swords **twice as heavy** as real ones
+- Drilled formations until they were perfect
+
 They did this for years before seeing real battle.
 
 CARD: Daily Battles
-They fought mock battles against each other. The loser got punished with reduced rations. It kept everyone sharp. Officers watched every move and noted mistakes. Soldiers who messed up got extra duty or worse food.
+They fought mock battles against each other:
+- Losers got reduced rations
+- Officers watched every move and noted mistakes
+- Bad soldiers got extra duty or worse food
+- Winners got respect and better positions
+
+It kept everyone sharp and ready.
 
 Rules - FOLLOW THESE:
-- Each card: 6-7 sentences (make them FULL and substantial)
-- Use **bold** for 3-4 key phrases per card (numbers, names, important facts)
-- Use bullet points (- item) whenever you list things (dates, examples, features, steps)
-- Every card should feel substantial - fill the screen with good content
+- Each card: 1-2 opening sentences, 3-5 bullets, 1 closing sentence
+- Use **bold** for key numbers, names, and dramatic facts
+- Bullets should be punchy - one fact per bullet
+- Make it scannable and easy to read
 
 WRITING RULES:
 - Don't repeat what you already said
