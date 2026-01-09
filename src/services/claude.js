@@ -104,35 +104,32 @@ FORMAT - CRITICAL:
 You MUST use this exact format. Write 2-3 cards total (not including hook).
 
 STRUCTURE FOR EACH CARD:
-1. Opening line or two (sets up the topic)
-2. Bullets with key facts (3-5 bullets)
-3. Closing line (ties it together or adds context)
+Mix of paragraphs and bullets. Make it FULL of info.
 
 CARD: Sky God of the Steppes
-**Tengri was the supreme sky god worshipped across Central Asia for over a thousand years.**
+**Tengri was the supreme sky god worshipped across Central Asia for over a thousand years.** This wasn't some local deity - Tengri ruled the religious world from Mongolia to Turkey.
 
-This wasn't some local deity:
-- Ruled from **Mongolia to Turkey**
+Nomadic tribes like the **Mongols, Turks, and Hungarians** all looked up at the endless blue sky and saw their chief god staring back:
 - Controlled weather, fate, and the rise and fall of empires
-- Name literally means "sky" or "heaven" in old Turkic
-- Nomadic tribes like the Mongols, Turks, and Hungarians all looked up and saw their chief god
+- Name literally means "sky" or "heaven" in old Turkic languages
+- When **Genghis Khan** conquered half the world, he claimed Tengri gave him permission
 
-When **Genghis Khan** conquered half the world, he said Tengri gave him permission.
+The steppe peoples believed everything - your success, your death, even which empires survived - came from the sky watching over you.
 
 CARD: Master of Everything
-**Imhotep was Pharaoh Djoser's right-hand man** around 2600 BC. He did it all:
-- Built the first pyramid (Step Pyramid at Saqqara)
+**Imhotep was Pharaoh Djoser's right-hand man** around 2600 BC. Most people back then were lucky to master one skill. Imhotep did it all:
+- Built the **first pyramid** (Step Pyramid at Saqqara)
 - Practiced medicine and surgery
 - Served as high priest
-- Advised the pharaoh on everything
+- Advised the pharaoh on literally everything
 
-Most people back then were lucky to master one skill. Imhotep mastered them all.
+He was so impressive that after he died, Egyptians worshipped him for **2,000 years** as the god of medicine and wisdom. That's like if we made Steve Jobs a god today and people were still praying to him in the year 4000.
 
 Rules - FOLLOW THESE:
-- Each card: 1-2 opening sentences, 3-5 bullets, 1 closing sentence
+- Make cards FULL - combine paragraphs and bullets, whatever it takes
 - Use **bold** for key numbers, names, and dramatic facts
-- Bullets should be punchy - one fact per bullet
-- Make it scannable and easy to read
+- Use bullets when listing things
+- Each card should have substantial content - don't be shy
 
 WRITING STYLE:
 Write like you're texting a friend. Simple words. Short sentences.
@@ -977,33 +974,33 @@ FORMAT - CRITICAL:
 You MUST use this exact format. Write 2-3 cards total.
 
 STRUCTURE FOR EACH CARD:
-1. Opening line or two (sets up the topic)
-2. Bullets with key facts (3-5 bullets)
-3. Closing line (ties it together or adds context)
+Mix of paragraphs and bullets. Make it FULL of info.
 
 CARD: Training Regimen
-Roman soldiers trained **every single day**. The training was brutal:
-- Marched **20 miles** in full armor
-- Built fortified camps every single night
-- Practiced with wooden swords **twice as heavy** as real ones
-- Drilled formations until they were perfect
+Roman soldiers trained **every single day** from sunrise to sunset. The training was designed to make actual combat feel easy by comparison.
 
-They did this for years before seeing real battle.
+The daily routine was brutal:
+- March **20 miles** in full armor carrying 60 pounds of gear
+- Build a fortified camp every single night (dig trenches, set up walls)
+- Practice with wooden swords **twice as heavy** as real ones
+- Drill formations until every movement was automatic
+
+They did this for **years** before ever seeing real battle. By the time they faced an enemy, their bodies were machines and their minds knew exactly what to do.
 
 CARD: Daily Battles
-They fought mock battles against each other:
-- Losers got reduced rations
-- Officers watched every move and noted mistakes
-- Bad soldiers got extra duty or worse food
-- Winners got respect and better positions
+They didn't just train - they fought each other in mock battles with real consequences:
+- Losers got reduced rations for the week
+- Officers watched every single move and noted mistakes
+- Bad soldiers got extra duty shifts or even worse food
+- Winners earned respect, better positions, and recommendations for promotion
 
-It kept everyone sharp and ready.
+The competition was intense. Every soldier knew his performance was being judged constantly. It kept everyone sharp and ready.
 
 Rules - FOLLOW THESE:
-- Each card: 1-2 opening sentences, 3-5 bullets, 1 closing sentence
+- Make cards FULL - combine paragraphs and bullets, whatever it takes
 - Use **bold** for key numbers, names, and dramatic facts
-- Bullets should be punchy - one fact per bullet
-- Make it scannable and easy to read
+- Use bullets when listing things
+- Each card should have substantial content - don't be shy
 
 WRITING RULES:
 - Don't repeat what you already said
