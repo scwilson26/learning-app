@@ -101,18 +101,22 @@ function App() {
       setProgress({ message: 'Crafting your story...' })
 
       try {
-        // Show screen immediately with empty hook
-        const partialData = { topic, hook: '', content: '', hyperlinks: [], suggestions: { related: [], tangents: [] } }
-        setLearnData(partialData)
-        setBreadcrumbs([partialData])
-        setCurrentIndex(0)
-        setCurrentPart(1)
-        setScreen('learn')
-        setProgress(null)
-
-        // Stream hook first (fast with Haiku)
+        // Stream hook first (fast with Haiku) - stay on loading screen
+        let firstChunk = false
         const { hook } = await generateArticleHook(topic, null, (streamedHook) => {
-          setLearnData(prev => ({ ...prev, hook: streamedHook }))
+          // Switch to learn screen on first chunk of hook
+          if (!firstChunk) {
+            firstChunk = true
+            const partialData = { topic, hook: streamedHook, content: '', hyperlinks: [], suggestions: { related: [], tangents: [] } }
+            setLearnData(partialData)
+            setBreadcrumbs([partialData])
+            setCurrentIndex(0)
+            setCurrentPart(1)
+            setScreen('learn')
+            setProgress(null)
+          } else {
+            setLearnData(prev => ({ ...prev, hook: streamedHook }))
+          }
         })
 
         // Stream body content - updates appear in real-time
@@ -151,19 +155,23 @@ function App() {
       // Step 1: Generate topic ASAP (filtered by selected categories)
       const randomTopic = await generateSurpriseTopic(selectedCategories)
 
-      // Step 2: Show screen immediately with empty hook
+      // Step 2: Stream hook (fast with Haiku) - stay on loading screen
       setProgress({ message: 'Crafting your story...' })
-      const partialData = { topic: randomTopic, hook: '', content: '', hyperlinks: [], suggestions: { related: [], tangents: [] } }
-      setLearnData(partialData)
-      setBreadcrumbs([partialData])
-      setCurrentIndex(0)
-      setCurrentPart(1)
-      setScreen('learn')
-      setProgress(null)
-
-      // Stream hook (fast with Haiku)
+      let firstChunk = false
       const { hook } = await generateArticleHook(randomTopic, null, (streamedHook) => {
-        setLearnData(prev => ({ ...prev, hook: streamedHook }))
+        // Switch to learn screen on first chunk of hook
+        if (!firstChunk) {
+          firstChunk = true
+          const partialData = { topic: randomTopic, hook: streamedHook, content: '', hyperlinks: [], suggestions: { related: [], tangents: [] } }
+          setLearnData(partialData)
+          setBreadcrumbs([partialData])
+          setCurrentIndex(0)
+          setCurrentPart(1)
+          setScreen('learn')
+          setProgress(null)
+        } else {
+          setLearnData(prev => ({ ...prev, hook: streamedHook }))
+        }
       })
 
       // Stream body content - updates appear in real-time
