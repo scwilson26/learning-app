@@ -94,36 +94,38 @@ IMPORTANT: Cover the FULL BREADTH of "${topic}" - not just the example from the 
  */
 export async function generateArticleBody(topic, quickCardText = null, onChunk = null, categoryIds = null) {
   try {
-    let prompt = `Write a SHORT article body about "${topic}". (Hook already written - just write body)
+    let prompt = `Write a SHORT overview of "${topic}". (Hook already written - just write body)
+
+GOAL: After reading Part 1, the reader should think "OK, I understand WHAT this is."
+
+This is an OVERVIEW, not a story. Explain what the topic is. Give them the basics.
+
+STRUCTURE (3-4 short paragraphs):
+
+First paragraph: What is it? Give a simple explanation.
+- If it's a person/group: Who were they? What did they do?
+- If it's a place: Where is it? What's there?
+- If it's a thing/concept: What is it? How does it work?
+- If it's an event: What happened? When?
+
+Middle paragraphs: Fill in key basics.
+- Add 2-3 key facts that help them understand it
+- Keep it simple and clear
+- Don't tell stories yet - just explain
+
+Last paragraph: One interesting detail that makes them curious.
+- Something that hints there's more to learn
+- Don't ask questions - just state something intriguing
 
 WRITING STYLE:
-Write like you're texting a friend. Simple words. Short sentences. Make it interesting.
-
-FIRST PARAGRAPH:
-Tell me why this matters. Keep it simple.
-
-Example: "Roman emperors needed bodyguards. They picked the best soldiers. Those soldiers had all the weapons."
-
-STORY:
-Don't spoil the ending first. Build to it.
-
-MIDDLE PARAGRAPHS:
-Tell the story. Use simple words.
-Mix it up: Short. Medium. Never long and complex.
+Write like you're texting a friend. Simple words. Short sentences.
 
 ✅ Use: "started" "used" "showed" "found" "made"
 ❌ Don't use: "commenced" "utilized" "demonstrated" "facilitated"
 
-LAST PARAGRAPH:
-Leave one interesting question. Don't wrap it up.
-
-✅ GOOD: "Scientists found 200 species. Some males can detach."
-❌ BAD: "So how do they survive? What do they eat? Why?" (too many questions)
-
 BANNED:
 ❌ "What makes this fascinating..."
 ❌ "It's important to understand..."
-❌ "This demonstrates..."
 ❌ Don't repeat yourself
 
 ❌ BAD: "The ship carried 7 tons of gold."
@@ -923,33 +925,28 @@ THE READER HAS ALREADY READ THIS:
 ${existingContent}
 ---
 
-TOPIC-ADAPTIVE COVERAGE:
-First, identify what type of topic "${topic}" is, then write the appropriate content for Part ${partNumber}.
+GOAL FOR PARTS 2-4:
+By the end of Part 4, the reader should feel complete. Like "OK, I understand this topic - I can move on now."
 
-**If it's a PERSON or GROUP (ninja, samurai, pirates, Einstein, etc.):**
-- Part 2: What did they actually DO? Daily life, methods, skills, training, tools/weapons
-- Part 3: Famous examples, key figures, major events, timeline of when they existed
-- Part 4: Myths vs reality, pop culture depictions, modern legacy, why people still care
+They shouldn't think "Wait, there's got to be more? This feels incomplete." Make sure the obvious essentials are covered.
 
-**If it's a CONCEPT or PHENOMENON (black holes, gravity, inflation, etc.):**
-- Part 2: How does it WORK? The mechanics, the science, step-by-step explanation
-- Part 3: Types/variations, discovery history, key scientists, major breakthroughs
-- Part 4: Open questions, modern research, real-world applications, why it matters
+PLANNING YOUR COVERAGE:
+Before writing Part ${partNumber}, think: "What are the 3-4 most important things someone needs to know about ${topic} to feel like they got the complete core story?"
 
-**If it's an EVENT (French Revolution, moon landing, Titanic, etc.):**
-- Part 2: Key players and factions, the buildup, what led to it
-- Part 3: Timeline of major moments, turning points, what actually happened
-- Part 4: Aftermath, what people get wrong, lasting impact, modern parallels
+Don't follow a rigid formula. Think about THIS specific topic:
+- What would someone obviously want to know?
+- What's missing that would make this feel incomplete?
+- By Part 4, have we covered the essential angles?
 
-**If it's a THING or INVENTION (Roman concrete, printing press, iPhone, etc.):**
-- Part 2: How was it made? The process, ingredients, engineering
-- Part 3: Where/how it was used, famous examples, who made it
-- Part 4: Why it matters, what it replaced, legacy, modern versions
+Examples of thinking through a topic:
 
-**If it's a PLACE (Pompeii, Area 51, Amazon rainforest, etc.):**
-- Part 2: What's actually there? Geography, layout, key features
-- Part 3: History and major events that happened there
-- Part 4: Modern status, why people visit/study it, mysteries remaining
+**Bonobos**: What is it? (Part 1 ✓). Still need: Where do they live? Why are they special/different from other apes? Conservation status? Social behavior details? → Cover these across Parts 2-4.
+
+**Ballista**: What is it? (Part 1 ✓). Still need: How does it actually work? Why did Romans use it? Famous uses? Why did it stop being used? → Cover these across Parts 2-4.
+
+**Christina of Sweden**: Who was she? (Part 1 ✓). Still need: Her major decisions as queen? The abdication (seems major)? What happened after? Why does she matter? → Cover these across Parts 2-4.
+
+For Part ${partNumber} specifically, pick ONE of those essential angles that hasn't been covered yet.
 
 NOW WRITE Part ${partNumber} for "${topic}".
 
