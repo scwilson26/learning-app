@@ -237,6 +237,13 @@ CRITICAL - COVER THE FULL TOPIC:
       /\[\[engineering\]\]/gi,
       /\[\[stone\]\]/gi,
       /\[\[architecture\]\]/gi,
+      // Generic astronomy/physics terms
+      /\[\[supernova[es]?\]\]/gi,
+      /\[\[Type I[abc]? supernova[es]?\]\]/gi,
+      /\[\[Type II supernova[es]?\]\]/gi,
+      /\[\[gamma-ray bursts?\]\]/gi,
+      /\[\[neutron stars?\]\]/gi,
+      /\[\[black holes?\]\]/gi,
     ];
 
     genericPatterns.forEach(pattern => {
@@ -539,6 +546,13 @@ CRITICAL HYPERLINK RULES - FOLLOW THESE STRICTLY:
       /\[\[engineering\]\]/gi,
       /\[\[stone\]\]/gi,
       /\[\[architecture\]\]/gi,
+      // Generic astronomy/physics terms
+      /\[\[supernova[es]?\]\]/gi,
+      /\[\[Type I[abc]? supernova[es]?\]\]/gi,
+      /\[\[Type II supernova[es]?\]\]/gi,
+      /\[\[gamma-ray bursts?\]\]/gi,
+      /\[\[neutron stars?\]\]/gi,
+      /\[\[black holes?\]\]/gi,
     ];
 
     // Remove the brackets from generic terms (leave the text, remove hyperlink)
