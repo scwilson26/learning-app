@@ -128,7 +128,7 @@ He was so impressive that after he died, Egyptians worshipped him for **2,000 ye
 Rules - FOLLOW THESE:
 - Make cards FULL - combine paragraphs and bullets, whatever it takes
 - Use **bold** for key numbers, names, and dramatic facts
-- Use bullets when listing things
+- CRITICAL: Each bullet must be on its own line with a line break after it
 - Each card should have substantial content - don't be shy
 
 WRITING STYLE:
@@ -999,7 +999,7 @@ The competition was intense. Every soldier knew his performance was being judged
 Rules - FOLLOW THESE:
 - Make cards FULL - combine paragraphs and bullets, whatever it takes
 - Use **bold** for key numbers, names, and dramatic facts
-- Use bullets when listing things
+- CRITICAL: Each bullet must be on its own line with a line break after it
 - Each card should have substantial content - don't be shy
 
 WRITING RULES:
