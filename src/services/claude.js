@@ -226,7 +226,6 @@ CRITICAL - COVER THE FULL TOPIC:
       /\[\[Battle\]\]/gi,
       /\[\[\d{4}\]\]/g,
       /\[\[\d+\]\]/g,
-      /\[\[[A-Z][a-z]+\]\]/g,
       /\[\[[A-Z][a-z]+ (researchers?|scientists?|studies?|team|professors?|experts?|engineers?|doctors?|officials?)\]\]/gi,
       // Generic math/science terms that are too broad
       /\[\[prime numbers?\]\]/gi,
@@ -1105,7 +1104,6 @@ Write Part ${partNumber} now:`;
       /\[\[Battle\]\]/gi,
       /\[\[\d{4}\]\]/g,
       /\[\[\d+\]\]/g,
-      /\[\[[A-Z][a-z]+\]\]/g,
       /\[\[[A-Z][a-z]+ (researchers?|scientists?|studies?|team|professors?|experts?|engineers?|doctors?|officials?)\]\]/gi,
     ];
 
