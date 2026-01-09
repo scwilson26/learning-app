@@ -15,21 +15,52 @@ export async function generateArticleHook(topic, quickCardText = null) {
   try {
     let prompt = `Write a 1-2 sentence OPENING HOOK about "${topic}" that makes readers desperate to learn more.
 
-CRITICAL: Start with a shocking fact FIRST, then weave in what it is.
+CRITICAL: FIRST sentence creates curiosity, SECOND sentence delivers details.
+
+FIRST SENTENCE RULES:
+- Under 15 words
+- Simple words only
+- Open a loop, don't close it
+- Create a question in the reader's mind
+- NO dates, numbers, names yet
+
+SECOND SENTENCE:
+- Now add the specific details (dates, names, numbers, drama)
+- Answer enough to ground them, but leave mystery
 
 ❌ NEVER use generic openings like:
 - "Imagine a time when..."
 - "Picture a world where..."
 - "In a time before..."
 
-✅ ALWAYS start with: [Mind-blowing fact that naturally reveals what this is]
-
 EXAMPLES:
-- "The Praetorian Guard was supposed to protect Roman emperors. Instead, they murdered more emperors than they saved."
-- "Aboriginal songs can navigate 40,000 miles of Australian desert with perfect accuracy - no maps, no roads, no landmarks."
-- "We still can't figure out how to make Roman concrete - and theirs gets stronger with time while ours crumbles."
 
-Write ONLY the hook - 1-2 sentences max. No title, no body, just the hook.`;
+❌ BAD (too dense, tries to do everything at once):
+"In a shadowy meeting of 12 intellectuals on May 1st, 1776, Adam Weishaupt launched a secret society so revolutionary that European monarchs would frantically hunt its members."
+
+✅ GOOD (short opener → details):
+"Secret societies make people nervous. When powerful people meet in secret, they can change laws and move money."
+
+❌ BAD (dumps all the drama up front):
+"The Praetorian Guard, elite Roman soldiers tasked with protecting emperors, murdered more rulers than they saved and even auctioned the throne in 193 CE."
+
+✅ GOOD (curiosity → payoff):
+"The Praetorian Guard was supposed to protect Roman emperors. Instead, they murdered more than they saved."
+
+❌ BAD (front-loads the complexity):
+"Aboriginal Australians developed sophisticated songlines that encode 40,000 miles of desert geography with perfect navigational accuracy using only music and oral tradition."
+
+✅ GOOD (simple → fascinating):
+"Aboriginal songs can navigate 40,000 miles of desert. No maps, no roads, no landmarks - just music."
+
+Think: OPEN THE LOOP (sentence 1) → ADD DRAMA (sentence 2)
+
+CRITICAL - BANNED PHRASES:
+❌ NEVER say "Here's the hook for..." or "Here's the hook:" or any meta-commentary
+❌ NEVER say "This is the hook" or similar
+❌ Start IMMEDIATELY with the actual hook content
+
+Write ONLY the hook - 2 sentences max. No title, no body, no meta-commentary, just the hook itself.`;
 
     // If we have Quick Card context, incorporate it
     if (quickCardText) {
@@ -72,8 +103,8 @@ export async function generateArticleBody(topic, quickCardText = null, onChunk =
 
 NOTE: A separate hook/opening has already been written. Write ONLY the body content that comes AFTER the hook.
 
-BODY (6-8 VERY SHORT paragraphs):
-Write like an AUDIOBOOK NARRATOR - engaging, conversational, easy to read aloud.
+BODY (4-6 VERY SHORT paragraphs):
+These are articles, not audiobooks. Respect the reader's time. Get to the fascinating stuff FAST.
 
 FIRST PARAGRAPH RULE - CRITICAL:
 The FIRST paragraph after the hook MUST ground the reader on WHY this topic matters.
@@ -87,45 +118,130 @@ Examples:
 
 Don't assume the reader knows WHY something is interesting. Tell them.
 
-READING LEVEL - CRITICAL:
-Write for a 10-year-old. Use simple, everyday words. MAX 15 words per sentence.
-- ❌ "subsequently" → ✅ "then"
-- ❌ "commenced" → ✅ "started"
-- ❌ "utilized" → ✅ "used"
-- ❌ "approximately" → ✅ "about"
-- ❌ "facilitate" → ✅ "help"
-- ❌ "demonstrate" → ✅ "show"
-- ❌ "phenomenon" → ✅ describe it simply
-If you wouldn't say it to a kid, don't write it.
+STORY STRUCTURE - CRITICAL:
+Don't spoil the ending in the first paragraph. You're telling a story - build to the climax, don't start with it.
 
-WRITING STYLE:
-- Just tell the story. No analysis. No commentary. Just WHAT HAPPENED.
-- Short, punchy sentences. One idea per sentence.
-- Active voice ("Washington freed his slaves" not "slaves were freed")
-- **Use past tense for historical events**
+❌ BAD: "The Dzungar Khanate controlled Central Asia for over a century, then picked a fight with the Qing Dynasty. What happened next was one of history's most complete genocides."
+(You just told me the ending! Now why keep reading?)
 
-BANNED WORDS/PHRASES:
+✅ GOOD: Build chronologically. Start with what made them powerful, THEN reveal their downfall.
+- Para 1: Why this matters (they dominated Central Asia)
+- Para 2-3: What made them formidable (cavalry warfare, Silk Road control)
+- Para 4: Their fatal mistake (picked fight with Qing)
+- Para 5: The consequences (genocide)
+
+Think like a storyteller, not a Wikipedia summary. Let the tension build.
+
+WRITING QUALITY - CRITICAL:
+You are a smart friend at a bar who just went down a Wikipedia rabbit hole and can't wait to share what you found.
+Think: Malcolm Gladwell, Erik Larson, Mary Roach. Confident, a little irreverent, respects the reader's intelligence.
+
+CORE PRINCIPLES:
+1. **Lead with mystery, not thesis.** Make the reader feel the puzzle before explaining it.
+2. **Front-load surprising details.** Weird fact, counterintuitive stat, vivid image—put it early.
+3. **No throat-clearing.** Just say the thing. Don't announce what you're about to say.
+4. **Earn conclusions, don't state them.** Show the evidence, let the reader feel the implication.
+5. **Don't spoil the ending.** Build chronologically. Let tension build toward the climax.
+6. **Rhetorical questions pull readers forward.** Use them to build tension, especially mid-section.
+
+SENTENCE RHYTHM:
+- Vary aggressively. Short punch. Medium explanation that breathes. Longer sentence that builds momentum and carries the reader through the full arc of an idea.
+- Stack facts like punches: "Isolated Amazon tribes. Arctic villages cut off for millennia. All of them invented language."
+- If a sentence has two clauses, consider splitting it.
+- Read it aloud - does it flow like conversation?
+
+BANNED THROAT-CLEARING:
+❌ "What makes this fascinating is..."
+❌ "It's important to understand that..."
+❌ "This demonstrates..."
+❌ "The significance of this..."
+❌ "One of the most interesting aspects..."
+❌ "Then she did something no one had done..." (just tell me what she did)
+❌ "But the real story was..." (just tell the real story)
+Just start with the thing itself.
+
+BANNED SETUP SENTENCES:
+❌ Setup sentences that cushion the punch before delivering it
+❌ "This was shocking." (if it's shocking, I'll know - show me)
+❌ "Why does this matter? Because..." (just tell me why)
+❌ Thesis statements: "The biggest empires fall when they get too greedy." (show it, don't state it)
+
+BANNED REPETITION:
+If a sentence restates the previous sentence in different words, DELETE one of them.
+Never repeat information the reader already has. Trust that it landed.
+
+BANNED WORDS (academic bloat):
+❌ "subsequently", "utilized", "commenced", "facilitate", "demonstrate"
 ❌ "contradiction", "unprecedented", "significance", "notably", "paradigm"
-❌ "furthermore", "moreover", "however", "nevertheless", "consequently"
+❌ "furthermore", "moreover", "nevertheless", "consequently"
 ❌ "His brilliance lay in...", "The key was...", "This would prove to be..."
-❌ Any sentence starting with "It was..." or "There was..."
-❌ NEVER use headers containing "Why This/It Matters/Mattered" in ANY form - just write naturally
+❌ "It was...", "There was..." (weak openers)
+❌ "In other words...", "What this means is..." (trust the reader)
+
+WRITING APPROACH:
+- Show, don't tell. Don't say "he was brilliant"—show what he did.
+- Trust the reader completely. They'll connect the dots. Don't explain your own sentences.
+- No setup sentences that cushion the impact. Just throw the punch.
+- Cut any sentence telling the reader how to feel.
+- One strong sentence beats two medium ones. Be ruthless about cutting redundancy.
+- End paragraphs with something that LANDS. Not a summary.
+- Active voice. Past tense for history.
+- Build tension constantly.
 
 PARAGRAPH STRUCTURE:
-- 2-3 sentences max per paragraph
-- Make facts surprising or counterintuitive
+- 2-4 sentences per paragraph (vary length - don't be robotic)
+- Front-load the surprise. Weird detail first, explanation second.
+- Every paragraph must have something INTERESTING in it. No "building" paragraphs that exist just to set up the next one.
+- If a section could be half as long and still land, make it half as long.
+- Read it back and ask: "Would I skim this?" If yes, cut it.
+- End paragraphs with something that LANDS:
+  • A rhetorical question that pulls forward
+  • A vivid image that sticks
+  • A punchy statement that makes them think
+  • NOT a summary or transition
+
+PACING - CRITICAL:
+Setup is ONE or TWO sentences max, then hit them with the thing.
+No slow builds. No patience. Get to the fascinating stuff immediately.
+If you're taking three paragraphs to get somewhere interesting, you're taking too long.
+
+RHETORICAL QUESTIONS - USE THEM:
+Questions pull readers forward. Use them mid-section to build momentum.
+❌ BAD (feels unresolved): End the entire article with "But what happened next?"
+✅ GOOD (builds tension): Use questions throughout to create forward motion
+
+Example flow:
+"Isolated Amazon tribes. Arctic villages cut off for millennia. All of them invented language. Why just us?"
+[Next paragraph answers it, then poses new question]
 
 FINAL PARAGRAPH RULE - CRITICAL:
-The LAST paragraph must give CLOSURE. The reader should think "I get it now" and feel confident explaining this topic to a friend.
-- Do NOT end on a cliffhanger or unanswered question
-- Do NOT ask "But how did they...?" without answering it
-- DO wrap up the core idea in a satisfying way
-- The Deep Dive is for EXTRA depth, not for finishing the story
+The LAST paragraph must CREATE TENSION that pulls the reader into Deep Dive.
+- Don't summarize. Don't wrap up. Don't give closure.
+- Leave ONE intriguing thread dangling. Not three questions. Not a quiz. One subtle hook.
+- Think: "Here's where it gets weird..."
 
-❌ BAD: "But how did ninjas actually train? And who were the most famous ones?" (leaves reader hanging)
-✅ GOOD: "That's what ninjas really were - spies and saboteurs who won through deception, not combat." (closure)
+STRATEGIES:
+1. One subtle question: "Scientists still can't explain why."
+2. A quiet "but": "Scientists have found 200 species. But some males can detach."
+3. Stack facts and stop: "Archaeological evidence shows X. Genetic studies show Y."
+4. Single unexpected detail: "The weirdest part? Some dissolve completely."
 
-The reader should be able to stop here and feel satisfied. Deep Dive is a bonus, not a requirement.
+❌ BAD (question overload - feels like begging):
+"So how did they actually train? Who were the most famous? And why do we get them so wrong?"
+
+❌ BAD (quiz mode):
+"What drives this extreme? How do they find each other? And why did evolution favor this?"
+
+✅ GOOD (one thread dangling):
+"Scientists have found over 200 species, each with its own variation. Some males bite and release."
+
+✅ GOOD (single quiet "but"):
+"The male becomes part of her forever. But in some species, he can detach."
+
+✅ GOOD (one subtle question):
+"Language made us human. But when did that first conversation happen?"
+
+The reader should feel pulled forward, not quizzed. One intriguing thread is enough.
 
 GROUNDING SHOCKING FACTS - CRITICAL:
 For every "wow" fact, ask: would someone who knows NOTHING about this understand WHY it's wow?
@@ -159,6 +275,10 @@ CRITICAL HYPERLINK RULES:
    - ❌ NEVER: "[[Old City]]" → ✅ ALWAYS: "[[Old City of Jerusalem]]"
    - ❌ NEVER: "[[Revolution]]" → ✅ ALWAYS: "[[French Revolution]]"
    - Full names for people: "[[Albert Einstein]]" not "[[Einstein]]"
+3. **NEVER hyperlink the topic itself or synonyms**:
+   - If writing about "Africanized bee", do NOT link "[[Africanized bees]]", "[[African honeybees]]", "[[killer bees]]"
+   - The reader is ALREADY reading about this topic - linking it is useless
+   - Only link terms that take the reader to a DIFFERENT topic
 
 Write ONLY the body paragraphs - do NOT repeat the hook.`;
 
@@ -355,8 +475,8 @@ FIRST sentence = shocking/weird/fascinating fact. SECOND sentence = what we're t
 - "[Topic] is the study of..."
 - Any sentence that sounds like a dictionary definition
 
-BODY (6-8 VERY SHORT paragraphs):
-Write like an AUDIOBOOK NARRATOR - engaging, conversational, easy to read aloud.
+BODY (4-6 VERY SHORT paragraphs):
+These are articles, not audiobooks. Respect the reader's time. Get to the fascinating stuff FAST.
 
 FIRST PARAGRAPH RULE - CRITICAL:
 The FIRST paragraph after the hook MUST ground the reader on WHY this topic matters.
@@ -370,28 +490,75 @@ Examples:
 
 Don't assume the reader knows WHY something is interesting. Tell them.
 
-READING LEVEL - CRITICAL:
-Write for a 10-year-old. Use simple, everyday words. MAX 15 words per sentence.
-- ❌ "subsequently" → ✅ "then"
-- ❌ "commenced" → ✅ "started"
-- ❌ "utilized" → ✅ "used"
-- ❌ "approximately" → ✅ "about"
-- ❌ "facilitate" → ✅ "help"
-- ❌ "demonstrate" → ✅ "show"
-- ❌ "phenomenon" → ✅ describe it simply
-If you wouldn't say it to a kid, don't write it.
+STORY STRUCTURE - CRITICAL:
+Don't spoil the ending in the first paragraph. You're telling a story - build to the climax, don't start with it.
 
-WRITING STYLE:
-- Just tell the story. No analysis. No commentary. Just WHAT HAPPENED.
-- Short, punchy sentences. One idea per sentence.
-- Active voice ("Washington freed his slaves" not "slaves were freed")
-- **Use past tense for historical events**
+❌ BAD: "The Dzungar Khanate controlled Central Asia for over a century, then picked a fight with the Qing Dynasty. What happened next was one of history's most complete genocides."
+(You just told me the ending! Now why keep reading?)
 
-BANNED WORDS/PHRASES:
+✅ GOOD: Build chronologically. Start with what made them powerful, THEN reveal their downfall.
+- Para 1: Why this matters (they dominated Central Asia)
+- Para 2-3: What made them formidable (cavalry warfare, Silk Road control)
+- Para 4: Their fatal mistake (picked fight with Qing)
+- Para 5: The consequences (genocide)
+
+Think like a storyteller, not a Wikipedia summary. Let the tension build.
+
+WRITING QUALITY - CRITICAL:
+You are a smart friend at a bar who just went down a Wikipedia rabbit hole and can't wait to share what you found.
+Think: Malcolm Gladwell, Erik Larson, Mary Roach. Confident, a little irreverent, respects the reader's intelligence.
+
+CORE PRINCIPLES:
+1. **Lead with mystery, not thesis.** Make the reader feel the puzzle before explaining it.
+2. **Front-load surprising details.** Weird fact, counterintuitive stat, vivid image—put it early.
+3. **No throat-clearing.** Just say the thing. Don't announce what you're about to say.
+4. **Earn conclusions, don't state them.** Show the evidence, let the reader feel the implication.
+5. **Don't spoil the ending.** Build chronologically. Let tension build toward the climax.
+6. **Rhetorical questions pull readers forward.** Use them to build tension, especially mid-section.
+
+SENTENCE RHYTHM:
+- Vary aggressively. Short punch. Medium explanation that breathes. Longer sentence that builds momentum.
+- Stack facts like punches: "Isolated Amazon tribes. Arctic villages cut off for millennia. All of them invented language."
+- If a sentence has two clauses, consider splitting it.
+- Read it aloud - does it flow like conversation?
+
+BANNED THROAT-CLEARING:
+❌ "What makes this fascinating is..."
+❌ "It's important to understand that..."
+❌ "This demonstrates..."
+❌ "The significance of this..."
+❌ "One of the most interesting aspects..."
+❌ "Then she did something no one had done..." (just tell me what she did)
+❌ "But the real story was..." (just tell the real story)
+Just start with the thing itself.
+
+BANNED SETUP SENTENCES:
+❌ Setup sentences that cushion the punch before delivering it
+❌ "This was shocking." (if it's shocking, I'll know - show me)
+❌ "Why does this matter? Because..." (just tell me why)
+❌ Thesis statements: "The biggest empires fall when they get too greedy." (show it, don't state it)
+
+BANNED REPETITION:
+If a sentence restates the previous sentence in different words, DELETE one of them.
+Never repeat information the reader already has. Trust that it landed.
+
+BANNED WORDS (academic bloat):
+❌ "subsequently", "utilized", "commenced", "facilitate", "demonstrate"
 ❌ "contradiction", "unprecedented", "significance", "notably", "paradigm"
-❌ "furthermore", "moreover", "however", "nevertheless", "consequently"
+❌ "furthermore", "moreover", "nevertheless", "consequently"
 ❌ "His brilliance lay in...", "The key was...", "This would prove to be..."
-❌ Any sentence starting with "It was..." or "There was..."
+❌ "It was...", "There was..." (weak openers)
+❌ "In other words...", "What this means is..." (trust the reader)
+
+WRITING APPROACH:
+- Show, don't tell. Don't say "he was brilliant"—show what he did.
+- Trust the reader completely. They'll connect the dots. Don't explain your own sentences.
+- No setup sentences that cushion the impact. Just throw the punch.
+- Cut any sentence telling the reader how to feel.
+- One strong sentence beats two medium ones. Be ruthless about cutting redundancy.
+- End paragraphs with something that LANDS. Not a summary.
+- Active voice. Past tense for history.
+- Build tension constantly.
 
 TONE EXAMPLES:
 ❌ BAD: "His brilliance lay in keeping the Continental Army alive through brutal winters"
@@ -403,13 +570,16 @@ TONE EXAMPLES:
 ❌ BAD: "He turned retreat into an art form"
 ✅ GOOD: "Washington lost more battles than he won. He kept retreating. It worked."
 
-❌ BAD: "His genius wasn't tactics. It was understanding that America just had to not lose."
-✅ GOOD: "Washington didn't need to win battles. He just needed to survive. Britain had to win. America just had to not lose."
-
 PARAGRAPH STRUCTURE:
-- 2-3 sentences max per paragraph
-- End with hooks that create curiosity
-- Make facts surprising or counterintuitive
+- 2-4 sentences per paragraph (vary length)
+- Front-load the surprise
+- Every paragraph must have something INTERESTING. No building paragraphs.
+- If it could be half as long and still land, make it half as long.
+- End with something that lands - not a transition or summary
+
+PACING:
+Setup is ONE or TWO sentences max, then hit the thing.
+Get to the fascinating stuff immediately. No slow builds.
 
 GROUNDING SHOCKING FACTS - CRITICAL:
 For every "wow" fact, ask: would someone who knows NOTHING about this understand WHY it's wow?
@@ -948,20 +1118,45 @@ First, identify what type of topic "${topic}" is, then write the appropriate con
 
 NOW WRITE Part ${partNumber} using the appropriate focus for "${topic}".
 
-READING LEVEL - CRITICAL:
-Write for a 10-year-old. Use simple, everyday words. MAX 15 words per sentence.
-- ❌ "subsequently" → ✅ "then"
-- ❌ "commenced" → ✅ "started"
-- ❌ "approximately" → ✅ "about"
-- ❌ "demonstrate" → ✅ "show"
-If you wouldn't say it to a kid, don't write it.
+WRITING QUALITY:
+You are a smart friend at a bar who just learned something wild. Confident, irreverent, respects the reader's time.
 
-WRITING STYLE:
-- Just tell the story. No analysis. No commentary.
-- Short, punchy sentences. One idea per sentence.
-- Active voice
-- **Use past tense for historical events**
-- 2-3 sentences per paragraph
+CORE PRINCIPLES:
+- These are articles, not audiobooks. Get to the fascinating stuff FAST.
+- Lead with mystery, not thesis
+- Front-load surprising details
+- No throat-clearing (❌ "What makes this fascinating..." just say the thing)
+- Earn conclusions, don't state them
+- Stack facts like punches: "Isolated tribes. Arctic villages. All invented language."
+- Vary sentence length: Short. Medium flow. Longer builds.
+- Every paragraph must have something interesting. No building paragraphs.
+- If it could be half as long and still land, make it half as long.
+
+PACING:
+Setup is ONE or TWO sentences max. Then hit the thing.
+Get to fascinating stuff immediately. No slow builds. No patience.
+Read it back: "Would I skim this?" If yes, cut it.
+
+BANNED THROAT-CLEARING:
+❌ "What makes this fascinating...", "It's important to understand...", "This demonstrates..."
+❌ "Then she did something no one had done..." (just say what she did)
+❌ "But the real story was..." (just tell the real story)
+
+BANNED SETUP SENTENCES:
+❌ Setup sentences that cushion the punch (just throw it)
+❌ "This was shocking." (if it's shocking, I'll know)
+❌ Rhetorical questions that answer themselves
+
+BANNED REPETITION:
+If a sentence restates the previous sentence in different words, DELETE one of them.
+Never repeat information the reader already has.
+
+BANNED WORDS:
+❌ "subsequently", "utilized", "commenced", "facilitate", "demonstrate"
+❌ "contradiction", "unprecedented", "significance", "notably", "paradigm"
+❌ "furthermore", "moreover", "nevertheless", "consequently"
+❌ "It was...", "There was..." (weak openers)
+❌ "In other words...", "What this means is..." (trust the reader)
 
 GROUNDING FACTS - CRITICAL:
 For every "wow" fact, ask: would someone who knows NOTHING about this understand WHY it's wow?
