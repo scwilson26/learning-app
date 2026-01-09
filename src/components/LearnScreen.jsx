@@ -332,58 +332,81 @@ export default function LearnScreen({
                   }
                 };
 
-                // Render current card only
-                const selectedCard = cardBlocks[currentCardIndex];
-                if (!selectedCard) return null;
-
+                // Render all cards with snap scroll carousel
                 return (
-                  <div
-                    onTouchStart={handleTouchStart}
-                    onTouchMove={handleTouchMove}
-                    onTouchEnd={handleTouchEnd}
-                  >
-                    {(() => {
-                      const block = selectedCard;
-                    const cardText = block.content.join('\n');
-                    const cardMatch = cardText.trim().match(/^CARD:\s*(.+?)\n([\s\S]+)$/);
-                    if (!cardMatch) return null;
+                  <div>
+                    {/* Snap scroll container */}
+                    <div
+                      className="overflow-y-auto snap-y snap-mandatory h-[70vh] hide-scrollbar"
+                      style={{
+                        scrollbarWidth: 'none',
+                        msOverflowStyle: 'none',
+                      }}
+                      onTouchStart={handleTouchStart}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={handleTouchEnd}
+                      onScroll={(e) => {
+                        const container = e.target;
+                        const cardHeight = container.scrollHeight / cardBlocks.length;
+                        const newIndex = Math.round(container.scrollTop / cardHeight);
+                        if (newIndex !== currentCardIndex && newIndex >= 0 && newIndex < cardBlocks.length) {
+                          setCurrentCardIndex(newIndex);
+                        }
+                      }}
+                    >
+                      {cardBlocks.map((block, idx) => {
+                        const cardText = block.content.join('\n');
+                        const cardMatch = cardText.trim().match(/^CARD:\s*(.+?)\n([\s\S]+)$/);
+                        if (!cardMatch) return null;
 
-                    const cardTitle = cardMatch[1].trim();
-                    const cardContent = cardMatch[2].trim();
+                        const cardTitle = cardMatch[1].trim();
+                        const cardContent = cardMatch[2].trim();
+                        const isActive = idx === currentCardIndex;
 
-                    return (
-                      <div>
-                        <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 mb-4 min-h-[60vh] flex flex-col justify-center">
-                          <div className="text-center mb-6">
-                            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4 capitalize">{topic}</h1>
+                        return (
+                          <div
+                            key={idx}
+                            className="snap-center h-[70vh] flex items-center justify-center px-4 transition-opacity duration-300"
+                            style={{
+                              opacity: isActive ? 1 : 0.3
+                            }}
+                          >
+                            <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 w-full max-w-2xl">
+                              <div className="text-center mb-6">
+                                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4 capitalize">{topic}</h1>
+                              </div>
+                              <div className="text-lg md:text-xl font-semibold text-gray-900 mb-4">{cardTitle}</div>
+                              <div className="text-sm md:text-base text-gray-800 leading-relaxed ml-4">
+                                {renderContent(cardContent, handleLinkClick)}
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-lg md:text-xl font-semibold text-gray-900 mb-4">{cardTitle}</div>
-                          <div className="text-sm md:text-base text-gray-800 leading-relaxed ml-4">
-                            {renderContent(cardContent, handleLinkClick)}
-                          </div>
-                        </div>
+                        );
+                      })}
+                    </div>
 
-                        {/* Card navigation dots */}
-                        <div className="flex justify-center gap-2 mt-4 mb-6">
-                          {cardBlocks.map((_, idx) => (
-                            <button
-                              key={idx}
-                              onClick={() => {
-                                setCurrentCardIndex(idx);
-                                window.scrollTo({ top: 0, behavior: 'smooth' });
-                              }}
-                              className={`w-2 h-2 rounded-full transition-all ${
-                                idx === currentCardIndex
-                                  ? 'bg-indigo-600 w-6'
-                                  : 'bg-gray-300'
-                              }`}
-                              aria-label={`Go to card ${idx + 1}`}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    );
-                    })()}
+                    {/* Card navigation dots */}
+                    <div className="flex justify-center gap-2 mt-4 mb-6">
+                      {cardBlocks.map((_, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => {
+                            setCurrentCardIndex(idx);
+                            const container = document.querySelector('.snap-y');
+                            if (container) {
+                              const cardHeight = container.scrollHeight / cardBlocks.length;
+                              container.scrollTo({ top: idx * cardHeight, behavior: 'smooth' });
+                            }
+                          }}
+                          className={`w-2 h-2 rounded-full transition-all ${
+                            idx === currentCardIndex
+                              ? 'bg-indigo-600 w-6'
+                              : 'bg-gray-300'
+                          }`}
+                          aria-label={`Go to card ${idx + 1}`}
+                        />
+                      ))}
+                    </div>
                   </div>
                 );
               })()}

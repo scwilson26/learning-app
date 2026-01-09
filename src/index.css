@@ -1,1 +1,6 @@
 @import "tailwindcss";
+
+/* Hide scrollbar for snap scroll container */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
