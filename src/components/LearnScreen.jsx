@@ -203,83 +203,101 @@ export default function LearnScreen({
           {/* Body content as cards (hook is now part of first card) */}
           {content !== null && content !== undefined ? (
             <div className="space-y-4">
-              {content.split('\n\n').map((paragraph, idx) => {
-                // Skip empty paragraphs
-                if (!paragraph.trim()) return null;
+              {(() => {
+                // Split content into blocks by CARD: markers and PART markers
+                const blocks = [];
+                const lines = content.split('\n');
+                let currentBlock = { type: null, content: [] };
 
-                // Check for part divider marker
-                const partMatch = paragraph.trim().match(/^---PART-(\d)---$/);
-                if (partMatch) {
-                  const partNum = partMatch[1];
-                  return (
-                    <div key={idx} className="flex items-center gap-4 my-6">
-                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-indigo-300 to-transparent"></div>
-                      <span className="text-sm font-semibold text-indigo-500 uppercase tracking-wider">
-                        Part {partNum}
-                      </span>
-                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-indigo-300 to-transparent"></div>
-                    </div>
-                  );
+                for (let i = 0; i < lines.length; i++) {
+                  const line = lines[i];
+
+                  // Check for PART divider
+                  if (line.trim().match(/^---PART-(\d)---$/)) {
+                    if (currentBlock.content.length > 0) {
+                      blocks.push(currentBlock);
+                    }
+                    blocks.push({ type: 'part', content: [line] });
+                    currentBlock = { type: null, content: [] };
+                    continue;
+                  }
+
+                  // Check for CARD marker
+                  if (line.trim().startsWith('CARD:')) {
+                    if (currentBlock.content.length > 0) {
+                      blocks.push(currentBlock);
+                    }
+                    currentBlock = { type: 'card', content: [line] };
+                    continue;
+                  }
+
+                  // Add line to current block
+                  currentBlock.content.push(line);
                 }
 
-                // Check for CARD format
-                const cardMatch = paragraph.trim().match(/^CARD:\s*(.+?)\n([\s\S]+)$/);
-                if (cardMatch) {
-                  const cardTitle = cardMatch[1].trim();
-                  const cardContent = cardMatch[2].trim();
+                // Push last block
+                if (currentBlock.content.length > 0) {
+                  blocks.push(currentBlock);
+                }
+
+                // Render blocks
+                return blocks.map((block, idx) => {
+                  if (block.type === 'part') {
+                    const partMatch = block.content[0].trim().match(/^---PART-(\d)---$/);
+                    const partNum = partMatch[1];
+                    return (
+                      <div key={idx} className="flex items-center gap-4 my-6">
+                        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-indigo-300 to-transparent"></div>
+                        <span className="text-sm font-semibold text-indigo-500 uppercase tracking-wider">
+                          Part {partNum}
+                        </span>
+                        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-indigo-300 to-transparent"></div>
+                      </div>
+                    );
+                  }
+
+                  if (block.type === 'card') {
+                    const cardText = block.content.join('\n');
+                    const cardMatch = cardText.trim().match(/^CARD:\s*(.+?)\n([\s\S]+)$/);
+                    if (!cardMatch) return null;
+
+                    const cardTitle = cardMatch[1].trim();
+                    const cardContent = cardMatch[2].trim();
 
                   // Split content by newlines to handle bullet points
                   const contentLines = cardContent.split('\n').filter(line => line.trim());
 
-                  return (
-                    <div key={idx} className="bg-white rounded-xl shadow-lg p-6 md:p-8 mb-4 min-h-[70vh] flex flex-col justify-center">
-                      <div className="text-sm font-medium text-gray-500 mb-4">{topic} - {cardTitle}</div>
-                      <div className="text-base md:text-lg text-gray-800 leading-relaxed space-y-3">
-                        {contentLines.map((line, lineIdx) => {
-                          // Check if it's a bullet point
-                          if (line.trim().startsWith('- ')) {
-                            const bulletText = line.trim().slice(2);
+                    return (
+                      <div key={idx} className="bg-white rounded-xl shadow-lg p-6 md:p-8 mb-4 min-h-[70vh] flex flex-col justify-center">
+                        <div className="text-sm font-medium text-gray-500 mb-4">{topic} - {cardTitle}</div>
+                        <div className="text-base md:text-lg text-gray-800 leading-relaxed space-y-3">
+                          {contentLines.map((line, lineIdx) => {
+                            // Check if it's a bullet point
+                            if (line.trim().startsWith('- ')) {
+                              const bulletText = line.trim().slice(2);
+                              return (
+                                <div key={lineIdx} className="flex gap-2">
+                                  <span className="text-indigo-600 font-bold">•</span>
+                                  <span>{renderContent(bulletText, handleLinkClick)}</span>
+                                </div>
+                              );
+                            }
+                            // Regular paragraph line
                             return (
-                              <div key={lineIdx} className="flex gap-2">
-                                <span className="text-indigo-600 font-bold">•</span>
-                                <span>{renderContent(bulletText, handleLinkClick)}</span>
-                              </div>
+                              <p key={lineIdx}>
+                                {renderContent(line, handleLinkClick)}
+                              </p>
                             );
-                          }
-                          // Regular paragraph line
-                          return (
-                            <p key={lineIdx}>
-                              {renderContent(line, handleLinkClick)}
-                            </p>
-                          );
-                        })}
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  );
-                }
+                    );
+                  }
 
-                // Check if this is a header (old format fallback)
-                if (paragraph.trim().startsWith('## ')) {
-                  const headerText = paragraph.trim().slice(3);
-                  return (
-                    <div key={idx} className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl shadow-md p-5 md:p-6">
-                      <h2 className="text-xl md:text-2xl font-bold text-gray-900">
-                        {renderContent(headerText, handleLinkClick)}
-                      </h2>
-                    </div>
-                  );
-                }
-
-                // Regular paragraph as card (fallback for old format)
-                return (
-                  <div key={idx} className="bg-white rounded-xl shadow-lg p-6 md:p-8 mb-4 min-h-[70vh] flex flex-col justify-center">
-                    <div className="text-sm font-medium text-gray-500 mb-4">{topic}</div>
-                    <p className="text-base md:text-lg text-gray-800 leading-relaxed">
-                      {renderContent(paragraph, handleLinkClick)}
-                    </p>
-                  </div>
-                );
-              })}
+                  // Fallback for non-card content
+                  return null;
+                });
+              })()}
             </div>
           ) : (
             <div className="bg-white rounded-xl shadow-md p-5 md:p-6 flex items-center gap-3">
