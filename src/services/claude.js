@@ -104,7 +104,7 @@ FORMAT - CRITICAL:
 You MUST use this exact format. Write 3 cards total (not including hook).
 
 STRUCTURE FOR EACH CARD:
-Each card should focus on ONE clear idea or concept. Mix of paragraphs and bullets. Make it FULL of info, but keep each card focused on a single aspect of the topic.
+Each card should focus on ONE clear idea or concept. Mix of paragraphs and bullets. Keep cards CONCISE - aim for about 80-120 words per card max. Each card must fit on a mobile screen without scrolling.
 
 CARD: Sky God of the Steppes
 **Tengri was the supreme sky god worshipped across Central Asia for over a thousand years.** This wasn't some local deity - Tengri ruled the religious world from Mongolia to Turkey.
@@ -1016,7 +1016,7 @@ FORMAT - CRITICAL:
 You MUST use this exact format. Write 2-3 cards total.
 
 STRUCTURE FOR EACH CARD:
-Mix of paragraphs and bullets. Make it FULL of info.
+Mix of paragraphs and bullets. Keep cards CONCISE - aim for about 80-120 words per card max. Each card must fit on a mobile screen without scrolling.
 
 CARD: Training Regimen
 Roman soldiers trained **every single day** from sunrise to sunset. The training was designed to make actual combat feel easy by comparison.
