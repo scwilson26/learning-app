@@ -7,13 +7,38 @@ import LoadingFacts from './LoadingFacts'
 function renderContent(text, onLinkClick) {
   if (!text) return null;
 
+  // Split by newlines first to handle bullets
+  const lines = text.split('\n');
+
+  return lines.map((line, lineIndex) => {
+    // Check if this line is a bullet point
+    if (line.trim().startsWith('- ')) {
+      const bulletText = line.trim().slice(2);
+      return (
+        <div key={lineIndex} className="flex gap-2 mb-2">
+          <span className="text-indigo-600 font-bold flex-shrink-0">•</span>
+          <span>{renderTextWithMarkup(bulletText, onLinkClick)}</span>
+        </div>
+      );
+    }
+
+    // Regular paragraph
+    if (line.trim()) {
+      return (
+        <p key={lineIndex} className="mb-2">
+          {renderTextWithMarkup(line, onLinkClick)}
+        </p>
+      );
+    }
+
+    return null;
+  });
+}
+
+// Helper to render hyperlinks and bold within a single line of text
+function renderTextWithMarkup(text, onLinkClick) {
   // Split by both hyperlinks and bold markers
   const parts = text.split(/(\[\[.*?\]\]|\*\*.*?\*\*)/g);
-
-  // Debug: log if we find brackets that aren't being split
-  if (text.includes('[[') && parts.length === 1) {
-    console.log('DEBUG: Found [[ but regex didnt split:', text);
-  }
 
   return parts.map((part, i) => {
     // Check if this is bold text
@@ -302,32 +327,12 @@ export default function LearnScreen({
                     const cardTitle = cardMatch[1].trim();
                     const cardContent = cardMatch[2].trim();
 
-                  // Split content by newlines to handle bullet points
-                  const contentLines = cardContent.split('\n').filter(line => line.trim());
-
                     return (
                       <div>
                         <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 mb-4 min-h-[60vh] flex flex-col justify-center">
                           <div className="text-lg md:text-xl font-bold text-gray-900 mb-4">{topic} - {cardTitle}</div>
-                          <div className="text-sm md:text-base text-gray-800 leading-relaxed space-y-2">
-                            {contentLines.map((line, lineIdx) => {
-                              // Check if it's a bullet point
-                              if (line.trim().startsWith('- ')) {
-                                const bulletText = line.trim().slice(2);
-                                return (
-                                  <div key={lineIdx} className="flex gap-2">
-                                    <span className="text-indigo-600 font-bold">•</span>
-                                    <span>{renderContent(bulletText, handleLinkClick)}</span>
-                                  </div>
-                                );
-                              }
-                              // Regular paragraph line
-                              return (
-                                <p key={lineIdx}>
-                                  {renderContent(line, handleLinkClick)}
-                                </p>
-                              );
-                            })}
+                          <div className="text-sm md:text-base text-gray-800 leading-relaxed">
+                            {renderContent(cardContent, handleLinkClick)}
                           </div>
                         </div>
 
