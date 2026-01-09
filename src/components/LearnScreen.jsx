@@ -167,7 +167,6 @@ export default function LearnScreen({
             </div>
           </div>
         )}
-      </div>
 
       {/* Quick Card Pop-up - MOVED OUTSIDE CONTAINER */}
       {quickCard && (
