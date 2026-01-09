@@ -1,7 +1,18 @@
 import { useState, useEffect } from 'react'
 import { renderContent } from '../utils/contentRenderer'
 
-export default function CardCarousel({ content, topic, onLinkClick }) {
+export default function CardCarousel({
+  content,
+  topic,
+  onLinkClick,
+  // Action cards props
+  currentPart,
+  loadingContinuation,
+  onKeepReading,
+  suggestions,
+  onSuggestionClick,
+  onSurpriseMe
+}) {
   if (!content) return null;
 
   // Split content into blocks by CARD: markers
@@ -45,6 +56,7 @@ export default function CardCarousel({ content, topic, onLinkClick }) {
 
   return (
     <div className="h-full overflow-y-scroll snap-y snap-mandatory hide-scrollbar">
+      {/* Content cards */}
       {cardBlocks.map((block, idx) => {
         const cardText = block.content.join('\n');
         const cardMatch = cardText.trim().match(/^CARD:\s*(.+?)\n([\s\S]+)$/);
@@ -55,7 +67,7 @@ export default function CardCarousel({ content, topic, onLinkClick }) {
 
         return (
           <div
-            key={idx}
+            key={`content-${idx}`}
             className="h-screen snap-start flex items-center justify-center px-4"
           >
               <div className="bg-white rounded-xl shadow-lg p-4 md:p-5 w-full max-w-xl max-h-[75vh] overflow-y-auto">
@@ -70,6 +82,93 @@ export default function CardCarousel({ content, topic, onLinkClick }) {
             </div>
           );
         })}
+
+      {/* Deep Dive card - shows when not at max parts */}
+      {currentPart < 4 && (
+        <div
+          key="deep-dive-card"
+          className="h-screen snap-start flex items-center justify-center px-4"
+        >
+          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-xl">
+            <div className="text-center mb-6">
+              <div className="text-4xl mb-4">🤿</div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Ready to dive deeper?</h2>
+              <p className="text-gray-600">
+                Continue reading to learn more about {topic}
+              </p>
+            </div>
+            <button
+              onClick={onKeepReading}
+              disabled={loadingContinuation}
+              className="w-full bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600 text-white font-bold py-4 px-6 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-3"
+            >
+              {loadingContinuation ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  <span>Loading more...</span>
+                </>
+              ) : (
+                <>
+                  <span>Deep Dive</span>
+                  <span className="text-sm opacity-80">
+                    (Part {currentPart + 1} of 4)
+                  </span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Completed indicator card when at part 4 */}
+      {currentPart === 4 && (
+        <div
+          key="completed-card"
+          className="h-screen snap-start flex items-center justify-center px-4"
+        >
+          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-xl text-center">
+            <div className="text-6xl mb-4">🎓</div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Complete!</h2>
+            <p className="text-gray-600 text-lg mb-2">You've read the complete deep-dive!</p>
+            <p className="text-sm text-gray-500">Swipe to explore related topics or start a new adventure</p>
+          </div>
+        </div>
+      )}
+
+      {/* Where to next card */}
+      {suggestions && (suggestions.related.length > 0 || suggestions.tangents.length > 0) && (
+        <div
+          key="suggestions-card"
+          className="h-screen snap-start flex items-center justify-center px-4"
+        >
+          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-xl max-h-[75vh] overflow-y-auto">
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4">🐇 Where to next?</h2>
+
+            {/* Combined suggestions - Rabbit Hole options */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {[...suggestions.related, ...suggestions.tangents].slice(0, 6).map((suggestedTopic, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => onSuggestionClick(suggestedTopic)}
+                  className="px-4 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-medium rounded-lg transition-colors"
+                >
+                  {suggestedTopic}
+                </button>
+              ))}
+            </div>
+
+            {/* Surprise Me button */}
+            <div className="pt-4 border-t border-gray-200">
+              <button
+                onClick={onSurpriseMe}
+                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98]"
+              >
+                ✨ Surprise Me
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -95,6 +95,12 @@ export default function LearnScreen({
               content={content}
               topic={topic}
               onLinkClick={handleLinkClick}
+              currentPart={currentPart}
+              loadingContinuation={loadingContinuation}
+              onKeepReading={onKeepReading}
+              suggestions={suggestions}
+              onSuggestionClick={handleSuggestionClick}
+              onSurpriseMe={handleSurpriseMe}
             />
           ) : (
             <div className="bg-white rounded-xl shadow-md p-5 md:p-6 flex items-center gap-3">
@@ -102,71 +108,7 @@ export default function LearnScreen({
               <span className="text-gray-500">Loading more...</span>
             </div>
           )}
-
-          {/* Deep Dive button - shows when content is loaded and not at max parts */}
-          {content && currentPart < 4 && (
-            <div className="mt-8 pt-6 border-t border-gray-200">
-              <button
-                onClick={onKeepReading}
-                disabled={loadingContinuation}
-                className="w-full bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600 text-white font-bold py-4 px-6 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-3"
-              >
-                {loadingContinuation ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                    <span>Loading more...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>🤿 Deep Dive</span>
-                    <span className="text-sm opacity-80">
-                      (Part {currentPart + 1} of 4)
-                    </span>
-                  </>
-                )}
-              </button>
-            </div>
-          )}
-
-          {/* Completed indicator when at part 4 */}
-          {content && currentPart === 4 && (
-            <div className="mt-8 pt-6 border-t border-gray-200 text-center">
-              <div className="text-2xl mb-2">🎓</div>
-              <p className="text-gray-600 font-medium">You've read the complete deep-dive!</p>
-              <p className="text-sm text-gray-500 mt-1">Explore related topics below or start a new adventure</p>
-            </div>
-          )}
         </div>
-
-        {/* Where to next? section */}
-        {(suggestions.related.length > 0 || suggestions.tangents.length > 0) && (
-          <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-            <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4">🐇 Where to next?</h2>
-
-            {/* Combined suggestions - Rabbit Hole options */}
-            <div className="flex flex-wrap gap-2 mb-4">
-              {[...suggestions.related, ...suggestions.tangents].slice(0, 6).map((suggestedTopic, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleSuggestionClick(suggestedTopic)}
-                  className="px-4 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-medium rounded-lg transition-colors"
-                >
-                  {suggestedTopic}
-                </button>
-              ))}
-            </div>
-
-            {/* Surprise Me button */}
-            <div className="pt-4 border-t border-gray-200">
-              <button
-                onClick={handleSurpriseMe}
-                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98]"
-              >
-                ✨ Surprise Me
-              </button>
-            </div>
-          </div>
-        )}
 
       {/* Quick Card Pop-up - MOVED OUTSIDE CONTAINER */}
       {quickCard && (
