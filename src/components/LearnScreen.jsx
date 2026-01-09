@@ -92,11 +92,17 @@ export default function LearnScreen({
   const [quickCard, setQuickCard] = useState(null) // { term, text, hyperlinks }
   const [loadingCard, setLoadingCard] = useState(false)
   const [loadingSurprise, setLoadingSurprise] = useState(false)
+  const [currentCardIndex, setCurrentCardIndex] = useState(0)
 
   // Reset loadingSurprise when topic changes (new article has loaded)
   useEffect(() => {
     setLoadingSurprise(false)
   }, [topic])
+
+  // Reset card index when content changes
+  useEffect(() => {
+    setCurrentCardIndex(0)
+  }, [content])
 
   const handleLinkClick = async (term) => {
     recordHyperlinkClick()
@@ -204,7 +210,7 @@ export default function LearnScreen({
 
           {/* Body content as cards (hook is now part of first card) */}
           {content !== null && content !== undefined ? (
-            <div className="space-y-4">
+            <div>
               {(() => {
                 // Split content into blocks by CARD: markers and PART markers
                 const blocks = [];
@@ -242,23 +248,48 @@ export default function LearnScreen({
                   blocks.push(currentBlock);
                 }
 
-                // Render blocks
-                return blocks.map((block, idx) => {
-                  if (block.type === 'part') {
-                    const partMatch = block.content[0].trim().match(/^---PART-(\d)---$/);
-                    const partNum = partMatch[1];
-                    return (
-                      <div key={idx} className="flex items-center gap-4 my-6">
-                        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-indigo-300 to-transparent"></div>
-                        <span className="text-sm font-semibold text-indigo-500 uppercase tracking-wider">
-                          Part {partNum}
-                        </span>
-                        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-indigo-300 to-transparent"></div>
-                      </div>
-                    );
-                  }
+                // Filter to only card blocks for swiping
+                const cardBlocks = blocks.filter(b => b.type === 'card');
+                const totalCards = cardBlocks.length;
 
-                  if (block.type === 'card') {
+                // Swipe handlers
+                let touchStartY = 0;
+                let touchStartX = 0;
+                const handleTouchStart = (e) => {
+                  touchStartY = e.touches[0].clientY;
+                  touchStartX = e.touches[0].clientX;
+                };
+                const handleTouchEnd = (e) => {
+                  const touchEndY = e.changedTouches[0].clientY;
+                  const touchEndX = e.changedTouches[0].clientX;
+                  const deltaY = touchStartY - touchEndY;
+                  const deltaX = Math.abs(touchStartX - touchEndX);
+
+                  // Only trigger if vertical swipe is significant and horizontal movement is small
+                  if (Math.abs(deltaY) > 50 && deltaX < 30) {
+                    if (deltaY > 0 && currentCardIndex < totalCards - 1) {
+                      // Swiped up - next card
+                      setCurrentCardIndex(prev => prev + 1);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    } else if (deltaY < 0 && currentCardIndex > 0) {
+                      // Swiped down - previous card
+                      setCurrentCardIndex(prev => prev - 1);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                  }
+                };
+
+                // Render current card only
+                const currentBlock = cardBlocks[currentCardIndex];
+                if (!currentBlock) return null;
+
+                return (
+                  <div
+                    onTouchStart={handleTouchStart}
+                    onTouchEnd={handleTouchEnd}
+                  >
+                    {(() => {
+                      const block = currentBlock;
                     const cardText = block.content.join('\n');
                     const cardMatch = cardText.trim().match(/^CARD:\s*(.+?)\n([\s\S]+)$/);
                     if (!cardMatch) return null;
@@ -270,35 +301,54 @@ export default function LearnScreen({
                   const contentLines = cardContent.split('\n').filter(line => line.trim());
 
                     return (
-                      <div key={idx} className="bg-white rounded-xl shadow-lg p-6 md:p-8 mb-4 min-h-[60vh] flex flex-col justify-center">
-                        <div className="text-lg md:text-xl font-bold text-gray-900 mb-4">{topic} - {cardTitle}</div>
-                        <div className="text-sm md:text-base text-gray-800 leading-relaxed space-y-2">
-                          {contentLines.map((line, lineIdx) => {
-                            // Check if it's a bullet point
-                            if (line.trim().startsWith('- ')) {
-                              const bulletText = line.trim().slice(2);
+                      <div>
+                        <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 mb-4 min-h-[60vh] flex flex-col justify-center">
+                          <div className="text-lg md:text-xl font-bold text-gray-900 mb-4">{topic} - {cardTitle}</div>
+                          <div className="text-sm md:text-base text-gray-800 leading-relaxed space-y-2">
+                            {contentLines.map((line, lineIdx) => {
+                              // Check if it's a bullet point
+                              if (line.trim().startsWith('- ')) {
+                                const bulletText = line.trim().slice(2);
+                                return (
+                                  <div key={lineIdx} className="flex gap-2">
+                                    <span className="text-indigo-600 font-bold">•</span>
+                                    <span>{renderContent(bulletText, handleLinkClick)}</span>
+                                  </div>
+                                );
+                              }
+                              // Regular paragraph line
                               return (
-                                <div key={lineIdx} className="flex gap-2">
-                                  <span className="text-indigo-600 font-bold">•</span>
-                                  <span>{renderContent(bulletText, handleLinkClick)}</span>
-                                </div>
+                                <p key={lineIdx}>
+                                  {renderContent(line, handleLinkClick)}
+                                </p>
                               );
-                            }
-                            // Regular paragraph line
-                            return (
-                              <p key={lineIdx}>
-                                {renderContent(line, handleLinkClick)}
-                              </p>
-                            );
-                          })}
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Card navigation dots */}
+                        <div className="flex justify-center gap-2 mt-4 mb-6">
+                          {cardBlocks.map((_, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => {
+                                setCurrentCardIndex(idx);
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                              }}
+                              className={`w-2 h-2 rounded-full transition-all ${
+                                idx === currentCardIndex
+                                  ? 'bg-indigo-600 w-6'
+                                  : 'bg-gray-300'
+                              }`}
+                              aria-label={`Go to card ${idx + 1}`}
+                            />
+                          ))}
                         </div>
                       </div>
                     );
-                  }
-
-                  // Fallback for non-card content
-                  return null;
-                });
+                    })()}
+                  </div>
+                );
               })()}
             </div>
           ) : (
