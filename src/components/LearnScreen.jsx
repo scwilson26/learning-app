@@ -296,9 +296,23 @@ export default function LearnScreen({
                 // Swipe handlers
                 let touchStartY = 0;
                 let touchStartX = 0;
+                let scrollAtStart = 0;
                 const handleTouchStart = (e) => {
                   touchStartY = e.touches[0].clientY;
                   touchStartX = e.touches[0].clientX;
+                  scrollAtStart = window.scrollY;
+                };
+                const handleTouchMove = (e) => {
+                  // Check if this is a valid vertical swipe gesture
+                  const touchCurrentY = e.touches[0].clientY;
+                  const touchCurrentX = e.touches[0].clientX;
+                  const deltaY = touchStartY - touchCurrentY;
+                  const deltaX = Math.abs(touchStartX - touchCurrentX);
+
+                  // If it's a clear vertical swipe (not horizontal), prevent default scroll
+                  if (Math.abs(deltaY) > 10 && deltaX < 30) {
+                    e.preventDefault();
+                  }
                 };
                 const handleTouchEnd = (e) => {
                   const touchEndY = e.changedTouches[0].clientY;
@@ -308,6 +322,7 @@ export default function LearnScreen({
 
                   // Only trigger if vertical swipe is significant and horizontal movement is small
                   if (Math.abs(deltaY) > 50 && deltaX < 30) {
+                    e.preventDefault();
                     if (deltaY > 0 && currentCardIndex < totalCards - 1) {
                       // Swiped up - next card
                       setCurrentCardIndex(prev => prev + 1);
@@ -317,6 +332,8 @@ export default function LearnScreen({
                       setCurrentCardIndex(prev => prev - 1);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }
+                    // Restore scroll position to prevent page jump
+                    window.scrollTo({ top: scrollAtStart, behavior: 'instant' });
                   }
                 };
 
@@ -327,6 +344,7 @@ export default function LearnScreen({
                 return (
                   <div
                     onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
                     onTouchEnd={handleTouchEnd}
                   >
                     {(() => {
