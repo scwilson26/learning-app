@@ -185,19 +185,25 @@ export default function LearnScreen({
           )}
         </div>
 
-        {/* Content area */}
-        <div className="bg-white rounded-lg shadow-lg p-5 md:p-8 mb-6">
-          {/* Title */}
-          <h1 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6 text-gray-900">{topic}</h1>
+        {/* Content area - Card Layout */}
+        <div className="mb-6">
+          {/* Title Card */}
+          <div className="bg-white rounded-xl shadow-md p-5 md:p-6 mb-4">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{topic}</h1>
+          </div>
 
-          {/* Hook paragraph - larger, bold */}
-          <p className="text-base md:text-lg font-semibold mb-4 md:mb-6 text-gray-900 leading-relaxed">
-            {renderContent(hook, handleLinkClick)}
-          </p>
+          {/* Hook Card */}
+          {hook && (
+            <div className="bg-white rounded-xl shadow-md p-5 md:p-6 mb-4">
+              <p className="text-base md:text-lg font-semibold text-gray-900 leading-relaxed">
+                {renderContent(hook, handleLinkClick)}
+              </p>
+            </div>
+          )}
 
-          {/* Body content - render paragraphs (or loading state) */}
+          {/* Body content as cards */}
           {content !== null && content !== undefined ? (
-            <div className="space-y-3 md:space-y-4 text-gray-800 leading-relaxed text-base md:text-lg">
+            <div className="space-y-4">
               {content.split('\n\n').map((paragraph, idx) => {
                 // Skip empty paragraphs
                 if (!paragraph.trim()) return null;
@@ -207,7 +213,7 @@ export default function LearnScreen({
                 if (partMatch) {
                   const partNum = partMatch[1];
                   return (
-                    <div key={idx} className="flex items-center gap-4 my-8 md:my-10">
+                    <div key={idx} className="flex items-center gap-4 my-6">
                       <div className="flex-1 h-px bg-gradient-to-r from-transparent via-indigo-300 to-transparent"></div>
                       <span className="text-sm font-semibold text-indigo-500 uppercase tracking-wider">
                         Part {partNum}
@@ -221,21 +227,26 @@ export default function LearnScreen({
                 if (paragraph.trim().startsWith('## ')) {
                   const headerText = paragraph.trim().slice(3);
                   return (
-                    <h2 key={idx} className="text-xl md:text-2xl font-bold mt-6 md:mt-8 mb-3 md:mb-4 text-gray-900">
-                      {renderContent(headerText, handleLinkClick)}
-                    </h2>
+                    <div key={idx} className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl shadow-md p-5 md:p-6">
+                      <h2 className="text-xl md:text-2xl font-bold text-gray-900">
+                        {renderContent(headerText, handleLinkClick)}
+                      </h2>
+                    </div>
                   );
                 }
 
+                // Regular paragraph as card
                 return (
-                  <p key={idx} className="mb-4">
-                    {renderContent(paragraph, handleLinkClick)}
-                  </p>
+                  <div key={idx} className="bg-white rounded-xl shadow-md p-5 md:p-6">
+                    <p className="text-base md:text-lg text-gray-800 leading-relaxed">
+                      {renderContent(paragraph, handleLinkClick)}
+                    </p>
+                  </div>
                 );
               })}
             </div>
           ) : (
-            <div className="flex items-center gap-3 py-8">
+            <div className="bg-white rounded-xl shadow-md p-5 md:p-6 flex items-center gap-3">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
               <span className="text-gray-500">Loading more...</span>
             </div>
