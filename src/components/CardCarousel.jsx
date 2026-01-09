@@ -107,8 +107,12 @@ export default function CardCarousel({ content, topic, onLinkClick }) {
         onTouchEnd={handleTouchEnd}
         onScroll={(e) => {
           const container = e.target;
+          const scrollTop = container.scrollTop;
+          const containerHeight = container.clientHeight;
+          const scrollCenter = scrollTop + containerHeight / 2;
           const cardHeight = container.scrollHeight / cardBlocks.length;
-          const newIndex = Math.round(container.scrollTop / cardHeight);
+          const newIndex = Math.floor(scrollCenter / cardHeight);
+
           if (newIndex !== currentCardIndex && newIndex >= 0 && newIndex < cardBlocks.length) {
             setCurrentCardIndex(newIndex);
           }
@@ -131,12 +135,12 @@ export default function CardCarousel({ content, topic, onLinkClick }) {
                 opacity: isActive ? 1 : 0.25
               }}
             >
-              <div className="bg-white rounded-xl shadow-lg p-5 md:p-6 w-full max-w-xl max-h-[70vh] overflow-y-auto">
-                <div className="text-center mb-4">
-                  <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-3 capitalize">{topic}</h1>
+              <div className="bg-white rounded-xl shadow-lg p-4 md:p-5 w-full max-w-xl max-h-[70vh] overflow-y-auto">
+                <div className="text-center mb-3">
+                  <h1 className="text-lg md:text-xl font-bold text-gray-900 mb-2 capitalize">{topic}</h1>
                 </div>
-                <div className="text-base md:text-lg font-semibold text-gray-900 mb-3">{cardTitle}</div>
-                <div className="text-sm md:text-base text-gray-800 leading-relaxed ml-3">
+                <div className="text-sm md:text-base font-semibold text-gray-900 mb-2">{cardTitle}</div>
+                <div className="text-xs md:text-sm text-gray-800 leading-snug ml-2">
                   {renderContent(cardContent, onLinkClick)}
                 </div>
               </div>
