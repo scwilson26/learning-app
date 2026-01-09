@@ -592,11 +592,11 @@ Do NOT focus on how it relates to any other topic. The reader wants to learn abo
 
 GOAL: Make them go "WHAT?!" and immediately click "Go Deeper"
 
-WRITING STYLE - CRITICAL:
-- MAXIMUM 2 sentences. No more. Ever.
+WRITING STYLE:
+- MAXIMUM 2 sentences. No more.
 - Lead with the WEIRDEST, most shocking fact ABOUT "${term}"
-- **Use past tense for historical events**
-- Simple words a 10-year-old would understand. MAX 15 words per sentence.
+- Write like you're texting a friend. Simple words. Short sentences.
+- Use past tense for historical events
 - NO context-setting or explanations
 - Just state the shocking facts and STOP
 
