@@ -37,20 +37,31 @@ function renderContent(text, onLinkClick) {
 
 // Helper to render hyperlinks and bold within a single line of text
 function renderTextWithMarkup(text, onLinkClick) {
-  // Split by both hyperlinks and bold markers
-  const parts = text.split(/(\[\[.*?\]\]|\*\*.*?\*\*)/g);
+  // First split by bold markers
+  const boldParts = text.split(/(\*\*.*?\*\*)/g);
 
-  return parts.map((part, i) => {
+  return boldParts.map((boldPart, i) => {
     // Check if this is bold text
-    if (part.startsWith('**') && part.endsWith('**')) {
-      const boldText = part.slice(2, -2);
+    if (boldPart.startsWith('**') && boldPart.endsWith('**')) {
+      const boldText = boldPart.slice(2, -2);
+      // Process hyperlinks within bold text
       return (
         <strong key={i} className="font-bold text-gray-900">
-          {boldText}
+          {processHyperlinks(boldText, onLinkClick)}
         </strong>
       );
     }
 
+    // Process hyperlinks in non-bold text
+    return <span key={i}>{processHyperlinks(boldPart, onLinkClick)}</span>;
+  });
+}
+
+// Process hyperlinks within text
+function processHyperlinks(text, onLinkClick) {
+  const parts = text.split(/(\[\[.*?\]\])/g);
+
+  return parts.map((part, i) => {
     // Check if this is a hyperlink
     if (part.startsWith('[[') && part.endsWith(']]')) {
       let term = part.slice(2, -2);
