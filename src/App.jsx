@@ -262,8 +262,8 @@ function App() {
     setLoadingContinuation(true)
     try {
       const nextPart = currentPart + 1
-      // Build the full existing content (hook + body)
-      const existingContent = `${learnData.hook}\n\n${learnData.content}`
+      // Build the full existing content (just body, no hook - hook is too specific to Part 1)
+      const existingContent = learnData.content
 
       // Store the base content before streaming starts
       const baseContent = learnData.content
