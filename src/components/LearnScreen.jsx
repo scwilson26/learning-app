@@ -2,115 +2,8 @@ import { useState, useEffect } from 'react'
 import { generateQuickCard } from '../services/claude'
 import { recordHyperlinkClick, recordQuickCardView, recordSurpriseMeClick } from '../services/stats'
 import LoadingFacts from './LoadingFacts'
-
-// Helper function to render text with [[hyperlinks]], **bold**, and bullet points
-function renderContent(text, onLinkClick) {
-  if (!text) return null;
-
-  // Split by newlines first to handle bullets
-  const lines = text.split('\n');
-
-  return lines.map((line, lineIndex) => {
-    // Check if this line is a bullet point
-    if (line.trim().startsWith('- ')) {
-      const bulletText = line.trim().slice(2);
-      return (
-        <div key={lineIndex} className="flex gap-2 mb-2">
-          <span className="text-indigo-600 font-bold flex-shrink-0">•</span>
-          <span>{renderTextWithMarkup(bulletText, onLinkClick)}</span>
-        </div>
-      );
-    }
-
-    // Regular paragraph
-    if (line.trim()) {
-      return (
-        <p key={lineIndex} className="mb-2">
-          {renderTextWithMarkup(line, onLinkClick)}
-        </p>
-      );
-    }
-
-    return null;
-  });
-}
-
-// Helper to render hyperlinks and bold within a single line of text
-function renderTextWithMarkup(text, onLinkClick) {
-  // First split by bold markers
-  const boldParts = text.split(/(\*\*.*?\*\*)/g);
-
-  return boldParts.map((boldPart, i) => {
-    // Check if this is bold text
-    if (boldPart.startsWith('**') && boldPart.endsWith('**')) {
-      const boldText = boldPart.slice(2, -2);
-      // Process hyperlinks within bold text
-      return (
-        <strong key={i} className="font-bold text-gray-900">
-          {processHyperlinks(boldText, onLinkClick)}
-        </strong>
-      );
-    }
-
-    // Process hyperlinks in non-bold text
-    return <span key={i}>{processHyperlinks(boldPart, onLinkClick)}</span>;
-  });
-}
-
-// Process hyperlinks within text
-function processHyperlinks(text, onLinkClick) {
-  const parts = text.split(/(\[\[.*?\]\])/g);
-
-  return parts.map((part, i) => {
-    // Check if this is a hyperlink
-    if (part.startsWith('[[') && part.endsWith(']]')) {
-      let term = part.slice(2, -2);
-
-      // Handle wiki-style links like [[display|target]] - just use the first part
-      if (term.includes('|')) {
-        term = term.split('|')[0];
-      }
-
-      return (
-        <span
-          key={i}
-          onClick={() => onLinkClick(term)}
-          onTouchEnd={(e) => {
-            e.preventDefault()
-            onLinkClick(term)
-          }}
-          style={{
-            color: '#4F46E5',
-            fontWeight: '500',
-            textDecoration: 'underline',
-            textDecorationThickness: '2px',
-            textUnderlineOffset: '2px',
-            cursor: 'pointer',
-            display: 'inline-block',
-            WebkitTapHighlightColor: 'rgba(79, 70, 229, 0.3)',
-            touchAction: 'manipulation',
-            WebkitUserSelect: 'none',
-            userSelect: 'none',
-          }}
-        >
-          {term}
-        </span>
-      );
-    }
-
-    // Check for section headers (lines starting with ##)
-    if (part.trim().startsWith('## ')) {
-      const headerText = part.trim().slice(3);
-      return (
-        <h2 key={i} className="text-xl md:text-2xl font-bold mt-6 md:mt-8 mb-3 md:mb-4 text-gray-900">
-          {headerText}
-        </h2>
-      );
-    }
-
-    return <span key={i}>{part}</span>;
-  });
-}
+import CardCarousel from './CardCarousel'
+import { renderContent } from '../utils/contentRenderer'
 
 export default function LearnScreen({
   topic,
@@ -133,17 +26,11 @@ export default function LearnScreen({
   const [quickCard, setQuickCard] = useState(null) // { term, text, hyperlinks }
   const [loadingCard, setLoadingCard] = useState(false)
   const [loadingSurprise, setLoadingSurprise] = useState(false)
-  const [currentCardIndex, setCurrentCardIndex] = useState(0)
 
   // Reset loadingSurprise when topic changes (new article has loaded)
   useEffect(() => {
     setLoadingSurprise(false)
   }, [topic])
-
-  // Reset card index when content changes
-  useEffect(() => {
-    setCurrentCardIndex(0)
-  }, [content])
 
   const handleLinkClick = async (term) => {
     recordHyperlinkClick()
@@ -244,173 +131,12 @@ export default function LearnScreen({
 
         {/* Content area - Card Layout */}
         <div className="mb-6">
-          {/* Body content as cards (hook is now part of first card) */}
           {content !== null && content !== undefined ? (
-            <div>
-              {(() => {
-                // Split content into blocks by CARD: markers and PART markers
-                const blocks = [];
-                const lines = content.split('\n');
-                let currentBlock = { type: null, content: [] };
-
-                for (let i = 0; i < lines.length; i++) {
-                  const line = lines[i];
-
-                  // Check for PART divider
-                  if (line.trim().match(/^---PART-(\d)---$/)) {
-                    if (currentBlock.content.length > 0) {
-                      blocks.push(currentBlock);
-                    }
-                    blocks.push({ type: 'part', content: [line] });
-                    currentBlock = { type: null, content: [] };
-                    continue;
-                  }
-
-                  // Check for CARD marker
-                  if (line.trim().startsWith('CARD:')) {
-                    if (currentBlock.content.length > 0) {
-                      blocks.push(currentBlock);
-                    }
-                    currentBlock = { type: 'card', content: [line] };
-                    continue;
-                  }
-
-                  // Add line to current block
-                  currentBlock.content.push(line);
-                }
-
-                // Push last block
-                if (currentBlock.content.length > 0) {
-                  blocks.push(currentBlock);
-                }
-
-                // Filter to only card blocks for swiping
-                const cardBlocks = blocks.filter(b => b.type === 'card');
-                const totalCards = cardBlocks.length;
-
-                // Swipe handlers
-                let touchStartY = 0;
-                let touchStartX = 0;
-                let scrollAtStart = 0;
-                const handleTouchStart = (e) => {
-                  touchStartY = e.touches[0].clientY;
-                  touchStartX = e.touches[0].clientX;
-                  scrollAtStart = window.scrollY;
-                };
-                const handleTouchMove = (e) => {
-                  // Check if this is a valid vertical swipe gesture
-                  const touchCurrentY = e.touches[0].clientY;
-                  const touchCurrentX = e.touches[0].clientX;
-                  const deltaY = touchStartY - touchCurrentY;
-                  const deltaX = Math.abs(touchStartX - touchCurrentX);
-
-                  // If it's a clear vertical swipe (not horizontal), prevent default scroll
-                  if (Math.abs(deltaY) > 10 && deltaX < 30) {
-                    e.preventDefault();
-                  }
-                };
-                const handleTouchEnd = (e) => {
-                  const touchEndY = e.changedTouches[0].clientY;
-                  const touchEndX = e.changedTouches[0].clientX;
-                  const deltaY = touchStartY - touchEndY;
-                  const deltaX = Math.abs(touchStartX - touchEndX);
-
-                  // Only trigger if vertical swipe is significant and horizontal movement is small
-                  if (Math.abs(deltaY) > 50 && deltaX < 30) {
-                    e.preventDefault();
-                    if (deltaY > 0 && currentCardIndex < totalCards - 1) {
-                      // Swiped up - next card
-                      setCurrentCardIndex(prev => prev + 1);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    } else if (deltaY < 0 && currentCardIndex > 0) {
-                      // Swiped down - previous card
-                      setCurrentCardIndex(prev => prev - 1);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }
-                    // Restore scroll position to prevent page jump
-                    window.scrollTo({ top: scrollAtStart, behavior: 'instant' });
-                  }
-                };
-
-                // Render all cards with snap scroll carousel
-                return (
-                  <div>
-                    {/* Snap scroll container */}
-                    <div
-                      className="overflow-y-auto snap-y snap-mandatory h-[80vh] hide-scrollbar"
-                      style={{
-                        scrollbarWidth: 'none',
-                        msOverflowStyle: 'none',
-                      }}
-                      onTouchStart={handleTouchStart}
-                      onTouchMove={handleTouchMove}
-                      onTouchEnd={handleTouchEnd}
-                      onScroll={(e) => {
-                        const container = e.target;
-                        const cardHeight = container.scrollHeight / cardBlocks.length;
-                        const newIndex = Math.round(container.scrollTop / cardHeight);
-                        if (newIndex !== currentCardIndex && newIndex >= 0 && newIndex < cardBlocks.length) {
-                          setCurrentCardIndex(newIndex);
-                        }
-                      }}
-                    >
-                      {cardBlocks.map((block, idx) => {
-                        const cardText = block.content.join('\n');
-                        const cardMatch = cardText.trim().match(/^CARD:\s*(.+?)\n([\s\S]+)$/);
-                        if (!cardMatch) return null;
-
-                        const cardTitle = cardMatch[1].trim();
-                        const cardContent = cardMatch[2].trim();
-                        const isActive = idx === currentCardIndex;
-
-                        return (
-                          <div
-                            key={idx}
-                            className="snap-center h-[80vh] flex items-center justify-center px-4 py-8 transition-opacity duration-300"
-                            style={{
-                              opacity: isActive ? 1 : 0.25
-                            }}
-                          >
-                            <div className="bg-white rounded-xl shadow-lg p-5 md:p-6 w-full max-w-xl max-h-[70vh] overflow-y-auto">
-                              <div className="text-center mb-4">
-                                <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-3 capitalize">{topic}</h1>
-                              </div>
-                              <div className="text-base md:text-lg font-semibold text-gray-900 mb-3">{cardTitle}</div>
-                              <div className="text-sm md:text-base text-gray-800 leading-relaxed ml-3">
-                                {renderContent(cardContent, handleLinkClick)}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {/* Card navigation dots */}
-                    <div className="flex justify-center gap-2 mt-4 mb-6">
-                      {cardBlocks.map((_, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => {
-                            setCurrentCardIndex(idx);
-                            const container = document.querySelector('.snap-y');
-                            if (container) {
-                              const cardHeight = container.scrollHeight / cardBlocks.length;
-                              container.scrollTo({ top: idx * cardHeight, behavior: 'smooth' });
-                            }
-                          }}
-                          className={`w-2 h-2 rounded-full transition-all ${
-                            idx === currentCardIndex
-                              ? 'bg-indigo-600 w-6'
-                              : 'bg-gray-300'
-                          }`}
-                          aria-label={`Go to card ${idx + 1}`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
+            <CardCarousel
+              content={content}
+              topic={topic}
+              onLinkClick={handleLinkClick}
+            />
           ) : (
             <div className="bg-white rounded-xl shadow-md p-5 md:p-6 flex items-center gap-3">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
