@@ -101,10 +101,10 @@ GOAL: After reading Part 1, the reader should think "OK, I understand WHAT this 
 This is an OVERVIEW, not a story. Explain what the topic is. Give them the basics.
 
 FORMAT - CRITICAL:
-You MUST use this exact format. Write 2-3 cards total (not including hook).
+You MUST use this exact format. Write 3 cards total (not including hook).
 
 STRUCTURE FOR EACH CARD:
-Mix of paragraphs and bullets. Make it FULL of info.
+Each card should focus on ONE clear idea or concept. Mix of paragraphs and bullets. Make it FULL of info, but keep each card focused on a single aspect of the topic.
 
 CARD: Sky God of the Steppes
 **Tengri was the supreme sky god worshipped across Central Asia for over a thousand years.** This wasn't some local deity - Tengri ruled the religious world from Mongolia to Turkey.
@@ -126,6 +126,8 @@ CARD: Master of Everything
 He was so impressive that after he died, Egyptians worshipped him for **2,000 years** as the god of medicine and wisdom. That's like if we made Steve Jobs a god today and people were still praying to him in the year 4000.
 
 Rules - FOLLOW THESE:
+- Write EXACTLY 3 cards - one focused concept per card
+- Each card = one clear idea (don't jam multiple big concepts into one card)
 - Make cards FULL - combine paragraphs and bullets, whatever it takes
 - Use **bold** for key numbers, names, and dramatic facts
 - CRITICAL: Each bullet must be on its own line with a line break after it
@@ -1024,6 +1026,8 @@ They didn't just train - they fought each other in mock battles with real conseq
 The competition was intense. Every soldier knew his performance was being judged constantly. It kept everyone sharp and ready.
 
 Rules - FOLLOW THESE:
+- Write EXACTLY 3 cards - one focused concept per card
+- Each card = one clear idea (don't jam multiple big concepts into one card)
 - Make cards FULL - combine paragraphs and bullets, whatever it takes
 - Use **bold** for key numbers, names, and dramatic facts
 - CRITICAL: Each bullet must be on its own line with a line break after it
