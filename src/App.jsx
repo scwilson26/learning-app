@@ -101,17 +101,19 @@ function App() {
       setProgress({ message: 'Crafting your story...' })
 
       try {
-        // Get hook first (fast with Haiku)
-        const { hook } = await generateArticleHook(topic)
-
-        // Show hook immediately and switch to learn screen
-        const partialData = { topic, hook, content: '', hyperlinks: [], suggestions: { related: [], tangents: [] } }
+        // Show screen immediately with empty hook
+        const partialData = { topic, hook: '', content: '', hyperlinks: [], suggestions: { related: [], tangents: [] } }
         setLearnData(partialData)
         setBreadcrumbs([partialData])
         setCurrentIndex(0)
         setCurrentPart(1)
         setScreen('learn')
         setProgress(null)
+
+        // Stream hook first (fast with Haiku)
+        const { hook } = await generateArticleHook(topic, null, (streamedHook) => {
+          setLearnData(prev => ({ ...prev, hook: streamedHook }))
+        })
 
         // Stream body content - updates appear in real-time
         let currentHook = hook
@@ -149,18 +151,20 @@ function App() {
       // Step 1: Generate topic ASAP (filtered by selected categories)
       const randomTopic = await generateSurpriseTopic(selectedCategories)
 
-      // Step 2: Get hook (fast with Haiku)
+      // Step 2: Show screen immediately with empty hook
       setProgress({ message: 'Crafting your story...' })
-      const { hook } = await generateArticleHook(randomTopic)
-
-      // Show hook immediately and switch to learn screen
-      const partialData = { topic: randomTopic, hook, content: '', hyperlinks: [], suggestions: { related: [], tangents: [] } }
+      const partialData = { topic: randomTopic, hook: '', content: '', hyperlinks: [], suggestions: { related: [], tangents: [] } }
       setLearnData(partialData)
       setBreadcrumbs([partialData])
       setCurrentIndex(0)
       setCurrentPart(1)
       setScreen('learn')
       setProgress(null)
+
+      // Stream hook (fast with Haiku)
+      const { hook } = await generateArticleHook(randomTopic, null, (streamedHook) => {
+        setLearnData(prev => ({ ...prev, hook: streamedHook }))
+      })
 
       // Stream body content - updates appear in real-time
       let currentHook = hook
@@ -192,6 +196,7 @@ function App() {
     }
     // Bank the session stats
     resetSession()
+    // Reset all state including loading
     setScreen('home')
     setTopic('')
     setLearnData(null)
@@ -199,6 +204,9 @@ function App() {
     setCurrentIndex(0)
     setCurrentPart(1)
     setCurrentJourneyId(null)
+    setLoading(false)
+    setProgress(null)
+    setError(null)
   }
 
   const handleGoDeeper = async (term, quickCardText = null) => {
@@ -206,9 +214,8 @@ function App() {
     setProgress({ message: 'Crafting your story...' })
 
     try {
-      // Get hook first (fast with Haiku)
-      const { hook } = await generateArticleHook(term, quickCardText)
-      const partialData = { topic: term, hook, content: '', hyperlinks: [], suggestions: { related: [], tangents: [] } }
+      // Show partial data immediately with empty hook
+      const partialData = { topic: term, hook: '', content: '', hyperlinks: [], suggestions: { related: [], tangents: [] } }
       setLearnData(partialData)
       // If we're in the middle of history, branch from current point
       setBreadcrumbs(prev => [...prev.slice(0, currentIndex + 1), partialData])
@@ -216,6 +223,11 @@ function App() {
       setCurrentPart(1) // Reset to part 1 for new topic
       setProgress(null)
       window.scrollTo(0, 0)
+
+      // Stream hook first (fast with Haiku)
+      const { hook } = await generateArticleHook(term, quickCardText, (streamedHook) => {
+        setLearnData(prev => ({ ...prev, hook: streamedHook }))
+      })
 
       // Stream body content - updates appear in real-time
       let currentHook = hook

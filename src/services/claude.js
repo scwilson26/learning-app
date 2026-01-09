@@ -6,61 +6,34 @@ const anthropic = new Anthropic({
 });
 
 /**
- * Generate just the hook/opening for an article (fast, ~1-2 sentences)
+ * Generate just the hook/opening for an article (fast, ~1 sentence)
  * @param {string} topic - The topic to explore
  * @param {string} quickCardText - Optional Quick Card text to build upon
+ * @param {Function} onChunk - Optional callback for streaming chunks
  * @returns {Promise<{hook: string}>}
  */
-export async function generateArticleHook(topic, quickCardText = null) {
+export async function generateArticleHook(topic, quickCardText = null, onChunk = null) {
   try {
-    let prompt = `Write a 1-2 sentence OPENING HOOK about "${topic}" that makes readers desperate to learn more.
+    let prompt = `Write a ONE SENTENCE opening hook about "${topic}".
 
-CRITICAL: FIRST sentence creates curiosity, SECOND sentence delivers details.
-
-FIRST SENTENCE RULES:
+RULES:
 - Under 15 words
-- Simple words only
-- Open a loop, don't close it
-- Create a question in the reader's mind
-- NO dates, numbers, names yet
-
-SECOND SENTENCE:
-- Now add the specific details (dates, names, numbers, drama)
-- Answer enough to ground them, but leave mystery
-
-❌ NEVER use generic openings like:
-- "Imagine a time when..."
-- "Picture a world where..."
-- "In a time before..."
+- Simple everyday words (nothing fancy)
+- Make them curious
 
 EXAMPLES:
 
-❌ BAD (too dense, tries to do everything at once):
-"In a shadowy meeting of 12 intellectuals on May 1st, 1776, Adam Weishaupt launched a secret society so revolutionary that European monarchs would frantically hunt its members."
+✅ GOOD:
+"The Praetorian Guard murdered more emperors than they protected."
+"Aboriginal songs can guide you 40,000 miles with no map."
+"The Illuminati disbanded in 1785, but people still believe."
 
-✅ GOOD (short opener → details):
-"Secret societies make people nervous. When powerful people meet in secret, they can change laws and move money."
+❌ BAD (too wordy):
+"In a shadowy meeting of 12 intellectuals on May 1st, 1776..."
 
-❌ BAD (dumps all the drama up front):
-"The Praetorian Guard, elite Roman soldiers tasked with protecting emperors, murdered more rulers than they saved and even auctioned the throne in 193 CE."
+❌ NEVER say "Here's the hook" or any meta-commentary.
 
-✅ GOOD (curiosity → payoff):
-"The Praetorian Guard was supposed to protect Roman emperors. Instead, they murdered more than they saved."
-
-❌ BAD (front-loads the complexity):
-"Aboriginal Australians developed sophisticated songlines that encode 40,000 miles of desert geography with perfect navigational accuracy using only music and oral tradition."
-
-✅ GOOD (simple → fascinating):
-"Aboriginal songs can navigate 40,000 miles of desert. No maps, no roads, no landmarks - just music."
-
-Think: OPEN THE LOOP (sentence 1) → ADD DRAMA (sentence 2)
-
-CRITICAL - BANNED PHRASES:
-❌ NEVER say "Here's the hook for..." or "Here's the hook:" or any meta-commentary
-❌ NEVER say "This is the hook" or similar
-❌ Start IMMEDIATELY with the actual hook content
-
-Write ONLY the hook - 2 sentences max. No title, no body, no meta-commentary, just the hook itself.`;
+Write ONLY the hook - ONE sentence.`;
 
     // If we have Quick Card context, incorporate it
     if (quickCardText) {
@@ -76,13 +49,35 @@ IMPORTANT: Cover the FULL BREADTH of "${topic}" - not just the example from the 
 - Start with something NEW that expands their understanding`;
     }
 
-    const message = await anthropic.messages.create({
-      model: 'claude-3-5-haiku-20241022',  // Haiku for faster hook generation
-      max_tokens: 200,
-      messages: [{ role: 'user', content: prompt }]
-    });
+    // If streaming callback provided, use streaming
+    if (onChunk) {
+      let hookText = '';
 
-    return { hook: message.content[0].text.trim() };
+      const stream = await anthropic.messages.create({
+        model: 'claude-3-5-haiku-20241022',
+        max_tokens: 200,
+        messages: [{ role: 'user', content: prompt }],
+        stream: true
+      });
+
+      for await (const event of stream) {
+        if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+          hookText += event.delta.text;
+          onChunk(hookText);
+        }
+      }
+
+      return { hook: hookText.trim() };
+    } else {
+      // Non-streaming fallback
+      const message = await anthropic.messages.create({
+        model: 'claude-3-5-haiku-20241022',
+        max_tokens: 200,
+        messages: [{ role: 'user', content: prompt }]
+      });
+
+      return { hook: message.content[0].text.trim() };
+    }
   } catch (error) {
     console.error('Error generating hook:', error);
     throw new Error('Failed to generate hook');
@@ -99,158 +94,37 @@ IMPORTANT: Cover the FULL BREADTH of "${topic}" - not just the example from the 
  */
 export async function generateArticleBody(topic, quickCardText = null, onChunk = null, categoryIds = null) {
   try {
-    let prompt = `Write the BODY of a SHORT article about "${topic}".
+    let prompt = `Write a SHORT article body about "${topic}". (Hook already written - just write body)
 
-NOTE: A separate hook/opening has already been written. Write ONLY the body content that comes AFTER the hook.
+WRITING STYLE:
+Write like you're texting a friend. Simple words. Short sentences. Make it interesting.
 
-BODY (4-6 VERY SHORT paragraphs):
-These are articles, not audiobooks. Respect the reader's time. Get to the fascinating stuff FAST.
+FIRST PARAGRAPH:
+Tell me why this matters. Keep it simple.
 
-FIRST PARAGRAPH RULE - CRITICAL:
-The FIRST paragraph after the hook MUST ground the reader on WHY this topic matters.
-Ask yourself: "Would someone with ZERO background understand why anyone cares about this?"
-If not, your first paragraph must answer: "Why does this exist? What problem does it solve?"
+Example: "Roman emperors needed bodyguards. They picked the best soldiers. Those soldiers had all the weapons."
 
-Examples:
-- Seed vault? → "Crops fail. Diseases wipe out harvests. If we lose a type of wheat, it's gone forever. Unless someone saved the seeds."
-- Roman concrete? → "Our buildings crack after 50 years. Roman buildings have lasted 2,000. We still don't know their secret."
-- Praetorian Guard? → "Roman emperors needed bodyguards. They picked the best soldiers. Then those soldiers realized THEY had all the weapons."
+STORY:
+Don't spoil the ending first. Build to it.
 
-Don't assume the reader knows WHY something is interesting. Tell them.
+MIDDLE PARAGRAPHS:
+Tell the story. Use simple words.
+Mix it up: Short. Medium. Never long and complex.
 
-STORY STRUCTURE - CRITICAL:
-Don't spoil the ending in the first paragraph. You're telling a story - build to the climax, don't start with it.
+✅ Use: "started" "used" "showed" "found" "made"
+❌ Don't use: "commenced" "utilized" "demonstrated" "facilitated"
 
-❌ BAD: "The Dzungar Khanate controlled Central Asia for over a century, then picked a fight with the Qing Dynasty. What happened next was one of history's most complete genocides."
-(You just told me the ending! Now why keep reading?)
+LAST PARAGRAPH:
+Leave one interesting question. Don't wrap it up.
 
-✅ GOOD: Build chronologically. Start with what made them powerful, THEN reveal their downfall.
-- Para 1: Why this matters (they dominated Central Asia)
-- Para 2-3: What made them formidable (cavalry warfare, Silk Road control)
-- Para 4: Their fatal mistake (picked fight with Qing)
-- Para 5: The consequences (genocide)
+✅ GOOD: "Scientists found 200 species. Some males can detach."
+❌ BAD: "So how do they survive? What do they eat? Why?" (too many questions)
 
-Think like a storyteller, not a Wikipedia summary. Let the tension build.
-
-WRITING QUALITY - CRITICAL:
-You are a smart friend at a bar who just went down a Wikipedia rabbit hole and can't wait to share what you found.
-Think: Malcolm Gladwell, Erik Larson, Mary Roach. Confident, a little irreverent, respects the reader's intelligence.
-
-CORE PRINCIPLES:
-1. **Lead with mystery, not thesis.** Make the reader feel the puzzle before explaining it.
-2. **Front-load surprising details.** Weird fact, counterintuitive stat, vivid image—put it early.
-3. **No throat-clearing.** Just say the thing. Don't announce what you're about to say.
-4. **Earn conclusions, don't state them.** Show the evidence, let the reader feel the implication.
-5. **Don't spoil the ending.** Build chronologically. Let tension build toward the climax.
-6. **Rhetorical questions pull readers forward.** Use them to build tension, especially mid-section.
-
-SENTENCE RHYTHM:
-- Vary aggressively. Short punch. Medium explanation that breathes. Longer sentence that builds momentum and carries the reader through the full arc of an idea.
-- Stack facts like punches: "Isolated Amazon tribes. Arctic villages cut off for millennia. All of them invented language."
-- If a sentence has two clauses, consider splitting it.
-- Read it aloud - does it flow like conversation?
-
-BANNED THROAT-CLEARING:
-❌ "What makes this fascinating is..."
-❌ "It's important to understand that..."
+BANNED:
+❌ "What makes this fascinating..."
+❌ "It's important to understand..."
 ❌ "This demonstrates..."
-❌ "The significance of this..."
-❌ "One of the most interesting aspects..."
-❌ "Then she did something no one had done..." (just tell me what she did)
-❌ "But the real story was..." (just tell the real story)
-Just start with the thing itself.
-
-BANNED SETUP SENTENCES:
-❌ Setup sentences that cushion the punch before delivering it
-❌ "This was shocking." (if it's shocking, I'll know - show me)
-❌ "Why does this matter? Because..." (just tell me why)
-❌ Thesis statements: "The biggest empires fall when they get too greedy." (show it, don't state it)
-
-BANNED REPETITION:
-If a sentence restates the previous sentence in different words, DELETE one of them.
-Never repeat information the reader already has. Trust that it landed.
-
-BANNED WORDS (academic bloat):
-❌ "subsequently", "utilized", "commenced", "facilitate", "demonstrate"
-❌ "contradiction", "unprecedented", "significance", "notably", "paradigm"
-❌ "furthermore", "moreover", "nevertheless", "consequently"
-❌ "His brilliance lay in...", "The key was...", "This would prove to be..."
-❌ "It was...", "There was..." (weak openers)
-❌ "In other words...", "What this means is..." (trust the reader)
-
-WRITING APPROACH:
-- Show, don't tell. Don't say "he was brilliant"—show what he did.
-- Trust the reader completely. They'll connect the dots. Don't explain your own sentences.
-- No setup sentences that cushion the impact. Just throw the punch.
-- Cut any sentence telling the reader how to feel.
-- One strong sentence beats two medium ones. Be ruthless about cutting redundancy.
-- End paragraphs with something that LANDS. Not a summary.
-- Active voice. Past tense for history.
-- Build tension constantly.
-
-PARAGRAPH STRUCTURE:
-- 2-4 sentences per paragraph (vary length - don't be robotic)
-- Front-load the surprise. Weird detail first, explanation second.
-- Every paragraph must have something INTERESTING in it. No "building" paragraphs that exist just to set up the next one.
-- If a section could be half as long and still land, make it half as long.
-- Read it back and ask: "Would I skim this?" If yes, cut it.
-- End paragraphs with something that LANDS:
-  • A rhetorical question that pulls forward
-  • A vivid image that sticks
-  • A punchy statement that makes them think
-  • NOT a summary or transition
-
-PACING - CRITICAL:
-Setup is ONE or TWO sentences max, then hit them with the thing.
-No slow builds. No patience. Get to the fascinating stuff immediately.
-If you're taking three paragraphs to get somewhere interesting, you're taking too long.
-
-RHETORICAL QUESTIONS - USE THEM:
-Questions pull readers forward. Use them mid-section to build momentum.
-❌ BAD (feels unresolved): End the entire article with "But what happened next?"
-✅ GOOD (builds tension): Use questions throughout to create forward motion
-
-Example flow:
-"Isolated Amazon tribes. Arctic villages cut off for millennia. All of them invented language. Why just us?"
-[Next paragraph answers it, then poses new question]
-
-FINAL PARAGRAPH RULE - CRITICAL:
-The LAST paragraph must CREATE TENSION that pulls the reader into Deep Dive.
-- Don't summarize. Don't wrap up. Don't give closure.
-- Leave ONE intriguing thread dangling. Not three questions. Not a quiz. One subtle hook.
-- Think: "Here's where it gets weird..."
-
-STRATEGIES:
-1. One subtle question: "Scientists still can't explain why."
-2. A quiet "but": "Scientists have found 200 species. But some males can detach."
-3. Stack facts and stop: "Archaeological evidence shows X. Genetic studies show Y."
-4. Single unexpected detail: "The weirdest part? Some dissolve completely."
-
-❌ BAD (question overload - feels like begging):
-"So how did they actually train? Who were the most famous? And why do we get them so wrong?"
-
-❌ BAD (quiz mode):
-"What drives this extreme? How do they find each other? And why did evolution favor this?"
-
-✅ GOOD (one thread dangling):
-"Scientists have found over 200 species, each with its own variation. Some males bite and release."
-
-✅ GOOD (single quiet "but"):
-"The male becomes part of her forever. But in some species, he can detach."
-
-✅ GOOD (one subtle question):
-"Language made us human. But when did that first conversation happen?"
-
-The reader should feel pulled forward, not quizzed. One intriguing thread is enough.
-
-GROUNDING SHOCKING FACTS - CRITICAL:
-For every "wow" fact, ask: would someone who knows NOTHING about this understand WHY it's wow?
-If not, add ONE sentence of context BEFORE the fact so it lands.
-
-Structure: Setup (brief context) → Shocking fact → Let it breathe
-
-❌ BAD: "Police found thousands of hand-drawn frames showing victims' final moments."
-✅ GOOD: "Animation requires 24 drawings for each second of film. Police found 14,400 hand-drawn frames in his studio. Each one traced by hand from real footage."
+❌ Don't repeat yourself
 
 ❌ BAD: "The ship carried 7 tons of gold."
 ✅ GOOD: "A single gold bar weighs 27 pounds. The ship carried 7 tons - enough to fill a school bus."
@@ -440,58 +314,19 @@ export async function generateFullArticle(topic, onProgress = () => {}) {
   try {
     onProgress('Crafting your story...');
 
-    const prompt = `Write a SHORT article about "${topic}" designed to make the reader want to explore more.
+    const prompt = `Write a SHORT article about "${topic}".
 
-OPENING HOOK (1-2 sentences):
-CRITICAL: Start with a shocking fact FIRST, then weave in what it is.
+HOOK (1 sentence):
+Start with something interesting. Under 15 words.
 
-❌ NEVER use generic openings like:
-- "Imagine a time when..."
-- "Imagine a place where..."
-- "Picture a world where..."
-- "In a time before..."
-- "Long ago..."
+Example: "The Praetorian Guard murdered more emperors than they protected."
 
-✅ ALWAYS start with: [Mind-blowing fact that naturally reveals what this is]
+BODY (3-4 paragraphs):
+Write like you're texting a friend. Simple words. Short sentences.
 
-EXAMPLES:
-- "The Praetorian Guard was supposed to protect Roman emperors. Instead, they murdered more emperors than they saved."
-  (Hook grabs you → naturally reveals they're bodyguards)
-
-- "Aboriginal songs can navigate 40,000 miles of Australian desert with perfect accuracy - no maps, no roads, no landmarks. These are dream maps: knowledge encoded in music."
-  (Hook grabs you → definition comes second)
-
-- "We still can't figure out how to make Roman concrete - and theirs gets stronger with time while ours crumbles."
-  (Hook grabs you → you already know what concrete is from context)
-
-- "A single street corner can make you feel anxious, nostalgic, or mysteriously energized - and nobody can explain why. Psychogeography tries to explain how places mess with our emotions."
-  (Hook grabs you → flows naturally into the topic)
-
-FIRST sentence = shocking/weird/fascinating fact. SECOND sentence = what we're talking about (if needed).
-
-❌ NEVER USE THESE FORMULAIC PATTERNS:
-- "This is [topic]:" or "This is [topic] -" (too textbook-y)
-- "Welcome to the world of..."
-- "[Topic] is the study of..."
-- Any sentence that sounds like a dictionary definition
-
-BODY (4-6 VERY SHORT paragraphs):
-These are articles, not audiobooks. Respect the reader's time. Get to the fascinating stuff FAST.
-
-FIRST PARAGRAPH RULE - CRITICAL:
-The FIRST paragraph after the hook MUST ground the reader on WHY this topic matters.
-Ask yourself: "Would someone with ZERO background understand why anyone cares about this?"
-If not, your first paragraph must answer: "Why does this exist? What problem does it solve?"
-
-Examples:
-- Seed vault? → "Crops fail. Diseases wipe out harvests. If we lose a type of wheat, it's gone forever. Unless someone saved the seeds."
-- Roman concrete? → "Our buildings crack after 50 years. Roman buildings have lasted 2,000. We still don't know their secret."
-- Praetorian Guard? → "Roman emperors needed bodyguards. They picked the best soldiers. Then those soldiers realized THEY had all the weapons."
-
-Don't assume the reader knows WHY something is interesting. Tell them.
-
-STORY STRUCTURE - CRITICAL:
-Don't spoil the ending in the first paragraph. You're telling a story - build to the climax, don't start with it.
+First paragraph: Why this matters
+Middle paragraphs: Tell the story
+Last paragraph: Leave one interesting question
 
 ❌ BAD: "The Dzungar Khanate controlled Central Asia for over a century, then picked a fight with the Qing Dynasty. What happened next was one of history's most complete genocides."
 (You just told me the ending! Now why keep reading?)
@@ -1116,65 +951,19 @@ First, identify what type of topic "${topic}" is, then write the appropriate con
 - Part 3: History and major events that happened there
 - Part 4: Modern status, why people visit/study it, mysteries remaining
 
-NOW WRITE Part ${partNumber} using the appropriate focus for "${topic}".
+NOW WRITE Part ${partNumber} for "${topic}".
 
-WRITING QUALITY:
-You are a smart friend at a bar who just learned something wild. Confident, irreverent, respects the reader's time.
+WRITING:
+- Write like you're texting a friend
+- Simple words, short sentences
+- 3-4 short paragraphs
+- Start with a header (## format)
 
-CORE PRINCIPLES:
-- These are articles, not audiobooks. Get to the fascinating stuff FAST.
-- Lead with mystery, not thesis
-- Front-load surprising details
-- No throat-clearing (❌ "What makes this fascinating..." just say the thing)
-- Earn conclusions, don't state them
-- Stack facts like punches: "Isolated tribes. Arctic villages. All invented language."
-- Vary sentence length: Short. Medium flow. Longer builds.
-- Every paragraph must have something interesting. No building paragraphs.
-- If it could be half as long and still land, make it half as long.
-
-PACING:
-Setup is ONE or TWO sentences max. Then hit the thing.
-Get to fascinating stuff immediately. No slow builds. No patience.
-Read it back: "Would I skim this?" If yes, cut it.
-
-BANNED THROAT-CLEARING:
-❌ "What makes this fascinating...", "It's important to understand...", "This demonstrates..."
-❌ "Then she did something no one had done..." (just say what she did)
-❌ "But the real story was..." (just tell the real story)
-
-BANNED SETUP SENTENCES:
-❌ Setup sentences that cushion the punch (just throw it)
-❌ "This was shocking." (if it's shocking, I'll know)
-❌ Rhetorical questions that answer themselves
-
-BANNED REPETITION:
-If a sentence restates the previous sentence in different words, DELETE one of them.
-Never repeat information the reader already has.
-
-BANNED WORDS:
-❌ "subsequently", "utilized", "commenced", "facilitate", "demonstrate"
-❌ "contradiction", "unprecedented", "significance", "notably", "paradigm"
-❌ "furthermore", "moreover", "nevertheless", "consequently"
-❌ "It was...", "There was..." (weak openers)
-❌ "In other words...", "What this means is..." (trust the reader)
-
-GROUNDING FACTS - CRITICAL:
-For every "wow" fact, ask: would someone who knows NOTHING about this understand WHY it's wow?
-If not, add ONE sentence of context BEFORE the fact so it lands.
-
-Structure: Setup (brief context) → Shocking fact → Let it breathe
-
-❌ BAD: "The company lost $2 billion in a single day."
-✅ GOOD: "Apple was worth $3 trillion. It lost $2 billion in a single day - more than most companies are worth."
-
-START WITH A SECTION HEADER:
-Use ## format, make it intriguing and relevant to what Part ${partNumber} covers for this topic type.
-
-CRITICAL:
-- Do NOT repeat information already covered
-- Build on what came before - assume the reader remembers it
-- Add NEW information, examples, quotes, connections
-- Write 4-6 SHORT paragraphs (this is a continuation, not a full article)
+RULES:
+- Don't repeat what you already said
+- Add NEW stuff
+- ✅ Use: "started" "used" "showed"
+- ❌ Don't use: "commenced" "utilized" "demonstrated"
 
 HYPERLINKS - CRITICAL FORMAT:
 Use EXACTLY [[double brackets]] around hyperlinks.
