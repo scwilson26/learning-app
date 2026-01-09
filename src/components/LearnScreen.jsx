@@ -87,50 +87,9 @@ export default function LearnScreen({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="max-w-3xl mx-auto px-4 py-8">
-        {/* Breadcrumb Navigation */}
-        {breadcrumbs.length > 0 && (
-          <div className="bg-white rounded-lg shadow-sm mb-4 p-3 overflow-x-auto">
-            <div className="flex items-center gap-2 whitespace-nowrap">
-              {breadcrumbs.map((crumb, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <button
-                    onClick={() => onBreadcrumbClick(index)}
-                    className={`px-3 py-1 rounded-full transition-colors ${
-                      index === currentIndex
-                        ? 'bg-indigo-600 text-white font-semibold'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {crumb.topic}
-                  </button>
-                  {index < breadcrumbs.length - 1 && (
-                    <span className="text-gray-400">→</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Header with back button */}
-        <div className="flex justify-between items-center mb-6">
-          <button
-            onClick={onBack}
-            className="text-indigo-600 hover:text-indigo-800 font-medium"
-          >
-            ← Back to Home
-          </button>
-          {breadcrumbs.length >= 5 && (
-            <div className="text-sm text-indigo-600 font-medium">
-              🎯 {breadcrumbs.length} topics deep!
-            </div>
-          )}
-        </div>
-
-        {/* Content area - Card Layout */}
-        <div className="mb-6 pb-20">
+    <div className="fixed inset-0 bg-gradient-to-br from-blue-50 to-indigo-100">
+      {/* Content area - Full screen card carousel */}
+      <div className="h-full">
           {content !== null && content !== undefined ? (
             <CardCarousel
               content={content}

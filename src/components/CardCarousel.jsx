@@ -44,7 +44,7 @@ export default function CardCarousel({ content, topic, onLinkClick }) {
   const cardBlocks = blocks.filter(b => b.type === 'card');
 
   return (
-    <div className="space-y-2">
+    <div className="h-full overflow-y-scroll snap-y snap-mandatory hide-scrollbar">
       {cardBlocks.map((block, idx) => {
         const cardText = block.content.join('\n');
         const cardMatch = cardText.trim().match(/^CARD:\s*(.+?)\n([\s\S]+)$/);
@@ -56,9 +56,9 @@ export default function CardCarousel({ content, topic, onLinkClick }) {
         return (
           <div
             key={idx}
-            className="min-h-[85vh] flex items-center justify-center"
+            className="h-screen snap-start flex items-center justify-center px-4"
           >
-              <div className="bg-white rounded-xl shadow-lg p-4 md:p-5 w-full max-w-xl max-h-[70vh] overflow-y-auto">
+              <div className="bg-white rounded-xl shadow-lg p-4 md:p-5 w-full max-w-xl max-h-[75vh] overflow-y-auto">
                 <div className="text-center mb-3">
                   <h1 className="text-lg md:text-xl font-bold text-gray-900 mb-2 capitalize">{topic}</h1>
                 </div>
