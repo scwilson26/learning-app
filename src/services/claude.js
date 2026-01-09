@@ -953,15 +953,25 @@ First, identify what type of topic "${topic}" is, then write the appropriate con
 
 NOW WRITE Part ${partNumber} for "${topic}".
 
+CRITICAL: Make a smooth transition!
+- Read how Part 1 ended
+- Your header should connect to that naturally
+- Then dive into the new Part ${partNumber} content
+
+Example:
+Part 1 ends: "...only 15,000 left in the wild. What happens when they disappear?"
+Part 2 Header: "Why They're Disappearing" ✅ (flows naturally)
+NOT: "How Bonobos Actually Live" ❌ (jarring jump)
+
 WRITING:
 - Write like you're texting a friend
 - Simple words, short sentences
 - 3-4 short paragraphs
-- Start with a header (## format)
+- Start with a header (## format) that bridges from Part 1
 
 RULES:
 - Don't repeat what you already said
-- Add NEW stuff
+- Cover the Part ${partNumber} content from the guide above
 - ✅ Use: "started" "used" "showed"
 - ❌ Don't use: "commenced" "utilized" "demonstrated"
 
