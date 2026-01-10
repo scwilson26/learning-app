@@ -117,6 +117,15 @@ Mix up the format between cards:
 
 IMPORTANT: Don't make all cards the same length or structure. Keep the reader guessing what's coming next.
 
+CRITICAL - MAKE EACH CARD SELF-CONTAINED AND SHAREABLE:
+Each card must make sense if someone sees ONLY that card (like a screenshot). This means:
+- Always mention the main topic by name in the card content - don't use vague pronouns like "it" or "they" without context
+- Each card should be a complete thought, not half of an explanation
+- Write punchy, intriguing card titles that make someone want to read
+- Use concrete examples and specifics, not vague concepts
+- Make it screenshot-worthy - lead with the most interesting/surprising angle
+BUT cards in sequence should still build understanding - each adding a new layer so together they give a comprehensive overview.
+
 CARD: Sky God of the Steppes
 **Tengri was the supreme sky god worshipped across Central Asia for over a thousand years.** This wasn't some local deity - Tengri ruled the religious world from Mongolia to Turkey.
 
@@ -1039,6 +1048,15 @@ Mix up the format between cards:
 - Some cards: Start with a question or surprising claim
 
 IMPORTANT: Don't make all cards the same length or structure. Variety keeps readers engaged.
+
+CRITICAL - MAKE EACH CARD SELF-CONTAINED AND SHAREABLE:
+Each card must make sense if someone sees ONLY that card (like a screenshot). This means:
+- Always mention the main topic by name in the card content - don't use vague pronouns like "it" or "they" without context
+- Each card should be a complete thought, not half of an explanation
+- Write punchy, intriguing card titles that make someone want to read
+- Use concrete examples and specifics, not vague concepts
+- Make it screenshot-worthy - lead with the most interesting/surprising angle
+BUT cards in sequence should still build understanding - each adding a new layer so together they give a comprehensive overview.
 
 CARD: Training Regimen
 Roman soldiers trained **every single day** from sunrise to sunset. The training was designed to make actual combat feel easy by comparison.
