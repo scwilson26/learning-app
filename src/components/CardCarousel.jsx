@@ -94,7 +94,7 @@ export default function CardCarousel({
   let cardIndex = 0;
 
   return (
-    <div ref={containerRef} className="h-full overflow-y-scroll snap-y snap-mandatory hide-scrollbar">
+    <div ref={containerRef} className="h-full overflow-y-scroll snap-y snap-mandatory snap-center hide-scrollbar">
       {/* Content cards */}
       {cardBlocks.map((block, idx) => {
         const cardText = block.content.join('\n');
@@ -110,7 +110,7 @@ export default function CardCarousel({
           <div
             key={`content-${idx}`}
             data-card-index={currentCardIndex}
-            className="snap-start flex items-start justify-center px-4 pt-4 pb-2 transition-opacity duration-300"
+            className="snap-center flex items-center justify-center px-4 py-2 transition-opacity duration-300"
             style={{ opacity: isActive ? 1 : 0.4 }}
           >
               <div className="bg-white rounded-xl shadow-lg p-4 md:p-5 w-full max-w-xl">
@@ -134,7 +134,7 @@ export default function CardCarousel({
           <div
             key="deep-dive-card"
             data-card-index={currentCardIndex}
-            className="snap-start flex items-start justify-center px-4 pt-4 pb-2 transition-opacity duration-300"
+            className="snap-center flex items-center justify-center px-4 py-2 transition-opacity duration-300"
             style={{ opacity: isActive ? 1 : 0.4 }}
           >
             <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-xl">
@@ -177,7 +177,7 @@ export default function CardCarousel({
           <div
             key="completed-card"
             data-card-index={currentCardIndex}
-            className="snap-start flex items-start justify-center px-4 pt-4 pb-2 transition-opacity duration-300"
+            className="snap-center flex items-center justify-center px-4 py-2 transition-opacity duration-300"
             style={{ opacity: isActive ? 1 : 0.4 }}
           >
             <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-xl text-center">
@@ -198,7 +198,7 @@ export default function CardCarousel({
           <div
             key="suggestions-card"
             data-card-index={currentCardIndex}
-            className="snap-start flex items-start justify-center px-4 pt-4 pb-2 transition-opacity duration-300"
+            className="snap-center flex items-center justify-center px-4 py-2 transition-opacity duration-300"
             style={{ opacity: isActive ? 1 : 0.4 }}
           >
             <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-xl">
