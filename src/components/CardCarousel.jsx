@@ -110,7 +110,7 @@ export default function CardCarousel({
           <div
             key={`content-${idx}`}
             data-card-index={currentCardIndex}
-            className="snap-center flex items-center justify-center px-4 py-2 transition-opacity duration-300"
+            className="snap-center flex items-center justify-center px-4 py-2 min-h-screen transition-opacity duration-300"
             style={{ opacity: isActive ? 1 : 0.4 }}
           >
               <div className="bg-white rounded-xl shadow-lg p-4 md:p-5 w-full max-w-xl">
@@ -131,7 +131,7 @@ export default function CardCarousel({
           <div
             key="deep-dive-card"
             data-card-index={currentCardIndex}
-            className="snap-center flex items-center justify-center px-4 py-2 transition-opacity duration-300"
+            className="snap-center flex items-center justify-center px-4 py-2 min-h-screen transition-opacity duration-300"
             style={{ opacity: isActive ? 1 : 0.4 }}
           >
             <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-xl">
@@ -174,7 +174,7 @@ export default function CardCarousel({
           <div
             key="completed-card"
             data-card-index={currentCardIndex}
-            className="snap-center flex items-center justify-center px-4 py-2 transition-opacity duration-300"
+            className="snap-center flex items-center justify-center px-4 py-2 min-h-screen transition-opacity duration-300"
             style={{ opacity: isActive ? 1 : 0.4 }}
           >
             <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-xl text-center">
@@ -195,7 +195,7 @@ export default function CardCarousel({
           <div
             key="suggestions-card"
             data-card-index={currentCardIndex}
-            className="snap-center flex items-center justify-center px-4 py-2 transition-opacity duration-300"
+            className="snap-center flex items-center justify-center px-4 py-2 min-h-screen transition-opacity duration-300"
             style={{ opacity: isActive ? 1 : 0.4 }}
           >
             <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-xl">

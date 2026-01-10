@@ -96,8 +96,8 @@ export default function LearnScreen({
         </div>
       </div>
 
-      {/* Content area - Full screen card carousel with top padding */}
-      <div className="h-full pt-16">
+      {/* Content area - Full screen card carousel with top and bottom padding */}
+      <div className="h-full pt-16 pb-20">
           {content !== null && content !== undefined ? (
             <CardCarousel
               content={content}
