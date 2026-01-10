@@ -68,9 +68,9 @@ export default function CardCarousel({
         return (
           <div
             key={`content-${idx}`}
-            className="h-screen snap-start flex items-start justify-center px-4 pt-16"
+            className="snap-start flex items-start justify-center px-4 pt-4 pb-2"
           >
-              <div className="bg-white rounded-xl shadow-lg p-4 md:p-5 w-full max-w-xl max-h-[80vh] overflow-y-auto">
+              <div className="bg-white rounded-xl shadow-lg p-4 md:p-5 w-full max-w-xl">
                 <div className="text-center mb-3">
                   <h1 className="text-lg md:text-xl font-bold text-gray-900 mb-2 capitalize">{topic}</h1>
                 </div>
@@ -87,7 +87,7 @@ export default function CardCarousel({
       {currentPart < 4 && (
         <div
           key="deep-dive-card"
-          className="h-screen snap-start flex items-start justify-center px-4 pt-16"
+          className="snap-start flex items-start justify-center px-4 pt-4 pb-2"
         >
           <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-xl">
             <div className="text-center mb-6">
@@ -124,7 +124,7 @@ export default function CardCarousel({
       {currentPart === 4 && (
         <div
           key="completed-card"
-          className="h-screen snap-start flex items-start justify-center px-4 pt-16"
+          className="snap-start flex items-start justify-center px-4 pt-4 pb-2"
         >
           <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-xl text-center">
             <div className="text-6xl mb-4">🎓</div>
@@ -139,9 +139,9 @@ export default function CardCarousel({
       {suggestions && (suggestions.related.length > 0 || suggestions.tangents.length > 0) && (
         <div
           key="suggestions-card"
-          className="h-screen snap-start flex items-start justify-center px-4 pt-16"
+          className="snap-start flex items-start justify-center px-4 pt-4 pb-2"
         >
-          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-xl max-h-[80vh] overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-xl">
             <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4">🐇 Where to next?</h2>
 
             {/* Combined suggestions - Rabbit Hole options */}
