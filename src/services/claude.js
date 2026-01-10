@@ -104,7 +104,18 @@ FORMAT - CRITICAL:
 You MUST use this exact format. Write 3 cards total (not including hook).
 
 STRUCTURE FOR EACH CARD:
-Each card should focus on ONE clear idea or concept. Mix of paragraphs and bullets. Keep cards CONCISE - aim for about 80-120 words per card max. Each card must fit on a mobile screen without scrolling.
+Each card should focus on ONE clear idea or concept. VARY THE STRUCTURE AND LENGTH to keep it interesting:
+- Short punchy cards (40-60 words) - Just the core fact with impact
+- Medium cards (80-120 words) - Mix of paragraphs and bullets
+- Longer detailed cards (120-180 words) - Deep dive on one fascinating aspect
+
+Mix up the format between cards:
+- Some cards: Just paragraphs, no bullets
+- Some cards: Heavy on bullet points
+- Some cards: One powerful paragraph + short bullet list
+- Some cards: Start with a question or surprising statement
+
+IMPORTANT: Don't make all cards the same length or structure. Keep the reader guessing what's coming next.
 
 CARD: Sky God of the Steppes
 **Tengri was the supreme sky god worshipped across Central Asia for over a thousand years.** This wasn't some local deity - Tengri ruled the religious world from Mongolia to Turkey.
@@ -1016,7 +1027,18 @@ FORMAT - CRITICAL:
 You MUST use this exact format. Write 2-3 cards total.
 
 STRUCTURE FOR EACH CARD:
-Mix of paragraphs and bullets. Keep cards CONCISE - aim for about 80-120 words per card max. Each card must fit on a mobile screen without scrolling.
+VARY THE STRUCTURE AND LENGTH to keep it fresh and unpredictable:
+- Short punchy cards (40-60 words) - Just the core fact with maximum impact
+- Medium cards (80-120 words) - Mix of paragraphs and bullets
+- Longer detailed cards (120-180 words) - Deep dive on one fascinating detail
+
+Mix up the format between cards:
+- Some cards: Just paragraphs, no bullets
+- Some cards: Heavy on bullet points
+- Some cards: One powerful paragraph + short bullet list
+- Some cards: Start with a question or surprising claim
+
+IMPORTANT: Don't make all cards the same length or structure. Variety keeps readers engaged.
 
 CARD: Training Regimen
 Roman soldiers trained **every single day** from sunrise to sunset. The training was designed to make actual combat feel easy by comparison.
