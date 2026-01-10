@@ -104,18 +104,22 @@ FORMAT - CRITICAL:
 You MUST use this exact format. Write 3 cards total (not including hook).
 
 STRUCTURE FOR EACH CARD:
-Each card should focus on ONE clear idea or concept. VARY THE STRUCTURE AND LENGTH to keep it interesting:
-- Short punchy cards (40-60 words) - Just the core fact with impact
-- Medium cards (80-120 words) - Mix of paragraphs and bullets
-- Longer detailed cards (120-180 words) - Deep dive on one fascinating aspect
+Each card should focus on ONE clear idea or concept. DRAMATICALLY VARY THE STRUCTURE AND LENGTH:
+- Ultra-short cards (30-50 words) - ONE powerful fact, that's it
+- Medium cards (60-90 words) - A bit more detail, but still tight
+- Longer cards (100-130 words MAX) - Only when absolutely necessary for a complex idea
 
-Mix up the format between cards:
-- Some cards: Just paragraphs, no bullets
-- Some cards: Heavy on bullet points
-- Some cards: One powerful paragraph + short bullet list
-- Some cards: Start with a question or surprising statement
+CRITICAL - MIX UP THE FORMAT WILDLY between cards:
+- Card 1: Just ONE paragraph, no bullets at all
+- Card 2: ALL bullets, no paragraph
+- Card 3: One short sentence + 2-3 bullets
+- NEVER use the same structure twice in a row
+- NEVER start every card with a bolded sentence (vary it!)
+- Some cards: Start with a question
+- Some cards: Start with a surprising number or fact
+- Some cards: Just tell it straight
 
-IMPORTANT: Don't make all cards the same length or structure. Keep the reader guessing what's coming next.
+IMPORTANT: Most cards should be SHORT (30-70 words). Only 1 card can be longer. Keep readers wanting more, not overwhelmed.
 
 CRITICAL - MAKE EACH CARD SELF-CONTAINED AND SHAREABLE:
 Each card must make sense if someone sees ONLY that card (like a screenshot). This means:
@@ -1036,18 +1040,22 @@ FORMAT - CRITICAL:
 You MUST use this exact format. Write 2-3 cards total.
 
 STRUCTURE FOR EACH CARD:
-VARY THE STRUCTURE AND LENGTH to keep it fresh and unpredictable:
-- Short punchy cards (40-60 words) - Just the core fact with maximum impact
-- Medium cards (80-120 words) - Mix of paragraphs and bullets
-- Longer detailed cards (120-180 words) - Deep dive on one fascinating detail
+DRAMATICALLY VARY THE STRUCTURE AND LENGTH to keep it fresh and unpredictable:
+- Ultra-short cards (30-50 words) - ONE powerful fact, that's it
+- Medium cards (60-90 words) - A bit more detail, but still tight
+- Longer cards (100-130 words MAX) - Only when absolutely necessary for a complex idea
 
-Mix up the format between cards:
-- Some cards: Just paragraphs, no bullets
-- Some cards: Heavy on bullet points
-- Some cards: One powerful paragraph + short bullet list
-- Some cards: Start with a question or surprising claim
+CRITICAL - MIX UP THE FORMAT WILDLY between cards:
+- Some cards: Just ONE paragraph, no bullets at all
+- Some cards: ALL bullets, no paragraph
+- Some cards: One short sentence + 2-3 bullets
+- NEVER use the same structure twice in a row
+- NEVER start every card with a bolded sentence (vary it!)
+- Some cards: Start with a question
+- Some cards: Start with a surprising number or fact
+- Some cards: Just tell it straight
 
-IMPORTANT: Don't make all cards the same length or structure. Variety keeps readers engaged.
+IMPORTANT: Most cards should be SHORT (30-70 words). Only 1 card per part can be longer. Keep readers wanting more, not overwhelmed.
 
 CRITICAL - MAKE EACH CARD SELF-CONTAINED AND SHAREABLE:
 Each card must make sense if someone sees ONLY that card (like a screenshot). This means:

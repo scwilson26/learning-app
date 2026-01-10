@@ -114,9 +114,6 @@ export default function CardCarousel({
             style={{ opacity: isActive ? 1 : 0.4 }}
           >
               <div className="bg-white rounded-xl shadow-lg p-4 md:p-5 w-full max-w-xl">
-                <div className="text-center mb-3">
-                  <h1 className="text-lg md:text-xl font-bold text-gray-900 mb-2 capitalize">{topic}</h1>
-                </div>
                 <div className="text-sm md:text-base font-semibold text-gray-900 mb-2">{cardTitle}</div>
                 <div className="text-xs md:text-sm text-gray-800 leading-snug ml-2">
                   {renderContent(cardContent, onLinkClick)}

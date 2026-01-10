@@ -88,8 +88,16 @@ export default function LearnScreen({
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Content area - Full screen card carousel */}
-      <div className="h-full">
+      {/* Fixed Top Header */}
+      <div className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 shadow-sm z-50">
+        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+          <h1 className="text-lg md:text-xl font-bold text-gray-900 capitalize truncate flex-1">{topic}</h1>
+          <div className="text-sm text-gray-500 ml-4 whitespace-nowrap">Part {currentPart}</div>
+        </div>
+      </div>
+
+      {/* Content area - Full screen card carousel with top padding */}
+      <div className="h-full pt-16">
           {content !== null && content !== undefined ? (
             <CardCarousel
               content={content}
