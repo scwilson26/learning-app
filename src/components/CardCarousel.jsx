@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { renderContent } from '../utils/contentRenderer'
 
 export default function CardCarousel({
@@ -14,6 +14,42 @@ export default function CardCarousel({
   onSurpriseMe
 }) {
   if (!content) return null;
+
+  const [activeIndex, setActiveIndex] = useState(0);
+  const containerRef = useRef(null);
+
+  // Track scroll position to determine active card
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const scrollTop = container.scrollTop;
+      const cards = container.querySelectorAll('[data-card-index]');
+
+      // Find which card is closest to the top of viewport
+      let closestIndex = 0;
+      let closestDistance = Infinity;
+
+      cards.forEach((card, idx) => {
+        const rect = card.getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
+        const distance = Math.abs(rect.top - containerRect.top);
+
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestIndex = idx;
+        }
+      });
+
+      setActiveIndex(closestIndex);
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    handleScroll(); // Set initial active card
+
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [content, currentPart, suggestions]);
 
   // Split content into blocks by CARD: markers
   const blocks = [];
@@ -54,8 +90,11 @@ export default function CardCarousel({
   // Filter to only card blocks
   const cardBlocks = blocks.filter(b => b.type === 'card');
 
+  // Calculate total number of cards for indexing
+  let cardIndex = 0;
+
   return (
-    <div className="h-full overflow-y-scroll snap-y snap-mandatory hide-scrollbar">
+    <div ref={containerRef} className="h-full overflow-y-scroll snap-y snap-mandatory hide-scrollbar">
       {/* Content cards */}
       {cardBlocks.map((block, idx) => {
         const cardText = block.content.join('\n');
@@ -64,11 +103,15 @@ export default function CardCarousel({
 
         const cardTitle = cardMatch[1].trim();
         const cardContent = cardMatch[2].trim();
+        const currentCardIndex = cardIndex++;
+        const isActive = currentCardIndex === activeIndex;
 
         return (
           <div
             key={`content-${idx}`}
-            className="snap-start flex items-start justify-center px-4 pt-4 pb-2"
+            data-card-index={currentCardIndex}
+            className="snap-start flex items-start justify-center px-4 pt-4 pb-2 transition-opacity duration-300"
+            style={{ opacity: isActive ? 1 : 0.4 }}
           >
               <div className="bg-white rounded-xl shadow-lg p-4 md:p-5 w-full max-w-xl">
                 <div className="text-center mb-3">
@@ -84,12 +127,17 @@ export default function CardCarousel({
         })}
 
       {/* Deep Dive card - shows when not at max parts */}
-      {currentPart < 4 && (
-        <div
-          key="deep-dive-card"
-          className="snap-start flex items-start justify-center px-4 pt-4 pb-2"
-        >
-          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-xl">
+      {currentPart < 4 && (() => {
+        const currentCardIndex = cardIndex++;
+        const isActive = currentCardIndex === activeIndex;
+        return (
+          <div
+            key="deep-dive-card"
+            data-card-index={currentCardIndex}
+            className="snap-start flex items-start justify-center px-4 pt-4 pb-2 transition-opacity duration-300"
+            style={{ opacity: isActive ? 1 : 0.4 }}
+          >
+            <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-xl">
             <div className="text-center mb-6">
               <div className="text-4xl mb-4">🤿</div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Ready to dive deeper?</h2>
@@ -118,30 +166,42 @@ export default function CardCarousel({
             </button>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* Completed indicator card when at part 4 */}
-      {currentPart === 4 && (
-        <div
-          key="completed-card"
-          className="snap-start flex items-start justify-center px-4 pt-4 pb-2"
-        >
-          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-xl text-center">
+      {currentPart === 4 && (() => {
+        const currentCardIndex = cardIndex++;
+        const isActive = currentCardIndex === activeIndex;
+        return (
+          <div
+            key="completed-card"
+            data-card-index={currentCardIndex}
+            className="snap-start flex items-start justify-center px-4 pt-4 pb-2 transition-opacity duration-300"
+            style={{ opacity: isActive ? 1 : 0.4 }}
+          >
+            <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-xl text-center">
             <div className="text-6xl mb-4">🎓</div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Complete!</h2>
             <p className="text-gray-600 text-lg mb-2">You've read the complete deep-dive!</p>
             <p className="text-sm text-gray-500">Swipe to explore related topics or start a new adventure</p>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* Where to next card */}
-      {suggestions && (suggestions.related.length > 0 || suggestions.tangents.length > 0) && (
-        <div
-          key="suggestions-card"
-          className="snap-start flex items-start justify-center px-4 pt-4 pb-2"
-        >
-          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-xl">
+      {suggestions && (suggestions.related.length > 0 || suggestions.tangents.length > 0) && (() => {
+        const currentCardIndex = cardIndex++;
+        const isActive = currentCardIndex === activeIndex;
+        return (
+          <div
+            key="suggestions-card"
+            data-card-index={currentCardIndex}
+            className="snap-start flex items-start justify-center px-4 pt-4 pb-2 transition-opacity duration-300"
+            style={{ opacity: isActive ? 1 : 0.4 }}
+          >
+            <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-xl">
             <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4">🐇 Where to next?</h2>
 
             {/* Combined suggestions - Rabbit Hole options */}
@@ -168,7 +228,8 @@ export default function CardCarousel({
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
