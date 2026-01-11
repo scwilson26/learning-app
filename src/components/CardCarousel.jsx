@@ -90,6 +90,17 @@ export default function CardCarousel({
   // Filter to only card blocks
   const cardBlocks = blocks.filter(b => b.type === 'card');
 
+  // DEBUG: Log parsing results
+  console.log('=== CARD PARSING DEBUG ===');
+  console.log('Content length:', content.length);
+  console.log('Total blocks:', blocks.length);
+  console.log('Card blocks:', cardBlocks.length);
+  console.log('First 500 chars of content:', content.substring(0, 500));
+  cardBlocks.forEach((block, idx) => {
+    const text = block.content.join('\n');
+    console.log(`Card block ${idx} (length ${text.length}):`, text.substring(0, 150));
+  });
+
   // Calculate total number of cards for indexing
   let cardIndex = 0;
 
@@ -98,8 +109,20 @@ export default function CardCarousel({
       {/* Content cards */}
       {cardBlocks.map((block, idx) => {
         const cardText = block.content.join('\n');
-        const cardMatch = cardText.trim().match(/^CARD:\s*(.+?)\n([\s\S]+)$/);
-        if (!cardMatch) return null;
+        // More flexible regex - content after title is optional
+        const cardMatch = cardText.trim().match(/^CARD:\s*(.+?)(?:\n([\s\S]+))?$/);
+
+        // DEBUG: Log card matching
+        if (!cardMatch) {
+          console.log(`Card ${idx} FAILED to match. Text:`, cardText.substring(0, 100));
+          return null;
+        }
+
+        // If no content captured (cardMatch[2] is undefined), skip this card
+        if (!cardMatch[2] || cardMatch[2].trim() === '') {
+          console.log(`Card ${idx} has no content. Skipping.`);
+          return null;
+        }
 
         const cardTitle = cardMatch[1].trim();
         const cardContent = cardMatch[2].trim();

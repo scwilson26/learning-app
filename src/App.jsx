@@ -6,6 +6,10 @@ import ReviewScreen from './components/ReviewScreen'
 import CardLibrary from './components/CardLibrary'
 import LoadingFacts from './components/LoadingFacts'
 import CategoryFilter, { getSavedCategories, saveCategories } from './components/CategoryFilter'
+import Canvas from './components/Canvas'
+
+// Toggle this to test the new Canvas UI
+const USE_CANVAS = true
 
 function App() {
   const [screen, setScreen] = useState('home')
@@ -379,6 +383,11 @@ function App() {
   // Show Card Library screen if we're on it
   if (screen === 'library') {
     return <CardLibrary onBack={handleBackToHome} />
+  }
+
+  // New Canvas UI for testing
+  if (USE_CANVAS) {
+    return <Canvas />
   }
 
   return (
