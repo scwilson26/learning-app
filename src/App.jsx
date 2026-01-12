@@ -351,6 +351,11 @@ function App() {
     saveCategories(newCategories)
   }
 
+  // New Canvas UI - takes priority when enabled
+  if (USE_CANVAS) {
+    return <Canvas />
+  }
+
   // Show Learn screen if we're on it
   if (screen === 'learn' && learnData) {
     return (
@@ -383,11 +388,6 @@ function App() {
   // Show Card Library screen if we're on it
   if (screen === 'library') {
     return <CardLibrary onBack={handleBackToHome} />
-  }
-
-  // New Canvas UI for testing
-  if (USE_CANVAS) {
-    return <Canvas />
   }
 
   return (

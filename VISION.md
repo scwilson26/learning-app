@@ -2,118 +2,166 @@
 
 ## The Big Idea
 
-**An infinite canvas of knowledge where every card contains more cards.**
+**A card table where every deck contains more decks.**
 
-Imagine Google Maps, but for learning. You zoom out and see broad categories. Zoom in and see topics. Zoom in further and see the actual content. Pan around to explore adjacent ideas. Your entire learning journey is visible as a spatial map that YOU built through curiosity.
+Imagine a table with decks of cards. You open a deck, and cards fan out - some you can read, some are smaller decks to explore further. Open one of those sub-decks, and its cards fan out ON TOP, the parent deck still visible underneath. Your learning journey is a stack of cards you're building through curiosity.
 
 The goal: **Collect all the cards.** Learning becomes a game.
 
 ## Core Concept: The Card Table
 
-The whole app is an infinite card table. You're exploring nested decks of cards.
+The whole app is a card table. You're opening decks and stacking cards.
 
-### Decks, Not Just Cards
+### What's Inside a Deck
 
-Every topic (History, Egypt, Pyramids) is a **deck** - a stack of cards that contains:
-- **Overview cards** (2-6): Content about this topic itself
-- **Child decks**: Deeper topics to explore
+Every deck (History, Egypt, Pyramids) contains:
+- **Overview cards** (2-6): Readable cards about this topic itself
+- **Sub-decks**: Smaller decks for deeper topics
 
-This pattern repeats all the way down until you hit leaf nodes (decks with no children).
+When you open a deck, its contents spread out. The overview cards teach you about the topic. The sub-decks let you go deeper.
 
 ```
-[History Deck]
-├── Overview Cards: "What is History?" (1/4), "Why Study It?" (2/4), ...
-└── Child Decks: Ancient, Medieval, Wars, Empires...
+[History Deck] contains:
+├── Overview Cards: "What is History?" (1/3), "Why Study It?" (2/3), "How We Know" (3/3)
+└── Sub-decks: Ancient World, Medieval, World Wars, Empires...
 
-[Ancient Deck] (inside History)
+[Ancient World Deck] contains:
 ├── Overview Cards: "The Ancient World" (1/3), "Timeline" (2/3), ...
-└── Child Decks: Egypt, Rome, Greece, Persia, China...
+└── Sub-decks: Egypt, Rome, Greece, Persia, China...
 
-[Egypt Deck] (inside Ancient)
-├── Overview Cards: "Ancient Egypt" (1/5), "The Nile" (2/5), ...
-└── Child Decks: Pyramids, Pharaohs, Hieroglyphics... (or none if leaf)
+[Egypt Deck] contains:
+├── Overview Cards: "Ancient Egypt" (1/5), "The Nile" (2/5), "Daily Life" (3/5)...
+└── Sub-decks: Pyramids, Pharaohs, Hieroglyphics... (or none if this is a leaf)
 ```
 
-### Navigation Model
+This pattern repeats until you hit leaf decks (no sub-decks, just overview cards).
 
-**TAP a deck** = Open it
-- Deck becomes the background/table
-- You're now "inside" that deck
-- Overview cards fan out at top
-- Child decks appear below
+### Navigation Model: Stacking
 
-**TAP an overview card** = Zoom up to read it
+**TAP a deck** = Open it, cards fan out ON TOP
+- Overview cards spread out (readable content about this topic)
+- Sub-decks appear below them
+- Parent deck stays visible underneath, peeking out
+- You're building a stack
+
+**TAP an overview card** = Flip it up to read
 - Card enlarges to readable size
-- Tap again or swipe to zoom back down
+- Tap "Claim" to collect it
+- Tap again to put it back down
 
 **TAP "Claim"** = Collect the card
-- All cards (overview and deck cards) are claimable
 - Card gets checkmark/glow
 - Adds to your collection count
 
-**PINCH OUT or BACK BUTTON** = Rise up one level
-- Return to parent deck
-- See where you came from
+**CLEAR / BACK** = Sweep away the top layer
+- Current deck's cards slide away
+- Parent deck is right there waiting
+- You're back where you were
 
-### Visual Language
+### The Stacking Metaphor
 
-- **Decks look thick/stacky** - clearly contain cards inside
-- **Overview cards are numbered** - "1/4", "2/4", etc.
-- **Claimed cards glow** - checkmark visible
-- **Each deck has its own aesthetic** - background color/theme when inside
-
-### The Experience
+Think of it like poker hands stacked on top of each other:
 
 ```
-[Open App]
-     ↓
-See category decks on table (History, Science, Arts...)
-     ↓
-Tap "History" deck
-     ↓
-History becomes the table background
-Overview cards fan out: "What is History?" (1/4), "Why Study It?" (2/4)...
-Child decks appear: Ancient, Medieval, Wars...
-     ↓
-Tap overview card "What is History?"
-     ↓
-Card zooms up, you read it, tap "Claim"
-     ↓
-Tap "Ancient" deck
-     ↓
-Ancient becomes the table, its overview cards fan out...
-     ↓
-Pinch out to go back to History level
+[Open App - see category decks on table]
+
+┌─────────┐ ┌─────────┐ ┌─────────┐
+│ History │ │ Science │ │  Arts   │  ← Top-level decks on the table
+└─────────┘ └─────────┘ └─────────┘
+
+[Tap History - its contents fan out ON TOP]
+
+    ┌───────┐ ┌───────┐ ┌───────┐
+    │ 1/3   │ │ 2/3   │ │ 3/3   │     ← Overview cards (readable)
+    │ What  │ │ Why   │ │ How   │
+    └───────┘ └───────┘ └───────┘
+  ┌─────────┐ ┌─────────┐ ┌─────────┐
+  │ Ancient │ │Medieval │ │  Wars   │  ← Sub-decks (tappable)
+  └─────────┘ └─────────┘ └─────────┘
+┌─────────────────────────────────────┐
+│            HISTORY                  │  ← Parent deck peeking out underneath
+└─────────────────────────────────────┘
+
+[Tap Ancient World - its contents fan out ON TOP of History]
+
+      ┌───────┐ ┌───────┐ ┌───────┐
+      │ 1/3   │ │ 2/3   │ │ 3/3   │   ← Ancient World overview cards
+      └───────┘ └───────┘ └───────┘
+    ┌───────┐ ┌───────┐ ┌───────┐
+    │ Egypt │ │ Rome  │ │Greece │     ← Ancient World sub-decks
+    └───────┘ └───────┘ └───────┘
+  ┌───────────────────────────────────┐
+  │        ANCIENT WORLD              │  ← Ancient World deck underneath
+  └───────────────────────────────────┘
+┌─────────────────────────────────────────┐
+│              HISTORY                    │  ← History still there, deeper
+└─────────────────────────────────────────┘
+
+[Clear/Back - Ancient World's cards sweep away]
+
+Back to History's spread, Ancient World is just a deck again.
 ```
 
-### Why Decks > Continuous Zoom
+### Why Stacking Works
 
-- **Intentional navigation** - "I'm going INTO History" vs. accidental zoom
-- **Clear mental model** - you're always "inside" somewhere
-- **Natural hierarchy** - decks contain decks contain decks
-- **Escape is obvious** - pinch out or back button
-- **Overview + depth** - every deck teaches you about itself AND lets you go deeper
+- **Context is physical** - Parent is literally right there underneath
+- **Navigation is intuitive** - "Clear the hand" to go back
+- **Depth is visible** - Tall stack = deep in the hierarchy
+- **Feels like real cards** - Not folders, not a file browser
+- **No "where am I?"** - You can see exactly where you came from
+
+## Visual Language
+
+**Cards look different based on what they are.**
+
+### Deck Cards vs Leaf Cards
+
+**Deck cards** (have children inside):
+- Thick, stacky appearance
+- Multiple cards peeking out underneath with slight rotation
+- Clearly signals "there's more inside"
+- Tapping opens the deck, children fan out
+
+**Leaf cards** (no children, just content):
+- Single, flat appearance
+- No stack effect
+- Signals "this is the deepest it goes"
+- Tapping flips the card to read
+
+This visual distinction is instant communication - you know at a glance what a card does.
+
+### Card Flip Interaction
+
+**Tap to flip** - The card flips in place, revealing the back content. Feels real and tactile, like holding an actual card.
+
+**Zoom to read** - After flipping, tap again to zoom in on the card. It enlarges smoothly so you can read the full content comfortably.
+
+**Claim while reading** - "Claim" button visible on the zoomed card. Tap to collect it.
+
+**Tap out** - Tap outside or swipe down to shrink the card back to its place in the spread.
+
+This is more tactile than a modal popup. The card stays in context - you flipped it, you're holding it up to read, you put it back down. Physical and satisfying.
 
 ## The Collection Game
 
-**Every card you flip = a card collected.**
+**Every card you claim = a card collected.**
 
 ### Visual Progress
-- Unread cards: Dim/faded
-- Read cards: Bright/glowing/checkmark
-- Zoom out and you literally SEE your knowledge map lighting up
-- "I've collected 12/47 cards in Ancient History"
+- Unclaimed cards: Dim/faded
+- Claimed cards: Bright/glowing/checkmark
+- Decks show completion: "12/47 cards" on the deck face
+- Clear back and see which decks are complete vs. incomplete
 
 ### The Psychology
-- Half-filled grids create "unfinished business" - you HAVE to come back
+- Incomplete decks create "unfinished business" - you HAVE to come back
 - "Just one more card" before bed
-- Completionists will explore categories they'd never normally touch
-- Your canvas is unique to YOU - shows your curiosity path
+- Completionists will explore decks they'd never normally touch
+- Your collection is unique to YOU - shows your curiosity path
 
 ### Progress Visibility
-- Zoomed out: See which whole categories you've explored
-- Zoomed in: See which specific cards you've collected
-- Your map tells the story of your learning journey
+- Deck faces show completion counts
+- Claimed cards glow when you open a deck
+- Your stack history tells the story of your learning journey
 
 ## Personality System
 
@@ -229,28 +277,29 @@ These are curated, not AI-generated:
 
 ## User Experience Flow
 
-1. Open app → See grid of category cards
-2. Curious about Science → flip it → read quick summary → interesting!
-3. Zoom into Science → see Physics, Biology, Chemistry, etc.
-4. Flip Physics → quick overview
-5. Zoom into Physics → see Quantum, Relativity, Thermodynamics...
-6. Flip Quantum → "that's wild, I want more"
-7. Zoom into Quantum → actual content cards
-8. Flip through content cards, collecting each one
-9. Zoom out → see Quantum is now "lit up" as explored
-10. Pan over to Relativity → repeat
+1. Open app → See category decks on the table (History, Science, Arts...)
+2. Curious about Science → tap it → deck opens, contents fan out on top
+3. See 3 overview cards about Science + sub-decks (Physics, Biology, Chemistry...)
+4. Read the overview cards, claim them
+5. Tap Physics → Physics opens ON TOP, Science deck visible underneath
+6. See overview cards about Physics + sub-decks (Quantum, Relativity...)
+7. Read Physics overview cards, claim them
+8. Tap Quantum → opens on top, now 3 decks deep
+9. Read Quantum's overview cards (leaf deck, no sub-decks) → claim them all
+10. Clear/back → back to Physics spread, Quantum now shows as completed
+11. Tap Relativity → explore that branch
 
-**No dead ends.** You're never stuck. Just zoom out and go sideways.
+**No dead ends.** You're never stuck. Just clear back and explore sideways.
 
 ## What Makes This Unique
 
-1. **Spatial Memory** - "Rome is left of Greece" - your brain remembers WHERE things are
-2. **Fractal Knowledge** - Every card contains more cards, infinitely deep
-3. **Visible Progress** - Watch your knowledge map light up over time
-4. **Natural Exploration** - Pinch/zoom/pan is intuitive
-5. **Context Always Visible** - Zoom out a bit, see sibling topics
+1. **Physical Metaphor** - It's cards on a table, not folders on a computer
+2. **Fractal Knowledge** - Every deck contains more decks, as deep as needed
+3. **Visible Progress** - Watch your card collection grow, decks light up as completed
+4. **Context Always Visible** - Parent deck is right there underneath, you always know where you are
+5. **Satisfying Navigation** - Open decks, clear hands, stack cards - it FEELS good
 6. **No Linear Path** - You're wandering, not following a curriculum
-7. **The Interface IS the Game** - Exploring feels like playing
+7. **The Interface IS the Game** - Exploring feels like playing cards
 
 ## Structure & Scale
 
@@ -314,23 +363,23 @@ These are curated, not AI-generated:
 - System is depth-agnostic - just renders whatever cards exist
 - Sub-categories can be added/changed anytime - just a config update
 
-### Cards Per View
-- Zoomed out (categories): 9-12 cards visible (3x3 or 4x3 grid)
-- Zoomed into category: 6-10 sub-category cards
-- Zoomed into topic: 4-8 content cards
-- Always a manageable amount, never overwhelming
+### Cards Per Deck
+- Category decks: ~3 overview cards + ~8 sub-decks
+- Sub-category decks: ~3 overview cards + ~10 sub-decks
+- Topic decks: ~5 overview cards + sub-decks (or none if leaf)
+- Always a manageable spread, never overwhelming
 
 ## Technical Considerations
 
-### Canvas Implementation
-- Infinite 2D pan/zoom canvas
-- Cards rendered at appropriate detail level based on zoom
-- Smooth transitions between zoom levels
-- Touch-optimized gestures (pinch, pan, tap)
+### Stacking Implementation
+- Cards fan out with smooth animations
+- Parent decks remain visible underneath (layered rendering)
+- Clear/back animation sweeps cards away satisfyingly
+- Touch-optimized gestures (tap to open, tap to read, swipe/button to go back)
 
 ### Content Generation
-- AI generates sub-cards when you first zoom into something
-- AI generates back content when you first flip a card
+- AI generates deck contents when you first open a deck
+- AI generates card content when you first flip/read a card
 - Once generated, cards are saved permanently (localStorage)
 - Your cards are YOUR cards - same content forever
 
@@ -357,9 +406,9 @@ These are curated, not AI-generated:
 ```
 
 - Cards exist once generated
-- Back content fills in when first flipped
+- Card content fills in when first read
 - Claimed status + timestamp saved when collected
-- Children generated when first zoomed into
+- Deck contents generated when first opened
 
 ### Card States
 - Unvisited: Dim, just a title visible
@@ -368,10 +417,10 @@ These are curated, not AI-generated:
 - Fully completed (all children claimed): Gold border? Star? The flex.
 
 ### Performance
-- Only render visible cards at current zoom level
-- Lazy load deeper content as user zooms
+- Only render current stack (parent decks + current spread)
+- Lazy load deck contents when first opened
 - Cache collected cards locally
-- Progressive detail based on zoom level
+- Smooth animations for open/close/stack
 
 ## Card Content (Same Quality Standards)
 
@@ -391,10 +440,10 @@ These are curated, not AI-generated:
 ## The Addiction Loop
 
 You're always torn between:
-- Going **DEEP** (zooming into one area, completing it)
-- Going **WIDE** (exploring new categories, discovering new things)
+- Going **DEEP** (opening more sub-decks, stacking higher, completing a branch)
+- Going **WIDE** (clearing back, exploring sibling decks, discovering new areas)
 
-Both feel rewarding. Both grow your collection. Both are visible on your map.
+Both feel rewarding. Both grow your collection. Both show progress.
 
 **This turns learning into Pokemon.** Gotta catch 'em all.
 
@@ -409,77 +458,76 @@ Both feel rewarding. Both grow your collection. Both are visible on your map.
 
 ### How It Works
 
-1. **Button always visible** on the main canvas (floating, prominent)
+1. **Button always visible** on the table (floating, prominent)
 2. **User taps "Wander"**
 3. **App picks a random destination** deep in the hierarchy:
    - History → Ancient World → Egypt → Pyramids
    - Technology → Inventions → Printing Press
    - People → Scientists → Marie Curie
-4. **Teleports directly to destination** - user lands inside the target deck
+4. **Instantly stacks to that destination** - all the decks open in sequence
 5. **Auto-opens the first overview card** - content immediately visible
 6. **User explores from there** - or taps Wander again
 
-### The Key Insight: Teleport, Don't Animate
+### The Key Insight: Stack Without Exploring
 
-Wander **teleports** you directly to a random leaf deck. The decks along the path remain unexplored. This is intentional:
+Wander **stacks you directly** to a random leaf deck. The decks along the path are opened but their overview cards remain unclaimed. This is intentional:
 - Forces users to manually explore to fill in the gaps
-- Creates "islands" of knowledge on your map
-- You've been to Egypt, but Ancient World is still unclaimed
-- Encourages coming back to explore the path you skipped
+- Creates "islands" of knowledge - you've claimed Egypt cards, but Ancient World's overview cards are unclaimed
+- You can see the path (it's stacked underneath!) but haven't read it
+- Encourages clearing back to explore what you skipped
 
 ### The Experience
 
 ```
 [Wander Button Tapped]
      ↓
-Screen transitions to Egypt deck (inside Ancient, inside History)
+Decks stack instantly: History → Ancient → Egypt
      ↓
-Egypt's overview cards fan out
+Egypt's overview cards fan out on top
      ↓
-First card auto-zooms up: "Ancient Egypt" content visible
+First card auto-opens: "Ancient Egypt" content visible
      ↓
 User reads, claims, explores Egypt's other cards
      ↓
-User can: Wander again, explore Egypt's children, or pinch out to see Ancient
+User can: Wander again, open Egypt's sub-decks, or clear back
      ↓
-Going up reveals unexplored sibling decks (Rome, Greece, Persia...)
+Clearing back reveals Ancient World's spread - siblings like Rome, Greece visible
 ```
 
 ### Why This Is Powerful
 
-- **Teaches the mechanic** - shows users what zooming does
+- **Teaches the mechanic** - shows users what stacking looks like
 - **Guarantees discovery** - every tap is a new place
 - **Creates stories** - "I wandered and ended up at the Byzantine Empire"
 - **Low commitment** - don't like it? Wander again
-- **Surfaces buried content** - exposes Level 4 cards users might never find
+- **Surfaces buried content** - exposes deep decks users might never find
 - **Perfect for "just 5 minutes"** - instant engagement
 
 ### Design Notes
 
 - Button should feel playful, not utilitarian
-- Animation speed: fast enough to feel magical, slow enough to see the path
-- Maybe show breadcrumb trail during animation: History → Ancient → Egypt → Pyramids
+- Animation: fast deck stacking, maybe show the path building
 - Could have variants: "Wander Near" (explore siblings), "Wander Far" (totally random)
 
 ## Social Possibilities (Future)
 
-- Share your map - flex your coverage
+- Share your collection stats - flex your coverage
 - See where friends explored that you haven't
 - "I've collected 847 cards"
-- Heat maps of most popular paths
+- Heat maps of most popular decks
 - "X also explored this after visiting Y"
 
 ## The Vision
 
-When someone opens this app, they should feel like they're about to explore uncharted territory. Every zoom, every flip, every pan reveals something new. Your knowledge grows visually in front of you.
+When someone opens this app, they should feel like they're sitting down at a card table full of mystery decks. Every tap opens something new. Every deck contains more decks. Your knowledge grows as your card collection grows.
 
-It's not "another learning app." It's a knowledge universe you navigate.
+It's not "another learning app." It's a knowledge card game you play forever.
 
-**Wikipedia meets Google Maps meets Pokemon.**
+**Wikipedia meets a deck of cards meets Pokemon.**
 
 ## Technical Stack
 - React (Vite)
-- Canvas/WebGL for infinite pan/zoom (or react-zoom-pan-pinch)
+- Framer Motion or similar for card animations
 - Tailwind CSS
 - Claude API (Anthropic)
 - localStorage for collection progress
@@ -487,4 +535,4 @@ It's not "another learning app." It's a knowledge universe you navigate.
 
 ## Migration Path
 
-The current swipe-through-cards experience becomes LEVEL 4 (the deepest zoom). Everything above it is new. The good work on card content, Quick Cards, and AI prompts carries forward.
+The current swipe-through-cards experience becomes the deepest level (leaf deck overview cards). Everything above it is new. The good work on card content, Quick Cards, and AI prompts carries forward.
