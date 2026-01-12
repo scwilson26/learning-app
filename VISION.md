@@ -8,66 +8,91 @@ Imagine Google Maps, but for learning. You zoom out and see broad categories. Zo
 
 The goal: **Collect all the cards.** Learning becomes a game.
 
-## Core Concept: Cards Within Cards
+## Core Concept: The Card Table
 
-The entire app is one infinite 2D canvas. You can pan (drag) and zoom (pinch) anywhere.
+The whole app is an infinite card table. You're exploring nested decks of cards.
 
-### Zoom Levels
+### Decks, Not Just Cards
+
+Every topic (History, Egypt, Pyramids) is a **deck** - a stack of cards that contains:
+- **Overview cards** (2-6): Content about this topic itself
+- **Child decks**: Deeper topics to explore
+
+This pattern repeats all the way down until you hit leaf nodes (decks with no children).
 
 ```
-LEVEL 1 - Categories (furthest out)
-┌─────────┐ ┌─────────┐ ┌─────────┐
-│ History │ │ Science │ │   Art   │
-└─────────┘ └─────────┘ └─────────┘
-┌─────────┐ ┌─────────┐ ┌─────────┐
-│  Tech   │ │ Nature  │ │  Music  │
-└─────────┘ └─────────┘ └─────────┘
+[History Deck]
+├── Overview Cards: "What is History?" (1/4), "Why Study It?" (2/4), ...
+└── Child Decks: Ancient, Medieval, Wars, Empires...
 
-LEVEL 2 - Sub-categories (zoom into History)
-┌───────┐ ┌───────┐ ┌───────┐ ┌───────┐
-│Ancient│ │Medieval│ │ Wars  │ │Empires│
-└───────┘ └───────┘ └───────┘ └───────┘
+[Ancient Deck] (inside History)
+├── Overview Cards: "The Ancient World" (1/3), "Timeline" (2/3), ...
+└── Child Decks: Egypt, Rome, Greece, Persia, China...
 
-LEVEL 3 - Topics (zoom into Ancient)
-┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐
-│Egypt│ │Rome │ │Greece│ │Persia│ │China│
-└─────┘ └─────┘ └─────┘ └─────┘ └─────┘
-
-LEVEL 4 - Content Cards (zoom into Rome)
-┌────┐ ┌────┐ ┌────┐ ┌────┐
-│Card│ │Card│ │Card│ │Card│
-│ 1  │ │ 2  │ │ 3  │ │ 4  │
-└────┘ └────┘ └────┘ └────┘
+[Egypt Deck] (inside Ancient)
+├── Overview Cards: "Ancient Egypt" (1/5), "The Nile" (2/5), ...
+└── Child Decks: Pyramids, Pharaohs, Hieroglyphics... (or none if leaf)
 ```
 
-### Two Gestures, Two Actions
+### Navigation Model
 
-**FLIP a card** = See the back
-- Tap any card at any level to flip it over
-- See the content/overview about that thing
-- Flip back to see front again
+**TAP a deck** = Open it
+- Deck becomes the background/table
+- You're now "inside" that deck
+- Overview cards fan out at top
+- Child decks appear below
 
-**CLAIM a card** = Collect it
-- After reading the back, hit "Claim" button
-- NOW it's in your collection
-- Card visually changes (glow, checkmark, etc.)
-- Must actually engage with content to collect
-- Prevents speed-tapping through cards
+**TAP an overview card** = Zoom up to read it
+- Card enlarges to readable size
+- Tap again or swipe to zoom back down
 
-**ZOOM into a card** = Go deeper
-- Pinch to zoom into any card
-- Reveals the cards nested inside it
-- History contains Ancient, Medieval, etc.
-- Ancient contains Egypt, Rome, Greece, etc.
-- Each level reveals more specific cards
+**TAP "Claim"** = Collect the card
+- All cards (overview and deck cards) are claimable
+- Card gets checkmark/glow
+- Adds to your collection count
 
-### Every Card is Both a Container AND Content
+**PINCH OUT or BACK BUTTON** = Rise up one level
+- Return to parent deck
+- See where you came from
 
-This is the key insight. The "History" card isn't just a folder - it has its OWN content on the back (flip it to read "what is history, why does it matter"). But it also CONTAINS sub-cards (zoom in to see them).
+### Visual Language
 
-Same at every level:
-- Flip "Rome" → read a quick summary about Rome
-- Zoom into "Rome" → see the detailed content cards about Rome
+- **Decks look thick/stacky** - clearly contain cards inside
+- **Overview cards are numbered** - "1/4", "2/4", etc.
+- **Claimed cards glow** - checkmark visible
+- **Each deck has its own aesthetic** - background color/theme when inside
+
+### The Experience
+
+```
+[Open App]
+     ↓
+See category decks on table (History, Science, Arts...)
+     ↓
+Tap "History" deck
+     ↓
+History becomes the table background
+Overview cards fan out: "What is History?" (1/4), "Why Study It?" (2/4)...
+Child decks appear: Ancient, Medieval, Wars...
+     ↓
+Tap overview card "What is History?"
+     ↓
+Card zooms up, you read it, tap "Claim"
+     ↓
+Tap "Ancient" deck
+     ↓
+Ancient becomes the table, its overview cards fan out...
+     ↓
+Pinch out to go back to History level
+```
+
+### Why Decks > Continuous Zoom
+
+- **Intentional navigation** - "I'm going INTO History" vs. accidental zoom
+- **Clear mental model** - you're always "inside" somewhere
+- **Natural hierarchy** - decks contain decks contain decks
+- **Escape is obvious** - pinch out or back button
+- **Overview + depth** - every deck teaches you about itself AND lets you go deeper
 
 ## The Collection Game
 
@@ -260,6 +285,69 @@ You're always torn between:
 Both feel rewarding. Both grow your collection. Both are visible on your map.
 
 **This turns learning into Pokemon.** Gotta catch 'em all.
+
+## The Wander Button
+
+**"Surprise Me" / "Wander" - A guided random journey through knowledge.**
+
+### The Problem It Solves
+- Decision paralysis: "Where do I start?"
+- New users don't know how to explore
+- Sometimes you want serendipity, not choice
+
+### How It Works
+
+1. **Button always visible** on the main canvas (floating, prominent)
+2. **User taps "Wander"**
+3. **App picks a random destination** deep in the hierarchy:
+   - History → Ancient World → Egypt → Pyramids
+   - Technology → Inventions → Printing Press
+   - People → Scientists → Marie Curie
+4. **Teleports directly to destination** - user lands inside the target deck
+5. **Auto-opens the first overview card** - content immediately visible
+6. **User explores from there** - or taps Wander again
+
+### The Key Insight: Teleport, Don't Animate
+
+Wander **teleports** you directly to a random leaf deck. The decks along the path remain unexplored. This is intentional:
+- Forces users to manually explore to fill in the gaps
+- Creates "islands" of knowledge on your map
+- You've been to Egypt, but Ancient World is still unclaimed
+- Encourages coming back to explore the path you skipped
+
+### The Experience
+
+```
+[Wander Button Tapped]
+     ↓
+Screen transitions to Egypt deck (inside Ancient, inside History)
+     ↓
+Egypt's overview cards fan out
+     ↓
+First card auto-zooms up: "Ancient Egypt" content visible
+     ↓
+User reads, claims, explores Egypt's other cards
+     ↓
+User can: Wander again, explore Egypt's children, or pinch out to see Ancient
+     ↓
+Going up reveals unexplored sibling decks (Rome, Greece, Persia...)
+```
+
+### Why This Is Powerful
+
+- **Teaches the mechanic** - shows users what zooming does
+- **Guarantees discovery** - every tap is a new place
+- **Creates stories** - "I wandered and ended up at the Byzantine Empire"
+- **Low commitment** - don't like it? Wander again
+- **Surfaces buried content** - exposes Level 4 cards users might never find
+- **Perfect for "just 5 minutes"** - instant engagement
+
+### Design Notes
+
+- Button should feel playful, not utilitarian
+- Animation speed: fast enough to feel magical, slow enough to see the path
+- Maybe show breadcrumb trail during animation: History → Ancient → Egypt → Pyramids
+- Could have variants: "Wander Near" (explore siblings), "Wander Far" (totally random)
 
 ## Social Possibilities (Future)
 
