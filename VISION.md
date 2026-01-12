@@ -115,6 +115,118 @@ Pinch out to go back to History level
 - Zoomed in: See which specific cards you've collected
 - Your map tells the story of your learning journey
 
+## Personality System
+
+**Your learning style shapes your cards.**
+
+### The First Launch Quiz
+
+When you first open the app, a quick RPG-style quiz (3-5 questions):
+- "Do you see patterns or stories?"
+- "Numbers or words?"
+- "Build things or understand things?"
+- "Details or big picture?"
+- "Why it works or how it happened?"
+
+### Learner Archetypes
+
+Based on answers, you get a title and a lens:
+
+**Lorekeeper** - Stories, history, context
+- Cards emphasize narrative, origin stories, "how we got here"
+- Egypt card: "The mythology of the afterlife and the god-kings who built eternity in stone"
+
+**Pattern Seeker** - Systems, connections, structure
+- Cards emphasize underlying rules, relationships, "how it all fits together"
+- Egypt card: "The engineering systems and social hierarchies that made the pyramids possible"
+
+**Tinkerer** - How things work, building, making
+- Cards emphasize mechanics, construction, "how to do it"
+- Egypt card: "How they cut, moved, and stacked 2.3 million blocks without modern tools"
+
+**Word Weaver** - Language, meaning, expression
+- Cards emphasize etymology, quotes, linguistic connections
+- Egypt card: "From 'Aigyptos' to hieroglyphs—how words shaped and preserved a civilization"
+
+**Number Cruncher** - Data, quantities, precision
+- Cards emphasize statistics, measurements, timelines
+- Egypt card: "4,500 years. 481 feet tall. 20 years to build. The numbers behind the wonder."
+
+### How It Affects Cards
+
+Same facts, different lens. The AI generates content tailored to your archetype:
+- **Framing** - What angle leads the card
+- **Emphasis** - Which details get highlighted
+- **Tone** - Analytical vs. narrative vs. practical
+- **Connections** - What related topics get mentioned
+
+### Changeable Later
+
+- Settings let you retake the quiz anytime
+- Changing archetype doesn't delete cards—just affects NEW cards
+- Some users might want to "collect" cards in different styles
+
+## Card Rarity
+
+**Not all cards are equal. Some are special.**
+
+### Rarity Tiers
+
+- **Common** (white/gray border) - Standard cards, most of what you'll find
+- **Rare** (blue border) - Less common, interesting angles
+- **Epic** (purple border) - Unusual topics, deeper dives
+- **Legendary** (gold border, sparkle effect) - The really special ones
+
+### How Rarity Works
+
+**Pure random chance.** No grinding. No "complete X to unlock Y."
+
+When a card is generated:
+- 70% Common
+- 20% Rare
+- 8% Epic
+- 2% Legendary
+
+That's it. Just exploring = chance at something special.
+
+### Why Random is Better
+
+- **No meta-gaming** - You can't optimize for Legendaries
+- **Pure serendipity** - "Holy shit I found a Legendary in the Fungi deck!"
+- **Learning IS the reward** - Not a means to get rewards
+- **Respects the player** - Doesn't manipulate behavior
+- **Every card flip is exciting** - Could be anything
+
+### What Rarity Means
+
+Rarity affects **presentation**, not facts:
+- **Common**: Solid, informative, well-written
+- **Rare**: Unusual angle, surprising connection
+- **Epic**: Deep dive, mind-blowing detail
+- **Legendary**: The wildest fact, the craziest story, the thing you'll tell people about
+
+### Visual Treatment
+
+- Different border colors/effects
+- Legendary cards might have subtle animation (shimmer, glow)
+- Rarity visible in collection view
+- Flex factor: "I have 3 Legendaries"
+
+### Future: Mythic Tier
+
+A 5th tier for truly one-of-a-kind cards:
+
+- **Mythic** (prismatic/holographic effect) - Hand-crafted, not random
+- Only 10-20 in the entire app
+- Easter eggs hidden in unexpected places
+- The ultimate flex: "I found a Mythic"
+
+These are curated, not AI-generated:
+- Timely cards (anniversaries, current events)
+- Guest-curated cards from experts
+- Hidden gems that reward deep exploration
+- Override AI generation for specific topics
+
 ## User Experience Flow
 
 1. Open app → See grid of category cards
