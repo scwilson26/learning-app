@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { getWikipediaSubtopics, hasWikipediaMapping } from './wikipedia';
 
 const anthropic = new Anthropic({
   apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY,
@@ -1276,6 +1277,7 @@ Return ONLY a JSON array with exactly ${cardCount} titles, no explanation:
 
 /**
  * Generate sub-decks for a topic (for infinite depth exploration)
+ * Uses Wikipedia API first for real topic names, falls back to AI generation
  * @param {string} deckName - The name of the current deck (e.g., "Ancient Egypt")
  * @param {string} parentPath - The path to this deck (e.g., "History > Ancient World")
  * @param {number} depth - How deep we are (2 = sub-category, 3+ = dynamic)
@@ -1286,6 +1288,23 @@ export async function generateSubDecks(deckName, parentPath = null, depth = 2, u
     // Build the full breadcrumb path for context
     const fullPath = parentPath ? `${parentPath} → ${deckName}` : deckName
 
+    // Convert deck name to a potential ID for Wikipedia lookup
+    const deckId = deckName.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-')
+
+    // TRY WIKIPEDIA FIRST (for depth 2+)
+    // This allows section-based Level 2 decks to get Wikipedia topics
+    if (depth >= 2) {
+      console.log(`[generateSubDecks] Trying Wikipedia for: ${deckName} (depth ${depth})`)
+      const wikiResults = await getWikipediaSubtopics(deckId, deckName, parentPath)
+
+      if (wikiResults && wikiResults.length >= 3) {
+        console.log(`[generateSubDecks] Wikipedia returned ${wikiResults.length} results for: ${deckName}`)
+        return wikiResults
+      }
+      console.log(`[generateSubDecks] Wikipedia didn't have good results, falling back to AI`)
+    }
+
+    // FALL BACK TO AI GENERATION
     // Build archetype hint if available
     let archetypeHint = ''
     if (userArchetype) {
@@ -1319,7 +1338,7 @@ export async function generateSubDecks(deckName, parentPath = null, depth = 2, u
       shouldBeLeafHint = `\n🛑 VERY LIKELY A LEAF: Depth ${depth} is very deep. "${deckName}" should almost certainly be a leaf unless it's exceptionally broad.`
     }
 
-    const prompt = `You are generating sub-topics for a knowledge learning app with depth-limited exploration.
+    const prompt = `You are generating sub-topics for a knowledge learning app.
 
 FULL PATH: ${fullPath}
 CURRENT TOPIC: "${deckName}"
@@ -1327,61 +1346,55 @@ DEPTH LEVEL: ${depth}
 ${parentPath ? `PARENT CONTEXT: "${parentPath.split(' > ').pop() || parentPath}" is the broader category containing "${deckName}"` : 'This is a top-level category.'}
 ${archetypeHint}
 ═══════════════════════════════════════════════════════════════
-DEPTH-BASED INSTRUCTION:
 ${depthGuidance}${shouldBeLeafHint}
 ═══════════════════════════════════════════════════════════════
 
-Your task: Generate sub-topics for "${deckName}" OR decide it's specific enough to be a "leaf" (just overview cards, no sub-decks).
+🚨 CRITICAL: Generate SPECIFIC topics, NOT meta-categories or groupings!
+
+Each sub-topic MUST be:
+- A SPECIFIC person, place, thing, event, or concept with a PROPER NAME
+- Something someone would actually search for or click on Wikipedia
+- Exciting and recognizable - things people have heard of or want to learn about
+
+❌ NEVER generate topics like:
+- "Old Kingdom Influential Rulers" → ❌ This is a meta-category
+- "Female Pharaohs of Significance" → ❌ This is an abstract grouping
+- "Notable Building Projects" → ❌ This is a textbook chapter heading
+- "Types of X" or "Categories of Y" → ❌ Academic abstractions
+- "Important Figures" or "Key Events" → ❌ Generic groupings
+
+✅ ALWAYS generate topics like:
+- "Cleopatra" → ✅ Specific person
+- "Tutankhamun" → ✅ Specific person
+- "The Great Pyramid of Giza" → ✅ Specific place/thing
+- "The Rosetta Stone" → ✅ Specific artifact
+- "Battle of Kadesh" → ✅ Specific event
+
+EXAMPLES OF GOOD VS BAD:
+
+For "Notable Pharaohs":
+❌ BAD: "Old Kingdom Rulers", "Female Pharaohs", "Warrior Pharaohs", "Religious Pharaohs"
+✅ GOOD: "Cleopatra", "Tutankhamun", "Ramses II", "Hatshepsut", "Akhenaten", "Nefertiti"
+
+For "Ancient Egypt Architecture":
+❌ BAD: "Monumental Architecture", "Religious Structures", "Tomb Construction"
+✅ GOOD: "Great Pyramid of Giza", "The Sphinx", "Valley of the Kings", "Karnak Temple", "Abu Simbel"
+
+For "World War II Battles":
+❌ BAD: "European Theater Battles", "Pacific Campaigns", "Turning Point Battles"
+✅ GOOD: "D-Day (Normandy)", "Battle of Stalingrad", "Battle of Midway", "Battle of the Bulge"
+
+For "Renaissance Artists":
+❌ BAD: "Italian Masters", "Northern Renaissance Painters", "Sculpture Artists"
+✅ GOOD: "Leonardo da Vinci", "Michelangelo", "Raphael", "Botticelli", "Donatello"
 
 WHEN TO MAKE IT A LEAF (return empty subDecks array):
-- The topic is specific enough that 5 overview cards would cover it well
-- It feels like a detailed Wikipedia article title (not a category page)
-- Further subdivision would feel forced or artificial
-- It's a single event, person, specific place, or narrow concept
-- You're at depth 5+ and it's not genuinely broad
+- The topic is ALREADY a specific person, place, thing, or event
+- It's a single concept that 5 cards would cover well
+- It feels like a Wikipedia ARTICLE (not a category page)
+- Examples: "Cleopatra", "The Great Pyramid", "Battle of Thermopylae"
 
-LEAF EXAMPLES (should have NO sub-decks):
-✗ "Construction Techniques of the Great Pyramid" - specific topic
-✗ "The EPR Paradox" - single physics concept
-✗ "Battle of Thermopylae" - single historical event
-✗ "How Vaccines Work" - focused explainer topic
-✗ "Shakespeare's Hamlet" - single work
-✗ Any topic that reads like a detailed article title
-
-TOPICS THAT CAN GO DEEPER (genuinely broad):
-✓ "Ancient Egypt" (Level 3) - entire civilization with many aspects
-✓ "World War II" (Level 3-4) - major war with theaters, campaigns, themes
-✓ "Quantum Mechanics" (Level 3) - rich scientific field
-✓ "The Renaissance" (Level 3-4) - entire historical period
-✓ Topics that feel like Wikipedia category pages
-
-GOOD SUB-TOPICS (if generating):
-1. CLEARLY child topics of "${deckName}" - obvious sub-categories
-2. Represent genuinely distinct aspects someone would want to explore separately
-3. Are NOT just card topics (those belong as overview cards, not sub-decks)
-4. Feel like natural "chapters" or "sections" in a book about ${deckName}
-
-BAD SUB-TOPICS to AVOID:
-- Going back UP the hierarchy (broader than parent)
-- Things that should just be overview cards
-- Generic: "Introduction", "Overview", "Basics", "Other"
-- Duplicates of ancestors in the path
-- Forced divisions that don't feel natural
-
-${depth === 2 ? `LEVEL 2 EXAMPLES (broad categories, should almost always have sub-topics):
-- "Literature" → Poetry, Fiction, Drama, Non-Fiction, World Literature, Literary Movements
-- "Physics" → Mechanics, Thermodynamics, Electromagnetism, Quantum Physics, Relativity
-- "Animals" → Mammals, Birds, Fish, Reptiles, Insects, Marine Life` : ''}
-
-${depth === 3 ? `LEVEL 3 EXAMPLES (sub-categories, usually have sub-topics):
-- "Fiction" → Fantasy, Science Fiction, Mystery, Romance, Historical Fiction
-- "Mammals" → Primates, Carnivores, Marine Mammals, Rodents, Ungulates
-- "Ancient Rome" → Republic Era, Imperial Era, Daily Life, Military, Architecture` : ''}
-
-${depth >= 4 ? `LEVEL ${depth} DECISION GUIDE:
-Ask yourself: "Is '${deckName}' more like a Wikipedia CATEGORY page (broad, has sub-topics) or an ARTICLE page (specific, just needs overview cards)?"
-- If CATEGORY → generate 3-5 sub-topics
-- If ARTICLE → return empty array (make it a leaf)` : ''}
+${depth >= 4 ? `At depth ${depth}, prefer making "${deckName}" a LEAF unless it genuinely contains multiple famous specific things inside it.` : ''}
 
 Return ONLY valid JSON (no markdown, no explanation):
 

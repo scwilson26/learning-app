@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { generateCardContent, generateDeckCards, generateSubDecks } from '../services/claude'
+import { fetchLevel2WithSections, hasLevel2Sections } from '../services/wikipedia'
 import {
   getDeckCards,
   saveDeckCards,
@@ -17,6 +18,7 @@ import {
   saveData,
   getUserArchetype,
   pickRandomWanderDeck,
+  getExploredDecksCount,
   getTierCards,
   getDeckTierCompletion,
   canAccessTier,
@@ -534,6 +536,105 @@ function TierCompleteCelebration({ tierName, nextTierName, onContinue, onUnlockN
   )
 }
 
+// Wandering screen - animated loading state while generating new path
+function WanderingScreen({ pathSteps, currentStep, isComplete }) {
+  return (
+    <motion.div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-900"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      {/* Animated stars background */}
+      <div className="absolute inset-0 overflow-hidden">
+        {[...Array(20)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-1 h-1 bg-white rounded-full"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+            }}
+            animate={{
+              opacity: [0.2, 1, 0.2],
+              scale: [1, 1.5, 1],
+            }}
+            transition={{
+              duration: 2 + Math.random() * 2,
+              repeat: Infinity,
+              delay: Math.random() * 2,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="relative text-center px-8 max-w-md">
+        {/* Compass/dice animation */}
+        <motion.div
+          className="text-7xl mb-8"
+          animate={{
+            rotate: isComplete ? 0 : [0, 360],
+            scale: isComplete ? [1, 1.2, 1] : 1,
+          }}
+          transition={{
+            rotate: { duration: 2, repeat: isComplete ? 0 : Infinity, ease: 'linear' },
+            scale: { duration: 0.5 },
+          }}
+        >
+          {isComplete ? '🎯' : '🎲'}
+        </motion.div>
+
+        <motion.h2
+          className="text-2xl font-bold text-white mb-4"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          {isComplete ? 'Found something interesting!' : 'Wandering...'}
+        </motion.h2>
+
+        {/* Path building animation */}
+        <div className="flex flex-wrap items-center justify-center gap-2 text-white/90 min-h-[60px]">
+          {pathSteps.map((step, index) => (
+            <motion.span
+              key={index}
+              className="flex items-center gap-1"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.3 }}
+            >
+              {index > 0 && <span className="text-white/50 mx-1">→</span>}
+              <span className="text-lg">{step.emoji}</span>
+              <span className={`font-medium ${index === pathSteps.length - 1 ? 'text-yellow-300' : ''}`}>
+                {step.name}
+              </span>
+              {index === currentStep && !isComplete && (
+                <motion.span
+                  className="ml-1"
+                  animate={{ opacity: [1, 0] }}
+                  transition={{ duration: 0.5, repeat: Infinity }}
+                >
+                  ...
+                </motion.span>
+              )}
+            </motion.span>
+          ))}
+        </div>
+
+        {/* Loading indicator */}
+        {!isComplete && (
+          <motion.p
+            className="text-white/60 text-sm mt-6"
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+          >
+            Discovering unexplored territory...
+          </motion.p>
+        )}
+      </div>
+    </motion.div>
+  )
+}
+
 // Skeleton card - shown while generating cards for the first time
 function SkeletonCard({ index }) {
   return (
@@ -812,6 +913,95 @@ function SkeletonDeck({ index }) {
   )
 }
 
+// Section header with collapsible content
+function SectionHeader({ section, isExpanded, onToggle, deckCount }) {
+  return (
+    <motion.button
+      onClick={onToggle}
+      className="w-full flex items-center justify-between px-4 py-3 bg-white/50 hover:bg-white/80 rounded-xl border border-gray-200 transition-colors group"
+      whileHover={{ scale: 1.01 }}
+      whileTap={{ scale: 0.99 }}
+    >
+      <div className="flex items-center gap-3">
+        <span className="text-2xl">{section.emoji}</span>
+        <span className="font-semibold text-gray-800">{section.name}</span>
+        <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{deckCount} topics</span>
+      </div>
+      <motion.span
+        className="text-gray-400 text-xl"
+        animate={{ rotate: isExpanded ? 180 : 0 }}
+        transition={{ duration: 0.2 }}
+      >
+        ▼
+      </motion.span>
+    </motion.button>
+  )
+}
+
+// Sectioned decks display for Level 1 categories
+function SectionedDecks({ sections, onOpenDeck, claimedCards, parentGradient, parentBorderColor }) {
+  const [expandedSections, setExpandedSections] = useState(() => {
+    // Start with first section expanded
+    return { 0: true }
+  })
+
+  const toggleSection = (index) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [index]: !prev[index]
+    }))
+  }
+
+  return (
+    <div className="flex flex-col gap-4 w-full max-w-4xl">
+      {sections.sections.map((section, sectionIndex) => (
+        <div key={section.name} className="flex flex-col gap-3">
+          <SectionHeader
+            section={section}
+            isExpanded={expandedSections[sectionIndex]}
+            onToggle={() => toggleSection(sectionIndex)}
+            deckCount={section.subDecks.length}
+          />
+
+          <AnimatePresence>
+            {expandedSections[sectionIndex] && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="flex gap-4 flex-wrap justify-start pl-4 py-2">
+                  {section.subDecks.map((subDeck, deckIndex) => (
+                    <motion.div
+                      key={subDeck.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: deckIndex * 0.03 }}
+                    >
+                      <Deck
+                        deck={{
+                          ...subDeck,
+                          gradient: parentGradient,
+                          borderColor: parentBorderColor,
+                          level: 2,
+                        }}
+                        onOpen={onOpenDeck}
+                        claimed={claimedCards.has(subDeck.id)}
+                      />
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // The spread - overview cards + sub-decks laid out in a grid (now with tiered cards)
 function DeckSpread({
   deck,
@@ -822,13 +1012,16 @@ function DeckSpread({
   claimedCards,
   isLoading,
   isLoadingChildren,
+  isLoadingSections,
   skeletonCount,
   isLeaf,
   // Tier-related props
   tierCards,
   tierCompletion,
   onUnlockTier,
-  unlockingTier
+  unlockingTier,
+  // Section-related props (for Level 1)
+  sections
 }) {
   // Tier metadata
   const tiers = [
@@ -927,9 +1120,35 @@ function DeckSpread({
         </div>
       )}
 
-      {/* Sub-decks grid */}
-      {!isLoadingChildren && childDecks.length > 0 && (
+      {/* Loading sections indicator */}
+      {isLoadingSections && (
         <div className="flex flex-col items-center gap-3">
+          <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Loading topics...</span>
+          <div className="flex gap-6 flex-wrap justify-center max-w-4xl">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <SkeletonDeck key={`skeleton-section-${index}`} index={index} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Sectioned sub-decks (for Level 1 with Wikipedia sections) */}
+      {!isLoadingSections && sections && (
+        <div id="explore-section" className="flex flex-col items-center gap-3 w-full">
+          <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Explore by Topic</span>
+          <SectionedDecks
+            sections={sections}
+            onOpenDeck={onOpenDeck}
+            claimedCards={claimedCards}
+            parentGradient={deck.gradient}
+            parentBorderColor={deck.borderColor}
+          />
+        </div>
+      )}
+
+      {/* Sub-decks grid (for non-sectioned decks) */}
+      {!isLoadingChildren && !sections && childDecks.length > 0 && (
+        <div id="explore-section" className="flex flex-col items-center gap-3">
           <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Explore</span>
           <div className="flex gap-6 flex-wrap justify-center max-w-4xl">
             {childDecks.map((childDeck, index) => (
@@ -990,12 +1209,19 @@ export default function Canvas() {
   const [isWandering, setIsWandering] = useState(false) // True when wander navigation is in progress
   const [wanderMessage, setWanderMessage] = useState(null) // Message to show user (e.g., "All explored!")
   const [autoOpenCardId, setAutoOpenCardId] = useState(null) // Card to auto-open after wander navigation
+  const [wanderPathSteps, setWanderPathSteps] = useState([]) // Path steps for wandering animation
+  const [wanderCurrentStep, setWanderCurrentStep] = useState(0) // Current step being generated
+  const [wanderComplete, setWanderComplete] = useState(false) // True when path generation is complete
 
   // Tier-related state
   const [tierCards, setTierCards] = useState({}) // deckId -> { core: [], deep_dive_1: [], deep_dive_2: [] }
   const [unlockingTier, setUnlockingTier] = useState(null) // tier currently being unlocked/generated
   const [showCelebration, setShowCelebration] = useState(null) // { tierName, nextTierName } or null
   const [lastCompletedTier, setLastCompletedTier] = useState({}) // deckId -> last tier shown celebration for
+
+  // Section-based Level 2 data (from Wikipedia)
+  const [sectionData, setSectionData] = useState({}) // categoryId -> { sections: [...] }
+  const [loadingSections, setLoadingSections] = useState(null) // categoryId currently loading sections
 
   // Claim a card and persist to localStorage
   const handleClaim = (cardId) => {
@@ -1400,41 +1626,251 @@ export default function Canvas() {
     return path
   }
 
-  // Wander to a random interesting deck
-  const handleWander = async () => {
-    setIsWandering(true)
-    setWanderMessage(null)
+  // Generate a new random path on-the-fly
+  const generateWanderPath = async () => {
+    const userArchetype = getUserArchetype()
 
-    try {
-      // Pick a random destination
-      const currentDeckId = currentDeck?.id || null
-      const destination = pickRandomWanderDeck(currentDeckId)
+    // Pick random target depth (3-5 levels)
+    const targetDepth = 3 + Math.floor(Math.random() * 3) // 3, 4, or 5
+    console.log('[Wander] Target depth:', targetDepth)
 
-      if (!destination) {
-        // No wanderable decks found
-        setWanderMessage("Amazing! You've explored everything available. Keep going to unlock more!")
-        setTimeout(() => setWanderMessage(null), 3000)
-        setIsWandering(false)
-        return
+    // Pick a random category (Level 1)
+    const category = CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)]
+    setWanderPathSteps([{ emoji: category.emoji, name: category.name, id: category.id }])
+    setWanderCurrentStep(0)
+    console.log('[Wander] Starting from category:', category.name)
+
+    let currentPath = [category.id]
+    let currentDeckName = category.name
+    let currentParentPath = null
+    let currentDepth = 1
+    // Initialize to at least the category - we'll update as we go deeper
+    let lastDeckWithCards = { id: category.id, path: [...currentPath], parentPath: null }
+
+    // Build path level by level
+    while (currentDepth < targetDepth) {
+      setWanderCurrentStep(currentDepth - 1)
+      console.log(`[Wander] At depth ${currentDepth}, deck: ${currentDeckName}`)
+
+      // Get or generate children for current deck
+      const currentId = currentPath[currentPath.length - 1]
+      let children = []
+
+      // Check hardcoded children first
+      if (currentDepth === 1) {
+        // Level 1 -> Level 2: use category's hardcoded children
+        const cat = CATEGORIES.find(c => c.id === currentId)
+        if (cat?.children) {
+          children = cat.children.map(childId => {
+            const subcat = SUBCATEGORIES[childId]
+            return subcat ? { id: childId, name: subcat.name, emoji: subcat.emoji } : null
+          }).filter(Boolean)
+        }
+      } else if (currentDepth === 2) {
+        // Level 2 -> Level 3: check SUBCATEGORIES for hardcoded children, else generate
+        const subcat = SUBCATEGORIES[currentId]
+        if (subcat?.children?.length > 0) {
+          children = subcat.children.map(childId => {
+            const child = SUBCATEGORIES[childId]
+            return child ? { id: childId, name: child.name, emoji: child.emoji } : null
+          }).filter(Boolean)
+        } else {
+          // Check localStorage cache
+          const cachedChildren = getDeckChildren(currentId)
+          if (cachedChildren?.length > 0) {
+            children = cachedChildren
+          } else {
+            // Generate new children
+            const result = await generateSubDecks(currentDeckName, currentParentPath, currentDepth, userArchetype)
+            if (result && result.length > 0) {
+              // Save to storage
+              const parentDeck = getDeck(currentId)
+              const gradient = parentDeck?.gradient || 'from-gray-500 to-gray-700'
+              const borderColor = parentDeck?.borderColor || 'border-gray-300'
+              saveDeckChildren(
+                currentId,
+                currentDeckName,
+                result,
+                currentParentPath,
+                currentDepth,
+                gradient,
+                borderColor
+              )
+              children = result
+              // Update in-memory cache
+              setDynamicChildren(prev => ({
+                ...prev,
+                [currentId]: result.map(child => ({
+                  ...child,
+                  gradient,
+                  borderColor,
+                  level: currentDepth + 1,
+                }))
+              }))
+            }
+          }
+        }
+      } else {
+        // Level 3+: check cache or generate
+        const cachedChildren = getDeckChildren(currentId)
+        if (cachedChildren?.length > 0) {
+          children = cachedChildren
+        } else {
+          const result = await generateSubDecks(currentDeckName, currentParentPath, currentDepth, userArchetype)
+          if (result && result.length > 0) {
+            const parentDeck = getDeck(currentId) || getDynamicDeck(currentId)
+            const gradient = parentDeck?.gradient || 'from-gray-500 to-gray-700'
+            const borderColor = parentDeck?.borderColor || 'border-gray-300'
+            saveDeckChildren(
+              currentId,
+              currentDeckName,
+              result,
+              currentParentPath,
+              currentDepth,
+              gradient,
+              borderColor
+            )
+            children = result
+            setDynamicChildren(prev => ({
+              ...prev,
+              [currentId]: result.map(child => ({
+                ...child,
+                gradient,
+                borderColor,
+                level: currentDepth + 1,
+              }))
+            }))
+          }
+        }
       }
 
-      console.log('[Wander] Picked destination:', destination)
+      // If no children, this is a leaf - stop here
+      if (children.length === 0) {
+        console.log(`[Wander] No children at depth ${currentDepth}, stopping at ${currentDeckName}`)
+        lastDeckWithCards = { id: currentId, path: [...currentPath], parentPath: currentParentPath }
+        break
+      }
 
-      // Build navigation path
-      const navPath = buildNavigationPath(destination.parentPath, destination.deckId)
-      console.log('[Wander] Navigation path:', navPath)
+      // Pick a random child and continue
+      const randomChild = children[Math.floor(Math.random() * children.length)]
+      currentPath.push(randomChild.id)
+      currentParentPath = currentParentPath ? `${currentParentPath} > ${currentDeckName}` : currentDeckName
+      currentDeckName = randomChild.name
+      currentDepth++
 
-      // Set the card to auto-open after navigation
-      setAutoOpenCardId(destination.firstUnclaimedCardId)
+      // Update path steps for animation
+      setWanderPathSteps(prev => [...prev, { emoji: randomChild.emoji, name: randomChild.name, id: randomChild.id }])
+      lastDeckWithCards = { id: randomChild.id, path: [...currentPath], parentPath: currentParentPath }
+      console.log(`[Wander] Moved to ${randomChild.name} (${randomChild.id}), path:`, [...currentPath])
 
-      // Navigate to the destination
-      setStack(navPath)
+      // Small delay for visual effect
+      await new Promise(resolve => setTimeout(resolve, 200))
+    }
 
+    console.log('[Wander] Final destination:', lastDeckWithCards)
+    return lastDeckWithCards
+  }
+
+  // Wander to a random interesting deck (smart: generates new paths if < 20 explored)
+  const handleWander = async () => {
+    const exploredCount = getExploredDecksCount()
+    const useExistingDecks = exploredCount >= 20
+
+    console.log(`[Wander] Explored decks: ${exploredCount}, using existing: ${useExistingDecks}`)
+
+    // Reset wander state
+    setIsWandering(true)
+    setWanderMessage(null)
+    setWanderPathSteps([])
+    setWanderCurrentStep(0)
+    setWanderComplete(false)
+
+    try {
+      if (useExistingDecks) {
+        // Fast fallback: pick from existing decks (original behavior)
+        const currentDeckId = currentDeck?.id || null
+        const destination = pickRandomWanderDeck(currentDeckId)
+
+        if (!destination) {
+          // No wanderable decks - try generating a new path instead
+          console.log('[Wander] No existing decks, generating new path...')
+          const generated = await generateWanderPath()
+
+          if (generated) {
+            setWanderComplete(true)
+            await new Promise(resolve => setTimeout(resolve, 800)) // Show completion briefly
+            setStack(generated.path)
+          } else {
+            setWanderMessage("You've explored everything nearby! Check back soon.")
+            setTimeout(() => setWanderMessage(null), 3000)
+          }
+          setIsWandering(false)
+          return
+        }
+
+        console.log('[Wander] Using existing deck:', destination)
+
+        // Build navigation path
+        const navPath = buildNavigationPath(destination.parentPath, destination.deckId)
+
+        // Set the card to auto-open after navigation
+        setAutoOpenCardId(destination.firstUnclaimedCardId)
+
+        // Navigate to the destination
+        setStack(navPath)
+        setIsWandering(false)
+      } else {
+        // Generate a new path on-the-fly (Option A)
+        const MAX_ATTEMPTS = 3
+        let attempt = 0
+        let generated = null
+
+        while (attempt < MAX_ATTEMPTS && !generated) {
+          attempt++
+          console.log(`[Wander] Generating new path (attempt ${attempt}/${MAX_ATTEMPTS})...`)
+
+          generated = await generateWanderPath()
+
+          // Check if we ended up at an already-completed deck
+          if (generated) {
+            const deckCards = getDeckCards(generated.id)
+            if (deckCards?.length > 0) {
+              const allClaimed = deckCards.every(card => claimedCards.has(card.id))
+              if (allClaimed) {
+                console.log('[Wander] Destination fully explored, trying again...')
+                generated = null // Try again
+                setWanderPathSteps([])
+              }
+            }
+          }
+        }
+
+        if (generated) {
+          setWanderComplete(true)
+          // Brief pause to show completion
+          await new Promise(resolve => setTimeout(resolve, 800))
+
+          // Navigate to destination
+          setStack(generated.path)
+        } else {
+          // Failed to generate, try existing decks as fallback
+          const destination = pickRandomWanderDeck(currentDeck?.id || null)
+          if (destination) {
+            const navPath = buildNavigationPath(destination.parentPath, destination.deckId)
+            setAutoOpenCardId(destination.firstUnclaimedCardId)
+            setStack(navPath)
+          } else {
+            setWanderMessage("You've explored everything nearby! Check back soon.")
+            setTimeout(() => setWanderMessage(null), 3000)
+          }
+        }
+
+        setIsWandering(false)
+      }
     } catch (error) {
       console.error('[Wander] Error:', error)
       setWanderMessage('Something went wrong. Try again!')
       setTimeout(() => setWanderMessage(null), 2000)
-    } finally {
       setIsWandering(false)
     }
   }
@@ -1448,11 +1884,71 @@ export default function Canvas() {
     ? stackDecks.slice(0, -1).map(d => d.name).join(' > ')
     : null
 
+  // Load section data for Level 1 categories
+  const loadSectionsForCategory = async (categoryId) => {
+    // Check if already loaded
+    if (sectionData[categoryId]) return
+
+    // Check if this category has section mappings
+    if (!hasLevel2Sections(categoryId)) return
+
+    setLoadingSections(categoryId)
+    try {
+      const sections = await fetchLevel2WithSections(categoryId)
+      if (sections) {
+        setSectionData(prev => ({
+          ...prev,
+          [categoryId]: sections
+        }))
+
+        // Get parent category for styling
+        const parentCategory = CATEGORIES.find(c => c.id === categoryId)
+
+        // Register all section decks as dynamic decks so getDeck() can find them
+        sections.sections.forEach(section => {
+          section.subDecks.forEach(subDeck => {
+            // Save each section deck to localStorage as a dynamic deck
+            const data = getData()
+            if (!data.dynamicDecks) data.dynamicDecks = {}
+
+            // Only add if not already exists
+            if (!data.dynamicDecks[subDeck.id]) {
+              data.dynamicDecks[subDeck.id] = {
+                id: subDeck.id,
+                name: subDeck.name,
+                emoji: subDeck.emoji,
+                gradient: parentCategory?.gradient || 'from-gray-500 to-gray-700',
+                borderColor: parentCategory?.borderColor || 'border-gray-300',
+                depth: 2,
+                parentPath: parentCategory?.name || categoryId,
+                children: null,
+                childrenGenerated: false,
+                wikiCategory: subDeck.wikiCategory, // Store for future Wikipedia lookups
+                source: 'wikipedia-section'
+              }
+              saveData(data)
+            }
+          })
+        })
+      }
+    } catch (error) {
+      console.error('Failed to load sections:', error)
+    } finally {
+      setLoadingSections(null)
+    }
+  }
+
   // Load or generate cards and children when entering any deck
   useEffect(() => {
     if (currentDeck) {
       loadOrGenerateCardsForDeck(currentDeck, parentPath)
       loadOrGenerateChildDecks(currentDeck, parentPath)
+
+      // Load sections for Level 1 categories
+      const deckLevel = currentDeck.level || getDeckLevel(currentDeck.id)
+      if (deckLevel === 1) {
+        loadSectionsForCategory(currentDeck.id)
+      }
     }
   }, [currentDeck?.id])
 
@@ -1470,7 +1966,7 @@ export default function Canvas() {
 
     const deckLevel = currentDeck.level || getDeckLevel(currentDeck.id)
 
-    // Level 1: Use hardcoded children
+    // Level 1: Return flat list for compatibility (sections handled separately)
     if (deckLevel === 1) {
       const childIds = currentDeck.children || []
       return childIds.map(id => getDeck(id)).filter(Boolean)
@@ -1486,9 +1982,19 @@ export default function Canvas() {
     return dynamicChildren[currentDeck.id] || []
   }
 
+  // Get section data for current deck (only for Level 1)
+  const getCurrentSections = () => {
+    if (!currentDeck) return null
+    const deckLevel = currentDeck.level || getDeckLevel(currentDeck.id)
+    if (deckLevel !== 1) return null
+    return sectionData[currentDeck.id] || null
+  }
+
   const childDecks = getChildDecks()
+  const currentSections = getCurrentSections()
   const isLoading = loadingDeck === currentDeck?.id
   const isLoadingChildren = loadingChildren === currentDeck?.id
+  const isLoadingSectionsState = loadingSections === currentDeck?.id
 
   // Determine if current deck is a leaf (no sub-decks)
   const isLeafDeck = () => {
@@ -1694,6 +2200,55 @@ export default function Canvas() {
     </AnimatePresence>
   )
 
+  // Calculate topic count for Explore button
+  const getTopicCount = () => {
+    if (currentSections?.sections) {
+      return currentSections.sections.reduce((sum, section) => sum + section.subDecks.length, 0)
+    }
+    return childDecks.length
+  }
+
+  // Check if we have sub-decks to explore
+  const hasSubDecks = childDecks.length > 0 || (currentSections?.sections?.length > 0)
+
+  // Scroll to explore section
+  const scrollToExplore = () => {
+    const exploreSection = document.getElementById('explore-section')
+    if (exploreSection) {
+      exploreSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
+
+  // Explore Deeper button component (floating)
+  const ExploreButton = () => {
+    if (!hasSubDecks || isLeaf) return null
+
+    const topicCount = getTopicCount()
+
+    return (
+      <motion.button
+        onClick={scrollToExplore}
+        className="
+          fixed bottom-6 left-6 z-50
+          px-5 py-3 rounded-full
+          bg-gradient-to-r from-emerald-500 to-teal-600
+          text-white font-semibold text-sm
+          shadow-lg hover:shadow-xl
+          flex items-center gap-2
+          transition-all
+          hover:scale-105 active:scale-95
+        "
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        whileHover={{ y: -2 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        <span className="text-lg">↓</span>
+        <span>{topicCount} Topics</span>
+      </motion.button>
+    )
+  }
+
   // Root level - show all category decks
   if (stack.length === 0) {
     return (
@@ -1721,6 +2276,17 @@ export default function Canvas() {
         {/* Wander button */}
         <WanderButton />
         <WanderMessage />
+
+        {/* Wandering screen overlay */}
+        <AnimatePresence>
+          {isWandering && wanderPathSteps.length > 0 && (
+            <WanderingScreen
+              pathSteps={wanderPathSteps}
+              currentStep={wanderCurrentStep}
+              isComplete={wanderComplete}
+            />
+          )}
+        </AnimatePresence>
       </div>
     )
   }
@@ -1772,12 +2338,14 @@ export default function Canvas() {
               claimedCards={claimedCards}
               isLoading={isLoading}
               isLoadingChildren={isLoadingChildren}
+              isLoadingSections={isLoadingSectionsState}
               skeletonCount={skeletonCount}
               isLeaf={isLeaf}
               tierCards={currentTierCards}
               tierCompletion={currentTierCompletion}
               onUnlockTier={handleUnlockTier}
               unlockingTier={unlockingTier}
+              sections={currentSections}
             />
           </AnimatePresence>
         </div>
@@ -1816,9 +2384,21 @@ export default function Canvas() {
         )}
       </AnimatePresence>
 
-      {/* Wander button */}
+      {/* Floating buttons */}
+      <ExploreButton />
       <WanderButton />
       <WanderMessage />
+
+      {/* Wandering screen overlay */}
+      <AnimatePresence>
+        {isWandering && wanderPathSteps.length > 0 && (
+          <WanderingScreen
+            pathSteps={wanderPathSteps}
+            currentStep={wanderCurrentStep}
+            isComplete={wanderComplete}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

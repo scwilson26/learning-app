@@ -478,6 +478,16 @@ export function exportForSync() {
 }
 
 /**
+ * Get count of explored decks (decks with generated cards)
+ * Used to determine if we should generate new paths or use existing ones
+ * @returns {number} Count of explored decks
+ */
+export function getExploredDecksCount() {
+  const data = getData()
+  return Object.keys(data.decks).length
+}
+
+/**
  * Get all decks that have cards with at least one unclaimed card
  * Used for the Wander feature to find interesting destinations
  * @param {string} currentDeckId - The current deck ID to exclude
