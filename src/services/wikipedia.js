@@ -3,6 +3,14 @@
  * Uses Wikipedia's category system to get specific, recognizable topics
  */
 
+import Anthropic from '@anthropic-ai/sdk'
+import vitalArticles from '../data/vitalArticles.json'
+
+const anthropic = new Anthropic({
+  apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY,
+  dangerouslyAllowBrowser: true
+})
+
 // Wikipedia category mappings for our topics
 // Maps our deck IDs to Wikipedia category names
 const WIKIPEDIA_CATEGORY_MAP = {
@@ -649,54 +657,189 @@ function pickEmojiForTopic(title) {
 }
 
 /**
- * Main function: Get sub-topics from Wikipedia for a deck
+ * Map a deck name to the best vital articles category to search
+ * Returns array of category keys to search (in order of priority)
+ */
+function mapDeckToVitalCategories(deckName, parentPath = null) {
+  const name = deckName.toLowerCase()
+  const path = (parentPath || '').toLowerCase()
+
+  // Direct category mappings based on keywords
+  if (/mathematician|math|algebra|geometry|calculus/i.test(name)) {
+    return ['mathematics', 'people']
+  }
+  if (/physicist|physics|quantum|relativity/i.test(name)) {
+    return ['physics', 'people']
+  }
+  if (/biolog|life|organism|species|animal|plant/i.test(name)) {
+    return ['biology', 'people']
+  }
+  if (/chemist|chemistry|element|molecule/i.test(name)) {
+    return ['physics', 'people'] // Chemistry is under physical sciences
+  }
+  if (/artist|painter|sculptor|art|painting/i.test(name)) {
+    return ['arts', 'people']
+  }
+  if (/musician|composer|music|symphony|opera/i.test(name)) {
+    return ['arts', 'people']
+  }
+  if (/writer|author|poet|novel|literature/i.test(name)) {
+    return ['arts', 'people']
+  }
+  if (/philosopher|philosophy|ethics|logic/i.test(name)) {
+    return ['philosophy', 'people']
+  }
+  if (/religion|religious|spiritual|god|deity/i.test(name)) {
+    return ['philosophy', 'people']
+  }
+  if (/leader|politician|president|king|queen|emperor/i.test(name)) {
+    return ['people', 'history']
+  }
+  if (/explorer|adventurer|navigator/i.test(name)) {
+    return ['people', 'geography']
+  }
+  if (/inventor|invention|engineer/i.test(name)) {
+    return ['technology', 'people']
+  }
+  if (/war|battle|military|army|navy/i.test(name)) {
+    return ['history', 'people']
+  }
+  if (/country|nation|city|geography|continent/i.test(name)) {
+    return ['geography']
+  }
+  if (/ancient|medieval|modern|century|era|period/i.test(name)) {
+    return ['history']
+  }
+  if (/food|drink|sport|game|hobby/i.test(name)) {
+    return ['everyday']
+  }
+  if (/computer|software|internet|technology/i.test(name)) {
+    return ['technology']
+  }
+  if (/society|social|economic|political|law/i.test(name)) {
+    return ['society']
+  }
+
+  // Check parent path for context
+  if (/math/i.test(path)) return ['mathematics', 'people']
+  if (/physics|science/i.test(path)) return ['physics', 'biology', 'people']
+  if (/biology|health/i.test(path)) return ['biology', 'people']
+  if (/art/i.test(path)) return ['arts', 'people']
+  if (/history/i.test(path)) return ['history', 'people']
+  if (/people/i.test(path)) return ['people']
+  if (/geography/i.test(path)) return ['geography']
+  if (/philosophy|religion/i.test(path)) return ['philosophy']
+  if (/technology/i.test(path)) return ['technology']
+  if (/society/i.test(path)) return ['society']
+  if (/everyday/i.test(path)) return ['everyday']
+
+  // Default: search all categories weighted toward people
+  return ['people', 'history', 'arts', 'physics', 'biology']
+}
+
+/**
+ * Get a pool of candidate articles from vital articles
+ * Returns up to 200 articles from relevant categories
+ */
+function getCandidateArticles(deckName, parentPath = null) {
+  const categories = mapDeckToVitalCategories(deckName, parentPath)
+  const candidates = []
+
+  for (const category of categories) {
+    if (vitalArticles[category]) {
+      candidates.push(...vitalArticles[category])
+    }
+  }
+
+  // Shuffle for variety
+  return candidates.sort(() => Math.random() - 0.5).slice(0, 200)
+}
+
+/**
+ * Use AI to pick the most relevant articles from the vital pool
+ * for a given deck topic
+ */
+async function pickRelevantArticlesFromPool(deckName, parentPath, candidates) {
+  if (candidates.length === 0) return null
+
+  const prompt = `From this list of Wikipedia article titles, pick 8-12 that are SPECIFIC examples of "${deckName}".
+
+CANDIDATE ARTICLES:
+${candidates.slice(0, 150).join('\n')}
+
+RULES:
+1. Pick ONLY articles that are directly related to "${deckName}"
+2. For people categories (like "Mathematicians"), pick SPECIFIC PEOPLE
+3. For concept categories (like "Theorems"), pick SPECIFIC THEOREMS
+4. Prioritize famous/recognizable topics over obscure ones
+5. Return the EXACT article titles as they appear in the list
+
+${parentPath ? `CONTEXT: This is inside "${parentPath}"` : ''}
+
+Return ONLY a JSON array of 8-12 article titles, no explanation:
+["Title 1", "Title 2", ...]`;
+
+  try {
+    const message = await anthropic.messages.create({
+      model: 'claude-3-5-haiku-20241022',
+      max_tokens: 500,
+      messages: [{ role: 'user', content: prompt }]
+    })
+
+    const responseText = message.content[0].text.trim()
+    const jsonText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '')
+    const titles = JSON.parse(jsonText)
+
+    // Validate that returned titles exist in our pool
+    const validTitles = titles.filter(t => candidates.includes(t))
+
+    if (validTitles.length < 3) {
+      console.log(`[VitalPool] AI returned too few valid matches for "${deckName}"`)
+      return null
+    }
+
+    return validTitles
+  } catch (error) {
+    console.error('[VitalPool] Error picking articles:', error)
+    return null
+  }
+}
+
+/**
+ * Main function: Get sub-topics from the Vital Articles pool
+ * Uses AI to pick relevant articles from the pre-scraped 10,000 article pool
  * Returns array of sub-deck objects or null if no good results
  */
 export async function getWikipediaSubtopics(deckId, deckName, parentPath = null) {
-  console.log(`[Wikipedia] Getting subtopics for: ${deckName} (${deckId})`)
+  console.log(`[VitalPool] Getting subtopics for: ${deckName} (${deckId})`)
 
-  // Find the appropriate Wikipedia category
-  const categoryName = findWikipediaCategory(deckId, deckName)
-  console.log(`[Wikipedia] Mapped to category: ${categoryName}`)
+  // Get candidate articles from relevant categories
+  const candidates = getCandidateArticles(deckName, parentPath)
+  console.log(`[VitalPool] Found ${candidates.length} candidates from pool`)
 
-  // Fetch category members
-  const members = await fetchCategoryMembers(categoryName)
-
-  if (!members || members.length === 0) {
-    // Fallback: Try searching Wikipedia
-    console.log(`[Wikipedia] No category results, trying search...`)
-    const searchResults = await searchWikipedia(deckName + ' topics')
-
-    if (searchResults && searchResults.length > 0) {
-      const filtered = searchResults
-        .filter(r => r.title.toLowerCase() !== deckName.toLowerCase())
-        .slice(0, 8)
-
-      if (filtered.length >= 3) {
-        return filtered.map(r => ({
-          id: r.title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').substring(0, 50),
-          name: r.title,
-          emoji: pickEmojiForTopic(r.title),
-          source: 'wikipedia-search'
-        }))
-      }
-    }
-
-    console.log(`[Wikipedia] No good results for: ${deckName}`)
+  if (candidates.length === 0) {
+    console.log(`[VitalPool] No candidates for: ${deckName}`)
     return null
   }
 
-  // Filter and convert results
-  const filtered = filterWikipediaResults(members, deckName)
+  // Use AI to pick the most relevant articles
+  const selected = await pickRelevantArticlesFromPool(deckName, parentPath, candidates)
 
-  if (filtered.length < 3) {
-    console.log(`[Wikipedia] Not enough results (${filtered.length}) for: ${deckName}`)
+  if (!selected || selected.length < 3) {
+    console.log(`[VitalPool] Could not find enough relevant articles for: ${deckName}`)
     return null
   }
 
-  const subDecks = convertToSubDecks(filtered)
-  console.log(`[Wikipedia] Found ${subDecks.length} subtopics for: ${deckName}`)
+  // Convert to sub-deck format
+  const subDecks = selected.map(title => ({
+    id: title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').substring(0, 50),
+    name: title,
+    emoji: pickEmojiForTopic(title),
+    source: 'vital-articles',
+    isLeaf: true // Vital articles are leaf nodes - no further children
+  }))
 
+  console.log(`[VitalPool] Selected ${subDecks.length} articles for: ${deckName}`)
   return subDecks
 }
 

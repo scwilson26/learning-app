@@ -1271,6 +1271,13 @@ export default function Canvas() {
     // Level 1 categories always have hardcoded children (never generate)
     if (deckLevel === 1) return
 
+    // Vital articles are leaf nodes - they have no children
+    if (deck.isLeaf || deck.source === 'vital-articles') {
+      console.log(`[loadOrGenerateChildDecks] "${deck.name}" is a vital article leaf - no children`)
+      setDynamicChildren(prev => ({ ...prev, [deck.id]: [] }))
+      return
+    }
+
     // Check if already in memory
     if (dynamicChildren[deck.id] !== undefined) {
       // CRITICAL: Level 2 decks should NEVER have empty children in memory
@@ -1960,6 +1967,12 @@ export default function Canvas() {
   // Determine if current deck is a leaf (no sub-decks)
   const isLeafDeck = () => {
     if (!currentDeck) return false
+
+    // Vital articles are always leaves
+    if (currentDeck.isLeaf || currentDeck.source === 'vital-articles') {
+      return true
+    }
+
     // Still loading children - not determined yet
     if (isLoadingChildren) return false
     // Has children - not a leaf

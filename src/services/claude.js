@@ -1199,55 +1199,45 @@ export async function generateDeckCards(deckName, parentContext = null, cardCoun
     // Tier-specific instructions
     const tierInstructions = {
       core: `TIER: CORE ESSENTIALS
-These are the ESSENTIAL cards for understanding "${deckName}".
-After reading these 5 cards, the user should feel: "I understand ${deckName} now."
-
-FOCUS ON:
-- The fundamental concepts that define this topic
-- The "must-know" facts everyone should understand
-- Key questions that reveal the essence of the topic
-- The building blocks needed before going deeper
-
-Think: What would a good teacher cover FIRST to give someone a solid foundation?`,
+These 5 cards are fun, shareable facts about "${deckName}" as a category.
+Someone should be able to screenshot any card and share it like "check out this wild fact!"`,
 
       deep_dive_1: `TIER: DEEP DIVE 1 (Bonus Content)
-These are OPTIONAL bonus cards for users who want more after completing the core.
-The user already understands the basics - now give them the "behind the scenes."
-
-FOCUS ON:
-- Interesting details that weren't essential but are fascinating
-- The "how" and "why" behind the basics
-- Connections to other topics
-- Lesser-known but intriguing aspects
-- Stories and examples that bring the topic to life
-
-Think: What would an enthusiast find rewarding to learn after grasping the basics?`,
+These are the "behind the scenes" facts - still fun and shareable, but more niche.
+The user already knows the basics - give them the surprising deeper stuff.`,
 
       deep_dive_2: `TIER: DEEP DIVE 2 (Expert/Niche)
-These are OPTIONAL expert-level cards for completionists.
-The user has mastered the basics AND the interesting details. Now go DEEP.
-
-FOCUS ON:
-- Obscure but fascinating facts
-- Controversial or debated aspects
-- Expert-level nuances
-- Edge cases and exceptions
-- The "I bet you didn't know..." content
-
-Think: What would impress someone who already knows the topic well?`
+These are expert-level "I bet you didn't know..." facts.
+Obscure, fascinating, the kind of thing that impresses people who already know the topic.`
     };
 
-    const prompt = `Generate exactly ${cardCount} learning card titles for a deck about "${deckName}".
+    const prompt = `Generate exactly ${cardCount} card titles for "${deckName}".
 
 ${contextHint}
 
 ${tierInstructions[tier] || tierInstructions.core}
 
-RULES:
-- Each title should be a short, intriguing concept or question (3-7 words)
-- Make titles catchy and curiosity-inducing
-- NO overlap with other tiers - each tier covers DIFFERENT aspects
-- Each card should be worth 60-80 words of content (fits on a card)
+CARD TITLES MUST BE HOOKS - specific, surprising facts that make people tap.
+
+❌ BANNED - Essay prompts / abstract questions:
+- "Who Counts as a Mathematician?"
+- "The Global Impact of Mathematical Thinking"
+- "What Makes Someone a Great Mathematician?"
+- "Understanding the Nature of..."
+- "How Do X Work?"
+
+✅ GOOD - Specific hooks with a surprising angle:
+- "The Blind Mathematician Who Outworked Everyone"
+- "Why There's No Nobel Prize for Math"
+- "The Woman Banned from Universities"
+- "Solved in 358 Years"
+- "The Proof That Fills 10,000 Pages"
+
+Each title should:
+1. Hint at a SPECIFIC person, event, or fact (not abstract concepts)
+2. Create curiosity - "wait, what?!"
+3. Be something someone would screenshot and share
+4. Be 4-10 words
 
 Return ONLY a JSON array with exactly ${cardCount} titles, no explanation:
 [${exampleTitles}]`;
