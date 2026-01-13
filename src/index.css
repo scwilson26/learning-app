@@ -4,3 +4,13 @@
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* Shimmer animation for skeleton loading cards */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}

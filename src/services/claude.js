@@ -1179,6 +1179,333 @@ Write Part ${partNumber} now:`;
 }
 
 /**
+ * Generate study cards (titles) for a deck topic with tier support
+ * @param {string} deckName - The name of the deck (e.g., "Ancient Egypt", "Ancient Rome")
+ * @param {string} parentContext - Optional parent deck name for context (e.g., "History > Ancient World")
+ * @param {number} cardCount - Number of cards to generate (default 5)
+ * @param {string} tier - Card tier: 'core' | 'deep_dive_1' | 'deep_dive_2'
+ * @returns {Promise<Array<{id: string, title: string}>>} Array of card objects with ids and titles
+ */
+export async function generateDeckCards(deckName, parentContext = null, cardCount = 5, tier = 'core') {
+  try {
+    const contextHint = parentContext
+      ? `This is the "${deckName}" deck, which is inside "${parentContext}".`
+      : `This is the "${deckName}" deck.`;
+
+    // Build example output based on card count
+    const exampleTitles = Array.from({ length: cardCount }, (_, i) => `"Title ${i + 1}"`).join(', ');
+
+    // Tier-specific instructions
+    const tierInstructions = {
+      core: `TIER: CORE ESSENTIALS
+These are the ESSENTIAL cards for understanding "${deckName}".
+After reading these 5 cards, the user should feel: "I understand ${deckName} now."
+
+FOCUS ON:
+- The fundamental concepts that define this topic
+- The "must-know" facts everyone should understand
+- Key questions that reveal the essence of the topic
+- The building blocks needed before going deeper
+
+Think: What would a good teacher cover FIRST to give someone a solid foundation?`,
+
+      deep_dive_1: `TIER: DEEP DIVE 1 (Bonus Content)
+These are OPTIONAL bonus cards for users who want more after completing the core.
+The user already understands the basics - now give them the "behind the scenes."
+
+FOCUS ON:
+- Interesting details that weren't essential but are fascinating
+- The "how" and "why" behind the basics
+- Connections to other topics
+- Lesser-known but intriguing aspects
+- Stories and examples that bring the topic to life
+
+Think: What would an enthusiast find rewarding to learn after grasping the basics?`,
+
+      deep_dive_2: `TIER: DEEP DIVE 2 (Expert/Niche)
+These are OPTIONAL expert-level cards for completionists.
+The user has mastered the basics AND the interesting details. Now go DEEP.
+
+FOCUS ON:
+- Obscure but fascinating facts
+- Controversial or debated aspects
+- Expert-level nuances
+- Edge cases and exceptions
+- The "I bet you didn't know..." content
+
+Think: What would impress someone who already knows the topic well?`
+    };
+
+    const prompt = `Generate exactly ${cardCount} learning card titles for a deck about "${deckName}".
+
+${contextHint}
+
+${tierInstructions[tier] || tierInstructions.core}
+
+RULES:
+- Each title should be a short, intriguing concept or question (3-7 words)
+- Make titles catchy and curiosity-inducing
+- NO overlap with other tiers - each tier covers DIFFERENT aspects
+- Each card should be worth 60-80 words of content (fits on a card)
+
+Return ONLY a JSON array with exactly ${cardCount} titles, no explanation:
+[${exampleTitles}]`;
+
+    const message = await anthropic.messages.create({
+      model: 'claude-3-5-haiku-20241022',
+      max_tokens: 300,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    const responseText = message.content[0].text.trim();
+    // Parse JSON array, handling potential markdown code blocks
+    const jsonText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+    const titles = JSON.parse(jsonText);
+
+    // Convert to card objects with generated IDs (include tier in ID for uniqueness)
+    const tierSuffix = tier === 'core' ? '' : `-${tier.replace('_', '')}`;
+    return titles.map((title, index) => ({
+      id: `${deckName.toLowerCase().replace(/\s+/g, '-')}${tierSuffix}-${index + 1}-${Date.now()}`,
+      title
+    }));
+  } catch (error) {
+    console.error('Error generating deck cards:', error);
+    throw new Error('Failed to generate deck cards');
+  }
+}
+
+/**
+ * Generate sub-decks for a topic (for infinite depth exploration)
+ * @param {string} deckName - The name of the current deck (e.g., "Ancient Egypt")
+ * @param {string} parentPath - The path to this deck (e.g., "History > Ancient World")
+ * @param {number} depth - How deep we are (2 = sub-category, 3+ = dynamic)
+ * @returns {Promise<Array<{id: string, name: string, emoji: string}> | null>} Array of sub-deck objects, or null if this is a leaf
+ */
+export async function generateSubDecks(deckName, parentPath = null, depth = 2, userArchetype = null) {
+  try {
+    // Build the full breadcrumb path for context
+    const fullPath = parentPath ? `${parentPath} → ${deckName}` : deckName
+
+    // Build archetype hint if available
+    let archetypeHint = ''
+    if (userArchetype) {
+      const archetypePreferences = {
+        'lorekeeper': 'Focus on stories, histories, people, and narratives. The user loves rich backstories and legends.',
+        'pattern-seeker': 'Focus on systems, relationships, cause-and-effect, and underlying patterns. The user loves understanding how things connect.',
+        'tinkerer': 'Focus on how things work, construction, mechanics, and hands-on aspects. The user loves understanding the "how".',
+        'explorer': 'Focus on discovery, geography, journeys, and lesser-known facts. The user loves venturing into unfamiliar territory.',
+        'philosopher': 'Focus on ideas, meaning, ethics, and deeper questions. The user loves pondering the "why".',
+      }
+      archetypeHint = archetypePreferences[userArchetype]
+        ? `\nUSER PREFERENCE: ${archetypePreferences[userArchetype]}\n`
+        : ''
+    }
+
+    // Build depth-specific guidance
+    let depthGuidance = ''
+    let shouldBeLeafHint = ''
+
+    if (depth <= 2) {
+      depthGuidance = `At Level ${depth}, this is still a BROAD category. Generate 8-10 diverse sub-topics. Almost all Level 2 topics should have sub-topics.`
+    } else if (depth === 3) {
+      depthGuidance = `At Level ${depth}, this is a sub-category. Generate 6-8 sub-topics if this topic has multiple distinct aspects worth exploring.`
+    } else if (depth === 4) {
+      depthGuidance = `At Level ${depth}, topics are getting specific. Generate 4-6 sub-topics if genuinely divisible, OR mark as a leaf if it's focused enough.`
+    } else if (depth === 5) {
+      depthGuidance = `At Level ${depth}, most topics should be LEAVES. Only generate 3-5 sub-topics if "${deckName}" is genuinely rich with multiple distinct aspects. Otherwise, return an empty array.`
+      shouldBeLeafHint = `\n⚠️ STRONG PREFERENCE FOR LEAF: At this depth, err on the side of making "${deckName}" a leaf unless it's clearly a broad topic.`
+    } else {
+      depthGuidance = `At Level ${depth}, this topic SHOULD almost certainly be a LEAF. Only generate sub-topics in exceptional cases where "${deckName}" is surprisingly broad (like a major historical era or entire field). In 90% of cases, return an empty array.`
+      shouldBeLeafHint = `\n🛑 VERY LIKELY A LEAF: Depth ${depth} is very deep. "${deckName}" should almost certainly be a leaf unless it's exceptionally broad.`
+    }
+
+    const prompt = `You are generating sub-topics for a knowledge learning app with depth-limited exploration.
+
+FULL PATH: ${fullPath}
+CURRENT TOPIC: "${deckName}"
+DEPTH LEVEL: ${depth}
+${parentPath ? `PARENT CONTEXT: "${parentPath.split(' > ').pop() || parentPath}" is the broader category containing "${deckName}"` : 'This is a top-level category.'}
+${archetypeHint}
+═══════════════════════════════════════════════════════════════
+DEPTH-BASED INSTRUCTION:
+${depthGuidance}${shouldBeLeafHint}
+═══════════════════════════════════════════════════════════════
+
+Your task: Generate sub-topics for "${deckName}" OR decide it's specific enough to be a "leaf" (just overview cards, no sub-decks).
+
+WHEN TO MAKE IT A LEAF (return empty subDecks array):
+- The topic is specific enough that 5 overview cards would cover it well
+- It feels like a detailed Wikipedia article title (not a category page)
+- Further subdivision would feel forced or artificial
+- It's a single event, person, specific place, or narrow concept
+- You're at depth 5+ and it's not genuinely broad
+
+LEAF EXAMPLES (should have NO sub-decks):
+✗ "Construction Techniques of the Great Pyramid" - specific topic
+✗ "The EPR Paradox" - single physics concept
+✗ "Battle of Thermopylae" - single historical event
+✗ "How Vaccines Work" - focused explainer topic
+✗ "Shakespeare's Hamlet" - single work
+✗ Any topic that reads like a detailed article title
+
+TOPICS THAT CAN GO DEEPER (genuinely broad):
+✓ "Ancient Egypt" (Level 3) - entire civilization with many aspects
+✓ "World War II" (Level 3-4) - major war with theaters, campaigns, themes
+✓ "Quantum Mechanics" (Level 3) - rich scientific field
+✓ "The Renaissance" (Level 3-4) - entire historical period
+✓ Topics that feel like Wikipedia category pages
+
+GOOD SUB-TOPICS (if generating):
+1. CLEARLY child topics of "${deckName}" - obvious sub-categories
+2. Represent genuinely distinct aspects someone would want to explore separately
+3. Are NOT just card topics (those belong as overview cards, not sub-decks)
+4. Feel like natural "chapters" or "sections" in a book about ${deckName}
+
+BAD SUB-TOPICS to AVOID:
+- Going back UP the hierarchy (broader than parent)
+- Things that should just be overview cards
+- Generic: "Introduction", "Overview", "Basics", "Other"
+- Duplicates of ancestors in the path
+- Forced divisions that don't feel natural
+
+${depth === 2 ? `LEVEL 2 EXAMPLES (broad categories, should almost always have sub-topics):
+- "Literature" → Poetry, Fiction, Drama, Non-Fiction, World Literature, Literary Movements
+- "Physics" → Mechanics, Thermodynamics, Electromagnetism, Quantum Physics, Relativity
+- "Animals" → Mammals, Birds, Fish, Reptiles, Insects, Marine Life` : ''}
+
+${depth === 3 ? `LEVEL 3 EXAMPLES (sub-categories, usually have sub-topics):
+- "Fiction" → Fantasy, Science Fiction, Mystery, Romance, Historical Fiction
+- "Mammals" → Primates, Carnivores, Marine Mammals, Rodents, Ungulates
+- "Ancient Rome" → Republic Era, Imperial Era, Daily Life, Military, Architecture` : ''}
+
+${depth >= 4 ? `LEVEL ${depth} DECISION GUIDE:
+Ask yourself: "Is '${deckName}' more like a Wikipedia CATEGORY page (broad, has sub-topics) or an ARTICLE page (specific, just needs overview cards)?"
+- If CATEGORY → generate 3-5 sub-topics
+- If ARTICLE → return empty array (make it a leaf)` : ''}
+
+Return ONLY valid JSON (no markdown, no explanation):
+
+If generating sub-topics:
+{"subDecks": [{"id": "kebab-case-id", "name": "Display Name", "emoji": "🎯"}, ...], "isLeaf": false}
+
+If this is a leaf topic:
+{"subDecks": [], "isLeaf": true}`;
+
+    const message = await anthropic.messages.create({
+      model: 'claude-3-5-haiku-20241022',
+      max_tokens: 500,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    const responseText = message.content[0].text.trim();
+    // Parse JSON, handling potential markdown code blocks
+    const jsonText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+    const result = JSON.parse(jsonText);
+
+    // Return null for leaf decks, array for decks with children
+    if (!result.subDecks || result.subDecks.length === 0) {
+      return null; // This is a leaf deck
+    }
+
+    // Normalize the sub-deck data
+    const normalizedDecks = result.subDecks.map(deck => ({
+      id: deck.id || deck.name.toLowerCase().replace(/\s+/g, '-'),
+      name: deck.name || deck.title,
+      emoji: deck.emoji || deck.icon || '📄'
+    }));
+
+    // Validate and filter out bad sub-decks
+    const parentName = deckName.toLowerCase()
+    const pathParts = (parentPath || '').toLowerCase().split(' > ')
+
+    const validatedDecks = normalizedDecks.filter(deck => {
+      const name = deck.name.toLowerCase()
+
+      // Filter out generic/bad names
+      const badNames = ['introduction', 'overview', 'basics', 'other', 'miscellaneous', 'general', 'more']
+      if (badNames.some(bad => name === bad || name.includes(bad))) {
+        return false
+      }
+
+      // Filter out duplicates of parent
+      if (name === parentName || name.includes(parentName) && name.length < parentName.length + 5) {
+        return false
+      }
+
+      // Filter out if same as any ancestor in path
+      if (pathParts.some(part => part && (name === part || part === name))) {
+        return false
+      }
+
+      return true
+    })
+
+    // Remove duplicate names within the results
+    const seenNames = new Set()
+    const uniqueDecks = validatedDecks.filter(deck => {
+      const key = deck.name.toLowerCase()
+      if (seenNames.has(key)) {
+        return false
+      }
+      seenNames.add(key)
+      return true
+    })
+
+    return uniqueDecks.length > 0 ? uniqueDecks : null;
+  } catch (error) {
+    console.error('Error generating sub-decks:', error);
+    throw new Error('Failed to generate sub-decks');
+  }
+}
+
+/**
+ * Generate content for a deck's overview card (for the Canvas card system)
+ * @param {string} deckName - The name of the deck (e.g., "History", "Ancient Egypt")
+ * @param {string} cardTitle - The title of the card (e.g., "What is History?")
+ * @param {string} parentContext - Optional parent deck name for context
+ * @returns {Promise<string>} The card content (2-4 sentences)
+ */
+export async function generateCardContent(deckName, cardTitle, parentContext = null) {
+  try {
+    const contextHint = parentContext
+      ? `This card is in the "${deckName}" deck, which is inside "${parentContext}".`
+      : `This card is in the "${deckName}" deck.`;
+
+    const prompt = `Write content for a learning card.
+
+${contextHint}
+
+Card title: "${cardTitle}"
+
+RULES:
+- Write 2-4 sentences (50-100 words)
+- Make it fascinating and memorable
+- Use simple, conversational language
+- Include at least one surprising fact or insight
+- Write like you're telling a friend something cool you learned
+
+EXAMPLES OF GOOD CARD CONTENT:
+
+"The Nile flooded every year like clockwork. Ancient Egyptians built their entire civilization around this schedule - planting after floods, harvesting before the next one. Without the Nile, there would be no pyramids, no pharaohs, nothing."
+
+"Pharaohs weren't just kings - they were literally considered gods walking on Earth. When a pharaoh spoke, it was the voice of the divine. This is why people spent their entire lives building massive tombs for them."
+
+Write the content for "${cardTitle}" - just the content, no title or labels:`;
+
+    const message = await anthropic.messages.create({
+      model: 'claude-3-5-haiku-20241022',
+      max_tokens: 200,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    return message.content[0].text.trim();
+  } catch (error) {
+    console.error('Error generating card content:', error);
+    throw new Error('Failed to generate card content');
+  }
+}
+
+/**
  * Generate multiple flashcards from content
  * @param {string} content - The content to create flashcards from
  * @returns {Promise<Array<{question: string, answer: string}>>} Array of flashcard Q&As

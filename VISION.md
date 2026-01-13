@@ -509,6 +509,37 @@ Clearing back reveals Ancient World's spread - siblings like Rome, Greece visibl
 - Animation: fast deck stacking, maybe show the path building
 - Could have variants: "Wander Near" (explore siblings), "Wander Far" (totally random)
 
+## Mind Map Mode (Future)
+
+**An alternative way to visualize your knowledge.**
+
+Toggle between two views of the same data:
+
+**Card Table Mode** (default)
+- Grid of decks, tap to open, cards spread out
+- Feels like playing cards on a table
+- Good for: exploring, collecting, the tactile experience
+
+**Mind Map Mode**
+- Visual web of connected topics
+- Central node with branches radiating out
+- See relationships and structure at a glance
+- Good for: understanding the big picture, seeing where you've been, finding gaps
+
+### Visual Progress on the Map
+- Claimed areas glow bright
+- Unexplored branches are dim/faded
+- Your knowledge visualized as a growing web
+- Instantly see what you know vs. what's left to discover
+
+### Navigation
+- Tap a node to jump there in Card Table mode
+- Pinch to zoom in/out
+- Pan to explore different areas
+- Toggle button in corner to switch modes
+
+Same data, different lens. The map shows you the forest; the table lets you pick up the trees.
+
 ## Social Possibilities (Future)
 
 - Share your collection stats - flex your coverage
