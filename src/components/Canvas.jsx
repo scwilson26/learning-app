@@ -9,23 +9,15 @@ import {
   getCardContent,
   claimCard,
   getClaimedCardIds,
-  getClaimedCount,
-  hasDeckChildren,
   getDeckChildren,
   saveDeckChildren,
   getDynamicDeck,
   getData,
   saveData,
   getUserArchetype,
-  pickRandomWanderDeck,
-  getExploredDecksCount,
   getTierCards,
   getDeckTierCompletion,
-  canAccessTier,
-  hasTierCards,
-  unlockTier,
-  isTierUnlocked,
-  getDeckCompletionState
+  unlockTier
 } from '../services/storage'
 
 // Configuration - card counts can be adjusted here or per-deck
@@ -299,7 +291,7 @@ function getDeck(id) {
 }
 
 // Deck component - a card with subtle stack effect (cards underneath)
-function Deck({ deck, onOpen, claimed, cardCount }) {
+function Deck({ deck, onOpen, claimed }) {
   return (
     <motion.div
       className="relative cursor-pointer group"
@@ -340,10 +332,6 @@ function Deck({ deck, onOpen, claimed, cardCount }) {
               <span className="text-white text-xs">✓</span>
             </div>
           )}
-          {/* Card count */}
-          <div className="absolute bottom-2 text-xs text-gray-400">
-            {cardCount !== undefined ? `${cardCount} cards` : `${deck.children?.length || 0} decks`}
-          </div>
         </div>
       </div>
     </motion.div>
@@ -1064,6 +1052,11 @@ function DeckSpread({
             const prevComplete = prevTier ? tierCompletion[prevTier.key]?.complete : true
             const isLocked = !prevComplete
 
+            // Hide Deep Dive 2 entirely until Deep Dive 1 is complete
+            if (tier.key === 'deep_dive_2' && !tierCompletion.deep_dive_1?.complete) {
+              return null
+            }
+
             return (
               <TierSection
                 key={tier.key}
@@ -1771,12 +1764,16 @@ export default function Canvas() {
     return lastDeckWithCards
   }
 
-  // Wander to a random interesting deck (smart: generates new paths if < 20 explored)
-  const handleWander = async () => {
-    const exploredCount = getExploredDecksCount()
-    const useExistingDecks = exploredCount >= 20
+  // Check if a deck is fully completed (all cards claimed)
+  const isDeckFullyCompleted = (deckId) => {
+    const deckCards = getDeckCards(deckId)
+    if (!deckCards || deckCards.length === 0) return false // No cards = not completed, it's fresh
+    return deckCards.every(card => claimedCards.has(card.id))
+  }
 
-    console.log(`[Wander] Explored decks: ${exploredCount}, using existing: ${useExistingDecks}`)
+  // Wander to a random destination - always generates fresh AI path with animation
+  const handleWander = async () => {
+    console.log('[Wander] Starting fresh journey...')
 
     // Reset wander state
     setIsWandering(true)
@@ -1786,87 +1783,51 @@ export default function Canvas() {
     setWanderComplete(false)
 
     try {
-      if (useExistingDecks) {
-        // Fast fallback: pick from existing decks (original behavior)
-        const currentDeckId = currentDeck?.id || null
-        const destination = pickRandomWanderDeck(currentDeckId)
+      // Retry up to 3 times if we land on a fully completed deck
+      const MAX_ATTEMPTS = 3
+      let attempt = 0
+      let generated = null
 
-        if (!destination) {
-          // No wanderable decks - try generating a new path instead
-          console.log('[Wander] No existing decks, generating new path...')
-          const generated = await generateWanderPath()
+      while (attempt < MAX_ATTEMPTS) {
+        attempt++
+        console.log(`[Wander] Generating path (attempt ${attempt}/${MAX_ATTEMPTS})...`)
 
-          if (generated) {
-            setWanderComplete(true)
-            await new Promise(resolve => setTimeout(resolve, 800)) // Show completion briefly
-            setStack(generated.path)
-          } else {
-            setWanderMessage("You've explored everything nearby! Check back soon.")
-            setTimeout(() => setWanderMessage(null), 3000)
-          }
-          setIsWandering(false)
-          return
+        // Reset animation state for retry
+        if (attempt > 1) {
+          setWanderPathSteps([])
+          setWanderCurrentStep(0)
         }
 
-        console.log('[Wander] Using existing deck:', destination)
-
-        // Build navigation path
-        const navPath = buildNavigationPath(destination.parentPath, destination.deckId)
-
-        // Set the card to auto-open after navigation
-        setAutoOpenCardId(destination.firstUnclaimedCardId)
-
-        // Navigate to the destination
-        setStack(navPath)
-        setIsWandering(false)
-      } else {
-        // Generate a new path on-the-fly (Option A)
-        const MAX_ATTEMPTS = 3
-        let attempt = 0
-        let generated = null
-
-        while (attempt < MAX_ATTEMPTS && !generated) {
-          attempt++
-          console.log(`[Wander] Generating new path (attempt ${attempt}/${MAX_ATTEMPTS})...`)
-
-          generated = await generateWanderPath()
-
-          // Check if we ended up at an already-completed deck
-          if (generated) {
-            const deckCards = getDeckCards(generated.id)
-            if (deckCards?.length > 0) {
-              const allClaimed = deckCards.every(card => claimedCards.has(card.id))
-              if (allClaimed) {
-                console.log('[Wander] Destination fully explored, trying again...')
-                generated = null // Try again
-                setWanderPathSteps([])
-              }
-            }
-          }
-        }
+        generated = await generateWanderPath()
 
         if (generated) {
-          setWanderComplete(true)
-          // Brief pause to show completion
-          await new Promise(resolve => setTimeout(resolve, 800))
-
-          // Navigate to destination
-          setStack(generated.path)
-        } else {
-          // Failed to generate, try existing decks as fallback
-          const destination = pickRandomWanderDeck(currentDeck?.id || null)
-          if (destination) {
-            const navPath = buildNavigationPath(destination.parentPath, destination.deckId)
-            setAutoOpenCardId(destination.firstUnclaimedCardId)
-            setStack(navPath)
-          } else {
-            setWanderMessage("You've explored everything nearby! Check back soon.")
-            setTimeout(() => setWanderMessage(null), 3000)
+          // Check if destination is fully completed
+          if (isDeckFullyCompleted(generated.id)) {
+            console.log(`[Wander] Destination ${generated.id} is fully completed, retrying...`)
+            generated = null // Try again
+            continue
           }
+          // Found a good destination with unclaimed content
+          break
         }
-
-        setIsWandering(false)
       }
+
+      if (generated) {
+        setWanderComplete(true)
+        // Brief pause to show completion animation
+        await new Promise(resolve => setTimeout(resolve, 800))
+
+        // Navigate to destination
+        setStack(generated.path)
+
+        // Auto-open first UNCLAIMED card for instant engagement
+        setAutoOpenCardId('__first_unclaimed__')
+      } else {
+        setWanderMessage('Could not find new content. Try again!')
+        setTimeout(() => setWanderMessage(null), 3000)
+      }
+
+      setIsWandering(false)
     } catch (error) {
       console.error('[Wander] Error:', error)
       setWanderMessage('Something went wrong. Try again!')
@@ -2024,6 +1985,19 @@ export default function Canvas() {
   // Auto-open card after wander navigation (when cards are loaded)
   useEffect(() => {
     if (autoOpenCardId && overviewCards.length > 0) {
+      // Special marker: open the first UNCLAIMED card (used by Wander)
+      if (autoOpenCardId === '__first_unclaimed__') {
+        const firstUnclaimed = overviewCards.find(c => !claimedCards.has(c.id))
+        const cardToOpen = firstUnclaimed || overviewCards[0] // Fallback to first if all claimed
+        if (cardToOpen) {
+          setTimeout(() => {
+            setExpandedCard(cardToOpen.id)
+            setAutoOpenCardId(null)
+          }, 300)
+        }
+        return
+      }
+
       // Check if the card we want to open is in the current deck
       const cardToOpen = overviewCards.find(c => c.id === autoOpenCardId)
       if (cardToOpen) {
@@ -2033,20 +2007,11 @@ export default function Canvas() {
           setAutoOpenCardId(null)
         }, 300)
       } else {
-        // Card not found in this deck - find first unclaimed
-        const firstUnclaimed = overviewCards.find(c => !claimedCards.has(c.id))
-        if (firstUnclaimed) {
-          setTimeout(() => {
-            setExpandedCard(firstUnclaimed.id)
-            setAutoOpenCardId(null)
-          }, 300)
-        } else {
-          // All claimed, just clear the auto-open
-          setAutoOpenCardId(null)
-        }
+        // Card not found - clear auto-open
+        setAutoOpenCardId(null)
       }
     }
-  }, [autoOpenCardId, overviewCards.length])
+  }, [autoOpenCardId, overviewCards.length, claimedCards])
 
   // ONE-TIME CLEANUP: Clear all stale Level 2 leaf data on mount
   // This fixes the bug where Level 2 decks were incorrectly marked as leaves
@@ -2161,7 +2126,7 @@ export default function Canvas() {
     ? allCurrentCards.findIndex(c => c.id === expandedCard)
     : -1
 
-  // Wander button component (floating)
+  // Wander button component (floating) - always visible and functional
   const WanderButton = () => (
     <motion.button
       onClick={handleWander}

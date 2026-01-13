@@ -1490,18 +1490,31 @@ ${contextHint}
 
 Card title: "${cardTitle}"
 
-RULES:
+CRITICAL RULES:
 - Write 2-4 sentences (50-100 words)
-- Make it fascinating and memorable
-- Use simple, conversational language
-- Include at least one surprising fact or insight
+- EVERY card MUST include 2-3 CONCRETE, SPECIFIC, VERIFIABLE facts
+- NO purely conceptual or abstract cards allowed
 - Write like you're telling a friend something cool you learned
+
+CONCRETE FACTS = things you can look up and verify:
+✅ Numbers/dates: "2 million died", "built in 1917", "cost $15M"
+✅ Specific people: "Tsar Nicholas II", "architect Pheidias"
+✅ Named events/places: "Battle of Hucisko", "the Parthenon"
+✅ Surprising comparisons: "Neanderthals made art before they had language"
+
+❌ BANNED - vague/abstract language:
+- "humanity's universal language" → Say "a urinal became art when Duchamp put it in a museum in 1917"
+- "changed the world forever" → Say HOW with specific examples
+- "one of the most important" → Give the actual numbers or names
+- "throughout history" → Name the specific era or date
 
 EXAMPLES OF GOOD CARD CONTENT:
 
-"The Nile flooded every year like clockwork. Ancient Egyptians built their entire civilization around this schedule - planting after floods, harvesting before the next one. Without the Nile, there would be no pyramids, no pharaohs, nothing."
+"The Nile flooded every July like clockwork - you could set your calendar by it. Ancient Egyptians called this season 'Akhet' and built 365-day calendars around it. When the floods weakened around 2200 BCE, the Old Kingdom collapsed within decades."
 
-"Pharaohs weren't just kings - they were literally considered gods walking on Earth. When a pharaoh spoke, it was the voice of the divine. This is why people spent their entire lives building massive tombs for them."
+"Cleopatra lived closer in time to the Moon landing than to the building of the Great Pyramid. She ruled Egypt in 51 BCE - the pyramids were already 2,500 years old. She was the last pharaoh before Rome absorbed Egypt in 30 BCE."
+
+"Pharaohs weren't just kings - Egyptians believed the pharaoh was literally the god Horus in human form. Ramses II had 100+ children and ruled for 66 years. When he died at age 90, he had outlived most of his heirs."
 
 Write the content for "${cardTitle}" - just the content, no title or labels:`;
 
