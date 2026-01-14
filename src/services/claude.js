@@ -1185,9 +1185,10 @@ Write Part ${partNumber} now:`;
  * @param {string} parentContext - Optional parent deck name for context (e.g., "History > Ancient World")
  * @param {number} cardCount - Number of cards to generate (default 5)
  * @param {string} tier - Card tier: 'core' | 'deep_dive_1' | 'deep_dive_2'
+ * @param {string[]} previousTierTitles - Titles from previous tiers to avoid repetition
  * @returns {Promise<Array<{id: string, title: string}>>} Array of card objects with ids and titles
  */
-export async function generateDeckCards(deckName, parentContext = null, cardCount = 5, tier = 'core') {
+export async function generateDeckCards(deckName, parentContext = null, cardCount = 5, tier = 'core', previousTierTitles = []) {
   try {
     const contextHint = parentContext
       ? `This is the "${deckName}" deck, which is inside "${parentContext}".`
@@ -1196,15 +1197,32 @@ export async function generateDeckCards(deckName, parentContext = null, cardCoun
     // Build example output based on card count
     const exampleTitles = Array.from({ length: cardCount }, (_, i) => `"Title ${i + 1}"`).join(', ');
 
+    // Build "already covered" context from previous tiers
+    const alreadyCoveredHint = previousTierTitles.length > 0
+      ? `\n⚠️ ALREADY COVERED (do NOT repeat these topics or facts):
+${previousTierTitles.map((t, i) => `${i + 1}. ${t}`).join('\n')}
+
+Your new cards must cover DIFFERENT aspects - no overlap with the above!\n`
+      : '';
+
     // Tier-specific instructions - topic-aware, not template-based
     const tierInstructions = {
       core: `TIER: CORE (5 cards)
 These cards answer the OBVIOUS questions anyone would ask about "${deckName}".
 After reading these 5 cards, the reader should think: "OK, I get what ${deckName} is."
 
+🚨 CARD 1 MUST BE THE GROUNDING CARD:
+- Title: Just "${deckName}" (the topic name itself, nothing fancy)
+- This card orients the reader: "What is this? Why should I care?"
+- Content will explain what it is + hook them to keep reading
+
+Cards 2-5: Now you can use specific, surprising hook titles.
+
 Think: What would someone who knows NOTHING about this want to know first?
-- What is it? Why does it matter? What's the basic story?
-- Include at least one "wait, really?!" surprising fact to hook them`,
+- Card 1 grounds them, cards 2-5 go deeper with interesting angles
+- Include at least one "wait, really?!" surprising fact to hook them
+
+CRITICAL: Each card must cover a DISTINCT aspect. No two cards should overlap.`,
 
       deep_dive_1: `TIER: DEEP DIVE 1 (5 cards)
 These cards answer the "okay, but HOW/WHY?" follow-up questions.
@@ -1212,7 +1230,9 @@ The reader already knows the basics from Core cards.
 
 Think: What would a curious person ask next?
 - How does it actually work? What are the key parts/people/events?
-- What's the cause and effect? What are the types/variations?`,
+- What's the cause and effect? What are the types/variations?
+
+CRITICAL: Go DEEPER, not sideways. Build on what Core covered, don't repeat it.`,
 
       deep_dive_2: `TIER: DEEP DIVE 2 (5 cards)
 These cards answer questions only a REALLY curious person would think to ask.
@@ -1221,10 +1241,13 @@ The reader is now engaged and wants the deep stuff.
 Think: What would impress someone who already knows this topic?
 - The controversies, debates, edge cases
 - Recent discoveries, surprising connections, obscure details
-- The "I had no idea!" facts that even enthusiasts might not know`
+- The "I had no idea!" facts that even enthusiasts might not know
+
+CRITICAL: Find the OBSCURE stuff. The reader has already learned 10 cards worth.`
     };
 
     const prompt = `Generate exactly ${cardCount} card titles for "${deckName}".
+${alreadyCoveredHint}
 
 ${contextHint}
 
@@ -1268,7 +1291,30 @@ Return ONLY a JSON array with exactly ${cardCount} titles, no explanation:
     const responseText = message.content[0].text.trim();
     // Parse JSON array, handling potential markdown code blocks
     const jsonText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
-    const titles = JSON.parse(jsonText);
+    let titles = JSON.parse(jsonText);
+
+    // For Core tier, force Card 1 to be the deck name with a hook subtitle
+    if (tier === 'core' && titles.length > 0) {
+      // Generate a short hook/subtitle for the grounding card
+      const hookMessage = await anthropic.messages.create({
+        model: 'claude-3-5-haiku-20241022',
+        max_tokens: 50,
+        messages: [{
+          role: 'user',
+          content: `Write a 3-6 word hook/subtitle for "${deckName}" that makes someone curious.
+
+Examples:
+- "Ceramic Art" → "26,000 Years of Mud and Fire"
+- "Augustus" → "The Teenager Who Became Rome"
+- "Solidarity" → "When Workers Toppled an Empire"
+- "Black Holes" → "Where Physics Breaks Down"
+
+Return ONLY the hook, no quotes, no explanation.`
+        }]
+      });
+      const hook = hookMessage.content[0].text.trim().replace(/^["']|["']$/g, '');
+      titles[0] = `${deckName}: ${hook}`;
+    }
 
     // Convert to card objects with generated IDs (include tier in ID for uniqueness)
     const tierSuffix = tier === 'core' ? '' : `-${tier.replace('_', '')}`;
@@ -1492,6 +1538,9 @@ export async function generateCardContent(deckName, cardTitle, parentContext = n
       ? `This card is in the "${deckName}" deck, which is inside "${parentContext}".`
       : `This card is in the "${deckName}" deck.`;
 
+    // Check if this is the grounding card (Card 1 where title starts with deck name)
+    const isGroundingCard = cardTitle.toLowerCase().trim().startsWith(deckName.toLowerCase().trim());
+
     // Tier-specific content guidelines - depth comes from WHAT you cover, not length
     const tierGuidelines = {
       core: {
@@ -1510,12 +1559,29 @@ export async function generateCardContent(deckName, cardTitle, parentContext = n
 
     const guidelines = tierGuidelines[tier] || tierGuidelines.core;
 
+    // Special instructions for the grounding card
+    const groundingCardInstructions = isGroundingCard ? `
+🚨 THIS IS THE GROUNDING CARD - the reader's FIRST encounter with "${deckName}".
+Your job: Orient them AND hook them in the same breath.
+
+Structure:
+1. What is it? (1 sentence - clear definition)
+2. Why should they care? (1-2 sentences - the hook, the "wait really?!")
+
+Example for "Legendary Creatures":
+"Every culture invented monsters. Dragons in China, Griffins in Persia, Wendigos in North America. These weren't just bedtime stories - they explained floods, disappearances, and why you shouldn't go into the forest alone."
+
+Example for "Solidarity":
+"In 1980, Polish shipyard workers did the impossible - they challenged Soviet communism and won. Their union grew to 10 million members in weeks, proving that collective action could topple empires."
+
+` : '';
+
     const prompt = `Write content for a learning card.
 
 ${contextHint}
 
 Card title: "${cardTitle}"
-
+${groundingCardInstructions}
 LENGTH: 60-80 words MAXIMUM. Must fit on phone screen without scrolling.
 
 TIER: ${tier.toUpperCase().replace('_', ' ')}

@@ -1584,7 +1584,22 @@ export default function Canvas() {
   const generateTierCards = async (deck, tier, parentPath) => {
     setUnlockingTier(tier)
     try {
-      const cards = await generateDeckCards(deck.name, parentPath, 5, tier)
+      // Collect titles from previous tiers to avoid duplicate content
+      let previousTierTitles = []
+      const existingTierCards = tierCards[deck.id] || {}
+
+      if (tier === 'deep_dive_1') {
+        // DD1 needs to know what Core covered
+        const coreCards = existingTierCards.core || []
+        previousTierTitles = coreCards.map(c => c.title)
+      } else if (tier === 'deep_dive_2') {
+        // DD2 needs to know what Core AND DD1 covered
+        const coreCards = existingTierCards.core || []
+        const dd1Cards = existingTierCards.deep_dive_1 || []
+        previousTierTitles = [...coreCards, ...dd1Cards].map(c => c.title)
+      }
+
+      const cards = await generateDeckCards(deck.name, parentPath, 5, tier, previousTierTitles)
 
       // Save to localStorage with tier
       saveDeckCards(deck.id, deck.name, cards, tier)
