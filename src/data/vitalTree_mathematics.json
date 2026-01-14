@@ -1,0 +1,2518 @@
+{
+  "id": "mathematics",
+  "title": "Mathematics",
+  "source": "wikipedia_vital_4",
+  "version": "2025-01-13",
+  "articleCount": 298,
+  "children": [
+    {
+      "id": "mathematics-numbers-and-basic-operations",
+      "title": "Numbers and Basic Operations",
+      "source": "wikipedia_vital_4",
+      "version": "2025-01-13",
+      "articleCount": 34,
+      "children": [
+        {
+          "id": "mathematics-numbers-and-basic-operations-0",
+          "title": "0",
+          "isLeaf": true,
+          "wikiTitle": "0",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-numbers-and-basic-operations-1",
+          "title": "1",
+          "isLeaf": true,
+          "wikiTitle": "1",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-numbers-and-basic-operations-number",
+          "title": "Number",
+          "isLeaf": true,
+          "wikiTitle": "Number",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-numbers-and-basic-operations-natural-number",
+          "title": "Natural number",
+          "isLeaf": true,
+          "wikiTitle": "Natural number",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-numbers-and-basic-operations-integer",
+          "title": "Integer",
+          "isLeaf": true,
+          "wikiTitle": "Integer",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-numbers-and-basic-operations-rational-number",
+          "title": "Rational number",
+          "isLeaf": true,
+          "wikiTitle": "Rational number",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-numbers-and-basic-operations-irrational-number",
+          "title": "Irrational number",
+          "isLeaf": true,
+          "wikiTitle": "Irrational number",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-numbers-and-basic-operations-real-number",
+          "title": "Real number",
+          "isLeaf": true,
+          "wikiTitle": "Real number",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-numbers-and-basic-operations-complex-number",
+          "title": "Complex number",
+          "isLeaf": true,
+          "wikiTitle": "Complex number",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-numbers-and-basic-operations-imaginary-number",
+          "title": "Imaginary number",
+          "isLeaf": true,
+          "wikiTitle": "Imaginary number",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-numbers-and-basic-operations-imaginary-unit",
+          "title": "Imaginary unit",
+          "isLeaf": true,
+          "wikiTitle": "Imaginary unit",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-numbers-and-basic-operations-negative-number",
+          "title": "Negative number",
+          "isLeaf": true,
+          "wikiTitle": "Negative number",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-numbers-and-basic-operations-prime-number",
+          "title": "Prime number",
+          "isLeaf": true,
+          "wikiTitle": "Prime number",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-numbers-and-basic-operations-addition",
+          "title": "Addition",
+          "isLeaf": true,
+          "wikiTitle": "Addition",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-numbers-and-basic-operations-subtraction",
+          "title": "Subtraction",
+          "isLeaf": true,
+          "wikiTitle": "Subtraction",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-numbers-and-basic-operations-multiplication",
+          "title": "Multiplication",
+          "isLeaf": true,
+          "wikiTitle": "Multiplication",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-numbers-and-basic-operations-division-mathematics",
+          "title": "Division (mathematics)",
+          "isLeaf": true,
+          "wikiTitle": "Division (mathematics)",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-numbers-and-basic-operations-exponentiation",
+          "title": "Exponentiation",
+          "isLeaf": true,
+          "wikiTitle": "Exponentiation",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-numbers-and-basic-operations-square-root",
+          "title": "Square root",
+          "isLeaf": true,
+          "wikiTitle": "Square root",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-numbers-and-basic-operations-nth-root",
+          "title": "Nth root",
+          "isLeaf": true,
+          "wikiTitle": "Nth root",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-numbers-and-basic-operations-factorial",
+          "title": "Factorial",
+          "isLeaf": true,
+          "wikiTitle": "Factorial",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-numbers-and-basic-operations-arabic-numerals",
+          "title": "Arabic numerals",
+          "isLeaf": true,
+          "wikiTitle": "Arabic numerals",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-numbers-and-basic-operations-roman-numerals",
+          "title": "Roman numerals",
+          "isLeaf": true,
+          "wikiTitle": "Roman numerals",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-numbers-and-basic-operations-decimal",
+          "title": "Decimal",
+          "isLeaf": true,
+          "wikiTitle": "Decimal",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-numbers-and-basic-operations-binary-number",
+          "title": "Binary number",
+          "isLeaf": true,
+          "wikiTitle": "Binary number",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-numbers-and-basic-operations-fraction",
+          "title": "Fraction",
+          "isLeaf": true,
+          "wikiTitle": "Fraction",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-numbers-and-basic-operations-percentage",
+          "title": "Percentage",
+          "isLeaf": true,
+          "wikiTitle": "Percentage",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-numbers-and-basic-operations-positional-notation",
+          "title": "Positional notation",
+          "isLeaf": true,
+          "wikiTitle": "Positional notation",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-numbers-and-basic-operations-scientific-notation",
+          "title": "Scientific notation",
+          "isLeaf": true,
+          "wikiTitle": "Scientific notation",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-numbers-and-basic-operations-numerical-digit",
+          "title": "Numerical digit",
+          "isLeaf": true,
+          "wikiTitle": "Numerical digit",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-numbers-and-basic-operations-order-of-operations",
+          "title": "Order of operations",
+          "isLeaf": true,
+          "wikiTitle": "Order of operations",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-numbers-and-basic-operations-associative-property",
+          "title": "Associative property",
+          "isLeaf": true,
+          "wikiTitle": "Associative property",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-numbers-and-basic-operations-commutative-property",
+          "title": "Commutative property",
+          "isLeaf": true,
+          "wikiTitle": "Commutative property",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-numbers-and-basic-operations-distributive-property",
+          "title": "Distributive property",
+          "isLeaf": true,
+          "wikiTitle": "Distributive property",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        }
+      ]
+    },
+    {
+      "id": "mathematics-algebra-and-equations",
+      "title": "Algebra and Equations",
+      "source": "wikipedia_vital_4",
+      "version": "2025-01-13",
+      "articleCount": 34,
+      "children": [
+        {
+          "id": "mathematics-algebra-and-equations-algebra",
+          "title": "Algebra",
+          "isLeaf": true,
+          "wikiTitle": "Algebra",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-algebra-and-equations-elementary-algebra",
+          "title": "Elementary algebra",
+          "isLeaf": true,
+          "wikiTitle": "Elementary algebra",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-algebra-and-equations-abstract-algebra",
+          "title": "Abstract algebra",
+          "isLeaf": true,
+          "wikiTitle": "Abstract algebra",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-algebra-and-equations-equation",
+          "title": "Equation",
+          "isLeaf": true,
+          "wikiTitle": "Equation",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-algebra-and-equations-equation-solving",
+          "title": "Equation solving",
+          "isLeaf": true,
+          "wikiTitle": "Equation solving",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-algebra-and-equations-linear-equation",
+          "title": "Linear equation",
+          "isLeaf": true,
+          "wikiTitle": "Linear equation",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-algebra-and-equations-quadratic-equation",
+          "title": "Quadratic equation",
+          "isLeaf": true,
+          "wikiTitle": "Quadratic equation",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-algebra-and-equations-diophantine-equation",
+          "title": "Diophantine equation",
+          "isLeaf": true,
+          "wikiTitle": "Diophantine equation",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-algebra-and-equations-variable-mathematics",
+          "title": "Variable (mathematics)",
+          "isLeaf": true,
+          "wikiTitle": "Variable (mathematics)",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-algebra-and-equations-formula",
+          "title": "Formula",
+          "isLeaf": true,
+          "wikiTitle": "Formula",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-algebra-and-equations-inequality-mathematics",
+          "title": "Inequality (mathematics)",
+          "isLeaf": true,
+          "wikiTitle": "Inequality (mathematics)",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-algebra-and-equations-polynomial",
+          "title": "Polynomial",
+          "isLeaf": true,
+          "wikiTitle": "Polynomial",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-algebra-and-equations-function-mathematics",
+          "title": "Function (mathematics)",
+          "isLeaf": true,
+          "wikiTitle": "Function (mathematics)",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-algebra-and-equations-function-composition",
+          "title": "Function composition",
+          "isLeaf": true,
+          "wikiTitle": "Function composition",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-algebra-and-equations-inverse-function",
+          "title": "Inverse function",
+          "isLeaf": true,
+          "wikiTitle": "Inverse function",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-algebra-and-equations-implicit-function",
+          "title": "Implicit function",
+          "isLeaf": true,
+          "wikiTitle": "Implicit function",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-algebra-and-equations-graph-of-a-function",
+          "title": "Graph of a function",
+          "isLeaf": true,
+          "wikiTitle": "Graph of a function",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-algebra-and-equations-parametric-equation",
+          "title": "Parametric equation",
+          "isLeaf": true,
+          "wikiTitle": "Parametric equation",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-algebra-and-equations-exponential-function",
+          "title": "Exponential function",
+          "isLeaf": true,
+          "wikiTitle": "Exponential function",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-algebra-and-equations-logarithm",
+          "title": "Logarithm",
+          "isLeaf": true,
+          "wikiTitle": "Logarithm",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-algebra-and-equations-hyperbolic-functions",
+          "title": "Hyperbolic functions",
+          "isLeaf": true,
+          "wikiTitle": "Hyperbolic functions",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-algebra-and-equations-modular-arithmetic",
+          "title": "Modular arithmetic",
+          "isLeaf": true,
+          "wikiTitle": "Modular arithmetic",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-algebra-and-equations-group-mathematics",
+          "title": "Group (mathematics)",
+          "isLeaf": true,
+          "wikiTitle": "Group (mathematics)",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-algebra-and-equations-group-theory",
+          "title": "Group theory",
+          "isLeaf": true,
+          "wikiTitle": "Group theory",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-algebra-and-equations-group-representation",
+          "title": "Group representation",
+          "isLeaf": true,
+          "wikiTitle": "Group representation",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-algebra-and-equations-ring-mathematics",
+          "title": "Ring (mathematics)",
+          "isLeaf": true,
+          "wikiTitle": "Ring (mathematics)",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-algebra-and-equations-ring-theory",
+          "title": "Ring theory",
+          "isLeaf": true,
+          "wikiTitle": "Ring theory",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-algebra-and-equations-field-mathematics",
+          "title": "Field (mathematics)",
+          "isLeaf": true,
+          "wikiTitle": "Field (mathematics)",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-algebra-and-equations-abelian-group",
+          "title": "Abelian group",
+          "isLeaf": true,
+          "wikiTitle": "Abelian group",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-algebra-and-equations-commutative-algebra",
+          "title": "Commutative algebra",
+          "isLeaf": true,
+          "wikiTitle": "Commutative algebra",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-algebra-and-equations-commutative-ring",
+          "title": "Commutative ring",
+          "isLeaf": true,
+          "wikiTitle": "Commutative ring",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-algebra-and-equations-module-mathematics",
+          "title": "Module (mathematics)",
+          "isLeaf": true,
+          "wikiTitle": "Module (mathematics)",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-algebra-and-equations-galois-theory",
+          "title": "Galois theory",
+          "isLeaf": true,
+          "wikiTitle": "Galois theory",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-algebra-and-equations-representation-theory",
+          "title": "Representation theory",
+          "isLeaf": true,
+          "wikiTitle": "Representation theory",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        }
+      ]
+    },
+    {
+      "id": "mathematics-geometry-and-shapes",
+      "title": "Geometry and Shapes",
+      "source": "wikipedia_vital_4",
+      "version": "2025-01-13",
+      "articleCount": 40,
+      "children": [
+        {
+          "id": "mathematics-geometry-and-shapes-geometry",
+          "title": "Geometry",
+          "isLeaf": true,
+          "wikiTitle": "Geometry",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-euclidean-geometry",
+          "title": "Euclidean geometry",
+          "isLeaf": true,
+          "wikiTitle": "Euclidean geometry",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-non-euclidean-geometry",
+          "title": "Non-Euclidean geometry",
+          "isLeaf": true,
+          "wikiTitle": "Non-Euclidean geometry",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-analytic-geometry",
+          "title": "Analytic geometry",
+          "isLeaf": true,
+          "wikiTitle": "Analytic geometry",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-differential-geometry",
+          "title": "Differential geometry",
+          "isLeaf": true,
+          "wikiTitle": "Differential geometry",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-riemannian-geometry",
+          "title": "Riemannian geometry",
+          "isLeaf": true,
+          "wikiTitle": "Riemannian geometry",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-point-geometry",
+          "title": "Point (geometry)",
+          "isLeaf": true,
+          "wikiTitle": "Point (geometry)",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-line-geometry",
+          "title": "Line (geometry)",
+          "isLeaf": true,
+          "wikiTitle": "Line (geometry)",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-plane-mathematics",
+          "title": "Plane (mathematics)",
+          "isLeaf": true,
+          "wikiTitle": "Plane (mathematics)",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-angle",
+          "title": "Angle",
+          "isLeaf": true,
+          "wikiTitle": "Angle",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-right-angle",
+          "title": "Right angle",
+          "isLeaf": true,
+          "wikiTitle": "Right angle",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-distance",
+          "title": "Distance",
+          "isLeaf": true,
+          "wikiTitle": "Distance",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-length",
+          "title": "Length",
+          "isLeaf": true,
+          "wikiTitle": "Length",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-area",
+          "title": "Area",
+          "isLeaf": true,
+          "wikiTitle": "Area",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-volume",
+          "title": "Volume",
+          "isLeaf": true,
+          "wikiTitle": "Volume",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-shape",
+          "title": "Shape",
+          "isLeaf": true,
+          "wikiTitle": "Shape",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-circle",
+          "title": "Circle",
+          "isLeaf": true,
+          "wikiTitle": "Circle",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-triangle",
+          "title": "Triangle",
+          "isLeaf": true,
+          "wikiTitle": "Triangle",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-quadrilateral",
+          "title": "Quadrilateral",
+          "isLeaf": true,
+          "wikiTitle": "Quadrilateral",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-square",
+          "title": "Square",
+          "isLeaf": true,
+          "wikiTitle": "Square",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-polygon",
+          "title": "Polygon",
+          "isLeaf": true,
+          "wikiTitle": "Polygon",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-polyhedron",
+          "title": "Polyhedron",
+          "isLeaf": true,
+          "wikiTitle": "Polyhedron",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-cube",
+          "title": "Cube",
+          "isLeaf": true,
+          "wikiTitle": "Cube",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-sphere",
+          "title": "Sphere",
+          "isLeaf": true,
+          "wikiTitle": "Sphere",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-ellipse",
+          "title": "Ellipse",
+          "isLeaf": true,
+          "wikiTitle": "Ellipse",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-parabola",
+          "title": "Parabola",
+          "isLeaf": true,
+          "wikiTitle": "Parabola",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-hyperbola",
+          "title": "Hyperbola",
+          "isLeaf": true,
+          "wikiTitle": "Hyperbola",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-conic-section",
+          "title": "Conic section",
+          "isLeaf": true,
+          "wikiTitle": "Conic section",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-curve",
+          "title": "Curve",
+          "isLeaf": true,
+          "wikiTitle": "Curve",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-three-dimensional-space",
+          "title": "Three-dimensional space",
+          "isLeaf": true,
+          "wikiTitle": "Three-dimensional space",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-dimension",
+          "title": "Dimension",
+          "isLeaf": true,
+          "wikiTitle": "Dimension",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-coordinate-system",
+          "title": "Coordinate system",
+          "isLeaf": true,
+          "wikiTitle": "Coordinate system",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-cartesian-coordinate-system",
+          "title": "Cartesian coordinate system",
+          "isLeaf": true,
+          "wikiTitle": "Cartesian coordinate system",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-polar-coordinate-system",
+          "title": "Polar coordinate system",
+          "isLeaf": true,
+          "wikiTitle": "Polar coordinate system",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-euclidean-plane",
+          "title": "Euclidean plane",
+          "isLeaf": true,
+          "wikiTitle": "Euclidean plane",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-symmetry",
+          "title": "Symmetry",
+          "isLeaf": true,
+          "wikiTitle": "Symmetry",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-symmetry-in-mathematics",
+          "title": "Symmetry in mathematics",
+          "isLeaf": true,
+          "wikiTitle": "Symmetry in mathematics",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-tessellation",
+          "title": "Tessellation",
+          "isLeaf": true,
+          "wikiTitle": "Tessellation",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-pythagorean-theorem",
+          "title": "Pythagorean theorem",
+          "isLeaf": true,
+          "wikiTitle": "Pythagorean theorem",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-geometry-and-shapes-euclids-theorem",
+          "title": "Euclid's theorem",
+          "isLeaf": true,
+          "wikiTitle": "Euclid's theorem",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        }
+      ]
+    },
+    {
+      "id": "mathematics-calculus-and-analysis",
+      "title": "Calculus and Analysis",
+      "source": "wikipedia_vital_4",
+      "version": "2025-01-13",
+      "articleCount": 34,
+      "children": [
+        {
+          "id": "mathematics-calculus-and-analysis-calculus",
+          "title": "Calculus",
+          "isLeaf": true,
+          "wikiTitle": "Calculus",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-calculus-and-analysis-differential-calculus",
+          "title": "Differential calculus",
+          "isLeaf": true,
+          "wikiTitle": "Differential calculus",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-calculus-and-analysis-mathematical-analysis",
+          "title": "Mathematical analysis",
+          "isLeaf": true,
+          "wikiTitle": "Mathematical analysis",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-calculus-and-analysis-real-analysis",
+          "title": "Real analysis",
+          "isLeaf": true,
+          "wikiTitle": "Real analysis",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-calculus-and-analysis-complex-analysis",
+          "title": "Complex analysis",
+          "isLeaf": true,
+          "wikiTitle": "Complex analysis",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-calculus-and-analysis-functional-analysis",
+          "title": "Functional analysis",
+          "isLeaf": true,
+          "wikiTitle": "Functional analysis",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-calculus-and-analysis-harmonic-analysis",
+          "title": "Harmonic analysis",
+          "isLeaf": true,
+          "wikiTitle": "Harmonic analysis",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-calculus-and-analysis-derivative",
+          "title": "Derivative",
+          "isLeaf": true,
+          "wikiTitle": "Derivative",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-calculus-and-analysis-partial-derivative",
+          "title": "Partial derivative",
+          "isLeaf": true,
+          "wikiTitle": "Partial derivative",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-calculus-and-analysis-del",
+          "title": "Del",
+          "isLeaf": true,
+          "wikiTitle": "Del",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-calculus-and-analysis-integral",
+          "title": "Integral",
+          "isLeaf": true,
+          "wikiTitle": "Integral",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-calculus-and-analysis-multiple-integral",
+          "title": "Multiple integral",
+          "isLeaf": true,
+          "wikiTitle": "Multiple integral",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-calculus-and-analysis-numerical-integration",
+          "title": "Numerical integration",
+          "isLeaf": true,
+          "wikiTitle": "Numerical integration",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-calculus-and-analysis-limit-mathematics",
+          "title": "Limit (mathematics)",
+          "isLeaf": true,
+          "wikiTitle": "Limit (mathematics)",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-calculus-and-analysis-limit-of-a-function",
+          "title": "Limit of a function",
+          "isLeaf": true,
+          "wikiTitle": "Limit of a function",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-calculus-and-analysis-limit-of-a-sequence",
+          "title": "Limit of a sequence",
+          "isLeaf": true,
+          "wikiTitle": "Limit of a sequence",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-calculus-and-analysis-continuous-function",
+          "title": "Continuous function",
+          "isLeaf": true,
+          "wikiTitle": "Continuous function",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-calculus-and-analysis-differential-equation",
+          "title": "Differential equation",
+          "isLeaf": true,
+          "wikiTitle": "Differential equation",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-calculus-and-analysis-ordinary-differential-equation",
+          "title": "Ordinary differential equation",
+          "isLeaf": true,
+          "wikiTitle": "Ordinary differential equation",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-calculus-and-analysis-partial-differential-equation",
+          "title": "Partial differential equation",
+          "isLeaf": true,
+          "wikiTitle": "Partial differential equation",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-calculus-and-analysis-calculus-of-variations",
+          "title": "Calculus of variations",
+          "isLeaf": true,
+          "wikiTitle": "Calculus of variations",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-calculus-and-analysis-multivariable-calculus",
+          "title": "Multivariable calculus",
+          "isLeaf": true,
+          "wikiTitle": "Multivariable calculus",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-calculus-and-analysis-vector-calculus",
+          "title": "Vector calculus",
+          "isLeaf": true,
+          "wikiTitle": "Vector calculus",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-calculus-and-analysis-fourier-analysis",
+          "title": "Fourier analysis",
+          "isLeaf": true,
+          "wikiTitle": "Fourier analysis",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-calculus-and-analysis-fourier-series",
+          "title": "Fourier series",
+          "isLeaf": true,
+          "wikiTitle": "Fourier series",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-calculus-and-analysis-fourier-transform",
+          "title": "Fourier transform",
+          "isLeaf": true,
+          "wikiTitle": "Fourier transform",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-calculus-and-analysis-laplace-transform",
+          "title": "Laplace transform",
+          "isLeaf": true,
+          "wikiTitle": "Laplace transform",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-calculus-and-analysis-taylor-series",
+          "title": "Taylor series",
+          "isLeaf": true,
+          "wikiTitle": "Taylor series",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-calculus-and-analysis-fundamental-theorem-of-calculus",
+          "title": "Fundamental theorem of calculus",
+          "isLeaf": true,
+          "wikiTitle": "Fundamental theorem of calculus",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-calculus-and-analysis-cauchys-integral-formula",
+          "title": "Cauchy's integral formula",
+          "isLeaf": true,
+          "wikiTitle": "Cauchy's integral formula",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-calculus-and-analysis-laplaces-equation",
+          "title": "Laplace's equation",
+          "isLeaf": true,
+          "wikiTitle": "Laplace's equation",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-calculus-and-analysis-e-mathematical-constant",
+          "title": "E (mathematical constant)",
+          "isLeaf": true,
+          "wikiTitle": "E (mathematical constant)",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-calculus-and-analysis-eulers-formula",
+          "title": "Euler's formula",
+          "isLeaf": true,
+          "wikiTitle": "Euler's formula",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-calculus-and-analysis-eulers-identity",
+          "title": "Euler's identity",
+          "isLeaf": true,
+          "wikiTitle": "Euler's identity",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        }
+      ]
+    },
+    {
+      "id": "mathematics-linear-algebra-and-vectors",
+      "title": "Linear Algebra and Vectors",
+      "source": "wikipedia_vital_4",
+      "version": "2025-01-13",
+      "articleCount": 12,
+      "children": [
+        {
+          "id": "mathematics-linear-algebra-and-vectors-linear-algebra",
+          "title": "Linear algebra",
+          "isLeaf": true,
+          "wikiTitle": "Linear algebra",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-linear-algebra-and-vectors-vector-space",
+          "title": "Vector space",
+          "isLeaf": true,
+          "wikiTitle": "Vector space",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-linear-algebra-and-vectors-euclidean-vector",
+          "title": "Euclidean vector",
+          "isLeaf": true,
+          "wikiTitle": "Euclidean vector",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-linear-algebra-and-vectors-matrix-mathematics",
+          "title": "Matrix (mathematics)",
+          "isLeaf": true,
+          "wikiTitle": "Matrix (mathematics)",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-linear-algebra-and-vectors-determinant",
+          "title": "Determinant",
+          "isLeaf": true,
+          "wikiTitle": "Determinant",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-linear-algebra-and-vectors-eigenvalues-and-eigenvectors",
+          "title": "Eigenvalues and eigenvectors",
+          "isLeaf": true,
+          "wikiTitle": "Eigenvalues and eigenvectors",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-linear-algebra-and-vectors-linear-equation",
+          "title": "Linear equation",
+          "isLeaf": true,
+          "wikiTitle": "Linear equation",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-linear-algebra-and-vectors-linear-programming",
+          "title": "Linear programming",
+          "isLeaf": true,
+          "wikiTitle": "Linear programming",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-linear-algebra-and-vectors-gaussian-elimination",
+          "title": "Gaussian elimination",
+          "isLeaf": true,
+          "wikiTitle": "Gaussian elimination",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-linear-algebra-and-vectors-cross-product",
+          "title": "Cross product",
+          "isLeaf": true,
+          "wikiTitle": "Cross product",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-linear-algebra-and-vectors-dot-product",
+          "title": "Dot product",
+          "isLeaf": true,
+          "wikiTitle": "Dot product",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-linear-algebra-and-vectors-tensor",
+          "title": "Tensor",
+          "isLeaf": true,
+          "wikiTitle": "Tensor",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        }
+      ]
+    },
+    {
+      "id": "mathematics-statistics-and-probability",
+      "title": "Statistics and Probability",
+      "source": "wikipedia_vital_4",
+      "version": "2025-01-13",
+      "articleCount": 37,
+      "children": [
+        {
+          "id": "mathematics-statistics-and-probability-statistics",
+          "title": "Statistics",
+          "isLeaf": true,
+          "wikiTitle": "Statistics",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-probability",
+          "title": "Probability",
+          "isLeaf": true,
+          "wikiTitle": "Probability",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-probability-theory",
+          "title": "Probability theory",
+          "isLeaf": true,
+          "wikiTitle": "Probability theory",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-probability-distribution",
+          "title": "Probability distribution",
+          "isLeaf": true,
+          "wikiTitle": "Probability distribution",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-probability-density-function",
+          "title": "Probability density function",
+          "isLeaf": true,
+          "wikiTitle": "Probability density function",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-random-variable",
+          "title": "Random variable",
+          "isLeaf": true,
+          "wikiTitle": "Random variable",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-expected-value",
+          "title": "Expected value",
+          "isLeaf": true,
+          "wikiTitle": "Expected value",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-mean",
+          "title": "Mean",
+          "isLeaf": true,
+          "wikiTitle": "Mean",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-median",
+          "title": "Median",
+          "isLeaf": true,
+          "wikiTitle": "Median",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-mode-statistics",
+          "title": "Mode (statistics)",
+          "isLeaf": true,
+          "wikiTitle": "Mode (statistics)",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-variance",
+          "title": "Variance",
+          "isLeaf": true,
+          "wikiTitle": "Variance",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-standard-deviation",
+          "title": "Standard deviation",
+          "isLeaf": true,
+          "wikiTitle": "Standard deviation",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-standard-error",
+          "title": "Standard error",
+          "isLeaf": true,
+          "wikiTitle": "Standard error",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-covariance",
+          "title": "Covariance",
+          "isLeaf": true,
+          "wikiTitle": "Covariance",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-correlation",
+          "title": "Correlation",
+          "isLeaf": true,
+          "wikiTitle": "Correlation",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-normal-distribution",
+          "title": "Normal distribution",
+          "isLeaf": true,
+          "wikiTitle": "Normal distribution",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-binomial-distribution",
+          "title": "Binomial distribution",
+          "isLeaf": true,
+          "wikiTitle": "Binomial distribution",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-poisson-distribution",
+          "title": "Poisson distribution",
+          "isLeaf": true,
+          "wikiTitle": "Poisson distribution",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-exponential-distribution",
+          "title": "Exponential distribution",
+          "isLeaf": true,
+          "wikiTitle": "Exponential distribution",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-discrete-uniform-distribution",
+          "title": "Discrete uniform distribution",
+          "isLeaf": true,
+          "wikiTitle": "Discrete uniform distribution",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-central-limit-theorem",
+          "title": "Central limit theorem",
+          "isLeaf": true,
+          "wikiTitle": "Central limit theorem",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-law-of-large-numbers",
+          "title": "Law of large numbers",
+          "isLeaf": true,
+          "wikiTitle": "Law of large numbers",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-bayes-theorem",
+          "title": "Bayes' theorem",
+          "isLeaf": true,
+          "wikiTitle": "Bayes' theorem",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-bayesian-inference",
+          "title": "Bayesian inference",
+          "isLeaf": true,
+          "wikiTitle": "Bayesian inference",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-statistical-hypothesis-test",
+          "title": "Statistical hypothesis test",
+          "isLeaf": true,
+          "wikiTitle": "Statistical hypothesis test",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-chi-squared-test",
+          "title": "Chi-squared test",
+          "isLeaf": true,
+          "wikiTitle": "Chi-squared test",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-students-t-test",
+          "title": "Student's t-test",
+          "isLeaf": true,
+          "wikiTitle": "Student's t-test",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-p-value",
+          "title": "P-value",
+          "isLeaf": true,
+          "wikiTitle": "P-value",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-regression-analysis",
+          "title": "Regression analysis",
+          "isLeaf": true,
+          "wikiTitle": "Regression analysis",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-ordinary-least-squares",
+          "title": "Ordinary least squares",
+          "isLeaf": true,
+          "wikiTitle": "Ordinary least squares",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-statistical-population",
+          "title": "Statistical population",
+          "isLeaf": true,
+          "wikiTitle": "Statistical population",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-sampling-statistics",
+          "title": "Sampling (statistics)",
+          "isLeaf": true,
+          "wikiTitle": "Sampling (statistics)",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-survey-methodology",
+          "title": "Survey methodology",
+          "isLeaf": true,
+          "wikiTitle": "Survey methodology",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-observational-study",
+          "title": "Observational study",
+          "isLeaf": true,
+          "wikiTitle": "Observational study",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-randomized-controlled-trial",
+          "title": "Randomized controlled trial",
+          "isLeaf": true,
+          "wikiTitle": "Randomized controlled trial",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-design-of-experiments",
+          "title": "Design of experiments",
+          "isLeaf": true,
+          "wikiTitle": "Design of experiments",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-statistics-and-probability-meta-analysis",
+          "title": "Meta-analysis",
+          "isLeaf": true,
+          "wikiTitle": "Meta-analysis",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        }
+      ]
+    },
+    {
+      "id": "mathematics-discrete-mathematics-and-combinatorics",
+      "title": "Discrete Mathematics and Combinatorics",
+      "source": "wikipedia_vital_4",
+      "version": "2025-01-13",
+      "articleCount": 20,
+      "children": [
+        {
+          "id": "mathematics-discrete-mathematics-and-combinatorics-discrete-mathematics",
+          "title": "Discrete mathematics",
+          "isLeaf": true,
+          "wikiTitle": "Discrete mathematics",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-discrete-mathematics-and-combinatorics-combinatorics",
+          "title": "Combinatorics",
+          "isLeaf": true,
+          "wikiTitle": "Combinatorics",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-discrete-mathematics-and-combinatorics-permutation",
+          "title": "Permutation",
+          "isLeaf": true,
+          "wikiTitle": "Permutation",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-discrete-mathematics-and-combinatorics-combination",
+          "title": "Combination",
+          "isLeaf": true,
+          "wikiTitle": "Combination",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-discrete-mathematics-and-combinatorics-graph-theory",
+          "title": "Graph theory",
+          "isLeaf": true,
+          "wikiTitle": "Graph theory",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-discrete-mathematics-and-combinatorics-graph-discrete-mathematics",
+          "title": "Graph (discrete mathematics)",
+          "isLeaf": true,
+          "wikiTitle": "Graph (discrete mathematics)",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-discrete-mathematics-and-combinatorics-boolean-algebra",
+          "title": "Boolean algebra",
+          "isLeaf": true,
+          "wikiTitle": "Boolean algebra",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-discrete-mathematics-and-combinatorics-set-theory",
+          "title": "Set theory",
+          "isLeaf": true,
+          "wikiTitle": "Set theory",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-discrete-mathematics-and-combinatorics-naive-set-theory",
+          "title": "Naive set theory",
+          "isLeaf": true,
+          "wikiTitle": "Naive set theory",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-discrete-mathematics-and-combinatorics-set-mathematics",
+          "title": "Set (mathematics)",
+          "isLeaf": true,
+          "wikiTitle": "Set (mathematics)",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-discrete-mathematics-and-combinatorics-empty-set",
+          "title": "Empty set",
+          "isLeaf": true,
+          "wikiTitle": "Empty set",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-discrete-mathematics-and-combinatorics-subset",
+          "title": "Subset",
+          "isLeaf": true,
+          "wikiTitle": "Subset",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-discrete-mathematics-and-combinatorics-union-set-theory",
+          "title": "Union (set theory)",
+          "isLeaf": true,
+          "wikiTitle": "Union (set theory)",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-discrete-mathematics-and-combinatorics-intersection-set-theory",
+          "title": "Intersection (set theory)",
+          "isLeaf": true,
+          "wikiTitle": "Intersection (set theory)",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-discrete-mathematics-and-combinatorics-venn-diagram",
+          "title": "Venn diagram",
+          "isLeaf": true,
+          "wikiTitle": "Venn diagram",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-discrete-mathematics-and-combinatorics-equivalence-relation",
+          "title": "Equivalence relation",
+          "isLeaf": true,
+          "wikiTitle": "Equivalence relation",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-discrete-mathematics-and-combinatorics-fibonacci-sequence",
+          "title": "Fibonacci sequence",
+          "isLeaf": true,
+          "wikiTitle": "Fibonacci sequence",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-discrete-mathematics-and-combinatorics-golden-ratio",
+          "title": "Golden ratio",
+          "isLeaf": true,
+          "wikiTitle": "Golden ratio",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-discrete-mathematics-and-combinatorics-parity-mathematics",
+          "title": "Parity (mathematics)",
+          "isLeaf": true,
+          "wikiTitle": "Parity (mathematics)",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-discrete-mathematics-and-combinatorics-mathematical-induction",
+          "title": "Mathematical induction",
+          "isLeaf": true,
+          "wikiTitle": "Mathematical induction",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        }
+      ]
+    },
+    {
+      "id": "mathematics-advanced-mathematics-and-topology",
+      "title": "Advanced Mathematics and Topology",
+      "source": "wikipedia_vital_4",
+      "version": "2025-01-13",
+      "articleCount": 19,
+      "children": [
+        {
+          "id": "mathematics-advanced-mathematics-and-topology-topology",
+          "title": "Topology",
+          "isLeaf": true,
+          "wikiTitle": "Topology",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-advanced-mathematics-and-topology-general-topology",
+          "title": "General topology",
+          "isLeaf": true,
+          "wikiTitle": "General topology",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-advanced-mathematics-and-topology-algebraic-topology",
+          "title": "Algebraic topology",
+          "isLeaf": true,
+          "wikiTitle": "Algebraic topology",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-advanced-mathematics-and-topology-topological-space",
+          "title": "Topological space",
+          "isLeaf": true,
+          "wikiTitle": "Topological space",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-advanced-mathematics-and-topology-open-set",
+          "title": "Open set",
+          "isLeaf": true,
+          "wikiTitle": "Open set",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-advanced-mathematics-and-topology-compact-space",
+          "title": "Compact space",
+          "isLeaf": true,
+          "wikiTitle": "Compact space",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-advanced-mathematics-and-topology-metric-space",
+          "title": "Metric space",
+          "isLeaf": true,
+          "wikiTitle": "Metric space",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-advanced-mathematics-and-topology-manifold",
+          "title": "Manifold",
+          "isLeaf": true,
+          "wikiTitle": "Manifold",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-advanced-mathematics-and-topology-riemannian-manifold",
+          "title": "Riemannian manifold",
+          "isLeaf": true,
+          "wikiTitle": "Riemannian manifold",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-advanced-mathematics-and-topology-riemann-surface",
+          "title": "Riemann surface",
+          "isLeaf": true,
+          "wikiTitle": "Riemann surface",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-advanced-mathematics-and-topology-convex-set",
+          "title": "Convex set",
+          "isLeaf": true,
+          "wikiTitle": "Convex set",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-advanced-mathematics-and-topology-homology-mathematics",
+          "title": "Homology (mathematics)",
+          "isLeaf": true,
+          "wikiTitle": "Homology (mathematics)",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-advanced-mathematics-and-topology-homotopy",
+          "title": "Homotopy",
+          "isLeaf": true,
+          "wikiTitle": "Homotopy",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-advanced-mathematics-and-topology-fundamental-group",
+          "title": "Fundamental group",
+          "isLeaf": true,
+          "wikiTitle": "Fundamental group",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-advanced-mathematics-and-topology-knot-theory",
+          "title": "Knot theory",
+          "isLeaf": true,
+          "wikiTitle": "Knot theory",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-advanced-mathematics-and-topology-category-theory",
+          "title": "Category theory",
+          "isLeaf": true,
+          "wikiTitle": "Category theory",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-advanced-mathematics-and-topology-homological-algebra",
+          "title": "Homological algebra",
+          "isLeaf": true,
+          "wikiTitle": "Homological algebra",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-advanced-mathematics-and-topology-sheaf-mathematics",
+          "title": "Sheaf (mathematics)",
+          "isLeaf": true,
+          "wikiTitle": "Sheaf (mathematics)",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-advanced-mathematics-and-topology-euler-characteristic",
+          "title": "Euler characteristic",
+          "isLeaf": true,
+          "wikiTitle": "Euler characteristic",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        }
+      ]
+    },
+    {
+      "id": "mathematics-number-theory-and-advanced-algebra",
+      "title": "Number Theory and Advanced Algebra",
+      "source": "wikipedia_vital_4",
+      "version": "2025-01-13",
+      "articleCount": 13,
+      "children": [
+        {
+          "id": "mathematics-number-theory-and-advanced-algebra-number-theory",
+          "title": "Number theory",
+          "isLeaf": true,
+          "wikiTitle": "Number theory",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-number-theory-and-advanced-algebra-analytic-number-theory",
+          "title": "Analytic number theory",
+          "isLeaf": true,
+          "wikiTitle": "Analytic number theory",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-number-theory-and-advanced-algebra-algebraic-number-theory",
+          "title": "Algebraic number theory",
+          "isLeaf": true,
+          "wikiTitle": "Algebraic number theory",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-number-theory-and-advanced-algebra-algebraic-number-field",
+          "title": "Algebraic number field",
+          "isLeaf": true,
+          "wikiTitle": "Algebraic number field",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-number-theory-and-advanced-algebra-prime-number-theorem",
+          "title": "Prime number theorem",
+          "isLeaf": true,
+          "wikiTitle": "Prime number theorem",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-number-theory-and-advanced-algebra-fundamental-theorem-of-arithmetic",
+          "title": "Fundamental theorem of arithmetic",
+          "isLeaf": true,
+          "wikiTitle": "Fundamental theorem of arithmetic",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-number-theory-and-advanced-algebra-fundamental-theorem-of-algebra",
+          "title": "Fundamental theorem of algebra",
+          "isLeaf": true,
+          "wikiTitle": "Fundamental theorem of algebra",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-number-theory-and-advanced-algebra-euclidean-algorithm",
+          "title": "Euclidean algorithm",
+          "isLeaf": true,
+          "wikiTitle": "Euclidean algorithm",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-number-theory-and-advanced-algebra-class-field-theory",
+          "title": "Class field theory",
+          "isLeaf": true,
+          "wikiTitle": "Class field theory",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-number-theory-and-advanced-algebra-fermats-last-theorem",
+          "title": "Fermat's Last Theorem",
+          "isLeaf": true,
+          "wikiTitle": "Fermat's Last Theorem",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-number-theory-and-advanced-algebra-riemann-hypothesis",
+          "title": "Riemann hypothesis",
+          "isLeaf": true,
+          "wikiTitle": "Riemann hypothesis",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-number-theory-and-advanced-algebra-algebraic-geometry",
+          "title": "Algebraic geometry",
+          "isLeaf": true,
+          "wikiTitle": "Algebraic geometry",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-number-theory-and-advanced-algebra-algebraic-variety",
+          "title": "Algebraic variety",
+          "isLeaf": true,
+          "wikiTitle": "Algebraic variety",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        }
+      ]
+    },
+    {
+      "id": "mathematics-applied-mathematics-and-computer-science",
+      "title": "Applied Mathematics and Computer Science",
+      "source": "wikipedia_vital_4",
+      "version": "2025-01-13",
+      "articleCount": 28,
+      "children": [
+        {
+          "id": "mathematics-applied-mathematics-and-computer-science-applied-mathematics",
+          "title": "Applied mathematics",
+          "isLeaf": true,
+          "wikiTitle": "Applied mathematics",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-applied-mathematics-and-computer-science-algorithm",
+          "title": "Algorithm",
+          "isLeaf": true,
+          "wikiTitle": "Algorithm",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-applied-mathematics-and-computer-science-abstract-machine",
+          "title": "Abstract machine",
+          "isLeaf": true,
+          "wikiTitle": "Abstract machine",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-applied-mathematics-and-computer-science-computability-theory",
+          "title": "Computability theory",
+          "isLeaf": true,
+          "wikiTitle": "Computability theory",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-applied-mathematics-and-computer-science-computable-function",
+          "title": "Computable function",
+          "isLeaf": true,
+          "wikiTitle": "Computable function",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-applied-mathematics-and-computer-science-computational-complexity-theory",
+          "title": "Computational complexity theory",
+          "isLeaf": true,
+          "wikiTitle": "Computational complexity theory",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-applied-mathematics-and-computer-science-theory-of-computation",
+          "title": "Theory of computation",
+          "isLeaf": true,
+          "wikiTitle": "Theory of computation",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-applied-mathematics-and-computer-science-theoretical-computer-science",
+          "title": "Theoretical computer science",
+          "isLeaf": true,
+          "wikiTitle": "Theoretical computer science",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-applied-mathematics-and-computer-science-data-structure",
+          "title": "Data structure",
+          "isLeaf": true,
+          "wikiTitle": "Data structure",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-applied-mathematics-and-computer-science-formal-language",
+          "title": "Formal language",
+          "isLeaf": true,
+          "wikiTitle": "Formal language",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-applied-mathematics-and-computer-science-information-theory",
+          "title": "Information theory",
+          "isLeaf": true,
+          "wikiTitle": "Information theory",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-applied-mathematics-and-computer-science-coding-theory",
+          "title": "Coding theory",
+          "isLeaf": true,
+          "wikiTitle": "Coding theory",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-applied-mathematics-and-computer-science-error-detection-and-correction",
+          "title": "Error detection and correction",
+          "isLeaf": true,
+          "wikiTitle": "Error detection and correction",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-applied-mathematics-and-computer-science-data-compression",
+          "title": "Data compression",
+          "isLeaf": true,
+          "wikiTitle": "Data compression",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-applied-mathematics-and-computer-science-data-and-information-visualization",
+          "title": "Data and information visualization",
+          "isLeaf": true,
+          "wikiTitle": "Data and information visualization",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-applied-mathematics-and-computer-science-game-theory",
+          "title": "Game theory",
+          "isLeaf": true,
+          "wikiTitle": "Game theory",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-applied-mathematics-and-computer-science-operations-research",
+          "title": "Operations research",
+          "isLeaf": true,
+          "wikiTitle": "Operations research",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-applied-mathematics-and-computer-science-mathematical-optimization",
+          "title": "Mathematical optimization",
+          "isLeaf": true,
+          "wikiTitle": "Mathematical optimization",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-applied-mathematics-and-computer-science-nonlinear-programming",
+          "title": "Nonlinear programming",
+          "isLeaf": true,
+          "wikiTitle": "Nonlinear programming",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-applied-mathematics-and-computer-science-control-theory",
+          "title": "Control theory",
+          "isLeaf": true,
+          "wikiTitle": "Control theory",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-applied-mathematics-and-computer-science-dynamical-system",
+          "title": "Dynamical system",
+          "isLeaf": true,
+          "wikiTitle": "Dynamical system",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-applied-mathematics-and-computer-science-dynamical-systems-theory",
+          "title": "Dynamical systems theory",
+          "isLeaf": true,
+          "wikiTitle": "Dynamical systems theory",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-applied-mathematics-and-computer-science-chaos-theory",
+          "title": "Chaos theory",
+          "isLeaf": true,
+          "wikiTitle": "Chaos theory",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-applied-mathematics-and-computer-science-approximation-theory",
+          "title": "Approximation theory",
+          "isLeaf": true,
+          "wikiTitle": "Approximation theory",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-applied-mathematics-and-computer-science-numerical-analysis",
+          "title": "Numerical analysis",
+          "isLeaf": true,
+          "wikiTitle": "Numerical analysis",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-applied-mathematics-and-computer-science-markov-chain",
+          "title": "Markov chain",
+          "isLeaf": true,
+          "wikiTitle": "Markov chain",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-applied-mathematics-and-computer-science-stochastic-process",
+          "title": "Stochastic process",
+          "isLeaf": true,
+          "wikiTitle": "Stochastic process",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-applied-mathematics-and-computer-science-p-versus-np-problem",
+          "title": "P versus NP problem",
+          "isLeaf": true,
+          "wikiTitle": "P versus NP problem",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        }
+      ]
+    },
+    {
+      "id": "mathematics-mathematical-logic-and-foundations",
+      "title": "Mathematical Logic and Foundations",
+      "source": "wikipedia_vital_4",
+      "version": "2025-01-13",
+      "articleCount": 18,
+      "children": [
+        {
+          "id": "mathematics-mathematical-logic-and-foundations-mathematical-logic",
+          "title": "Mathematical logic",
+          "isLeaf": true,
+          "wikiTitle": "Mathematical logic",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-mathematical-logic-and-foundations-propositional-logic",
+          "title": "Propositional logic",
+          "isLeaf": true,
+          "wikiTitle": "Propositional logic",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-mathematical-logic-and-foundations-first-order-logic",
+          "title": "First-order logic",
+          "isLeaf": true,
+          "wikiTitle": "First-order logic",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-mathematical-logic-and-foundations-mathematical-proof",
+          "title": "Mathematical proof",
+          "isLeaf": true,
+          "wikiTitle": "Mathematical proof",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-mathematical-logic-and-foundations-axiom",
+          "title": "Axiom",
+          "isLeaf": true,
+          "wikiTitle": "Axiom",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-mathematical-logic-and-foundations-axiom-of-choice",
+          "title": "Axiom of choice",
+          "isLeaf": true,
+          "wikiTitle": "Axiom of choice",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-mathematical-logic-and-foundations-theorem",
+          "title": "Theorem",
+          "isLeaf": true,
+          "wikiTitle": "Theorem",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-mathematical-logic-and-foundations-conjecture",
+          "title": "Conjecture",
+          "isLeaf": true,
+          "wikiTitle": "Conjecture",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-mathematical-logic-and-foundations-mathematical-constant",
+          "title": "Mathematical constant",
+          "isLeaf": true,
+          "wikiTitle": "Mathematical constant",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-mathematical-logic-and-foundations-infinity",
+          "title": "Infinity",
+          "isLeaf": true,
+          "wikiTitle": "Infinity",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-mathematical-logic-and-foundations-isomorphism",
+          "title": "Isomorphism",
+          "isLeaf": true,
+          "wikiTitle": "Isomorphism",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-mathematical-logic-and-foundations-gdels-incompleteness-theorems",
+          "title": "Gödel's incompleteness theorems",
+          "isLeaf": true,
+          "wikiTitle": "Gödel's incompleteness theorems",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-mathematical-logic-and-foundations-russells-paradox",
+          "title": "Russell's paradox",
+          "isLeaf": true,
+          "wikiTitle": "Russell's paradox",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-mathematical-logic-and-foundations-cantors-theorem",
+          "title": "Cantor's theorem",
+          "isLeaf": true,
+          "wikiTitle": "Cantor's theorem",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-mathematical-logic-and-foundations-hilberts-problems",
+          "title": "Hilbert's problems",
+          "isLeaf": true,
+          "wikiTitle": "Hilbert's problems",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-mathematical-logic-and-foundations-poincar-conjecture",
+          "title": "Poincaré conjecture",
+          "isLeaf": true,
+          "wikiTitle": "Poincaré conjecture",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-mathematical-logic-and-foundations-hilbert-space",
+          "title": "Hilbert space",
+          "isLeaf": true,
+          "wikiTitle": "Hilbert space",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-mathematical-logic-and-foundations-gamma-function",
+          "title": "Gamma function",
+          "isLeaf": true,
+          "wikiTitle": "Gamma function",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        }
+      ]
+    },
+    {
+      "id": "mathematics-trigonometry-and-special-functions",
+      "title": "Trigonometry and Special Functions",
+      "source": "wikipedia_vital_4",
+      "version": "2025-01-13",
+      "articleCount": 7,
+      "children": [
+        {
+          "id": "mathematics-trigonometry-and-special-functions-trigonometry",
+          "title": "Trigonometry",
+          "isLeaf": true,
+          "wikiTitle": "Trigonometry",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-trigonometry-and-special-functions-trigonometric-functions",
+          "title": "Trigonometric functions",
+          "isLeaf": true,
+          "wikiTitle": "Trigonometric functions",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-trigonometry-and-special-functions-pi",
+          "title": "Pi",
+          "isLeaf": true,
+          "wikiTitle": "Pi",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-trigonometry-and-special-functions-sequence",
+          "title": "Sequence",
+          "isLeaf": true,
+          "wikiTitle": "Sequence",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-trigonometry-and-special-functions-series-mathematics",
+          "title": "Series (mathematics)",
+          "isLeaf": true,
+          "wikiTitle": "Series (mathematics)",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-trigonometry-and-special-functions-holomorphic-function",
+          "title": "Holomorphic function",
+          "isLeaf": true,
+          "wikiTitle": "Holomorphic function",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-trigonometry-and-special-functions-fractal",
+          "title": "Fractal",
+          "isLeaf": true,
+          "wikiTitle": "Fractal",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        }
+      ]
+    },
+    {
+      "id": "mathematics-other-topics",
+      "title": "Other Topics",
+      "source": "wikipedia_vital_4",
+      "version": "2025-01-13",
+      "articleCount": 3,
+      "children": [
+        {
+          "id": "mathematics-other-topics-arithmetic",
+          "title": "Arithmetic",
+          "isLeaf": true,
+          "wikiTitle": "Arithmetic",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-other-topics-mathematics",
+          "title": "Mathematics",
+          "isLeaf": true,
+          "wikiTitle": "Mathematics",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        },
+        {
+          "id": "mathematics-other-topics-pure-mathematics",
+          "title": "Pure mathematics",
+          "isLeaf": true,
+          "wikiTitle": "Pure mathematics",
+          "source": "wikipedia_vital_4",
+          "version": "2025-01-13"
+        }
+      ]
+    }
+  ]
+}

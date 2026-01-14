@@ -660,11 +660,24 @@ function SkeletonCard({ index }) {
 }
 
 // Expanded card - zooms in and can flip back and forth
-function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName, onContentGenerated }) {
+function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName, onContentGenerated, onNext, onPrev, hasNext, hasPrev }) {
   const [isFlipped, setIsFlipped] = useState(false)
   const [content, setContent] = useState(card.content || null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [slideDirection, setSlideDirection] = useState(0) // -1 = left, 1 = right, 0 = none
+  const [prevCardId, setPrevCardId] = useState(card.id)
+
+  // Reset state when card changes (navigation)
+  useEffect(() => {
+    if (card.id !== prevCardId) {
+      // Determine slide direction based on index change
+      setContent(card.content || null)
+      setIsFlipped(false)
+      setError(null)
+      setPrevCardId(card.id)
+    }
+  }, [card.id, card.content, prevCardId])
 
   // Update content if it arrives from background generation
   useEffect(() => {
@@ -706,9 +719,46 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
     setIsFlipped(!isFlipped)
   }
 
+  // Handle claim and advance to next card
+  const handleClaimAndNext = () => {
+    onClaim(card.id)
+    // Small delay to show the claim feedback, then advance
+    if (hasNext) {
+      setTimeout(() => {
+        goNext()
+      }, 300)
+    }
+  }
+
+  // Handle swipe gestures and track direction for animation
+  const handleDragEnd = (event, info) => {
+    const threshold = 100
+    const velocity = 500
+
+    if (info.offset.x > threshold || info.velocity.x > velocity) {
+      // Swiped right - go to previous
+      if (hasPrev) {
+        setSlideDirection(1) // Coming from left
+        onPrev()
+      }
+    } else if (info.offset.x < -threshold || info.velocity.x < -velocity) {
+      // Swiped left - go to next
+      if (hasNext) {
+        setSlideDirection(-1) // Coming from right
+        onNext()
+      }
+    }
+  }
+
+  // Wrapped navigation handler to set direction for animation
+  const goNext = () => {
+    setSlideDirection(-1)
+    onNext()
+  }
+
   return (
     <motion.div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 overflow-hidden"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -717,19 +767,27 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
       {/* X close button - top right */}
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 w-11 h-11 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 active:bg-white/40 transition-colors"
+        className="absolute top-4 right-4 w-11 h-11 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 active:bg-white/40 transition-colors z-10"
         aria-label="Close"
       >
         <span className="text-white text-2xl font-light">×</span>
       </button>
-      {/* Card container with perspective for 3D flip - optimized for mobile */}
+
+      {/* Card container with AnimatePresence for slide animation */}
+      <AnimatePresence mode="popLayout" initial={false}>
       <motion.div
+        key={card.id}
         className="relative w-[90vw] max-w-md h-[80vh] max-h-[600px] cursor-pointer"
         style={{ perspective: 1000 }}
-        initial={{ scale: 0.8, y: 30 }}
-        animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.8, y: 30 }}
+        initial={{ x: slideDirection * 300, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        exit={{ x: slideDirection * -300, opacity: 0 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         onClick={handleFlip}
+        drag="x"
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={0.2}
+        onDragEnd={handleDragEnd}
       >
         {/* Inner container that flips */}
         <motion.div
@@ -784,7 +842,7 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
             <div className="mt-4 sm:mt-6 pt-4 border-t border-gray-100" onClick={e => e.stopPropagation()}>
               {!claimed ? (
                 <button
-                  onClick={() => onClaim(card.id)}
+                  onClick={handleClaimAndNext}
                   disabled={isLoading || !content}
                   className={`w-full py-4 rounded-2xl text-white font-bold text-lg transition-all ${
                     isLoading || !content
@@ -795,16 +853,20 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
                   {isLoading ? 'Loading...' : '✓ Got it!'}
                 </button>
               ) : (
-                <div className="w-full py-4 rounded-2xl text-center font-bold text-lg text-yellow-600 bg-yellow-50 border-2 border-yellow-200">
-                  ✓ Card Claimed!
-                </div>
+                <button
+                  onClick={() => hasNext ? goNext() : onClose()}
+                  className="w-full py-4 rounded-2xl font-bold text-lg text-yellow-600 bg-yellow-50 border-2 border-yellow-200 hover:bg-yellow-100 active:scale-[0.98] transition-all"
+                >
+                  {hasNext ? 'Next Card →' : '✓ All Done!'}
+                </button>
               )}
               {/* Hint text - below button where users are looking */}
-              <p className="text-center text-gray-400 text-sm mt-3">Tap card to flip</p>
+              <p className="text-center text-gray-400 text-sm mt-3">{hasPrev || hasNext ? 'Swipe to navigate' : 'Tap card to flip'}</p>
             </div>
           </div>
         </motion.div>
       </motion.div>
+      </AnimatePresence>
     </motion.div>
   )
 }
@@ -2302,6 +2364,16 @@ export default function Canvas() {
             onClose={() => setExpandedCard(null)}
             deckName={currentDeck?.name || ''}
             onContentGenerated={handleContentGenerated}
+            hasNext={expandedCardIndex < allCurrentCards.length - 1}
+            hasPrev={expandedCardIndex > 0}
+            onNext={() => {
+              const nextCard = allCurrentCards[expandedCardIndex + 1]
+              if (nextCard) setExpandedCard(nextCard.id)
+            }}
+            onPrev={() => {
+              const prevCard = allCurrentCards[expandedCardIndex - 1]
+              if (prevCard) setExpandedCard(prevCard.id)
+            }}
           />
         )}
       </AnimatePresence>
