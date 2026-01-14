@@ -2145,13 +2145,15 @@ export default function Canvas() {
   }
 
   // Explore Deeper button component (floating)
-  const ExploreButton = () => {
-    if (!hasSubDecks || isLeaf) return null
+  // Calculate topic count once to avoid re-calculating on every render
+  const topicCount = getTopicCount()
+  const showExploreButton = hasSubDecks && !isLeaf && topicCount > 0
 
-    const topicCount = getTopicCount()
+  const ExploreButton = () => {
+    if (!showExploreButton) return null
 
     return (
-      <motion.button
+      <button
         onClick={scrollToExplore}
         className="
           fixed bottom-6 left-6 z-50
@@ -2160,17 +2162,13 @@ export default function Canvas() {
           text-white font-semibold text-sm
           shadow-lg hover:shadow-xl
           flex items-center gap-2
-          transition-all
+          transition-transform
           hover:scale-105 active:scale-95
         "
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        whileHover={{ y: -2 }}
-        whileTap={{ scale: 0.95 }}
       >
         <span className="text-lg">↓</span>
         <span>{topicCount} Topics</span>
-      </motion.button>
+      </button>
     )
   }
 
