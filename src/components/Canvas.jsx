@@ -17,7 +17,11 @@ import {
   getUserArchetype,
   getTierCards,
   getDeckTierCompletion,
-  unlockTier
+  unlockTier,
+  getTreeChildren,
+  isTreeDeck,
+  getTreeNode,
+  getRandomTreePath
 } from '../services/storage'
 
 // Configuration - card counts can be adjusted here or per-deck
@@ -261,7 +265,7 @@ function getDeckLevel(id) {
   return dynamicDeck?.depth || 3
 }
 
-// Get deck data by ID (checks hardcoded data first, then dynamic storage)
+// Get deck data by ID (checks hardcoded data first, then tree, then dynamic storage)
 function getDeck(id) {
   // Check hardcoded categories first (Level 1)
   const category = CATEGORIES.find(c => c.id === id)
@@ -270,6 +274,12 @@ function getDeck(id) {
   // Check hardcoded sub-categories (Level 2)
   const subcat = SUBCATEGORIES[id]
   if (subcat) return { ...subcat, level: 2 }
+
+  // Check vital articles tree (tree-based navigation)
+  const treeNode = getTreeNode(id)
+  if (treeNode) {
+    return treeNode
+  }
 
   // Check dynamic decks (Level 3+)
   const dynamicDeck = getDynamicDeck(id)
@@ -1268,12 +1278,8 @@ export default function Canvas() {
   const loadOrGenerateChildDecks = async (deck, parentPath) => {
     const deckLevel = deck.level || getDeckLevel(deck.id)
 
-    // Level 1 categories always have hardcoded children (never generate)
-    if (deckLevel === 1) return
-
     // Vital articles are leaf nodes - they have no children
     if (deck.isLeaf || deck.source === 'vital-articles') {
-      console.log(`[loadOrGenerateChildDecks] "${deck.name}" is a vital article leaf - no children`)
       setDynamicChildren(prev => ({ ...prev, [deck.id]: [] }))
       return
     }
@@ -1283,21 +1289,39 @@ export default function Canvas() {
       // CRITICAL: Level 2 decks should NEVER have empty children in memory
       // If they do, it's from a previous error or bad generation - we need to regenerate
       if (deckLevel === 2 && dynamicChildren[deck.id].length === 0) {
-        console.log(`[loadOrGenerateChildDecks] Level 2 deck "${deck.name}" has empty in-memory children, will regenerate`)
         // Don't return - fall through to regeneration
       } else {
         return
       }
     }
 
-    // Check if already has ACTUAL hardcoded children (like 'ancient' > egypt, rome, etc.)
-    // Note: Level 2 decks have children: [] which means "needs generation", not "is a leaf"
-    const hardcodedDeck = SUBCATEGORIES[deck.id]
-    if (hardcodedDeck?.children?.length > 0) {
-      // Has hardcoded children, no need to generate
+    // Check vital articles tree for pre-built hierarchy (PRIORITY over hardcoded)
+    const treeChildren = getTreeChildren(deck.id)
+
+    if (treeChildren !== null) {
+      if (treeChildren.length === 0) {
+        // This is a leaf node in the tree
+        setDynamicChildren(prev => ({ ...prev, [deck.id]: [] }))
+        return
+      }
+
+      // Build deck objects from tree children
+      const childDeckObjects = treeChildren.map(child => ({
+        id: child.id,
+        name: child.name,
+        emoji: child.emoji || '📖',
+        gradient: deck.gradient,
+        borderColor: deck.borderColor,
+        level: deckLevel + 1,
+        isLeaf: child.isLeaf || false,
+        wikiTitle: child.wikiTitle || null,
+        children: [], // Will be populated when opened
+        source: 'vital-tree',
+      }))
+
       setDynamicChildren(prev => ({
         ...prev,
-        [deck.id]: hardcodedDeck.children.map(id => getDeck(id)).filter(Boolean)
+        [deck.id]: childDeckObjects
       }))
       return
     }
@@ -1308,7 +1332,6 @@ export default function Canvas() {
       // CRITICAL FIX: Level 2 decks should NEVER be leaves - they're broad topics
       // If we have a cached empty array for Level 2, it's stale data that needs regeneration
       if (deckLevel === 2 && cachedChildren.length === 0) {
-        console.log(`[loadOrGenerateChildDecks] Level 2 deck "${deck.name}" has stale empty cache, regenerating...`)
         // Clear the stale cache entry by marking it as not generated
         const data = getData()
         if (data.dynamicDecks && data.dynamicDecks[deck.id]) {
@@ -1340,9 +1363,7 @@ export default function Canvas() {
     setLoadingChildren(deck.id)
     try {
       const userArchetype = getUserArchetype()
-      console.log(`[loadOrGenerateChildDecks] Calling generateSubDecks for "${deck.name}" at level ${deckLevel}`)
       const subDecks = await generateSubDecks(deck.name, parentPath, deckLevel, userArchetype)
-      console.log(`[loadOrGenerateChildDecks] Got subDecks for "${deck.name}":`, subDecks)
 
       // CRITICAL: Level 2 decks should NEVER be leaves
       // If AI returned null/empty for Level 2, don't save - just skip and we'll retry next time
@@ -1396,6 +1417,22 @@ export default function Canvas() {
 
   // Load or generate cards for a deck (now tier-aware)
   const loadOrGenerateCardsForDeck = async (deck, parentPath) => {
+    console.log(`[loadOrGenerateCardsForDeck] Called for deck.id="${deck.id}", deck.name="${deck.name}"`)
+
+    // Check if this deck has children in the vital articles tree
+    const treeChildren = getTreeChildren(deck.id)
+    const isBranchNode = treeChildren && treeChildren.length > 0
+
+    // For branch nodes: generate fewer overview cards (3)
+    // For leaf nodes: generate full set (5)
+    const cardCount = isBranchNode ? 3 : 5
+
+    if (isBranchNode) {
+      console.log(`[loadOrGenerateCardsForDeck] 🌿 BRANCH NODE: "${deck.name}" has ${treeChildren.length} children - will generate ${cardCount} overview cards`)
+    } else {
+      console.log(`[loadOrGenerateCardsForDeck] 🍂 LEAF NODE: "${deck.name}" - will generate ${cardCount} cards`)
+    }
+
     // Check if tier cards already in memory
     if (tierCards[deck.id]?.core?.length > 0) {
       // Still check if we need to pre-generate content for any cards
@@ -1487,9 +1524,10 @@ export default function Canvas() {
     }
 
     // Not cached - generate new Core cards only (Deep Dives generated on-demand)
+    // Branch nodes get 3 overview cards, leaf nodes get 5 full cards
     setLoadingDeck(deck.id)
     try {
-      const cards = await generateDeckCards(deck.name, parentPath, 5, 'core')
+      const cards = await generateDeckCards(deck.name, parentPath, cardCount, 'core')
 
       // Save to localStorage with tier
       saveDeckCards(deck.id, deck.name, cards, 'core')
@@ -1626,149 +1664,31 @@ export default function Canvas() {
     return path
   }
 
-  // Generate a new random path on-the-fly
+  // Generate a new random path through the vital articles tree
   const generateWanderPath = async () => {
-    const userArchetype = getUserArchetype()
-
-    // Pick random target depth (3-5 levels)
-    const targetDepth = 3 + Math.floor(Math.random() * 3) // 3, 4, or 5
-    console.log('[Wander] Target depth:', targetDepth)
-
-    // Pick a random category (Level 1)
-    const category = CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)]
-    setWanderPathSteps([{ emoji: category.emoji, name: category.name, id: category.id }])
-    setWanderCurrentStep(0)
-    console.log('[Wander] Starting from category:', category.name)
-
-    let currentPath = [category.id]
-    let currentDeckName = category.name
-    let currentParentPath = null
-    let currentDepth = 1
-    // Initialize to at least the category - we'll update as we go deeper
-    let lastDeckWithCards = { id: category.id, path: [...currentPath], parentPath: null }
-
-    // Build path level by level
-    while (currentDepth < targetDepth) {
-      setWanderCurrentStep(currentDepth - 1)
-      console.log(`[Wander] At depth ${currentDepth}, deck: ${currentDeckName}`)
-
-      // Get or generate children for current deck
-      const currentId = currentPath[currentPath.length - 1]
-      let children = []
-
-      // Check hardcoded children first
-      if (currentDepth === 1) {
-        // Level 1 -> Level 2: use category's hardcoded children
-        const cat = CATEGORIES.find(c => c.id === currentId)
-        if (cat?.children) {
-          children = cat.children.map(childId => {
-            const subcat = SUBCATEGORIES[childId]
-            return subcat ? { id: childId, name: subcat.name, emoji: subcat.emoji } : null
-          }).filter(Boolean)
-        }
-      } else if (currentDepth === 2) {
-        // Level 2 -> Level 3: check SUBCATEGORIES for hardcoded children, else generate
-        const subcat = SUBCATEGORIES[currentId]
-        if (subcat?.children?.length > 0) {
-          children = subcat.children.map(childId => {
-            const child = SUBCATEGORIES[childId]
-            return child ? { id: childId, name: child.name, emoji: child.emoji } : null
-          }).filter(Boolean)
-        } else {
-          // Check localStorage cache
-          const cachedChildren = getDeckChildren(currentId)
-          if (cachedChildren?.length > 0) {
-            children = cachedChildren
-          } else {
-            // Generate new children
-            const result = await generateSubDecks(currentDeckName, currentParentPath, currentDepth, userArchetype)
-            if (result && result.length > 0) {
-              // Save to storage
-              const parentDeck = getDeck(currentId)
-              const gradient = parentDeck?.gradient || 'from-gray-500 to-gray-700'
-              const borderColor = parentDeck?.borderColor || 'border-gray-300'
-              saveDeckChildren(
-                currentId,
-                currentDeckName,
-                result,
-                currentParentPath,
-                currentDepth,
-                gradient,
-                borderColor
-              )
-              children = result
-              // Update in-memory cache
-              setDynamicChildren(prev => ({
-                ...prev,
-                [currentId]: result.map(child => ({
-                  ...child,
-                  gradient,
-                  borderColor,
-                  level: currentDepth + 1,
-                }))
-              }))
-            }
-          }
-        }
-      } else {
-        // Level 3+: check cache or generate
-        const cachedChildren = getDeckChildren(currentId)
-        if (cachedChildren?.length > 0) {
-          children = cachedChildren
-        } else {
-          const result = await generateSubDecks(currentDeckName, currentParentPath, currentDepth, userArchetype)
-          if (result && result.length > 0) {
-            const parentDeck = getDeck(currentId) || getDynamicDeck(currentId)
-            const gradient = parentDeck?.gradient || 'from-gray-500 to-gray-700'
-            const borderColor = parentDeck?.borderColor || 'border-gray-300'
-            saveDeckChildren(
-              currentId,
-              currentDeckName,
-              result,
-              currentParentPath,
-              currentDepth,
-              gradient,
-              borderColor
-            )
-            children = result
-            setDynamicChildren(prev => ({
-              ...prev,
-              [currentId]: result.map(child => ({
-                ...child,
-                gradient,
-                borderColor,
-                level: currentDepth + 1,
-              }))
-            }))
-          }
-        }
-      }
-
-      // If no children, this is a leaf - stop here
-      if (children.length === 0) {
-        console.log(`[Wander] No children at depth ${currentDepth}, stopping at ${currentDeckName}`)
-        lastDeckWithCards = { id: currentId, path: [...currentPath], parentPath: currentParentPath }
-        break
-      }
-
-      // Pick a random child and continue
-      const randomChild = children[Math.floor(Math.random() * children.length)]
-      currentPath.push(randomChild.id)
-      currentParentPath = currentParentPath ? `${currentParentPath} > ${currentDeckName}` : currentDeckName
-      currentDeckName = randomChild.name
-      currentDepth++
-
-      // Update path steps for animation
-      setWanderPathSteps(prev => [...prev, { emoji: randomChild.emoji, name: randomChild.name, id: randomChild.id }])
-      lastDeckWithCards = { id: randomChild.id, path: [...currentPath], parentPath: currentParentPath }
-      console.log(`[Wander] Moved to ${randomChild.name} (${randomChild.id}), path:`, [...currentPath])
-
-      // Small delay for visual effect
-      await new Promise(resolve => setTimeout(resolve, 200))
+    // Get a random path from the tree (no AI calls needed!)
+    const treePath = getRandomTreePath(3, 5)
+    if (!treePath) {
+      console.log('[Wander] Could not generate tree path')
+      return null
     }
 
-    console.log('[Wander] Final destination:', lastDeckWithCards)
-    return lastDeckWithCards
+    console.log('[Wander] Generated tree path:', treePath.steps.map(s => s.name).join(' → '))
+
+    // Animate through the path steps
+    for (let i = 0; i < treePath.steps.length; i++) {
+      setWanderPathSteps(treePath.steps.slice(0, i + 1))
+      setWanderCurrentStep(i)
+      // Small delay for visual effect between each step
+      await new Promise(resolve => setTimeout(resolve, 300))
+    }
+
+    console.log('[Wander] Final destination:', treePath.destination.name)
+    return {
+      id: treePath.destination.id,
+      path: treePath.path,
+      parentPath: treePath.steps.slice(0, -1).map(s => s.name).join(' > ') || null
+    }
   }
 
   // Check if a deck is fully completed (all cards claimed)
@@ -1912,9 +1832,11 @@ export default function Canvas() {
       loadOrGenerateCardsForDeck(currentDeck, parentPath)
       loadOrGenerateChildDecks(currentDeck, parentPath)
 
-      // Load sections for Level 1 categories
+      // Load sections for Level 1 categories - BUT only if tree doesn't have children
+      // The vital articles tree replaces the Wikipedia sections system
       const deckLevel = currentDeck.level || getDeckLevel(currentDeck.id)
-      if (deckLevel === 1) {
+      const treeChildren = getTreeChildren(currentDeck.id)
+      if (deckLevel === 1 && (!treeChildren || treeChildren.length === 0)) {
         loadSectionsForCategory(currentDeck.id)
       }
     }
@@ -1928,33 +1850,37 @@ export default function Canvas() {
       }))
     : []
 
-  // Get child decks - from hardcoded data or dynamic generation
+  // Get child decks - from dynamicChildren (populated by loadOrGenerateChildDecks from tree)
   const getChildDecks = () => {
     if (!currentDeck) return []
 
-    const deckLevel = currentDeck.level || getDeckLevel(currentDeck.id)
-
-    // Level 1: Return flat list for compatibility (sections handled separately)
-    if (deckLevel === 1) {
-      const childIds = currentDeck.children || []
-      return childIds.map(id => getDeck(id)).filter(Boolean)
+    // dynamicChildren is populated from the vital articles tree by loadOrGenerateChildDecks
+    // This is our primary (and only) source for child decks now
+    const dynChildren = dynamicChildren[currentDeck.id]
+    if (dynChildren && dynChildren.length > 0) {
+      return dynChildren
     }
 
-    // Level 2+: Check for hardcoded children first (like 'ancient' has hardcoded egypt, rome, etc.)
-    const hardcodedDeck = SUBCATEGORIES[currentDeck.id]
-    if (hardcodedDeck?.children?.length > 0) {
-      return hardcodedDeck.children.map(id => getDeck(id)).filter(Boolean)
+    // If dynamicChildren is empty array, it means this is a leaf node
+    if (dynChildren !== undefined) {
+      return []
     }
 
-    // Use dynamically generated children
-    return dynamicChildren[currentDeck.id] || []
+    // dynamicChildren is undefined - still loading from tree
+    // Return empty array while loading (the UI will show a loading state)
+    return []
   }
 
-  // Get section data for current deck (only for Level 1)
+  // Get section data for current deck (only for Level 1, and only if tree doesn't have children)
   const getCurrentSections = () => {
     if (!currentDeck) return null
     const deckLevel = currentDeck.level || getDeckLevel(currentDeck.id)
     if (deckLevel !== 1) return null
+
+    // NEW: If tree has children, don't use sections (accordion UI)
+    const treeChildren = getTreeChildren(currentDeck.id)
+    if (treeChildren && treeChildren.length > 0) return null
+
     return sectionData[currentDeck.id] || null
   }
 

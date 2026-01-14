@@ -3,7 +3,310 @@
  * Structured for future cloud sync - all data in one clean object
  */
 
+import vitalArticlesTree from '../data/vitalArticlesTree.json'
+
 const STORAGE_KEY = 'learning_app_data'
+
+// ============================================================================
+// VITAL ARTICLES TREE NAVIGATION
+// ============================================================================
+
+// Build a flat index of all nodes for O(1) lookup instead of O(n) tree traversal
+const nodeIndex = new Map()
+
+function buildNodeIndex(node) {
+  nodeIndex.set(node.id, node)
+  if (node.children) {
+    for (const child of node.children) {
+      buildNodeIndex(child)
+    }
+  }
+}
+
+// Build index on module load
+buildNodeIndex(vitalArticlesTree)
+console.log(`[storage] Built node index with ${nodeIndex.size} entries`)
+
+/**
+ * Find a node in the vital articles tree by ID (O(1) lookup)
+ * @param {Object} _node - Unused, kept for API compatibility
+ * @param {string} targetId - The ID to find
+ * @returns {Object|null} The found node or null
+ */
+function findNodeById(_node, targetId) {
+  return nodeIndex.get(targetId) || null
+}
+
+/**
+ * Get children of a deck from the vital articles tree
+ * Skips implementation detail nodes (alphabetical splits)
+ * @param {string} deckId - The deck ID to get children for
+ * @returns {Array|null} Array of child objects, null if not found, empty if leaf
+ */
+export function getTreeChildren(deckId) {
+  const node = findNodeById(vitalArticlesTree, deckId)
+
+  if (!node) {
+    return null
+  }
+
+  if (!node.children || node.children.length === 0) {
+    return []
+  }
+
+  // Flatten out implementation details - show their children directly
+  const children = []
+  for (const child of node.children) {
+    if (child.isImplementationDetail && child.children) {
+      // Skip this level, add its children instead
+      children.push(...child.children)
+    } else {
+      children.push(child)
+    }
+  }
+
+  return children.map(child => ({
+    id: child.id,  // Use actual tree ID, NOT slugified
+    name: child.title,
+    title: child.title,
+    isLeaf: child.isLeaf || false,
+    wikiTitle: child.wikiTitle || null,
+    articleCount: child.articleCount || 0,
+    emoji: pickEmojiForTopic(child.title),
+  }))
+}
+
+/**
+ * Check if a deck exists in the vital articles tree
+ * @param {string} deckId - The deck ID to check
+ * @returns {boolean} True if deck exists in tree
+ */
+export function isTreeDeck(deckId) {
+  return findNodeById(vitalArticlesTree, deckId) !== null
+}
+
+// Category gradients for tree nodes (matches CATEGORIES in Canvas.jsx)
+const CATEGORY_STYLES = {
+  arts: { gradient: 'from-pink-500 to-rose-600', borderColor: 'border-pink-300' },
+  biology: { gradient: 'from-emerald-500 to-teal-600', borderColor: 'border-emerald-300' },
+  everyday: { gradient: 'from-orange-500 to-amber-600', borderColor: 'border-orange-300' },
+  geography: { gradient: 'from-cyan-500 to-blue-600', borderColor: 'border-cyan-300' },
+  history: { gradient: 'from-amber-600 to-yellow-700', borderColor: 'border-amber-300' },
+  mathematics: { gradient: 'from-violet-500 to-purple-600', borderColor: 'border-violet-300' },
+  people: { gradient: 'from-rose-500 to-pink-600', borderColor: 'border-rose-300' },
+  philosophy: { gradient: 'from-indigo-500 to-blue-600', borderColor: 'border-indigo-300' },
+  physics: { gradient: 'from-blue-500 to-indigo-600', borderColor: 'border-blue-300' },
+  society: { gradient: 'from-slate-500 to-gray-600', borderColor: 'border-slate-300' },
+  technology: { gradient: 'from-gray-600 to-slate-700', borderColor: 'border-gray-300' },
+}
+
+/**
+ * Get a node from the vital articles tree by ID
+ * @param {string} deckId - The deck ID to get
+ * @returns {Object|null} The node with deck-like properties, or null
+ */
+export function getTreeNode(deckId) {
+  const node = findNodeById(vitalArticlesTree, deckId)
+  if (!node) return null
+
+  // Extract category from ID (e.g., "people-people-a-c-writers" -> "people")
+  const categoryId = deckId.split('-')[0]
+  const categoryStyle = CATEGORY_STYLES[categoryId] || { gradient: 'from-gray-500 to-gray-700', borderColor: 'border-gray-300' }
+
+  // Compute level based on ID depth (rough estimate based on dashes)
+  // This is approximate - tree nodes don't have explicit depth
+  const dashCount = (deckId.match(/-/g) || []).length
+  const level = Math.min(dashCount + 1, 5) // Cap at level 5
+
+  return {
+    id: node.id,
+    name: node.title,
+    title: node.title,
+    emoji: pickEmojiForTopic(node.title),
+    isLeaf: node.isLeaf || false,
+    wikiTitle: node.wikiTitle || null,
+    articleCount: node.articleCount || 0,
+    source: 'vital-tree',
+    gradient: categoryStyle.gradient,
+    borderColor: categoryStyle.borderColor,
+    level: level,
+  }
+}
+
+/**
+ * Get all top-level categories from the vital articles tree
+ * @returns {Array} Array of category objects
+ */
+export function getTreeCategories() {
+  if (!vitalArticlesTree.children) return []
+
+  return vitalArticlesTree.children.map(cat => ({
+    id: cat.id,
+    name: cat.title,
+    title: cat.title,
+    articleCount: cat.articleCount || 0,
+    emoji: pickEmojiForTopic(cat.title),
+  }))
+}
+
+/**
+ * Generate a random path through the vital articles tree
+ * Descends randomly from root to either a leaf or target depth
+ * @param {number} minDepth - Minimum depth to reach before stopping (default 3)
+ * @param {number} maxDepth - Maximum depth to reach (default 5)
+ * @returns {Object} { path: [...ids], steps: [{id, name, emoji}...], destination: nodeInfo }
+ */
+export function getRandomTreePath(minDepth = 3, maxDepth = 5) {
+  const path = []
+  const steps = []
+
+  // Start from a random top-level category
+  const categories = vitalArticlesTree.children
+  if (!categories || categories.length === 0) return null
+
+  let currentNode = categories[Math.floor(Math.random() * categories.length)]
+  path.push(currentNode.id)
+  steps.push({
+    id: currentNode.id,
+    name: currentNode.title,
+    emoji: pickEmojiForTopic(currentNode.title),
+  })
+
+  // Descend randomly until we hit a leaf or reach target depth
+  const targetDepth = minDepth + Math.floor(Math.random() * (maxDepth - minDepth + 1))
+  let depth = 1
+
+  while (depth < targetDepth && currentNode.children && currentNode.children.length > 0) {
+    // Pick a random child (prefer non-leaf nodes if we haven't reached minDepth)
+    let candidates = currentNode.children
+
+    if (depth < minDepth) {
+      // Try to find non-leaf children to keep going deeper
+      const nonLeaves = candidates.filter(c => c.children && c.children.length > 0)
+      if (nonLeaves.length > 0) {
+        candidates = nonLeaves
+      }
+    }
+
+    // Pick random child from candidates
+    currentNode = candidates[Math.floor(Math.random() * candidates.length)]
+    path.push(currentNode.id)
+    steps.push({
+      id: currentNode.id,
+      name: currentNode.title,
+      emoji: pickEmojiForTopic(currentNode.title),
+    })
+    depth++
+
+    // If we hit a leaf, stop
+    if (currentNode.isLeaf) break
+  }
+
+  // Get destination info
+  const categoryId = path[0]
+  const categoryStyle = CATEGORY_STYLES[categoryId] || { gradient: 'from-gray-500 to-gray-700', borderColor: 'border-gray-300' }
+
+  return {
+    path,
+    steps,
+    destination: {
+      id: currentNode.id,
+      name: currentNode.title,
+      title: currentNode.title,
+      emoji: pickEmojiForTopic(currentNode.title),
+      isLeaf: currentNode.isLeaf || false,
+      wikiTitle: currentNode.wikiTitle || null,
+      articleCount: currentNode.articleCount || 0,
+      gradient: categoryStyle.gradient,
+      borderColor: categoryStyle.borderColor,
+    }
+  }
+}
+
+/**
+ * Pick an appropriate emoji for a topic
+ * @param {string} topic - The topic name
+ * @returns {string} An emoji
+ */
+function pickEmojiForTopic(topic) {
+  const lower = topic.toLowerCase()
+
+  // People categories
+  if (/scientist|inventor|physicist|chemist|biologist/.test(lower)) return '🔬'
+  if (/mathematician|math/.test(lower)) return '🔢'
+  if (/artist|painter|sculptor/.test(lower)) return '🎨'
+  if (/musician|composer|music/.test(lower)) return '🎵'
+  if (/writer|poet|author|novel/.test(lower)) return '✍️'
+  if (/philosopher|philosophy/.test(lower)) return '🤔'
+  if (/leader|president|king|queen|emperor|politician/.test(lower)) return '👑'
+  if (/explorer|adventurer/.test(lower)) return '🧭'
+  if (/athlete|sport/.test(lower)) return '🏆'
+  if (/actor|entertainer|film/.test(lower)) return '🎬'
+
+  // Science categories
+  if (/physics|quantum|relativity|mechanics/.test(lower)) return '⚛️'
+  if (/chemistry|chemical|element/.test(lower)) return '🧪'
+  if (/biology|life|organism|animal|plant/.test(lower)) return '🧬'
+  if (/astronomy|space|star|planet|galaxy/.test(lower)) return '🌌'
+  if (/earth|geology|climate|weather/.test(lower)) return '🌍'
+  if (/medicine|health|disease/.test(lower)) return '🏥'
+
+  // History categories
+  if (/ancient|classical|empire|civilization/.test(lower)) return '🏛️'
+  if (/medieval|middle age/.test(lower)) return '🏰'
+  if (/war|military|battle|conflict/.test(lower)) return '⚔️'
+  if (/revolution|political/.test(lower)) return '✊'
+  if (/modern|contemporary|20th|21st/.test(lower)) return '🕐'
+
+  // Geography categories
+  if (/country|nation/.test(lower)) return '🗺️'
+  if (/city|capital/.test(lower)) return '🏙️'
+  if (/mountain|volcano/.test(lower)) return '🏔️'
+  if (/river|lake|water/.test(lower)) return '💧'
+  if (/ocean|sea|marine/.test(lower)) return '🌊'
+  if (/island|archipelago/.test(lower)) return '🏝️'
+
+  // Arts categories
+  if (/architecture|building|monument/.test(lower)) return '🏗️'
+  if (/literature|book|written/.test(lower)) return '📚'
+  if (/visual|painting|art/.test(lower)) return '🖼️'
+  if (/dance|ballet|performance/.test(lower)) return '💃'
+  if (/theater|drama|play/.test(lower)) return '🎭'
+
+  // Technology categories
+  if (/computer|software|internet/.test(lower)) return '💻'
+  if (/engineering|machine/.test(lower)) return '⚙️'
+  if (/transport|vehicle|aircraft/.test(lower)) return '🚀'
+  if (/communication|media/.test(lower)) return '📡'
+
+  // Society categories
+  if (/economic|money|business/.test(lower)) return '💰'
+  if (/law|legal|justice/.test(lower)) return '⚖️'
+  if (/language|linguistic/.test(lower)) return '🗣️'
+  if (/education|university/.test(lower)) return '🎓'
+  if (/religion|spiritual|faith/.test(lower)) return '🙏'
+
+  // Everyday categories
+  if (/food|cuisine|cooking/.test(lower)) return '🍽️'
+  if (/game|play|recreation/.test(lower)) return '🎮'
+  if (/holiday|festival|celebration/.test(lower)) return '🎉'
+
+  // Top-level fallbacks
+  if (lower === 'people') return '👥'
+  if (lower === 'biology') return '🧬'
+  if (lower === 'geography') return '🌍'
+  if (lower === 'physics') return '⚛️'
+  if (lower === 'society') return '🏛️'
+  if (lower === 'technology') return '💻'
+  if (lower === 'arts') return '🎨'
+  if (lower === 'history') return '📜'
+  if (lower === 'everyday') return '🏠'
+  if (lower === 'philosophy') return '🤔'
+  if (lower === 'mathematics') return '🔢'
+
+  // Default
+  return '📖'
+}
 
 // Default data structure
 const DEFAULT_DATA = {
