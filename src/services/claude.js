@@ -1196,25 +1196,32 @@ export async function generateDeckCards(deckName, parentContext = null, cardCoun
     // Build example output based on card count
     const exampleTitles = Array.from({ length: cardCount }, (_, i) => `"Title ${i + 1}"`).join(', ');
 
-    // Tier-specific instructions
+    // Tier-specific instructions - topic-aware, not template-based
     const tierInstructions = {
-      core: `TIER: CORE ESSENTIALS (5 cards)
-Goal: Reader should feel "I understand what ${deckName} is now"
-- Big picture, "aha!" moments, why it's interesting
-- Make them curious to learn more
-- NO jargon unless explained`,
+      core: `TIER: CORE (5 cards)
+These cards answer the OBVIOUS questions anyone would ask about "${deckName}".
+After reading these 5 cards, the reader should think: "OK, I get what ${deckName} is."
+
+Think: What would someone who knows NOTHING about this want to know first?
+- What is it? Why does it matter? What's the basic story?
+- Include at least one "wait, really?!" surprising fact to hook them`,
 
       deep_dive_1: `TIER: DEEP DIVE 1 (5 cards)
-Goal: Reader should feel "Now I understand HOW it works"
-- Mechanisms, processes, deeper connections
-- More detailed but still conversational
-- Some technical terms OK (with context)`,
+These cards answer the "okay, but HOW/WHY?" follow-up questions.
+The reader already knows the basics from Core cards.
+
+Think: What would a curious person ask next?
+- How does it actually work? What are the key parts/people/events?
+- What's the cause and effect? What are the types/variations?`,
 
       deep_dive_2: `TIER: DEEP DIVE 2 (5 cards)
-Goal: Reader should feel "Wow, that's fascinating"
-- Nerdy, detailed, assumes engaged reader
-- Edge cases, history, research, mind-blowing details
-- Technical depth encouraged`
+These cards answer questions only a REALLY curious person would think to ask.
+The reader is now engaged and wants the deep stuff.
+
+Think: What would impress someone who already knows this topic?
+- The controversies, debates, edge cases
+- Recent discoveries, surprising connections, obscure details
+- The "I had no idea!" facts that even enthusiasts might not know`
     };
 
     const prompt = `Generate exactly ${cardCount} card titles for "${deckName}".
@@ -1223,27 +1230,31 @@ ${contextHint}
 
 ${tierInstructions[tier] || tierInstructions.core}
 
-CARD TITLES MUST BE HOOKS - specific, surprising facts that make people tap.
+IMPORTANT: Don't follow a rigid template. Figure out what THIS specific topic needs.
+- "${deckName}" might be a person, place, event, concept, or thing
+- The questions that need answering are DIFFERENT for each type
+- By the end of all 15 cards, the reader should understand "${deckName}" like they read a good Wikipedia article (but more fun)
 
-❌ BANNED - Essay prompts / abstract questions:
-- "Who Counts as a Mathematician?"
-- "The Global Impact of Mathematical Thinking"
-- "What Makes Someone a Great Mathematician?"
-- "Understanding the Nature of..."
-- "How Do X Work?"
+CARD TITLES MUST BE HOOKS - specific, surprising angles that make people tap.
 
-✅ GOOD - Specific hooks with a surprising angle:
+❌ BANNED - Generic/abstract titles:
+- "Understanding ${deckName}"
+- "The History of ${deckName}"
+- "Why ${deckName} Matters"
+- "How ${deckName} Works"
+- Any title that could apply to 100 different topics
+
+✅ GOOD - Specific hooks unique to THIS topic:
 - "The Blind Mathematician Who Outworked Everyone"
 - "Why There's No Nobel Prize for Math"
-- "The Woman Banned from Universities"
 - "Solved in 358 Years"
-- "The Proof That Fills 10,000 Pages"
+- "6 Million Bones Break Every Year"
 
 Each title should:
-1. Hint at a SPECIFIC person, event, or fact (not abstract concepts)
+1. Hint at a SPECIFIC fact, person, number, or event
 2. Create curiosity - "wait, what?!"
-3. Be something someone would screenshot and share
-4. Be 4-10 words
+3. Be 4-10 words
+4. Only make sense for "${deckName}" (not generic)
 
 Return ONLY a JSON array with exactly ${cardCount} titles, no explanation:
 [${exampleTitles}]`;
@@ -1481,25 +1492,19 @@ export async function generateCardContent(deckName, cardTitle, parentContext = n
       ? `This card is in the "${deckName}" deck, which is inside "${parentContext}".`
       : `This card is in the "${deckName}" deck.`;
 
-    // Tier-specific content guidelines
+    // Tier-specific content guidelines - depth comes from WHAT you cover, not length
     const tierGuidelines = {
       core: {
-        wordRange: '40-80 words',
-        tone: 'Engaging, surprising, makes them curious',
-        goal: 'Reader should feel "I understand what this is now"',
-        focus: 'Big picture, "aha!" moments, why it\'s interesting. NO jargon unless explained.'
+        focus: 'Answer the obvious questions. Big picture, basic facts, why it matters.',
+        depth: 'Assume reader knows NOTHING. Explain any jargon.'
       },
       deep_dive_1: {
-        wordRange: '60-100 words',
-        tone: 'More detailed but still conversational',
-        goal: 'Reader should feel "Now I understand HOW it works"',
-        focus: 'Mechanisms, processes, deeper connections. Some technical terms OK (with context).'
+        focus: 'Answer the "how/why" follow-ups. Mechanisms, causes, key details.',
+        depth: 'Reader knows basics. Can use some technical terms with brief context.'
       },
       deep_dive_2: {
-        wordRange: '80-120 words',
-        tone: 'Nerdy, detailed, assumes engaged reader',
-        goal: 'Reader should feel "Wow, that\'s fascinating"',
-        focus: 'Edge cases, history, research, mind-blowing details. Technical depth encouraged.'
+        focus: 'The fascinating stuff only curious people ask about. Edge cases, debates, surprises.',
+        depth: 'Reader is engaged. Technical depth OK. Impress them.'
       }
     };
 
@@ -1511,30 +1516,30 @@ ${contextHint}
 
 Card title: "${cardTitle}"
 
+LENGTH: 60-80 words MAXIMUM. Must fit on phone screen without scrolling.
+
 TIER: ${tier.toUpperCase().replace('_', ' ')}
-- Length: ${guidelines.wordRange}
-- Tone: ${guidelines.tone}
-- Goal: ${guidelines.goal}
 - Focus: ${guidelines.focus}
+- Depth: ${guidelines.depth}
 
 CRITICAL RULES:
-- EVERY card MUST include 2-3 CONCRETE, SPECIFIC, VERIFIABLE facts
-- NO purely conceptual or abstract cards allowed
-- Write like you're telling a friend something cool you learned
+- 60-80 words MAX. No exceptions. Count them.
+- Include 2-3 CONCRETE, SPECIFIC facts (numbers, names, dates)
+- Write like you're telling a friend something cool
+- NO filler, NO throat-clearing, NO "interestingly..." openers
 
-CONCRETE FACTS = things you can look up and verify:
-✅ Numbers/dates: "2 million died", "built in 1917", "cost $15M"
-✅ Specific people: "Tsar Nicholas II", "architect Pheidias"
-✅ Named events/places: "Battle of Hucisko", "the Parthenon"
-✅ Surprising comparisons: "Neanderthals made art before they had language"
+CONCRETE FACTS = things you can verify:
+✅ "6 million fractures happen in the US each year"
+✅ "Cleopatra lived closer to the Moon landing than to the pyramids"
+✅ "The bone heals in 6-8 weeks through a process called callus formation"
 
-❌ BANNED - vague/abstract language:
-- "humanity's universal language" → Say "a urinal became art when Duchamp put it in a museum in 1917"
-- "changed the world forever" → Say HOW with specific examples
-- "one of the most important" → Give the actual numbers or names
-- "throughout history" → Name the specific era or date
+❌ BANNED:
+- "throughout history" → Name the specific era
+- "changed everything" → Say HOW specifically
+- "one of the most important" → Give actual ranking/numbers
+- Any sentence that could apply to 100 different topics
 
-EXAMPLES OF GOOD CARD CONTENT:
+EXAMPLES OF GOOD CARD CONTENT (notice: ~70 words each):
 
 "The Nile flooded every July like clockwork - you could set your calendar by it. Ancient Egyptians called this season 'Akhet' and built 365-day calendars around it. When the floods weakened around 2200 BCE, the Old Kingdom collapsed within decades."
 
@@ -1542,12 +1547,9 @@ EXAMPLES OF GOOD CARD CONTENT:
 
 Write the content for "${cardTitle}" - just the content, no title or labels:`;
 
-    // Adjust max_tokens based on tier (longer content for deeper tiers)
-    const maxTokens = tier === 'deep_dive_2' ? 300 : tier === 'deep_dive_1' ? 250 : 200;
-
     const message = await anthropic.messages.create({
       model: 'claude-3-5-haiku-20241022',
-      max_tokens: maxTokens,
+      max_tokens: 150, // 60-80 words = ~100-120 tokens, 150 gives buffer
       messages: [{ role: 'user', content: prompt }]
     });
 
