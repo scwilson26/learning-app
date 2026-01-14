@@ -673,6 +673,13 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
     }
   }, [card.content])
 
+  // Helper to determine tier from card ID
+  const getTierFromCardId = (cardId) => {
+    if (cardId.includes('-deepdive2-')) return 'deep_dive_2'
+    if (cardId.includes('-deepdive1-')) return 'deep_dive_1'
+    return 'core'
+  }
+
   const handleFlip = async (e) => {
     e.stopPropagation()
 
@@ -681,7 +688,8 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
       setIsLoading(true)
       setError(null)
       try {
-        const generatedContent = await generateCardContent(deckName, card.title)
+        const tier = getTierFromCardId(card.id)
+        const generatedContent = await generateCardContent(deckName, card.title, null, tier)
         setContent(generatedContent)
         // Notify parent to save the content
         if (onContentGenerated) {
@@ -706,6 +714,14 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
       exit={{ opacity: 0 }}
       onClick={onClose}
     >
+      {/* X close button - top right */}
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 w-11 h-11 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 active:bg-white/40 transition-colors"
+        aria-label="Close"
+      >
+        <span className="text-white text-2xl font-light">×</span>
+      </button>
       {/* Card container with perspective for 3D flip - optimized for mobile */}
       <motion.div
         className="relative w-[90vw] max-w-md h-[80vh] max-h-[600px] cursor-pointer"
@@ -783,15 +799,12 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
                   ✓ Card Claimed!
                 </div>
               )}
+              {/* Hint text - below button where users are looking */}
+              <p className="text-center text-gray-400 text-sm mt-3">Tap card to flip</p>
             </div>
           </div>
         </motion.div>
       </motion.div>
-
-      {/* Hint text - subtle at bottom */}
-      <div className="absolute bottom-4 sm:bottom-6 text-white/60 text-sm">
-        Tap to flip · Tap outside to close
-      </div>
     </motion.div>
   )
 }
@@ -1252,10 +1265,18 @@ export default function Canvas() {
 
     if (cardsNeedingContent.length === 0) return
 
+    // Helper to determine tier from card ID
+    const getTierFromCardId = (cardId) => {
+      if (cardId.includes('-deepdive2-')) return 'deep_dive_2'
+      if (cardId.includes('-deepdive1-')) return 'deep_dive_1'
+      return 'core'
+    }
+
     // Generate all content in parallel
     const contentPromises = cardsNeedingContent.map(async (card) => {
       try {
-        const content = await generateCardContent(deckName, card.title)
+        const tier = getTierFromCardId(card.id)
+        const content = await generateCardContent(deckName, card.title, null, tier)
         // Save to localStorage
         saveCardContent(card.id, content)
         // Update in-memory state

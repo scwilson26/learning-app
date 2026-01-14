@@ -1198,17 +1198,23 @@ export async function generateDeckCards(deckName, parentContext = null, cardCoun
 
     // Tier-specific instructions
     const tierInstructions = {
-      core: `TIER: CORE ESSENTIALS
-These 5 cards are fun, shareable facts about "${deckName}" as a category.
-Someone should be able to screenshot any card and share it like "check out this wild fact!"`,
+      core: `TIER: CORE ESSENTIALS (5 cards)
+Goal: Reader should feel "I understand what ${deckName} is now"
+- Big picture, "aha!" moments, why it's interesting
+- Make them curious to learn more
+- NO jargon unless explained`,
 
-      deep_dive_1: `TIER: DEEP DIVE 1 (Bonus Content)
-These are the "behind the scenes" facts - still fun and shareable, but more niche.
-The user already knows the basics - give them the surprising deeper stuff.`,
+      deep_dive_1: `TIER: DEEP DIVE 1 (5 cards)
+Goal: Reader should feel "Now I understand HOW it works"
+- Mechanisms, processes, deeper connections
+- More detailed but still conversational
+- Some technical terms OK (with context)`,
 
-      deep_dive_2: `TIER: DEEP DIVE 2 (Expert/Niche)
-These are expert-level "I bet you didn't know..." facts.
-Obscure, fascinating, the kind of thing that impresses people who already know the topic.`
+      deep_dive_2: `TIER: DEEP DIVE 2 (5 cards)
+Goal: Reader should feel "Wow, that's fascinating"
+- Nerdy, detailed, assumes engaged reader
+- Edge cases, history, research, mind-blowing details
+- Technical depth encouraged`
     };
 
     const prompt = `Generate exactly ${cardCount} card titles for "${deckName}".
@@ -1466,13 +1472,38 @@ If this is a leaf topic:
  * @param {string} deckName - The name of the deck (e.g., "History", "Ancient Egypt")
  * @param {string} cardTitle - The title of the card (e.g., "What is History?")
  * @param {string} parentContext - Optional parent deck name for context
- * @returns {Promise<string>} The card content (2-4 sentences)
+ * @param {string} tier - Card tier: 'core' | 'deep_dive_1' | 'deep_dive_2'
+ * @returns {Promise<string>} The card content
  */
-export async function generateCardContent(deckName, cardTitle, parentContext = null) {
+export async function generateCardContent(deckName, cardTitle, parentContext = null, tier = 'core') {
   try {
     const contextHint = parentContext
       ? `This card is in the "${deckName}" deck, which is inside "${parentContext}".`
       : `This card is in the "${deckName}" deck.`;
+
+    // Tier-specific content guidelines
+    const tierGuidelines = {
+      core: {
+        wordRange: '40-80 words',
+        tone: 'Engaging, surprising, makes them curious',
+        goal: 'Reader should feel "I understand what this is now"',
+        focus: 'Big picture, "aha!" moments, why it\'s interesting. NO jargon unless explained.'
+      },
+      deep_dive_1: {
+        wordRange: '60-100 words',
+        tone: 'More detailed but still conversational',
+        goal: 'Reader should feel "Now I understand HOW it works"',
+        focus: 'Mechanisms, processes, deeper connections. Some technical terms OK (with context).'
+      },
+      deep_dive_2: {
+        wordRange: '80-120 words',
+        tone: 'Nerdy, detailed, assumes engaged reader',
+        goal: 'Reader should feel "Wow, that\'s fascinating"',
+        focus: 'Edge cases, history, research, mind-blowing details. Technical depth encouraged.'
+      }
+    };
+
+    const guidelines = tierGuidelines[tier] || tierGuidelines.core;
 
     const prompt = `Write content for a learning card.
 
@@ -1480,8 +1511,13 @@ ${contextHint}
 
 Card title: "${cardTitle}"
 
+TIER: ${tier.toUpperCase().replace('_', ' ')}
+- Length: ${guidelines.wordRange}
+- Tone: ${guidelines.tone}
+- Goal: ${guidelines.goal}
+- Focus: ${guidelines.focus}
+
 CRITICAL RULES:
-- Write 2-4 sentences (50-100 words)
 - EVERY card MUST include 2-3 CONCRETE, SPECIFIC, VERIFIABLE facts
 - NO purely conceptual or abstract cards allowed
 - Write like you're telling a friend something cool you learned
@@ -1504,13 +1540,14 @@ EXAMPLES OF GOOD CARD CONTENT:
 
 "Cleopatra lived closer in time to the Moon landing than to the building of the Great Pyramid. She ruled Egypt in 51 BCE - the pyramids were already 2,500 years old. She was the last pharaoh before Rome absorbed Egypt in 30 BCE."
 
-"Pharaohs weren't just kings - Egyptians believed the pharaoh was literally the god Horus in human form. Ramses II had 100+ children and ruled for 66 years. When he died at age 90, he had outlived most of his heirs."
-
 Write the content for "${cardTitle}" - just the content, no title or labels:`;
+
+    // Adjust max_tokens based on tier (longer content for deeper tiers)
+    const maxTokens = tier === 'deep_dive_2' ? 300 : tier === 'deep_dive_1' ? 250 : 200;
 
     const message = await anthropic.messages.create({
       model: 'claude-3-5-haiku-20241022',
-      max_tokens: 200,
+      max_tokens: maxTokens,
       messages: [{ role: 'user', content: prompt }]
     });
 
