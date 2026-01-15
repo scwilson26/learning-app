@@ -1258,26 +1258,30 @@ IMPORTANT: Don't follow a rigid template. Figure out what THIS specific topic ne
 - The questions that need answering are DIFFERENT for each type
 - By the end of all 15 cards, the reader should understand "${deckName}" like they read a good Wikipedia article (but more fun)
 
-CARD TITLES MUST BE HOOKS - specific, surprising angles that make people tap.
+TITLE FORMULA: [Specific Topic Element] + [Hook/Tension]
+Every title must hint at something SPECIFIC you'll learn.
 
-❌ BANNED - Generic/abstract titles:
+❌ BANNED - Generic/vague titles:
 - "Understanding ${deckName}"
 - "The History of ${deckName}"
 - "Why ${deckName} Matters"
 - "How ${deckName} Works"
+- "The Basics of..."
 - Any title that could apply to 100 different topics
 
-✅ GOOD - Specific hooks unique to THIS topic:
+✅ GREAT TITLES (notice: specific + intriguing):
 - "The Blind Mathematician Who Outworked Everyone"
 - "Why There's No Nobel Prize for Math"
 - "Solved in 358 Years"
-- "6 Million Bones Break Every Year"
+- "The 6-Second Rule That Saved Apollo 11"
+- "When Salt Was Worth More Than Gold"
 
-Each title should:
-1. Hint at a SPECIFIC fact, person, number, or event
-2. Create curiosity - "wait, what?!"
+Each title MUST:
+1. Include a SPECIFIC element (number, name, date, place, object)
+2. Create tension or curiosity - "wait, what?!"
 3. Be 4-10 words
 4. Only make sense for "${deckName}" (not generic)
+5. Promise a story or revelation, not a lecture
 
 Return ONLY a JSON array with exactly ${cardCount} titles, no explanation:
 [${exampleTitles}]`;
@@ -1920,21 +1924,36 @@ export async function generateCardTitles(deckName, parentPath = null) {
 
   const prompt = `Generate 15 card titles for: "${deckName}"
 ${parentContext}
-TITLE RULES:
-- MAX 8 words per title
-- Clear and specific (not vague hooks)
-- Each title = different aspect
+TITLE FORMULA: [Specific Element] + [Hook/Tension]
+Every title must hint at something SPECIFIC you'll learn.
 
-Good: "The Seven Fine Arts", "Renaissance Origins", "Art vs Craft Debate"
-Bad: "The Amazing Story Behind...", "What You Need to Know About..."
+TITLE RULES:
+- 4-10 words per title
+- Include a SPECIFIC element (number, name, date, place, object)
+- Create curiosity - "wait, what?!"
+- Promise a story or revelation, not a lecture
+
+✅ GREAT TITLES:
+- "The Blind Mathematician Who Outworked Everyone"
+- "Why There's No Nobel Prize for Math"
+- "The 6-Second Rule That Saved Apollo 11"
+- "When Salt Was Worth More Than Gold"
+
+❌ BANNED (generic/textbook):
+- "Definition and Core Components"
+- "Understanding [Topic]"
+- "The History of [Topic]"
+- "Why [Topic] Matters"
+- "How [Topic] Works"
+- Any title starting with "The Basics of..."
 
 STRUCTURE:
-Cards 1-5: Core Essentials (what is it, key facts)
-Cards 6-10: Deep Dive 1 (how it works, processes)
-Cards 11-15: Deep Dive 2 (history, edge cases, lesser-known)
+Cards 1-5: CORE - Answer obvious questions. Card 1 should ground the reader on "what is this?"
+Cards 6-10: DEEP DIVE 1 - The "how/why" follow-ups, mechanisms, connections
+Cards 11-15: DEEP DIVE 2 - Obscure facts, debates, expert-level surprises
 
 Return ONLY JSON:
-{"cards":[{"number":1,"title":"Short Title"},{"number":2,"title":"Another Title"}]}`;
+{"cards":[{"number":1,"title":"Short Hooky Title"},{"number":2,"title":"Another Intriguing Title"}]}`;
 
 
   try {
@@ -1985,14 +2004,14 @@ Return ONLY JSON:
 export async function generateSingleCardContent(deckName, cardNumber, cardTitle, allTitles, onStreamUpdate = null) {
   console.log(`[CONTENT] ${onStreamUpdate ? 'Streaming' : 'Generating'} for card ${cardNumber}: ${cardTitle}`);
 
-  // Determine tier context
+  // Determine tier context with tone guidance
   let tierContext = '';
   if (cardNumber <= 5) {
-    tierContext = 'Core Essentials - Big picture overview. Tone: Engaging and accessible.';
+    tierContext = 'CORE ESSENTIALS - Clear + engaging. Prioritize understanding. Reader knows NOTHING.';
   } else if (cardNumber <= 10) {
-    tierContext = 'Deep Dive 1 - How it works. Tone: More detailed but conversational.';
+    tierContext = 'DEEP DIVE 1 - Surprising + connective. The "aha" moments. Reader knows basics.';
   } else {
-    tierContext = 'Deep Dive 2 - Fascinating details. Tone: Nerdy and mind-blowing.';
+    tierContext = 'DEEP DIVE 2 - Obscure + expert. Flex-worthy trivia. Impress them.';
   }
 
   // Include other titles to avoid repetition
@@ -2001,7 +2020,7 @@ export async function generateSingleCardContent(deckName, cardNumber, cardTitle,
     .map(t => `Card ${t.number}: ${t.title}`)
     .join('\n');
 
-  const prompt = `Generate content for this learning card:
+  const prompt = `Write content for this learning card:
 
 Topic: "${deckName}"
 Card ${cardNumber}: "${cardTitle}"
@@ -2011,13 +2030,26 @@ Tier: ${tierContext}
 OTHER CARDS (DO NOT REPEAT):
 ${otherTitles}
 
-REQUIREMENTS:
-1. Write EXACTLY 40-60 words (STRICT LIMIT)
-2. DO NOT cover topics from other card titles
-3. Include 1-2 specific facts, numbers, or names
-4. Make it engaging and memorable
-5. Self-contained (readable alone)
-6. Conversational tone
+⚠️ LENGTH: 50-70 words STRICTLY. Count them.
+
+STRUCTURE (all within 50-70 words):
+1. HOOK (first sentence): Grab attention with a surprising fact or question
+2. CONTEXT: Brief background
+3. MECHANISM/DETAIL: The meat of the card
+4. LANDING: End with the surprising implication
+
+WRITING RULES:
+- Use SPECIFIC numbers, names, dates (not "many" or "often")
+- Write conversationally - like telling a friend something cool
+- Start sentences with action words, not "The" or "It"
+- Each card = ONE nugget of wisdom, not a summary
+
+❌ BANNED:
+- "Interestingly..." / "It's worth noting..."
+- "A [topic] is..." definitions
+- "throughout history" → Name the specific era
+- "changed everything" → Say HOW specifically
+- Academic throat-clearing of any kind
 
 Return ONLY the content text (no title, no JSON, just the paragraph):`;
 
@@ -2110,18 +2142,21 @@ export async function generateCardContent(deckName, cardTitle, parentContext = n
     // Check if this is the grounding card (Card 1 where title starts with deck name)
     const isGroundingCard = cardTitle.toLowerCase().trim().startsWith(deckName.toLowerCase().trim());
 
-    // Tier-specific content guidelines - depth comes from WHAT you cover, not length
+    // Tier-specific content guidelines - tone varies by tier
     const tierGuidelines = {
       core: {
+        tone: 'Clear + engaging. Prioritize understanding.',
         focus: 'Answer the obvious questions. Big picture, basic facts, why it matters.',
         depth: 'Assume reader knows NOTHING. Explain any jargon.'
       },
       deep_dive_1: {
-        focus: 'Answer the "how/why" follow-ups. Mechanisms, causes, key details.',
+        tone: 'Surprising + connective. The "aha" moments.',
+        focus: 'Answer the "how/why" follow-ups. Mechanisms, causes, connections.',
         depth: 'Reader knows basics. Can use some technical terms with brief context.'
       },
       deep_dive_2: {
-        focus: 'The fascinating stuff only curious people ask about. Edge cases, debates, surprises.',
+        tone: 'Obscure + expert. The flex-worthy trivia.',
+        focus: 'The stuff only a REALLY curious person would ask about. Debates, edge cases, surprises.',
         depth: 'Reader is engaged. Technical depth OK. Impress them.'
       }
     };
@@ -2131,17 +2166,17 @@ export async function generateCardContent(deckName, cardTitle, parentContext = n
     // Special instructions for the grounding card
     const groundingCardInstructions = isGroundingCard ? `
 🚨 THIS IS THE GROUNDING CARD - the reader's FIRST encounter with "${deckName}".
-Your job: Orient them AND hook them in the same breath.
+Orient them AND hook them in 40-60 words total.
 
 Structure:
-1. What is it? (1 sentence - clear definition)
-2. Why should they care? (1-2 sentences - the hook, the "wait really?!")
+1. What is it? (1 punchy sentence)
+2. Why should they care? (1-2 sentences with a specific hook)
 
-Example for "Legendary Creatures":
-"Every culture invented monsters. Dragons in China, Griffins in Persia, Wendigos in North America. These weren't just bedtime stories - they explained floods, disappearances, and why you shouldn't go into the forest alone."
+Example for "Legendary Creatures" (52 words):
+"Every culture invented monsters - dragons in China, griffins in Persia, wendigos among the Algonquin. These weren't bedtime stories. They explained real fears: floods, disappearances, the sounds in the forest at night. Some creatures appear in cultures that never contacted each other."
 
-Example for "Solidarity":
-"In 1980, Polish shipyard workers did the impossible - they challenged Soviet communism and won. Their union grew to 10 million members in weeks, proving that collective action could topple empires."
+Example for "Solidarity" (48 words):
+"In 1980, Polish shipyard workers did the impossible. They challenged Soviet communism and won. Their union grew to 10 million members in two weeks - a quarter of Poland's workforce. Within a decade, the Soviet bloc collapsed."
 
 ` : '';
 
@@ -2151,34 +2186,37 @@ ${contextHint}
 
 Card title: "${cardTitle}"
 ${groundingCardInstructions}
-LENGTH: 60-80 words MAXIMUM. Must fit on phone screen without scrolling.
+⚠️ LENGTH: 50-70 words STRICTLY. Count them. This is non-negotiable.
 
 TIER: ${tier.toUpperCase().replace('_', ' ')}
+- Tone: ${guidelines.tone}
 - Focus: ${guidelines.focus}
 - Depth: ${guidelines.depth}
 
-CRITICAL RULES:
-- 60-80 words MAX. No exceptions. Count them.
-- Include 2-3 CONCRETE, SPECIFIC facts (numbers, names, dates)
-- Write like you're telling a friend something cool
-- NO filler, NO throat-clearing, NO "interestingly..." openers
+STRUCTURE (all within 40-60 words):
+1. HOOK (first sentence): Grab attention with a surprising fact or question
+2. CONTEXT: Brief background that sets up the payoff
+3. MECHANISM/DETAIL: The "how" or "what" - the meat of the card
+4. LANDING: End with the surprising implication or "so what"
 
-CONCRETE FACTS = things you can verify:
-✅ "6 million fractures happen in the US each year"
-✅ "Cleopatra lived closer to the Moon landing than to the pyramids"
-✅ "The bone heals in 6-8 weeks through a process called callus formation"
+WRITING RULES:
+- Use SPECIFIC numbers, names, dates (not "many" or "often")
+- Write conversationally - like telling a friend something cool
+- Start sentences with action words, not "The" or "It"
+- Each card = ONE nugget of wisdom, not a summary
 
-❌ BANNED:
+❌ BANNED PHRASES:
+- "Interestingly..." / "It's worth noting..."
 - "throughout history" → Name the specific era
 - "changed everything" → Say HOW specifically
-- "one of the most important" → Give actual ranking/numbers
-- Any sentence that could apply to 100 different topics
+- "one of the most important" → Give actual numbers
+- Any academic throat-clearing
 
-EXAMPLES OF GOOD CARD CONTENT (notice: ~70 words each):
+✅ GOOD EXAMPLES (notice: ~50 words, punchy, specific):
 
-"The Nile flooded every July like clockwork - you could set your calendar by it. Ancient Egyptians called this season 'Akhet' and built 365-day calendars around it. When the floods weakened around 2200 BCE, the Old Kingdom collapsed within decades."
+"Roman concrete outlasted modern concrete by 2,000 years. The secret? Volcanic ash mixed with seawater created a chemical reaction that actually strengthened over time. When waves hit Roman harbors, the structures got stronger. Modern engineers are now reverse-engineering the recipe."
 
-"Cleopatra lived closer in time to the Moon landing than to the building of the Great Pyramid. She ruled Egypt in 51 BCE - the pyramids were already 2,500 years old. She was the last pharaoh before Rome absorbed Egypt in 30 BCE."
+"Honey never spoils. Archaeologists found 3,000-year-old honey in Egyptian tombs - still edible. The combination of low moisture, high acidity, and natural hydrogen peroxide creates an environment where bacteria simply can't survive."
 
 Write the content for "${cardTitle}" - just the content, no title or labels:`;
 
