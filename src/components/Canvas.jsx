@@ -23,7 +23,8 @@ import {
   getTreeNode,
   getRandomTreePath,
   searchTopics,
-  getSearchableTopicCount
+  getSearchableTopicCount,
+  clearAllData
 } from '../services/storage'
 
 // Configuration - card counts can be adjusted here or per-deck
@@ -1574,6 +1575,25 @@ export default function Canvas() {
   const [sectionData, setSectionData] = useState({}) // categoryId -> { sections: [...] }
   const [loadingSections, setLoadingSections] = useState(null) // categoryId currently loading sections
 
+  // Reset confirmation
+  const [showResetConfirm, setShowResetConfirm] = useState(false)
+
+  // Handle full reset
+  const handleReset = () => {
+    clearAllData()
+    // Reset all in-memory state
+    setClaimedCards(new Set())
+    setStack([])
+    setExpandedCard(null)
+    setGeneratedContent({})
+    setGeneratedCards({})
+    setDynamicChildren({})
+    setTierCards({})
+    setLastCompletedTier({})
+    setSectionData({})
+    setShowResetConfirm(false)
+  }
+
   // Claim a card and persist to localStorage
   const handleClaim = (cardId) => {
     claimCard(cardId)  // Persist to localStorage
@@ -2747,6 +2767,52 @@ export default function Canvas() {
             currentStep={wanderCurrentStep}
             isComplete={wanderComplete}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Reset button - bottom left */}
+      <button
+        onClick={() => setShowResetConfirm(true)}
+        className="fixed bottom-4 left-4 text-sm text-gray-400 hover:text-gray-600 transition-colors"
+      >
+        Reset
+      </button>
+
+      {/* Reset confirmation dialog */}
+      <AnimatePresence>
+        {showResetConfirm && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowResetConfirm(false)}
+          >
+            <motion.div
+              className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 className="text-xl font-bold text-gray-800 mb-2">Reset Progress?</h3>
+              <p className="text-gray-600 mb-6">This will clear all your claimed cards and progress. This cannot be undone.</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowResetConfirm(false)}
+                  className="flex-1 py-3 rounded-xl font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleReset}
+                  className="flex-1 py-3 rounded-xl font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors"
+                >
+                  Reset
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
