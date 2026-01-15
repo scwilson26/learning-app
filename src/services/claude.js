@@ -1525,6 +1525,575 @@ If this is a leaf topic:
 }
 
 /**
+ * Generate a narrative outline for all 15 cards in a deck
+ * This ensures no repetition by planning all cards together upfront
+ * @param {string} deckName - The name of the deck
+ * @param {boolean} hasChildren - Whether this deck has subtopics
+ * @param {string[]} childrenNames - Names of child topics (if any)
+ * @param {string} parentPath - Optional parent context path (e.g., "Technology > Manufacturing & Industrial Technology")
+ * @returns {Promise<Object>} The outline with narrative_arc and cards array
+ */
+export async function generateNarrativeOutline(deckName, hasChildren = false, childrenNames = [], parentPath = null) {
+  console.log(`[OUTLINE] Generating narrative outline for: ${deckName}${parentPath ? ` (within ${parentPath})` : ''}`);
+
+  const childrenContext = hasChildren && childrenNames.length > 0
+    ? `
+IMPORTANT: This topic has subtopics (${childrenNames.join(', ')}).
+- Don't deep-dive into subtopics - they have their own cards
+- Focus on the overview and connecting ideas
+- Each card should illuminate a different angle of "${deckName}" itself
+`
+    : `
+This is a leaf topic - cover it comprehensively across all 15 cards.
+`;
+
+  // Build parent context hint if we have a parent path
+  const parentContextHint = parentPath
+    ? `\nCONTEXT: This is "${deckName}" within the broader topic of "${parentPath}".
+All cards MUST be relevant to this parent context. For example, if this is "Other Topics" within "Manufacturing & Industrial Technology", the cards should cover manufacturing/industrial topics that don't fit other categories - NOT generic philosophical topics.\n`
+    : '';
+
+  const outlinePrompt = `You are creating a learning experience about: "${deckName}"${parentPath ? ` (within ${parentPath})` : ''}
+${parentContextHint}
+Your task: Generate a narrative outline for 15 cards that tells the COMPLETE story with ZERO repetition.
+
+CRITICAL RULES:
+1. Each card MUST cover a COMPLETELY DIFFERENT aspect
+2. NO overlap between cards whatsoever
+3. Each card must be self-contained (shareable on social media alone)
+4. Together, the 15 cards tell the full story from beginning to end
+5. Cards should flow logically (like chapters in a book)
+${childrenContext}
+
+CARD STRUCTURE:
+- Cards 1-5: CORE (the basics - what is it, why it matters, key facts)
+- Cards 6-10: DEEP DIVE 1 (how it works, key players, mechanisms)
+- Cards 11-15: DEEP DIVE 2 (surprising details, controversies, lesser-known facts)
+
+RESPONSE FORMAT (JSON):
+{
+  "narrative_arc": "One sentence describing the overall story flow",
+  "cards": [
+    {
+      "number": 1,
+      "title": "Compelling card title with hook",
+      "focus": "What THIS specific card covers",
+      "key_points": ["Specific fact 1", "Specific fact 2", "Specific fact 3"],
+      "excludes": "What NOT to mention (covered elsewhere)"
+    }
+  ]
+}
+
+EXAMPLE (for "Ancient Rome"):
+{
+  "narrative_arc": "Rome's evolution from village to empire, focusing on key turning points",
+  "cards": [
+    {
+      "number": 1,
+      "title": "Ancient Rome: From Mud Huts to World Empire",
+      "focus": "Overview - what was Rome and why it matters",
+      "key_points": ["753 BCE to 476 CE", "Mediterranean dominance", "Legal/cultural legacy"],
+      "excludes": "Specific wars, emperors (later cards)"
+    },
+    {
+      "number": 2,
+      "title": "The She-Wolf Legend: Rome's Violent Birth",
+      "focus": "Founding myth with Romulus and Remus",
+      "key_points": ["Wolf nursed twins", "Romulus kills Remus", "753 BCE founding"],
+      "excludes": "Republic era (card 3), later history"
+    },
+    {
+      "number": 3,
+      "title": "Overthrowing Kings: Birth of the Republic",
+      "focus": "Transition from monarchy to representative government",
+      "key_points": ["509 BCE revolution", "Senate and consuls", "Tarquin's exile"],
+      "excludes": "Founding legend (card 2), wars (cards 4-5)"
+    }
+  ]
+}
+
+Now generate the complete 15-card outline for: "${deckName}"
+Return ONLY valid JSON, no other text.`;
+
+  try {
+    // Use Haiku for speed - outline is just planning structure, not content
+    const message = await anthropic.messages.create({
+      model: 'claude-3-5-haiku-20241022',
+      max_tokens: 4000,
+      messages: [{ role: 'user', content: outlinePrompt }]
+    });
+
+    const outlineText = message.content[0].text;
+
+    // Parse JSON from response (handle markdown code blocks if present)
+    const jsonMatch = outlineText.match(/\{[\s\S]*\}/);
+    const outline = JSON.parse(jsonMatch ? jsonMatch[0] : outlineText);
+
+    console.log(`[OUTLINE] Generated outline with ${outline.cards.length} cards`);
+    return outline;
+
+  } catch (error) {
+    console.error('[OUTLINE] Error generating outline:', error);
+    throw error;
+  }
+}
+
+/**
+ * Generate content for a single card based on the narrative outline
+ * @param {number} cardNumber - Card number (1-15)
+ * @param {string} deckName - The deck name
+ * @param {Object} outline - The narrative outline from generateNarrativeOutline
+ * @returns {Promise<{id: string, title: string, content: string}>}
+ */
+export async function generateCardFromOutline(cardNumber, deckName, outline) {
+  console.log(`[CARD ${cardNumber}] Generating based on outline...`);
+
+  const thisCard = outline.cards[cardNumber - 1]; // Arrays are 0-indexed
+  const otherCards = outline.cards
+    .filter((_, i) => i !== cardNumber - 1)
+    .map(c => `Card ${c.number}: ${c.focus}`)
+    .join('\n');
+
+  const cardPrompt = `You are generating Card ${cardNumber} of 15 about: "${deckName}"
+
+OVERALL STORY ARC:
+${outline.narrative_arc}
+
+THIS CARD'S ASSIGNMENT:
+Title: "${thisCard.title}"
+Focus: ${thisCard.focus}
+Key Points: ${thisCard.key_points.join(', ')}
+DO NOT MENTION: ${thisCard.excludes}
+
+OTHER CARDS (to avoid repetition):
+${otherCards}
+
+REQUIREMENTS:
+1. Write 60-80 words of engaging content
+2. Make it shareable - someone should understand it even if they only see this card
+3. Include specific facts, numbers, names where relevant
+4. Use vivid, memorable language
+5. NO overlap with any other card's content
+6. Focus ONLY on this card's assigned topic
+
+TONE: Engaging, surprising, conversational (not academic/dry)
+
+Generate the card content now (text only, no title - that's already assigned).`;
+
+  try {
+    const message = await anthropic.messages.create({
+      model: 'claude-3-5-haiku-20241022',
+      max_tokens: 200,
+      messages: [{ role: 'user', content: cardPrompt }]
+    });
+
+    const content = message.content[0].text.trim();
+
+    console.log(`[CARD ${cardNumber}] Generated: ${content.slice(0, 50)}...`);
+
+    // Determine tier from card number
+    let tier = 'core';
+    if (cardNumber > 10) tier = 'deep_dive_2';
+    else if (cardNumber > 5) tier = 'deep_dive_1';
+
+    const tierSuffix = tier === 'core' ? '' : `-${tier.replace('_', '')}`;
+    const tierIndex = tier === 'core' ? cardNumber : (tier === 'deep_dive_1' ? cardNumber - 5 : cardNumber - 10);
+
+    return {
+      id: `${deckName.toLowerCase().replace(/\s+/g, '-')}${tierSuffix}-${tierIndex}-${Date.now()}`,
+      title: thisCard.title,
+      content: content,
+      tier: tier,
+      tierIndex: tierIndex - 1 // 0-indexed within tier
+    };
+
+  } catch (error) {
+    console.error(`[CARD ${cardNumber}] Error:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Generate a single tier of cards (5 cards) with specific focus
+ * @param {string} deckName - The deck name
+ * @param {Object} config - Tier configuration
+ * @param {string} parentPath - Optional parent context
+ * @returns {Promise<Array>} Array of 5 card objects
+ */
+async function generateTier(deckName, config, parentPath = null) {
+  const parentContext = parentPath
+    ? `\nCONTEXT: This is "${deckName}" within "${parentPath}". All cards MUST be relevant to this parent context.\n`
+    : '';
+
+  const prompt = `Generate ${config.cardNumbers.length} learning cards about: "${deckName}"
+${parentContext}
+TIER: ${config.tierName}
+CARD NUMBERS: ${config.cardNumbers.join(', ')}
+
+YOUR FOCUS FOR THIS TIER:
+${config.focus}
+
+TONE: ${config.tone}
+
+WHAT TO AVOID (covered in other tiers):
+${config.avoidTopics}
+
+CRITICAL RULES:
+1. Each card MUST cover a COMPLETELY DIFFERENT aspect
+2. NO two cards should repeat information
+3. Make each card self-contained (shareable on social media alone)
+4. Stay focused on this tier's theme
+5. Use specific facts, numbers, names - not vague statements
+6. Card 1 title MUST be "${deckName}: [short hook]" to orient readers
+
+CARD STRUCTURE:
+- Title: Compelling, specific, makes them want to read (4-10 words)
+- Content: 60-100 words, conversational, memorable, fact-dense
+
+RETURN ONLY VALID JSON (no markdown, no explanation):
+{
+  "cards": [
+    {
+      "number": ${config.cardNumbers[0]},
+      "title": "Specific compelling title",
+      "content": "60-100 words of engaging content with specific facts"
+    }
+  ]
+}
+
+Generate exactly ${config.cardNumbers.length} cards now:`;
+
+  try {
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2500,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    const text = message.content[0].text;
+
+    // Parse JSON (handle potential markdown wrapping)
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('No valid JSON found in response');
+    }
+
+    const result = JSON.parse(jsonMatch[0]);
+
+    if (!result.cards || !Array.isArray(result.cards)) {
+      throw new Error('Invalid card structure in response');
+    }
+
+    // Transform to our card format
+    return result.cards.map((card, index) => ({
+      id: `${deckName.toLowerCase().replace(/\s+/g, '-')}-${config.tier}-${index}-${Date.now()}`,
+      title: card.title,
+      content: card.content,
+      tier: config.tier,
+      tierIndex: index
+    }));
+
+  } catch (error) {
+    console.error(`[TIER] Error generating ${config.tierName}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Generate all 15 cards for a deck using PARALLEL tier generation with PROGRESSIVE loading
+ * Fires 3 API calls simultaneously, calls onTierComplete as each tier finishes
+ * @param {string} deckName - The deck name
+ * @param {boolean} hasChildren - Whether this deck has subtopics (unused but kept for API compat)
+ * @param {string[]} childrenNames - Names of child topics (unused but kept for API compat)
+ * @param {Function} onTierComplete - Callback when a tier completes: (tierName, cards) => void
+ * @param {string} parentPath - Optional parent context path (e.g., "Technology > Manufacturing")
+ * @returns {Promise<{cards: Array, cardsByTier: Object}>}
+ */
+export async function generateAllCardsWithOutline(deckName, hasChildren = false, childrenNames = [], onTierComplete = null, parentPath = null) {
+  console.log(`[CARDS] Generating 15 cards in PARALLEL for: ${deckName}${parentPath ? ` (within ${parentPath})` : ''}`);
+
+  const cardsByTier = {
+    core: null,
+    deep_dive_1: null,
+    deep_dive_2: null
+  };
+
+  // Helper to safely call onTierComplete
+  const safeCallback = (tierName, cards) => {
+    if (onTierComplete) {
+      try {
+        onTierComplete(tierName, cards);
+      } catch (err) {
+        console.error(`[CARDS] Error in onTierComplete callback for ${tierName}:`, err);
+      }
+    }
+  };
+
+  try {
+    // Fire all 3 tier requests simultaneously, but handle each completion independently
+    const corePromise = generateTier(deckName, {
+      tier: 'core',
+      tierName: 'Core Essentials',
+      cardNumbers: [1, 2, 3, 4, 5],
+      focus: 'Big picture overview. Answer: What is this topic? Why does it matter? What are the most interesting/surprising facts? Give them the "aha!" moments.',
+      tone: 'Engaging, surprising, accessible - hook them immediately',
+      avoidTopics: 'Don\'t go deep into mechanisms (that\'s Deep Dive 1) or obscure edge cases (that\'s Deep Dive 2). Stay high-level and fascinating.'
+    }, parentPath).then(cards => {
+      console.log(`[CARDS] ✅ Core tier complete (5 cards)`);
+      cardsByTier.core = cards;
+      safeCallback('core', cards);
+      return cards;
+    }).catch(err => {
+      console.error('[CARDS] Core tier failed:', err);
+      cardsByTier.core = [];
+      return [];
+    });
+
+    const deepDive1Promise = generateTier(deckName, {
+      tier: 'deep_dive_1',
+      tierName: 'Deep Dive 1',
+      cardNumbers: [6, 7, 8, 9, 10],
+      focus: 'How it actually works. Cover mechanisms, processes, systems, connections, and deeper explanations. The "behind the scenes" stuff.',
+      tone: 'More detailed but still conversational - they\'re engaged now',
+      avoidTopics: 'Don\'t repeat basic overview info (that\'s Core Essentials) or dive into obscure trivia (that\'s Deep Dive 2). Focus on explanatory depth.'
+    }, parentPath).then(cards => {
+      console.log(`[CARDS] ✅ Deep Dive 1 tier complete (5 cards)`);
+      cardsByTier.deep_dive_1 = cards;
+      safeCallback('deep_dive_1', cards);
+      return cards;
+    }).catch(err => {
+      console.error('[CARDS] Deep Dive 1 tier failed:', err);
+      cardsByTier.deep_dive_1 = [];
+      return [];
+    });
+
+    const deepDive2Promise = generateTier(deckName, {
+      tier: 'deep_dive_2',
+      tierName: 'Deep Dive 2',
+      cardNumbers: [11, 12, 13, 14, 15],
+      focus: 'Mind-blowing details and fascinating tangents. Cover: historical discoveries, edge cases, current research, weird exceptions, "tell your friends about this" facts.',
+      tone: 'Nerdy, detailed, enthusiastic - reward their curiosity',
+      avoidTopics: 'Don\'t repeat overview (Core Essentials) or basic mechanisms (Deep Dive 1). This is the "wow I didn\'t know that!" tier.'
+    }, parentPath).then(cards => {
+      console.log(`[CARDS] ✅ Deep Dive 2 tier complete (5 cards)`);
+      cardsByTier.deep_dive_2 = cards;
+      safeCallback('deep_dive_2', cards);
+      return cards;
+    }).catch(err => {
+      console.error('[CARDS] Deep Dive 2 tier failed:', err);
+      cardsByTier.deep_dive_2 = [];
+      return [];
+    });
+
+    // Wait for all to complete
+    await Promise.all([corePromise, deepDive1Promise, deepDive2Promise]);
+
+    // Combine all tiers (filter out empty arrays from failed tiers)
+    const cards = [...(cardsByTier.core || []), ...(cardsByTier.deep_dive_1 || []), ...(cardsByTier.deep_dive_2 || [])];
+
+    console.log(`[CARDS] ✅ All ${cards.length} cards complete`);
+
+    return { cards, cardsByTier };
+
+  } catch (error) {
+    console.error('[CARDS] Error generating cards:', error);
+    throw error;
+  }
+}
+
+// ============================================================================
+// NEW: TITLES-FIRST APPROACH (Fast initial load, on-demand content)
+// ============================================================================
+
+/**
+ * Generate all 15 card titles in ONE API call (~2 seconds)
+ * @param {string} deckName - The deck name
+ * @param {string} parentPath - Optional parent context path
+ * @returns {Promise<Array>} Array of card objects with titles (no content yet)
+ */
+export async function generateCardTitles(deckName, parentPath = null) {
+  console.log(`[TITLES] Generating 15 descriptive titles for: ${deckName}`);
+
+  const parentContext = parentPath
+    ? `\nCONTEXT: This is "${deckName}" within "${parentPath}". All titles MUST be relevant to this parent context.\n`
+    : '';
+
+  const prompt = `Generate 15 card titles for: "${deckName}"
+${parentContext}
+TITLE RULES:
+- MAX 8 words per title
+- Clear and specific (not vague hooks)
+- Each title = different aspect
+
+Good: "The Seven Fine Arts", "Renaissance Origins", "Art vs Craft Debate"
+Bad: "The Amazing Story Behind...", "What You Need to Know About..."
+
+STRUCTURE:
+Cards 1-5: Core Essentials (what is it, key facts)
+Cards 6-10: Deep Dive 1 (how it works, processes)
+Cards 11-15: Deep Dive 2 (history, edge cases, lesser-known)
+
+Return ONLY JSON:
+{"cards":[{"number":1,"title":"Short Title"},{"number":2,"title":"Another Title"}]}`;
+
+
+  try {
+    const message = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1000,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    const text = message.content[0].text;
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('No valid JSON in response');
+    }
+
+    const result = JSON.parse(jsonMatch[0]);
+
+    // Transform to our card format with tiers
+    return result.cards.map(card => {
+      const tier = card.number <= 5 ? 'core' : card.number <= 10 ? 'deep_dive_1' : 'deep_dive_2';
+      const tierIndex = card.number <= 5 ? card.number - 1 : card.number <= 10 ? card.number - 6 : card.number - 11;
+
+      return {
+        id: `${deckName.toLowerCase().replace(/\s+/g, '-')}-${tier}-${tierIndex}-${Date.now()}`,
+        number: card.number,
+        title: card.title,
+        content: null, // Generated on-demand
+        tier,
+        tierIndex,
+        contentLoaded: false
+      };
+    });
+
+  } catch (error) {
+    console.error('[TITLES] Error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Generate content for a single card ON-DEMAND (when user flips it)
+ * @param {string} deckName - The deck name
+ * @param {number} cardNumber - Card number (1-15)
+ * @param {string} cardTitle - The card's title
+ * @param {Array} allTitles - All card titles (to avoid repetition)
+ * @returns {Promise<string>} The card content
+ */
+export async function generateSingleCardContent(deckName, cardNumber, cardTitle, allTitles, onStreamUpdate = null) {
+  console.log(`[CONTENT] ${onStreamUpdate ? 'Streaming' : 'Generating'} for card ${cardNumber}: ${cardTitle}`);
+
+  // Determine tier context
+  let tierContext = '';
+  if (cardNumber <= 5) {
+    tierContext = 'Core Essentials - Big picture overview. Tone: Engaging and accessible.';
+  } else if (cardNumber <= 10) {
+    tierContext = 'Deep Dive 1 - How it works. Tone: More detailed but conversational.';
+  } else {
+    tierContext = 'Deep Dive 2 - Fascinating details. Tone: Nerdy and mind-blowing.';
+  }
+
+  // Include other titles to avoid repetition
+  const otherTitles = allTitles
+    .filter(t => t.number !== cardNumber)
+    .map(t => `Card ${t.number}: ${t.title}`)
+    .join('\n');
+
+  const prompt = `Generate content for this learning card:
+
+Topic: "${deckName}"
+Card ${cardNumber}: "${cardTitle}"
+
+Tier: ${tierContext}
+
+OTHER CARDS (DO NOT REPEAT):
+${otherTitles}
+
+REQUIREMENTS:
+1. Write EXACTLY 40-60 words (STRICT LIMIT)
+2. DO NOT cover topics from other card titles
+3. Include 1-2 specific facts, numbers, or names
+4. Make it engaging and memorable
+5. Self-contained (readable alone)
+6. Conversational tone
+
+Return ONLY the content text (no title, no JSON, just the paragraph):`;
+
+  try {
+    // Use streaming if callback provided
+    if (onStreamUpdate) {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': import.meta.env.VITE_ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 250,
+          messages: [{ role: 'user', content: prompt }],
+          stream: true
+        })
+      });
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullContent = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') continue;
+
+            try {
+              const parsed = JSON.parse(data);
+
+              if (parsed.type === 'content_block_delta') {
+                const text = parsed.delta?.text || '';
+                fullContent += text;
+                onStreamUpdate(fullContent);
+              }
+            } catch (e) {
+              // Skip invalid JSON
+            }
+          }
+        }
+      }
+
+      return fullContent.trim();
+    }
+
+    // Non-streaming fallback (for background generation)
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 250,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    return message.content[0].text.trim();
+
+  } catch (error) {
+    console.error('[CONTENT] Error:', error);
+    throw error;
+  }
+}
+
+// ============================================================================
+// LEGACY: Original card content generation (kept for backward compatibility)
+// ============================================================================
+
+/**
  * Generate content for a deck's overview card (for the Canvas card system)
  * @param {string} deckName - The name of the deck (e.g., "History", "Ancient Egypt")
  * @param {string} cardTitle - The title of the card (e.g., "What is History?")

@@ -4,6 +4,7 @@
  */
 
 import vitalArticlesTree from '../data/vitalArticlesTree.json'
+import Fuse from 'fuse.js'
 
 const STORAGE_KEY = 'learning_app_data'
 
@@ -26,6 +27,79 @@ function buildNodeIndex(node) {
 // Build index on module load
 buildNodeIndex(vitalArticlesTree)
 console.log(`[storage] Built node index with ${nodeIndex.size} entries`)
+
+// ============================================================================
+// SEARCH INDEX (Fuse.js for fuzzy search)
+// ============================================================================
+
+// Build a flat searchable array with path information
+const searchIndex = []
+
+function buildSearchIndex(node, path = []) {
+  // Skip the root node itself, and implementation detail nodes
+  if (node.id !== 'root' && !node.isImplementationDetail) {
+    searchIndex.push({
+      id: node.id,
+      title: node.title,
+      path: path.map(p => p.title),
+      pathIds: path.map(p => p.id),
+      isLeaf: !node.children || node.children.length === 0
+    })
+  }
+
+  // Recursively index children
+  if (node.children) {
+    for (const child of node.children) {
+      // For implementation detail nodes, don't add them to path
+      if (child.isImplementationDetail) {
+        // Pass through the current path (skip the impl detail)
+        if (child.children) {
+          for (const grandchild of child.children) {
+            buildSearchIndex(grandchild, [...path, node.id !== 'root' ? node : null].filter(Boolean))
+          }
+        }
+      } else {
+        buildSearchIndex(child, [...path, node.id !== 'root' ? node : null].filter(Boolean))
+      }
+    }
+  }
+}
+
+// Build search index on module load
+buildSearchIndex(vitalArticlesTree)
+console.log(`[storage] Built search index with ${searchIndex.length} searchable topics`)
+
+// Create Fuse instance for fuzzy searching
+const fuse = new Fuse(searchIndex, {
+  keys: ['title'],
+  threshold: 0.3, // Lower = stricter matching (0.3 allows some typos)
+  includeScore: true,
+  minMatchCharLength: 2
+})
+
+/**
+ * Search topics using fuzzy matching
+ * @param {string} query - Search query
+ * @param {number} limit - Max results to return (default 10)
+ * @returns {Array} Array of search results with { id, title, path, pathIds, score }
+ */
+export function searchTopics(query, limit = 10) {
+  if (!query || query.length < 2) return []
+
+  const results = fuse.search(query, { limit })
+  return results.map(r => ({
+    ...r.item,
+    score: r.score
+  }))
+}
+
+/**
+ * Get the total number of searchable topics
+ * @returns {number}
+ */
+export function getSearchableTopicCount() {
+  return searchIndex.length
+}
 
 /**
  * Find a node in the vital articles tree by ID (O(1) lookup)
@@ -430,6 +504,7 @@ export function saveDeckCards(deckId, deckName, cards, tier = 'core') {
       content: null,  // Content generated on flip
       tier: tier,
       tierIndex: index,  // Position within tier (0-4)
+      number: card.number || (tier === 'core' ? index + 1 : tier === 'deep_dive_1' ? index + 6 : index + 11),  // Global card number 1-15
       rarity: 'common',  // Default, can be enhanced later
       claimed: false,
       claimedAt: null,

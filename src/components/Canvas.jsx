@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { generateCardContent, generateDeckCards, generateSubDecks } from '../services/claude'
+import { generateDeckCards, generateSubDecks, generateCardTitles, generateSingleCardContent } from '../services/claude'
 import { fetchLevel2WithSections, hasLevel2Sections } from '../services/wikipedia'
 import {
   getDeckCards,
@@ -21,7 +21,9 @@ import {
   getTreeChildren,
   isTreeDeck,
   getTreeNode,
-  getRandomTreePath
+  getRandomTreePath,
+  searchTopics,
+  getSearchableTopicCount
 } from '../services/storage'
 
 // Configuration - card counts can be adjusted here or per-deck
@@ -392,7 +394,7 @@ function LockedCard({ index }) {
 }
 
 // Tier section component - shows cards for one tier with header and progress
-function TierSection({ tier, tierName, tierEmoji, cards, claimedCards, onReadCard, completion, isLocked, onUnlock, isUnlocking }) {
+function TierSection({ tier, tierName, tierEmoji, cards, claimedCards, onReadCard, completion, isLocked, onUnlock, isUnlocking, totalCards = 15 }) {
   const { claimed, total } = completion
   const isComplete = total > 0 && claimed === total
 
@@ -431,23 +433,29 @@ function TierSection({ tier, tierName, tierEmoji, cards, claimedCards, onReadCar
           {isComplete && <span className="text-green-500">✓</span>}
         </div>
         <div className="flex gap-4 flex-wrap justify-center">
-          {cards.map((card, index) => (
-            <motion.div
-              key={card.id}
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-            >
-              <OverviewCard
-                card={card}
-                index={index}
-                total={cards.length}
-                claimed={claimedCards.has(card.id)}
-                onClaim={() => {}}
-                onRead={onReadCard}
-              />
-            </motion.div>
-          ))}
+          {cards.map((card, index) => {
+            // Calculate global card number based on tier
+            const tierOffset = tier === 'core' ? 0 : tier === 'deep_dive_1' ? 5 : 10
+            const globalIndex = card.number ? card.number - 1 : tierOffset + index
+
+            return (
+              <motion.div
+                key={card.id}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+              >
+                <OverviewCard
+                  card={card}
+                  index={globalIndex}
+                  total={totalCards}
+                  claimed={claimedCards.has(card.id)}
+                  onClaim={() => {}}
+                  onRead={onReadCard}
+                />
+              </motion.div>
+            )
+          })}
         </div>
       </div>
     )
@@ -660,63 +668,119 @@ function SkeletonCard({ index }) {
 }
 
 // Expanded card - zooms in and can flip back and forth
-function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName, onContentGenerated, onNext, onPrev, hasNext, hasPrev }) {
-  const [isFlipped, setIsFlipped] = useState(false)
+function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName, onContentGenerated, allCards, onNext, onPrev, hasNext, hasPrev, startFlipped = false, slideDirection = 0 }) {
+  const [isFlipped, setIsFlipped] = useState(startFlipped)
   const [content, setContent] = useState(card.content || null)
+  const [displayedContent, setDisplayedContent] = useState(card.content || '')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [slideDirection, setSlideDirection] = useState(0) // -1 = left, 1 = right, 0 = none
   const [prevCardId, setPrevCardId] = useState(card.id)
+  // Track initial rotation for new cards entering (to skip flip animation)
+  const initialRotation = useRef(startFlipped ? 180 : 0)
+
+  // Generate content on mount if starting flipped without content
+  useEffect(() => {
+    if (startFlipped && !card.content && !isLoading) {
+      setIsLoading(true)
+      const cardNumber = card.number || (index + 1)
+      generateSingleCardContent(deckName, cardNumber, card.title, allCards || [])
+        .then(finalContent => {
+          setContent(finalContent)
+          setDisplayedContent(finalContent)
+          if (onContentGenerated) {
+            onContentGenerated(card.id, finalContent)
+          }
+        })
+        .catch(err => {
+          console.error('Failed to generate content:', err)
+          setError('Failed to load content')
+        })
+        .finally(() => {
+          setIsLoading(false)
+        })
+    }
+  }, []) // Only on mount
 
   // Reset state when card changes (navigation)
   useEffect(() => {
     if (card.id !== prevCardId) {
-      // Determine slide direction based on index change
-      setContent(card.content || null)
-      setIsFlipped(false)
+      const cardContent = card.content || null
+      setContent(cardContent)
+      setDisplayedContent(cardContent || '')
+      // Always show the back (flipped) when navigating, start already rotated
+      initialRotation.current = 180
+      setIsFlipped(true)
       setError(null)
       setPrevCardId(card.id)
-    }
-  }, [card.id, card.content, prevCardId])
 
-  // Update content if it arrives from background generation
-  useEffect(() => {
-    if (card.content && !content) {
-      setContent(card.content)
-    }
-  }, [card.content])
-
-  // Helper to determine tier from card ID
-  const getTierFromCardId = (cardId) => {
-    if (cardId.includes('-deepdive2-')) return 'deep_dive_2'
-    if (cardId.includes('-deepdive1-')) return 'deep_dive_1'
-    return 'core'
-  }
-
-  const handleFlip = async (e) => {
-    e.stopPropagation()
-
-    // If flipping to back and no content yet, generate it (fallback if pre-generation not done)
-    if (!isFlipped && !content && !isLoading) {
-      setIsLoading(true)
-      setError(null)
-      try {
-        const tier = getTierFromCardId(card.id)
-        const generatedContent = await generateCardContent(deckName, card.title, null, tier)
-        setContent(generatedContent)
-        // Notify parent to save the content
-        if (onContentGenerated) {
-          onContentGenerated(card.id, generatedContent)
-        }
-      } catch (err) {
-        console.error('Failed to generate content:', err)
-        setError('Failed to load content')
-      } finally {
+      // If no content, start generating it
+      if (!cardContent) {
+        setIsLoading(true)
+        const cardNumber = card.number || (index + 1)
+        generateSingleCardContent(deckName, cardNumber, card.title, allCards || [])
+          .then(finalContent => {
+            setContent(finalContent)
+            setDisplayedContent(finalContent)
+            if (onContentGenerated) {
+              onContentGenerated(card.id, finalContent)
+            }
+          })
+          .catch(err => {
+            console.error('Failed to generate content:', err)
+            setError('Failed to load content')
+          })
+          .finally(() => {
+            setIsLoading(false)
+          })
+      } else {
         setIsLoading(false)
       }
     }
+  }, [card.id, prevCardId])
 
+  // Update content if it arrives from background generation (but not while loading)
+  useEffect(() => {
+    if (card.content && !content && !isLoading) {
+      setContent(card.content)
+      setDisplayedContent(card.content)
+    }
+  }, [card.content, isLoading])
+
+  const handleFlip = (e) => {
+    e.stopPropagation()
+
+    // Flip immediately
     setIsFlipped(!isFlipped)
+
+    // If flipping to back and no content yet, generate it
+    if (!isFlipped && !content && !isLoading) {
+      setIsLoading(true)
+      setError(null)
+
+      const cardNumber = card.number || (index + 1)
+
+      // Generate content (no streaming - just wait for full content)
+      generateSingleCardContent(
+        deckName,
+        cardNumber,
+        card.title,
+        allCards || []
+      )
+        .then(finalContent => {
+          setContent(finalContent)
+          setDisplayedContent(finalContent)
+          if (onContentGenerated) {
+            onContentGenerated(card.id, finalContent)
+          }
+        })
+        .catch(err => {
+          console.error('Failed to generate content:', err)
+          setError('Failed to load content')
+        })
+        .finally(() => {
+          setIsLoading(false)
+        })
+    }
   }
 
   // Handle claim and advance to next card
@@ -725,35 +789,23 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
     // Small delay to show the claim feedback, then advance
     if (hasNext) {
       setTimeout(() => {
-        goNext()
+        onNext()
       }, 300)
     }
   }
 
-  // Handle swipe gestures and track direction for animation
+  // Handle swipe gestures
   const handleDragEnd = (event, info) => {
     const threshold = 100
     const velocity = 500
 
     if (info.offset.x > threshold || info.velocity.x > velocity) {
       // Swiped right - go to previous
-      if (hasPrev) {
-        setSlideDirection(1) // Coming from left
-        onPrev()
-      }
+      if (hasPrev) onPrev()
     } else if (info.offset.x < -threshold || info.velocity.x < -velocity) {
       // Swiped left - go to next
-      if (hasNext) {
-        setSlideDirection(-1) // Coming from right
-        onNext()
-      }
+      if (hasNext) onNext()
     }
-  }
-
-  // Wrapped navigation handler to set direction for animation
-  const goNext = () => {
-    setSlideDirection(-1)
-    onNext()
   }
 
   return (
@@ -773,15 +825,12 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
         <span className="text-white text-2xl font-light">×</span>
       </button>
 
-      {/* Card container with AnimatePresence for slide animation */}
-      <AnimatePresence mode="popLayout" initial={false}>
+      {/* Card container */}
       <motion.div
-        key={card.id}
         className="relative w-[90vw] max-w-md h-[80vh] max-h-[600px] cursor-pointer"
         style={{ perspective: 1000 }}
         initial={{ x: slideDirection * 300, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
-        exit={{ x: slideDirection * -300, opacity: 0 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         onClick={handleFlip}
         drag="x"
@@ -793,6 +842,7 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
         <motion.div
           className="relative w-full h-full"
           style={{ transformStyle: 'preserve-3d' }}
+          initial={{ rotateY: initialRotation.current }}
           animate={{ rotateY: isFlipped ? 180 : 0 }}
           transition={{ duration: 0.5, ease: 'easeInOut' }}
         >
@@ -822,9 +872,9 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
               <span className="text-sm text-gray-400 whitespace-nowrap">{index + 1}/{total}</span>
             </div>
 
-            {/* Content area with loading state - comfortable reading */}
+            {/* Content area with loading state */}
             <div className="flex-1 overflow-auto">
-              {isLoading ? (
+              {isLoading && !displayedContent ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="flex flex-col items-center gap-3">
                     <div className="w-8 h-8 border-3 border-gray-200 border-t-yellow-500 rounded-full animate-spin" />
@@ -834,7 +884,9 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
               ) : error ? (
                 <p className="text-red-500 text-center text-base">{error}</p>
               ) : (
-                <p className="text-gray-700 text-base sm:text-lg leading-relaxed sm:leading-relaxed">{content}</p>
+                <p className="text-gray-700 text-base sm:text-lg leading-relaxed sm:leading-relaxed">
+                  {displayedContent}
+                </p>
               )}
             </div>
 
@@ -854,7 +906,7 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
                 </button>
               ) : (
                 <button
-                  onClick={() => hasNext ? goNext() : onClose()}
+                  onClick={() => hasNext ? onNext() : onClose()}
                   className="w-full py-4 rounded-2xl font-bold text-lg text-yellow-600 bg-yellow-50 border-2 border-yellow-200 hover:bg-yellow-100 active:scale-[0.98] transition-all"
                 >
                   {hasNext ? 'Next Card →' : '✓ All Done!'}
@@ -866,7 +918,6 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
           </div>
         </motion.div>
       </motion.div>
-      </AnimatePresence>
     </motion.div>
   )
 }
@@ -1094,7 +1145,9 @@ function DeckSpread({
   onUnlockTier,
   unlockingTier,
   // Section-related props (for Level 1)
-  sections
+  sections,
+  // Progress for card generation
+  generationProgress
 }) {
   // Tier metadata
   const tiers = [
@@ -1116,8 +1169,28 @@ function DeckSpread({
       {/* Deck title */}
       <span className="text-sm font-semibold text-gray-700">{deck.emoji} {deck.name}</span>
 
-      {/* Skeleton cards while loading */}
-      {isLoading && (
+      {/* Progress indicator while loading (shows above cards during progressive load) */}
+      {isLoading && generationProgress && (
+        <div className="text-center mb-4">
+          <p className="text-sm text-gray-500">
+            {generationProgress.tiersComplete === 0
+              ? 'Generating cards...'
+              : generationProgress.tiersComplete >= 3
+                ? 'Almost done...'
+                : `Loading more cards...`
+            }
+          </p>
+          <div className="w-48 h-2 bg-gray-200 rounded-full mt-2 overflow-hidden mx-auto">
+            <div
+              className="h-full bg-gradient-to-r from-yellow-400 to-amber-500 transition-all duration-500"
+              style={{ width: `${((generationProgress.tiersComplete || 0) / 3) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Skeleton cards - only show if loading AND no tier data yet */}
+      {isLoading && !hasTierData && (
         <div className="flex flex-col items-center gap-3">
           <div className="flex gap-4 flex-wrap justify-center">
             {Array.from({ length: skeletonCount }).map((_, index) => (
@@ -1127,8 +1200,8 @@ function DeckSpread({
         </div>
       )}
 
-      {/* NEW: Tiered card display */}
-      {!isLoading && hasTierData && (
+      {/* NEW: Tiered card display - shows progressively as tiers complete */}
+      {hasTierData && (
         <div className="flex flex-col items-center gap-10 w-full">
           {tiers.map((tier, tierIndex) => {
             const cards = tierCards[tier.key] || []
@@ -1141,6 +1214,9 @@ function DeckSpread({
             if (tier.key === 'deep_dive_2' && !tierCompletion.deep_dive_1?.complete) {
               return null
             }
+
+            // Calculate total cards across all tiers
+            const allTierCards = (tierCards.core?.length || 0) + (tierCards.deep_dive_1?.length || 0) + (tierCards.deep_dive_2?.length || 0)
 
             return (
               <TierSection
@@ -1155,6 +1231,7 @@ function DeckSpread({
                 isLocked={isLocked}
                 onUnlock={() => onUnlockTier(tier.key)}
                 isUnlocking={unlockingTier === tier.key}
+                totalCards={allTierCards || 15}
               />
             )
           })}
@@ -1274,15 +1351,211 @@ function DeckSpread({
   )
 }
 
+// Search bar component with fuzzy search
+function SearchBar({ onNavigate }) {
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState([])
+  const [showResults, setShowResults] = useState(false)
+  const [selectedIndex, setSelectedIndex] = useState(0)
+  const inputRef = useRef(null)
+  const topicCount = getSearchableTopicCount()
+
+  // Search as user types
+  useEffect(() => {
+    if (query.length < 2) {
+      setResults([])
+      setSelectedIndex(0)
+      return
+    }
+
+    const matches = searchTopics(query, 10)
+    setResults(matches)
+    setSelectedIndex(0)
+    setShowResults(true)
+  }, [query])
+
+  // Highlight matching text in results
+  const highlightMatch = (text, query) => {
+    if (!query || query.length < 2) return text
+    const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
+    const parts = text.split(regex)
+    return parts.map((part, i) =>
+      regex.test(part) ? <mark key={i} className="bg-yellow-200 rounded px-0.5">{part}</mark> : part
+    )
+  }
+
+  // Handle result selection
+  const handleResultClick = (result) => {
+    console.log('[SEARCH] Selected:', result.title)
+    onNavigate(result)
+    setQuery('')
+    setShowResults(false)
+    setResults([])
+  }
+
+  // Keyboard navigation
+  const handleKeyDown = (e) => {
+    if (!showResults || results.length === 0) return
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setSelectedIndex(i => Math.min(i + 1, results.length - 1))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setSelectedIndex(i => Math.max(i - 1, 0))
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      handleResultClick(results[selectedIndex])
+    } else if (e.key === 'Escape') {
+      setShowResults(false)
+      setQuery('')
+      inputRef.current?.blur()
+    }
+  }
+
+  return (
+    <div className="relative w-full max-w-xl mx-auto">
+      {/* Search input */}
+      <div className="relative">
+        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg">🔍</span>
+        <input
+          ref={inputRef}
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => query.length >= 2 && setShowResults(true)}
+          onBlur={() => setTimeout(() => setShowResults(false), 200)}
+          onKeyDown={handleKeyDown}
+          placeholder={`Search ${topicCount.toLocaleString()} topics...`}
+          className="
+            w-full pl-12 pr-4 py-3
+            text-base
+            bg-white
+            border-2 border-gray-200
+            rounded-full
+            shadow-sm
+            outline-none
+            transition-all duration-200
+            focus:border-indigo-400 focus:shadow-md
+            placeholder:text-gray-400
+          "
+        />
+      </div>
+
+      {/* Results dropdown */}
+      <AnimatePresence>
+        {showResults && results.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.15 }}
+            className="
+              absolute top-full left-0 right-0
+              mt-2 bg-white
+              rounded-xl
+              shadow-xl
+              border border-gray-200
+              max-h-96 overflow-y-auto
+              z-50
+            "
+          >
+            {/* Results count header */}
+            <div className="px-4 py-2 border-b border-gray-100 bg-gray-50 rounded-t-xl">
+              <span className="text-sm text-gray-500">
+                Found {results.length} result{results.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+
+            {/* Result items */}
+            {results.map((result, index) => (
+              <div
+                key={result.id}
+                onClick={() => handleResultClick(result)}
+                className={`
+                  px-4 py-3 cursor-pointer
+                  border-b border-gray-50 last:border-b-0
+                  transition-colors duration-100
+                  ${index === selectedIndex ? 'bg-indigo-50' : 'hover:bg-gray-50'}
+                `}
+              >
+                <div className="font-semibold text-gray-800 mb-1">
+                  {highlightMatch(result.title, query)}
+                </div>
+                {result.path.length > 0 && (
+                  <div className="text-sm text-gray-500 truncate">
+                    {result.path.join(' → ')}
+                  </div>
+                )}
+              </div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Hint when only 1 character typed */}
+      <AnimatePresence>
+        {query.length === 1 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="
+              absolute top-full left-0 right-0
+              mt-2 bg-white
+              rounded-xl
+              shadow-md
+              border border-gray-200
+              px-4 py-3
+              text-center
+              z-50
+            "
+          >
+            <p className="text-gray-500 text-sm">Type one more character to search...</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* No results message */}
+      <AnimatePresence>
+        {showResults && query.length >= 2 && results.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="
+              absolute top-full left-0 right-0
+              mt-2 bg-white
+              rounded-xl
+              shadow-xl
+              border border-gray-200
+              px-4 py-6
+              text-center
+              z-50
+            "
+          >
+            <span className="text-3xl mb-2 block">🔍</span>
+            <p className="text-gray-500">No topics found for "{query}"</p>
+            <p className="text-sm text-gray-400 mt-1">Try a different search term</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
 export default function Canvas() {
   // Load claimed cards from localStorage on mount
   const [claimedCards, setClaimedCards] = useState(() => getClaimedCardIds())
   const [stack, setStack] = useState([]) // Array of deck IDs representing the stack
   const [expandedCard, setExpandedCard] = useState(null)
+  const [expandedCardStartFlipped, setExpandedCardStartFlipped] = useState(false) // Whether card should start showing back
+  const [expandedCardSlideDirection, setExpandedCardSlideDirection] = useState(0) // 1 = from right, -1 = from left
   const [generatedContent, setGeneratedContent] = useState({}) // cardId -> content (in-memory cache)
   const [generatedCards, setGeneratedCards] = useState({}) // deckId -> array of cards (in-memory cache)
   const [dynamicChildren, setDynamicChildren] = useState({}) // deckId -> array of child deck objects (in-memory cache)
   const [loadingDeck, setLoadingDeck] = useState(null) // deckId currently loading
+  const [generationProgress, setGenerationProgress] = useState(null) // { current, total } for progress display
   const [loadingChildren, setLoadingChildren] = useState(null) // deckId currently loading children
   const [isWandering, setIsWandering] = useState(false) // True when wander navigation is in progress
   const [wanderMessage, setWanderMessage] = useState(null) // Message to show user (e.g., "All explored!")
@@ -1315,46 +1588,6 @@ export default function Canvas() {
       ...prev,
       [cardId]: content
     }))
-  }
-
-  // Pre-generate content for all cards that don't have it yet
-  const preGenerateAllContent = async (cards, deckName) => {
-    // Find cards without content
-    const cardsNeedingContent = cards.filter(card => {
-      const cachedContent = getCardContent(card.id)
-      return !cachedContent
-    })
-
-    if (cardsNeedingContent.length === 0) return
-
-    // Helper to determine tier from card ID
-    const getTierFromCardId = (cardId) => {
-      if (cardId.includes('-deepdive2-')) return 'deep_dive_2'
-      if (cardId.includes('-deepdive1-')) return 'deep_dive_1'
-      return 'core'
-    }
-
-    // Generate all content in parallel
-    const contentPromises = cardsNeedingContent.map(async (card) => {
-      try {
-        const tier = getTierFromCardId(card.id)
-        const content = await generateCardContent(deckName, card.title, null, tier)
-        // Save to localStorage
-        saveCardContent(card.id, content)
-        // Update in-memory state
-        setGeneratedContent(prev => ({
-          ...prev,
-          [card.id]: content
-        }))
-        return { cardId: card.id, content }
-      } catch (error) {
-        console.error(`Failed to generate content for card ${card.id}:`, error)
-        return { cardId: card.id, content: null }
-      }
-    })
-
-    // Wait for all to complete (but don't block UI - this runs in background)
-    await Promise.all(contentPromises)
   }
 
   // Load or generate sub-decks for a deck (for level 2+ decks)
@@ -1516,18 +1749,8 @@ export default function Canvas() {
       console.log(`[loadOrGenerateCardsForDeck] 🍂 LEAF NODE: "${deck.name}" - will generate ${cardCount} cards`)
     }
 
-    // Check if tier cards already in memory
+    // Check if tier cards already in memory - content generated on-demand when flipped
     if (tierCards[deck.id]?.core?.length > 0) {
-      // Still check if we need to pre-generate content for any cards
-      const allCards = [
-        ...(tierCards[deck.id]?.core || []),
-        ...(tierCards[deck.id]?.deep_dive_1 || []),
-        ...(tierCards[deck.id]?.deep_dive_2 || [])
-      ]
-      const needsContent = allCards.some(card => !generatedContent[card.id] && !getCardContent(card.id))
-      if (needsContent) {
-        preGenerateAllContent(allCards, deck.name)
-      }
       return
     }
 
@@ -1568,8 +1791,7 @@ export default function Canvas() {
         }
       })
 
-      // Pre-generate any missing content in background
-      preGenerateAllContent(allCards, deck.name)
+      // Content is generated on-demand when user flips a card
 
       // Also populate legacy generatedCards for backward compatibility
       setGeneratedCards(prev => ({
@@ -1602,27 +1824,41 @@ export default function Canvas() {
         }
       })
 
-      preGenerateAllContent(cardsWithContent, deck.name)
+      // Content is generated on-demand when user flips a card
       return
     }
 
-    // Not cached - generate new Core cards only (Deep Dives generated on-demand)
-    // Branch nodes get 3 overview cards, leaf nodes get 5 full cards
+    // NEW: TITLES-FIRST APPROACH - Generate all 15 titles in ONE API call (~2 seconds)
+    // Content is generated on-demand when user flips a card
     setLoadingDeck(deck.id)
-    try {
-      const cards = await generateDeckCards(deck.name, parentPath, cardCount, 'core')
+    setGenerationProgress({ current: 0, total: 1, tiersComplete: 0 })
 
-      // Save to localStorage with tier
-      saveDeckCards(deck.id, deck.name, cards, 'core')
+    try {
+      // Generate all 15 titles in one fast API call
+      const cards = await generateCardTitles(deck.name, parentPath)
+
+      console.log(`[loadOrGenerateCardsForDeck] ✅ Generated ${cards.length} titles for ${deck.name}`)
+
+      // Group cards by tier
+      const cardsByTier = {
+        core: cards.filter(c => c.tier === 'core'),
+        deep_dive_1: cards.filter(c => c.tier === 'deep_dive_1'),
+        deep_dive_2: cards.filter(c => c.tier === 'deep_dive_2')
+      }
+
+      // Save to localStorage
+      saveDeckCards(deck.id, deck.name, cardsByTier.core, 'core')
+      saveDeckCards(deck.id, deck.name, cardsByTier.deep_dive_1, 'deep_dive_1')
+      saveDeckCards(deck.id, deck.name, cardsByTier.deep_dive_2, 'deep_dive_2')
+
+      // Auto-unlock all tiers (titles are ready, content generated on-demand)
+      unlockTier(deck.id, 'deep_dive_1')
+      unlockTier(deck.id, 'deep_dive_2')
 
       // Update in-memory state
       setTierCards(prev => ({
         ...prev,
-        [deck.id]: {
-          core: cards,
-          deep_dive_1: [],
-          deep_dive_2: []
-        }
+        [deck.id]: cardsByTier
       }))
 
       // Also populate legacy generatedCards for backward compatibility
@@ -1631,14 +1867,31 @@ export default function Canvas() {
         [deck.id]: cards
       }))
 
-      // Clear loading state - cards are visible now
-      setLoadingDeck(null)
+      setGenerationProgress({ current: 1, total: 1, tiersComplete: 1 })
 
-      // Now pre-generate all content in background
-      preGenerateAllContent(cards, deck.name)
+      // Pre-generate content for Core cards in background (parallel, fast with Haiku)
+      const coreCards = cardsByTier.core
+      coreCards.forEach(card => {
+        // Fire off content generation without awaiting - runs in background
+        generateSingleCardContent(deck.name, card.number, card.title, cards)
+          .then(content => {
+            // Save to localStorage
+            saveCardContent(card.id, content)
+            // Update in-memory state
+            setGeneratedContent(prev => ({
+              ...prev,
+              [card.id]: content
+            }))
+            console.log(`[BACKGROUND] Content ready for card ${card.number}: ${card.title}`)
+          })
+          .catch(err => console.error(`[BACKGROUND] Failed to generate content for card ${card.number}:`, err))
+      })
+
     } catch (error) {
-      console.error('Failed to generate cards for deck:', error)
+      console.error('Failed to generate card titles:', error)
+    } finally {
       setLoadingDeck(null)
+      setGenerationProgress(null)
     }
   }
 
@@ -1684,8 +1937,7 @@ export default function Canvas() {
         [deck.id]: [...(prev[deck.id] || []), ...cards]
       }))
 
-      // Pre-generate content in background
-      preGenerateAllContent(cards, deck.name)
+      // Content is generated on-demand when user flips a card
     } catch (error) {
       console.error(`Failed to generate ${tier} cards:`, error)
     } finally {
@@ -1696,7 +1948,31 @@ export default function Canvas() {
   // Handle tier unlock button click
   const handleUnlockTier = (tier) => {
     if (!currentDeck) return
-    generateTierCards(currentDeck, tier, parentPath)
+
+    // With titles-first approach, all tier cards already exist
+    // Just trigger background content generation if needed
+    const deckTiers = tierCards[currentDeck.id] || {}
+    const tierCardsList = deckTiers[tier] || []
+
+    if (tierCardsList.length > 0) {
+      // Cards already exist - just pre-generate content in background
+      const allCards = [...(deckTiers.core || []), ...(deckTiers.deep_dive_1 || []), ...(deckTiers.deep_dive_2 || [])]
+      console.log(`[UNLOCK] Pre-generating content for ${tier} (${tierCardsList.length} cards)`)
+      tierCardsList.forEach(card => {
+        if (!getCardContent(card.id)) {
+          generateSingleCardContent(currentDeck.name, card.number, card.title, allCards)
+            .then(content => {
+              saveCardContent(card.id, content)
+              setGeneratedContent(prev => ({ ...prev, [card.id]: content }))
+              console.log(`[UNLOCK] Content ready for card ${card.number}: ${card.title}`)
+            })
+            .catch(err => console.error(`[UNLOCK] Failed card ${card.number}:`, err))
+        }
+      })
+    } else {
+      // Fallback: generate cards if they don't exist (legacy path)
+      generateTierCards(currentDeck, tier, parentPath)
+    }
   }
 
   const openDeck = (deck) => {
@@ -1864,6 +2140,18 @@ export default function Canvas() {
   // Get full deck objects for the stack
   const stackDecks = stack.map(id => getDeck(id)).filter(Boolean)
   const currentDeck = stackDecks.length > 0 ? stackDecks[stackDecks.length - 1] : null
+
+  // Handle search result navigation - builds stack from path
+  const handleSearchNavigate = (result) => {
+    console.log('[SEARCH] Navigating to:', result.title, 'via path:', result.pathIds)
+
+    // Build the full navigation stack: pathIds + the result itself
+    const fullStack = [...result.pathIds, result.id]
+    console.log('[SEARCH] Setting stack to:', fullStack)
+
+    // Set the stack to navigate there
+    setStack(fullStack)
+  }
 
   // Build parent path for context (e.g., "History > Ancient World")
   const parentPath = stackDecks.length > 1
@@ -2099,17 +2387,17 @@ export default function Canvas() {
   // Get tier cards for current deck (merge with latest generated content)
   const currentTierCards = currentDeck ? (() => {
     const deckTierCards = tierCards[currentDeck.id] || { core: [], deep_dive_1: [], deep_dive_2: [] }
-    // Merge in latest generated content for each card
+    // Merge in latest generated content for each card (handle partially loaded tiers)
     return {
-      core: deckTierCards.core.map(card => ({
+      core: (deckTierCards.core || []).map(card => ({
         ...card,
         content: generatedContent[card.id] || card.content || null
       })),
-      deep_dive_1: deckTierCards.deep_dive_1.map(card => ({
+      deep_dive_1: (deckTierCards.deep_dive_1 || []).map(card => ({
         ...card,
         content: generatedContent[card.id] || card.content || null
       })),
-      deep_dive_2: deckTierCards.deep_dive_2.map(card => ({
+      deep_dive_2: (deckTierCards.deep_dive_2 || []).map(card => ({
         ...card,
         content: generatedContent[card.id] || card.content || null
       }))
@@ -2131,6 +2419,23 @@ export default function Canvas() {
         tier: 'core'
       })
       setLastCompletedTier(prev => ({ ...prev, [currentDeck.id]: 'core' }))
+
+      // Pre-generate Deep Dive 1 content in background
+      const deckTiers = tierCards[currentDeck.id] || {}
+      const dd1Cards = deckTiers.deep_dive_1 || []
+      const allCards = [...(deckTiers.core || []), ...dd1Cards, ...(deckTiers.deep_dive_2 || [])]
+      console.log(`[BACKGROUND] Starting DD1 pre-generation for ${dd1Cards.length} cards`)
+      dd1Cards.forEach(card => {
+        if (!getCardContent(card.id)) {
+          generateSingleCardContent(currentDeck.name, card.number, card.title, allCards)
+            .then(content => {
+              saveCardContent(card.id, content)
+              setGeneratedContent(prev => ({ ...prev, [card.id]: content }))
+              console.log(`[BACKGROUND] DD1 content ready for card ${card.number}: ${card.title}`)
+            })
+            .catch(err => console.error(`[BACKGROUND] Failed DD1 card ${card.number}:`, err))
+        }
+      })
     }
     // Check if deep_dive_1 just completed
     else if (completion.deep_dive_1.complete && lastCompleted === 'core') {
@@ -2140,6 +2445,23 @@ export default function Canvas() {
         tier: 'deep_dive_1'
       })
       setLastCompletedTier(prev => ({ ...prev, [currentDeck.id]: 'deep_dive_1' }))
+
+      // Pre-generate Deep Dive 2 content in background
+      const deckTiers = tierCards[currentDeck.id] || {}
+      const dd2Cards = deckTiers.deep_dive_2 || []
+      const allCards = [...(deckTiers.core || []), ...(deckTiers.deep_dive_1 || []), ...dd2Cards]
+      console.log(`[BACKGROUND] Starting DD2 pre-generation for ${dd2Cards.length} cards`)
+      dd2Cards.forEach(card => {
+        if (!getCardContent(card.id)) {
+          generateSingleCardContent(currentDeck.name, card.number, card.title, allCards)
+            .then(content => {
+              saveCardContent(card.id, content)
+              setGeneratedContent(prev => ({ ...prev, [card.id]: content }))
+              console.log(`[BACKGROUND] DD2 content ready for card ${card.number}: ${card.title}`)
+            })
+            .catch(err => console.error(`[BACKGROUND] Failed DD2 card ${card.number}:`, err))
+        }
+      })
     }
     // Check if deep_dive_2 just completed
     else if (completion.deep_dive_2.complete && lastCompleted === 'deep_dive_1') {
@@ -2150,7 +2472,7 @@ export default function Canvas() {
       })
       setLastCompletedTier(prev => ({ ...prev, [currentDeck.id]: 'deep_dive_2' }))
     }
-  }, [claimedCards, currentDeck?.id])
+  }, [claimedCards, currentDeck?.id, tierCards])
 
   // Find the expanded card data (check both tier cards and legacy cards)
   const allCurrentCards = currentTierCards.core.length > 0
@@ -2253,7 +2575,12 @@ export default function Canvas() {
   if (stack.length === 0) {
     return (
       <div className="w-screen min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 overflow-auto">
-        <div className="min-h-screen flex items-center justify-center p-8 pt-20">
+        {/* Search bar at top */}
+        <div className="fixed top-0 left-0 right-0 z-40 pt-4 pb-2 px-4 bg-gradient-to-b from-gray-100 via-gray-100 to-transparent">
+          <SearchBar onNavigate={handleSearchNavigate} />
+        </div>
+
+        <div className="min-h-screen flex items-center justify-center p-8 pt-24">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
             {CATEGORIES.map((category) => (
               <Deck
@@ -2266,8 +2593,8 @@ export default function Canvas() {
           </div>
         </div>
 
-        {/* Collection counter */}
-        <div className="fixed top-4 right-4 bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-200 shadow-sm">
+        {/* Collection counter - moved down to avoid search bar */}
+        <div className="fixed top-20 right-4 bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-200 shadow-sm">
           <span className="text-gray-500 text-sm">Cards: </span>
           <span className="text-gray-800 font-bold">{claimedCards.size}</span>
           <span className="text-gray-400 text-sm"> / 5,000</span>
@@ -2346,6 +2673,7 @@ export default function Canvas() {
               onUnlockTier={handleUnlockTier}
               unlockingTier={unlockingTier}
               sections={currentSections}
+              generationProgress={generationProgress}
             />
           </AnimatePresence>
         </div>
@@ -2356,23 +2684,35 @@ export default function Canvas() {
       <AnimatePresence>
         {expandedCardData && (
           <ExpandedCard
+            key={`${expandedCardData.id}-${expandedCardStartFlipped}`}
             card={expandedCardData}
             index={expandedCardIndex}
             total={allCurrentCards.length}
             claimed={claimedCards.has(expandedCardData.id)}
             onClaim={handleClaim}
-            onClose={() => setExpandedCard(null)}
+            onClose={() => { setExpandedCard(null); setExpandedCardStartFlipped(false); setExpandedCardSlideDirection(0) }}
             deckName={currentDeck?.name || ''}
             onContentGenerated={handleContentGenerated}
+            allCards={allCurrentCards}
             hasNext={expandedCardIndex < allCurrentCards.length - 1}
             hasPrev={expandedCardIndex > 0}
+            startFlipped={expandedCardStartFlipped}
+            slideDirection={expandedCardSlideDirection}
             onNext={() => {
               const nextCard = allCurrentCards[expandedCardIndex + 1]
-              if (nextCard) setExpandedCard(nextCard.id)
+              if (nextCard) {
+                setExpandedCardSlideDirection(1) // Next card slides in from right
+                setExpandedCardStartFlipped(true)
+                setExpandedCard(nextCard.id)
+              }
             }}
             onPrev={() => {
               const prevCard = allCurrentCards[expandedCardIndex - 1]
-              if (prevCard) setExpandedCard(prevCard.id)
+              if (prevCard) {
+                setExpandedCardSlideDirection(-1) // Prev card slides in from left
+                setExpandedCardStartFlipped(true)
+                setExpandedCard(prevCard.id)
+              }
             }}
           />
         )}
