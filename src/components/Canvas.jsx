@@ -35,6 +35,26 @@ function getDeckCardCount(deck) {
   return deck?.overviewCardCount ?? DEFAULT_OVERVIEW_CARDS
 }
 
+// Helper to get subtle tint color based on deck gradient
+function getCardTint(gradient) {
+  if (!gradient) return '#fafbfc'
+
+  // Map gradient classes to subtle tint colors
+  if (gradient.includes('pink') || gradient.includes('rose')) return '#fff5f7'  // Arts - pink tint
+  if (gradient.includes('emerald') || gradient.includes('teal')) return '#f0fdfa' // Biology - teal tint
+  if (gradient.includes('amber') || gradient.includes('orange')) return '#fffbf5' // Everyday - warm tint
+  if (gradient.includes('cyan')) return '#f0f9ff'  // Geography - cyan tint
+  if (gradient.includes('yellow')) return '#fffef5' // History - yellow tint
+  if (gradient.includes('indigo') && gradient.includes('purple')) return '#faf5ff' // Mathematics - purple tint
+  if (gradient.includes('sky')) return '#f0f9ff'   // People - sky tint
+  if (gradient.includes('violet')) return '#faf5ff' // Philosophy - violet tint
+  if (gradient.includes('blue') && gradient.includes('indigo')) return '#f0f5ff' // Physics - blue tint
+  if (gradient.includes('slate') || gradient.includes('gray')) return '#f8fafc'  // Society - slate tint
+  if (gradient.includes('green')) return '#f0fdf4'  // Technology - green tint
+
+  return '#fafbfc' // Default subtle gray
+}
+
 // Category data - Level 1 decks (from VISION.md)
 const CATEGORIES = [
   {
@@ -331,12 +351,21 @@ function Deck({ deck, onOpen, claimed }) {
 
       {/* Top card */}
       <div className="relative w-28 h-36">
-        <div className={`
-          absolute inset-0 rounded-xl
-          bg-gradient-to-br ${deck.gradient}
-          shadow-lg group-hover:shadow-xl transition-shadow
-          ${claimed ? 'ring-4 ring-yellow-400' : ''}
-        `} />
+        <div
+          className={`
+            absolute inset-0 rounded-xl
+            bg-gradient-to-br ${deck.gradient}
+            transition-all duration-200
+            ${claimed ? 'ring-4 ring-yellow-400' : ''}
+          `}
+          style={{
+            boxShadow: `
+              0 8px 16px -4px rgba(0, 0, 0, 0.2),
+              0 4px 6px -2px rgba(0, 0, 0, 0.1),
+              inset 0 1px 0 rgba(255, 255, 255, 0.15)
+            `
+          }}
+        />
         <div className="absolute inset-[3px] rounded-lg bg-white flex flex-col items-center justify-center">
           <span className="text-2xl mb-1">{deck.emoji}</span>
           <span className="text-xs font-semibold text-gray-800 text-center px-2 leading-tight">{deck.name}</span>
@@ -352,17 +381,32 @@ function Deck({ deck, onOpen, claimed }) {
 }
 
 // Overview card component - same size as deck cards (w-28 h-36)
-function OverviewCard({ card, index, total, onClaim, claimed, onRead }) {
+function OverviewCard({ card, index, total, onClaim, claimed, onRead, tint = '#fafbfc' }) {
   return (
     <motion.div
       className={`
         relative w-28 h-36 rounded-xl cursor-pointer
-        bg-white border-2 ${claimed ? 'border-yellow-400' : 'border-gray-200'}
-        shadow-lg hover:shadow-xl transition-shadow
+        border-2 ${claimed ? 'border-yellow-400' : 'border-gray-200'}
+        transition-all duration-200
         flex flex-col items-center justify-center p-3
       `}
+      style={{
+        background: `linear-gradient(135deg, #ffffff 0%, ${tint} 100%)`,
+        boxShadow: `
+          0 8px 16px -4px rgba(0, 0, 0, 0.15),
+          0 4px 6px -2px rgba(0, 0, 0, 0.08),
+          inset 0 1px 0 rgba(255, 255, 255, 0.5)
+        `
+      }}
       onClick={() => onRead(card)}
-      whileHover={{ y: -4 }}
+      whileHover={{
+        y: -6,
+        boxShadow: `
+          0 12px 24px -4px rgba(0, 0, 0, 0.2),
+          0 6px 10px -2px rgba(0, 0, 0, 0.1),
+          inset 0 1px 0 rgba(255, 255, 255, 0.5)
+        `
+      }}
       whileTap={{ scale: 0.98 }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -395,7 +439,7 @@ function LockedCard({ index }) {
 }
 
 // Tier section component - shows cards for one tier with header and progress
-function TierSection({ tier, tierName, tierEmoji, cards, claimedCards, onReadCard, completion, isLocked, onUnlock, isUnlocking, totalCards = 15 }) {
+function TierSection({ tier, tierName, tierEmoji, cards, claimedCards, onReadCard, completion, isLocked, onUnlock, isUnlocking, totalCards = 15, tint }) {
   const { claimed, total } = completion
   const isComplete = total > 0 && claimed === total
 
@@ -453,6 +497,7 @@ function TierSection({ tier, tierName, tierEmoji, cards, claimedCards, onReadCar
                   claimed={claimedCards.has(card.id)}
                   onClaim={() => {}}
                   onRead={onReadCard}
+                  tint={tint}
                 />
               </motion.div>
             )
@@ -669,7 +714,7 @@ function SkeletonCard({ index }) {
 }
 
 // Expanded card - zooms in and can flip back and forth
-function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName, onContentGenerated, allCards, onNext, onPrev, hasNext, hasPrev, startFlipped = false, slideDirection = 0 }) {
+function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName, onContentGenerated, allCards, onNext, onPrev, hasNext, hasPrev, startFlipped = false, slideDirection = 0, tint = '#fafbfc' }) {
   const [isFlipped, setIsFlipped] = useState(startFlipped)
   const [content, setContent] = useState(card.content || null)
   const [displayedContent, setDisplayedContent] = useState(card.content || '')
@@ -840,8 +885,11 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
         >
           {/* Front of card */}
           <div
-            className="absolute inset-0 rounded-2xl bg-white border border-gray-200 shadow-2xl flex flex-col items-center justify-center p-6"
-            style={{ backfaceVisibility: 'hidden' }}
+            className="absolute inset-0 rounded-2xl border border-gray-200 shadow-2xl flex flex-col items-center justify-center p-6"
+            style={{
+              backfaceVisibility: 'hidden',
+              background: `linear-gradient(135deg, #ffffff 0%, ${tint} 100%)`
+            }}
           >
             <span className="text-sm text-gray-400 mb-3">{index + 1} of {total}</span>
             <h2 className="text-xl font-bold text-gray-800 text-center mb-4 leading-tight px-2">{card.title}</h2>
@@ -855,8 +903,12 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
 
           {/* Back of card - reading view optimized for mobile */}
           <div
-            className="absolute inset-0 rounded-2xl bg-white border border-gray-200 shadow-2xl flex flex-col p-5"
-            style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+            className="absolute inset-0 rounded-2xl border border-gray-200 shadow-2xl flex flex-col p-5"
+            style={{
+              backfaceVisibility: 'hidden',
+              transform: 'rotateY(180deg)',
+              background: `linear-gradient(135deg, #ffffff 0%, ${tint} 100%)`
+            }}
           >
             {/* Close button */}
             <button
@@ -1160,6 +1212,7 @@ function DeckSpread({
                 onUnlock={() => onUnlockTier(tier.key)}
                 isUnlocking={unlockingTier === tier.key}
                 totalCards={allTierCards || 15}
+                tint={getCardTint(deck.gradient)}
               />
             )
           })}
@@ -1184,6 +1237,7 @@ function DeckSpread({
                   claimed={claimedCards.has(card.id)}
                   onClaim={() => {}}
                   onRead={onReadCard}
+                  tint={getCardTint(deck.gradient)}
                 />
               </motion.div>
             ))}
@@ -2620,6 +2674,7 @@ export default function Canvas() {
             hasPrev={expandedCardIndex > 0}
             startFlipped={expandedCardStartFlipped}
             slideDirection={expandedCardSlideDirection}
+            tint={getCardTint(currentDeck?.gradient)}
             onNext={() => {
               const nextCard = allCurrentCards[expandedCardIndex + 1]
               if (nextCard) {
