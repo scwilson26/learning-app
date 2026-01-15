@@ -2502,7 +2502,7 @@ export default function Canvas() {
         "
       >
         <span className="text-lg">↓</span>
-        <span>{topicCount} Topics</span>
+        <span>More Topics</span>
       </button>
     )
   }
@@ -2533,7 +2533,6 @@ export default function Canvas() {
         <div className="fixed top-20 right-4 bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-200 shadow-sm">
           <span className="text-gray-500 text-sm">Cards: </span>
           <span className="text-gray-800 font-bold">{claimedCards.size}</span>
-          <span className="text-gray-400 text-sm"> / 5,000</span>
         </div>
 
         {/* Wander button */}
