@@ -315,14 +315,14 @@ function Deck({ deck, onOpen, claimed }) {
     >
       {/* Stack layers - cards peeking out underneath with slight rotation */}
       <div
-        className="absolute w-28 h-36 rounded-xl bg-white border border-gray-300"
+        className="absolute w-36 h-48 rounded-xl bg-white border border-gray-300"
         style={{
           transform: 'translate(4px, 4px) rotate(2deg)',
           boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
         }}
       />
       <div
-        className="absolute w-28 h-36 rounded-xl bg-white border border-gray-300"
+        className="absolute w-36 h-48 rounded-xl bg-white border border-gray-300"
         style={{
           transform: 'translate(2px, 2px) rotate(0.5deg)',
           boxShadow: '0 1px 2px rgba(0,0,0,0.08)'
@@ -330,7 +330,7 @@ function Deck({ deck, onOpen, claimed }) {
       />
 
       {/* Top card */}
-      <div className="relative w-28 h-36">
+      <div className="relative w-36 h-48">
         <div className={`
           absolute inset-0 rounded-xl
           bg-gradient-to-br ${deck.gradient}
@@ -338,11 +338,11 @@ function Deck({ deck, onOpen, claimed }) {
           ${claimed ? 'ring-4 ring-yellow-400' : ''}
         `} />
         <div className="absolute inset-[3px] rounded-lg bg-white flex flex-col items-center justify-center">
-          <span className="text-2xl mb-1">{deck.emoji}</span>
-          <span className="text-xs font-semibold text-gray-800 text-center px-2 leading-tight">{deck.name}</span>
+          <span className="text-4xl mb-2">{deck.emoji}</span>
+          <span className="text-sm font-semibold text-gray-800 text-center px-3 leading-tight">{deck.name}</span>
           {claimed && (
-            <div className="absolute top-1 right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center">
-              <span className="text-white text-[10px]">✓</span>
+            <div className="absolute top-2 right-2 w-5 h-5 bg-yellow-400 rounded-full flex items-center justify-center">
+              <span className="text-white text-xs">✓</span>
             </div>
           )}
         </div>
@@ -351,12 +351,12 @@ function Deck({ deck, onOpen, claimed }) {
   )
 }
 
-// Overview card component - same size as deck cards (w-28 h-36)
+// Overview card component - same size as deck cards (w-36 h-48)
 function OverviewCard({ card, index, total, onClaim, claimed, onRead }) {
   return (
     <motion.div
       className={`
-        relative w-28 h-36 rounded-xl cursor-pointer
+        relative w-36 h-48 rounded-xl cursor-pointer
         bg-white border-2 ${claimed ? 'border-yellow-400' : 'border-gray-200'}
         shadow-lg hover:shadow-xl transition-shadow
         flex flex-col items-center justify-center p-4
@@ -368,11 +368,11 @@ function OverviewCard({ card, index, total, onClaim, claimed, onRead }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
     >
-      <span className="text-xs text-gray-400 mb-1">{index + 1}/{total}</span>
-      <span className="text-xs font-semibold text-gray-800 text-center leading-tight px-1">{card.title}</span>
+      <span className="text-sm text-gray-400 mb-2">{index + 1}/{total}</span>
+      <span className="text-sm font-semibold text-gray-800 text-center leading-tight px-2">{card.title}</span>
       {claimed && (
-        <div className="absolute top-1 right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center">
-          <span className="text-white text-[10px]">✓</span>
+        <div className="absolute top-2 right-2 w-5 h-5 bg-yellow-400 rounded-full flex items-center justify-center">
+          <span className="text-white text-xs">✓</span>
         </div>
       )}
     </motion.div>
@@ -383,12 +383,12 @@ function OverviewCard({ card, index, total, onClaim, claimed, onRead }) {
 function LockedCard({ index }) {
   return (
     <motion.div
-      className="relative w-28 h-36 rounded-xl bg-gray-100 border-2 border-gray-200 border-dashed flex flex-col items-center justify-center p-3 opacity-60"
+      className="relative w-36 h-48 rounded-xl bg-gray-100 border-2 border-gray-200 border-dashed flex flex-col items-center justify-center p-4 opacity-60"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 0.6, y: 0 }}
       transition={{ delay: index * 0.05 }}
     >
-      <span className="text-xl mb-1">🔒</span>
+      <span className="text-2xl mb-2">🔒</span>
       <span className="text-xs text-gray-400 text-center">Locked</span>
     </motion.div>
   )
@@ -408,7 +408,7 @@ function TierSection({ tier, tierName, tierEmoji, cards, claimedCards, onReadCar
           <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Locked</span>
         </div>
         <p className="text-xs text-gray-400 mb-2">Complete the previous tier to unlock!</p>
-        <div className="flex gap-3 flex-wrap justify-center opacity-50">
+        <div className="flex gap-4 flex-wrap justify-center opacity-50">
           {Array.from({ length: 5 }).map((_, index) => (
             <LockedCard key={`locked-${tier}-${index}`} index={index} />
           ))}
@@ -433,7 +433,7 @@ function TierSection({ tier, tierName, tierEmoji, cards, claimedCards, onReadCar
           </span>
           {isComplete && <span className="text-green-500">✓</span>}
         </div>
-        <div className="flex gap-3 flex-wrap justify-center">
+        <div className="flex gap-4 flex-wrap justify-center">
           {cards.map((card, index) => {
             // Calculate global card number based on tier
             const tierOffset = tier === 'core' ? 0 : tier === 'deep_dive_1' ? 5 : 10
@@ -646,7 +646,7 @@ function WanderingScreen({ pathSteps, currentStep, isComplete }) {
 function SkeletonCard({ index }) {
   return (
     <motion.div
-      className="relative w-28 h-36 rounded-xl bg-gray-100 border-2 border-gray-200 overflow-hidden"
+      className="relative w-36 h-48 rounded-xl bg-gray-100 border-2 border-gray-200 overflow-hidden"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
@@ -657,12 +657,12 @@ function SkeletonCard({ index }) {
       </div>
 
       {/* Placeholder content */}
-      <div className="flex flex-col items-center justify-center h-full p-3 gap-2">
+      <div className="flex flex-col items-center justify-center h-full p-4 gap-3">
         {/* Index placeholder */}
-        <div className="w-6 h-3 bg-gray-200 rounded" />
+        <div className="w-8 h-4 bg-gray-200 rounded" />
         {/* Title placeholder - two lines */}
-        <div className="w-16 h-2 bg-gray-200 rounded" />
-        <div className="w-14 h-2 bg-gray-200 rounded" />
+        <div className="w-24 h-3 bg-gray-200 rounded" />
+        <div className="w-20 h-3 bg-gray-200 rounded" />
       </div>
     </motion.div>
   )
@@ -843,19 +843,11 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
             className="absolute inset-0 rounded-2xl bg-white border border-gray-200 shadow-2xl flex flex-col items-center justify-center p-6"
             style={{ backfaceVisibility: 'hidden' }}
           >
-            {/* Close button */}
-            <button
-              onClick={(e) => { e.stopPropagation(); onClose(); }}
-              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 active:bg-gray-300 transition-colors z-10"
-              aria-label="Close"
-            >
-              <span className="text-gray-500 text-lg font-light">×</span>
-            </button>
             <span className="text-sm text-gray-400 mb-3">{index + 1} of {total}</span>
             <h2 className="text-xl font-bold text-gray-800 text-center mb-4 leading-tight px-2">{card.title}</h2>
             <span className="text-gray-400 text-sm">Tap to read</span>
             {claimed && (
-              <div className="absolute top-3 left-3 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center shadow-md">
+              <div className="absolute top-3 right-3 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center shadow-md">
                 <span className="text-white text-sm">✓</span>
               </div>
             )}
@@ -1025,21 +1017,21 @@ function SkeletonDeck({ index }) {
     >
       {/* Stack layers */}
       <div
-        className="absolute w-28 h-36 rounded-xl bg-gray-200 border border-gray-300"
+        className="absolute w-36 h-48 rounded-xl bg-gray-200 border border-gray-300"
         style={{ transform: 'translate(4px, 4px) rotate(2deg)' }}
       />
       <div
-        className="absolute w-28 h-36 rounded-xl bg-gray-200 border border-gray-300"
+        className="absolute w-36 h-48 rounded-xl bg-gray-200 border border-gray-300"
         style={{ transform: 'translate(2px, 2px) rotate(0.5deg)' }}
       />
       {/* Top card */}
-      <div className="relative w-28 h-36 rounded-xl bg-gray-100 border-2 border-gray-200 overflow-hidden">
+      <div className="relative w-36 h-48 rounded-xl bg-gray-100 border-2 border-gray-200 overflow-hidden">
         <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite]">
           <div className="h-full w-1/2 bg-gradient-to-r from-transparent via-white/40 to-transparent" />
         </div>
-        <div className="flex flex-col items-center justify-center h-full gap-2">
-          <div className="w-8 h-8 bg-gray-200 rounded-full" />
-          <div className="w-14 h-2 bg-gray-200 rounded" />
+        <div className="flex flex-col items-center justify-center h-full gap-3">
+          <div className="w-10 h-10 bg-gray-200 rounded-full" />
+          <div className="w-20 h-3 bg-gray-200 rounded" />
         </div>
       </div>
     </motion.div>
@@ -1105,7 +1097,7 @@ function SectionedDecks({ sections, onOpenDeck, claimedCards, parentGradient, pa
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
               >
-                <div className="flex gap-3 flex-wrap justify-start pl-4 py-2">
+                <div className="flex gap-4 flex-wrap justify-start pl-4 py-2">
                   {section.subDecks.map((subDeck, deckIndex) => (
                     <motion.div
                       key={subDeck.id}
@@ -1178,30 +1170,11 @@ function DeckSpread({
       {/* Deck title */}
       <span className="text-sm font-semibold text-gray-700">{deck.emoji} {deck.name}</span>
 
-      {/* Progress indicator while loading (shows above cards during progressive load) */}
-      {isLoading && generationProgress && (
-        <div className="text-center mb-4">
-          <p className="text-sm text-gray-500">
-            {generationProgress.tiersComplete === 0
-              ? 'Generating cards...'
-              : generationProgress.tiersComplete >= 3
-                ? 'Almost done...'
-                : `Loading more cards...`
-            }
-          </p>
-          <div className="w-48 h-2 bg-gray-200 rounded-full mt-2 overflow-hidden mx-auto">
-            <div
-              className="h-full bg-gradient-to-r from-yellow-400 to-amber-500 transition-all duration-500"
-              style={{ width: `${((generationProgress.tiersComplete || 0) / 3) * 100}%` }}
-            />
-          </div>
-        </div>
-      )}
 
       {/* Skeleton cards - only show if loading AND no tier data yet */}
       {isLoading && !hasTierData && (
         <div className="flex flex-col items-center gap-3">
-          <div className="flex gap-3 flex-wrap justify-center">
+          <div className="flex gap-4 flex-wrap justify-center">
             {Array.from({ length: skeletonCount }).map((_, index) => (
               <SkeletonCard key={`skeleton-${index}`} index={index} />
             ))}
@@ -1250,7 +1223,7 @@ function DeckSpread({
       {/* LEGACY: Flat overview cards row (for backward compatibility) */}
       {!isLoading && !hasTierData && overviewCards.length > 0 && (
         <div className="flex flex-col items-center gap-3">
-          <div className="flex gap-3 flex-wrap justify-center">
+          <div className="flex gap-4 flex-wrap justify-center">
             {overviewCards.map((card, index) => (
               <motion.div
                 key={card.id}
@@ -1276,7 +1249,7 @@ function DeckSpread({
       {isLoadingChildren && (
         <div className="flex flex-col items-center gap-3">
           <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Loading sub-topics...</span>
-          <div className="flex gap-3 flex-wrap justify-center max-w-4xl">
+          <div className="flex gap-4 flex-wrap justify-center max-w-4xl">
             {Array.from({ length: 6 }).map((_, index) => (
               <SkeletonDeck key={`skeleton-deck-${index}`} index={index} />
             ))}
@@ -1288,7 +1261,7 @@ function DeckSpread({
       {isLoadingSections && (
         <div className="flex flex-col items-center gap-3">
           <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Loading topics...</span>
-          <div className="flex gap-3 flex-wrap justify-center max-w-4xl">
+          <div className="flex gap-4 flex-wrap justify-center max-w-4xl">
             {Array.from({ length: 4 }).map((_, index) => (
               <SkeletonDeck key={`skeleton-section-${index}`} index={index} />
             ))}
@@ -1314,7 +1287,7 @@ function DeckSpread({
       {!isLoadingChildren && !sections && childDecks.length > 0 && (
         <div id="explore-section" className="flex flex-col items-center gap-3">
           <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Explore</span>
-          <div className="flex gap-3 flex-wrap justify-center max-w-4xl">
+          <div className="flex gap-4 flex-wrap justify-center max-w-4xl">
             {childDecks.map((childDeck, index) => (
               <motion.div
                 key={childDeck.id}
@@ -1349,13 +1322,6 @@ function DeckSpread({
         </motion.div>
       )}
 
-      {/* Empty state - only show when not loading and no cards/decks */}
-      {!isLoading && !isLoadingChildren && overviewCards.length === 0 && !hasTierData && childDecks.length === 0 && (
-        <div className="text-center py-8">
-          <span className="text-5xl mb-4 block">{deck.emoji}</span>
-          <p className="text-gray-500">Content coming soon...</p>
-        </div>
-      )}
     </motion.div>
   )
 }
@@ -2609,7 +2575,7 @@ export default function Canvas() {
         </div>
 
         <div className="min-h-screen flex items-center justify-center p-8 pt-24">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
             {CATEGORIES.map((category) => (
               <Deck
                 key={category.id}
