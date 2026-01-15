@@ -817,18 +817,9 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
       exit={{ opacity: 0 }}
       onClick={onClose}
     >
-      {/* X close button - top right */}
-      <button
-        onClick={onClose}
-        className="absolute top-4 right-4 w-11 h-11 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 active:bg-white/40 transition-colors z-10"
-        aria-label="Close"
-      >
-        <span className="text-white text-2xl font-light">×</span>
-      </button>
-
       {/* Card container */}
       <motion.div
-        className="relative w-[90vw] max-w-md h-[80vh] max-h-[600px] cursor-pointer"
+        className="relative w-[85vw] max-w-[380px] h-[65vh] min-h-[300px] max-h-[500px] cursor-pointer"
         style={{ perspective: 1000 }}
         initial={{ x: slideDirection * 300, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
@@ -849,28 +840,45 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
         >
           {/* Front of card */}
           <div
-            className="absolute inset-0 rounded-3xl bg-white border border-gray-200 shadow-2xl flex flex-col items-center justify-center p-8"
+            className="absolute inset-0 rounded-2xl bg-white border border-gray-200 shadow-2xl flex flex-col items-center justify-center p-6"
             style={{ backfaceVisibility: 'hidden' }}
           >
-            <span className="text-base text-gray-400 mb-4">{index + 1} of {total}</span>
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 text-center mb-6 leading-tight px-2">{card.title}</h2>
-            <span className="text-gray-400 text-base">Tap to read</span>
+            {/* Close button */}
+            <button
+              onClick={(e) => { e.stopPropagation(); onClose(); }}
+              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 active:bg-gray-300 transition-colors z-10"
+              aria-label="Close"
+            >
+              <span className="text-gray-500 text-lg font-light">×</span>
+            </button>
+            <span className="text-sm text-gray-400 mb-3">{index + 1} of {total}</span>
+            <h2 className="text-xl font-bold text-gray-800 text-center mb-4 leading-tight px-2">{card.title}</h2>
+            <span className="text-gray-400 text-sm">Tap to read</span>
             {claimed && (
-              <div className="absolute top-6 right-6 w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center shadow-md">
-                <span className="text-white text-lg">✓</span>
+              <div className="absolute top-3 left-3 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center shadow-md">
+                <span className="text-white text-sm">✓</span>
               </div>
             )}
           </div>
 
           {/* Back of card - reading view optimized for mobile */}
           <div
-            className="absolute inset-0 rounded-3xl bg-white border border-gray-200 shadow-2xl flex flex-col p-6 sm:p-8"
+            className="absolute inset-0 rounded-2xl bg-white border border-gray-200 shadow-2xl flex flex-col p-5"
             style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
           >
+            {/* Close button */}
+            <button
+              onClick={(e) => { e.stopPropagation(); onClose(); }}
+              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 active:bg-gray-300 transition-colors z-10"
+              aria-label="Close"
+            >
+              <span className="text-gray-500 text-lg font-light">×</span>
+            </button>
+
             {/* Header */}
-            <div className="flex justify-between items-start mb-4 sm:mb-6">
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-800 leading-tight flex-1 pr-4">{card.title}</h2>
-              <span className="text-sm text-gray-400 whitespace-nowrap">{index + 1}/{total}</span>
+            <div className="flex justify-between items-start mb-3 pr-8">
+              <h2 className="text-lg font-bold text-gray-800 leading-tight flex-1">{card.title}</h2>
+              <span className="text-xs text-gray-400 whitespace-nowrap">{index + 1}/{total}</span>
             </div>
 
             {/* Content area with loading state */}
@@ -885,19 +893,19 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
               ) : error ? (
                 <p className="text-red-500 text-center text-base">{error}</p>
               ) : (
-                <p className="text-gray-700 text-base sm:text-lg leading-relaxed sm:leading-relaxed">
+                <p className="text-gray-700 text-sm leading-relaxed">
                   {displayedContent}
                 </p>
               )}
             </div>
 
-            {/* Action button - prominent at bottom */}
-            <div className="mt-4 sm:mt-6 pt-4 border-t border-gray-100" onClick={e => e.stopPropagation()}>
+            {/* Action button - compact at bottom */}
+            <div className="mt-3 pt-3 border-t border-gray-100" onClick={e => e.stopPropagation()}>
               {!claimed ? (
                 <button
                   onClick={handleClaimAndNext}
                   disabled={isLoading || !content}
-                  className={`w-full py-4 rounded-2xl text-white font-bold text-lg transition-all ${
+                  className={`w-full py-3 rounded-xl text-white font-bold text-base transition-all ${
                     isLoading || !content
                       ? 'bg-gray-300 cursor-not-allowed'
                       : 'bg-gradient-to-r from-yellow-500 to-amber-600 hover:opacity-90 active:scale-[0.98] shadow-lg'
@@ -908,13 +916,13 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
               ) : (
                 <button
                   onClick={() => hasNext ? onNext() : onClose()}
-                  className="w-full py-4 rounded-2xl font-bold text-lg text-yellow-600 bg-yellow-50 border-2 border-yellow-200 hover:bg-yellow-100 active:scale-[0.98] transition-all"
+                  className="w-full py-3 rounded-xl font-bold text-base text-yellow-600 bg-yellow-50 border-2 border-yellow-200 hover:bg-yellow-100 active:scale-[0.98] transition-all"
                 >
                   {hasNext ? 'Next Card →' : '✓ All Done!'}
                 </button>
               )}
-              {/* Hint text - below button where users are looking */}
-              <p className="text-center text-gray-400 text-sm mt-3">{hasPrev || hasNext ? 'Swipe to navigate' : 'Tap card to flip'}</p>
+              {/* Hint text */}
+              <p className="text-center text-gray-400 text-xs mt-2">{hasPrev || hasNext ? 'Swipe to navigate' : 'Tap to flip'}</p>
             </div>
           </div>
         </motion.div>
