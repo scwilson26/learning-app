@@ -721,6 +721,7 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
   const [prevCardId, setPrevCardId] = useState(card.id)
+  const [justClaimed, setJustClaimed] = useState(false)
   // Track initial rotation for new cards entering (to skip flip animation)
   const initialRotation = useRef(startFlipped ? 180 : 0)
 
@@ -831,13 +832,15 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
 
   // Handle claim and advance to next card
   const handleClaimAndNext = () => {
+    setJustClaimed(true)
     onClaim(card.id)
-    // Small delay to show the claim feedback, then advance
-    if (hasNext) {
-      setTimeout(() => {
+    // Show shimmer animation, then advance
+    setTimeout(() => {
+      setJustClaimed(false)
+      if (hasNext) {
         onNext()
-      }, 300)
-    }
+      }
+    }, 600)
   }
 
   // Handle swipe gestures
@@ -903,13 +906,26 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
 
           {/* Back of card - reading view optimized for mobile */}
           <div
-            className="absolute inset-0 rounded-2xl border border-gray-200 shadow-2xl flex flex-col p-5"
+            className="absolute inset-0 rounded-2xl border border-gray-200 shadow-2xl flex flex-col p-5 overflow-hidden"
             style={{
               backfaceVisibility: 'hidden',
               transform: 'rotateY(180deg)',
               background: `linear-gradient(135deg, #ffffff 0%, ${tint} 100%)`
             }}
           >
+            {/* Claim shimmer effect */}
+            {justClaimed && (
+              <motion.div
+                className="absolute inset-0 pointer-events-none z-20"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [0, 1, 0] }}
+                transition={{ duration: 0.6, ease: 'easeOut' }}
+                style={{
+                  background: 'linear-gradient(135deg, transparent 0%, rgba(250, 204, 21, 0.4) 50%, transparent 100%)',
+                  boxShadow: 'inset 0 0 60px rgba(250, 204, 21, 0.5)'
+                }}
+              />
+            )}
             {/* Close button */}
             <button
               onClick={(e) => { e.stopPropagation(); onClose(); }}
