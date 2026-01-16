@@ -159,6 +159,79 @@ export function isTreeDeck(deckId) {
   return findNodeById(vitalArticlesTree, deckId) !== null
 }
 
+/**
+ * Count all descendant nodes under a given node
+ * @param {string} nodeId - The node ID to count descendants for
+ * @returns {number} Total count of all descendants
+ */
+export function countDescendants(nodeId) {
+  const node = findNodeById(vitalArticlesTree, nodeId)
+  if (!node) return 0
+
+  let count = 0
+  const countRecursive = (n) => {
+    if (!n.children || n.children.length === 0) {
+      return 1 // Leaf node counts as 1
+    }
+    let total = 0
+    for (const child of n.children) {
+      if (!child.isImplementationDetail) {
+        total += 1 // Count this child
+      }
+      total += countRecursive(child)
+    }
+    return total
+  }
+
+  // Don't count the node itself, just its descendants
+  if (node.children) {
+    for (const child of node.children) {
+      if (!child.isImplementationDetail) {
+        count += 1
+      }
+      count += countRecursive(child)
+    }
+  }
+
+  return count
+}
+
+/**
+ * Count claimed descendants under a given node
+ * @param {string} nodeId - The node ID to count claimed descendants for
+ * @returns {number} Count of claimed descendants
+ */
+export function countClaimedDescendants(nodeId) {
+  const node = findNodeById(vitalArticlesTree, nodeId)
+  if (!node) return 0
+
+  const data = getData()
+  let count = 0
+
+  const countRecursive = (n) => {
+    // Check if this node is claimed
+    if (data.cards[n.id]?.claimed) {
+      count++
+    }
+
+    // Recurse into children
+    if (n.children) {
+      for (const child of n.children) {
+        countRecursive(child)
+      }
+    }
+  }
+
+  // Count descendants (not the node itself)
+  if (node.children) {
+    for (const child of node.children) {
+      countRecursive(child)
+    }
+  }
+
+  return count
+}
+
 // Category gradients for tree nodes (matches CATEGORIES in Canvas.jsx)
 const CATEGORY_STYLES = {
   arts: { gradient: 'from-pink-500 to-rose-600', borderColor: 'border-pink-300' },
@@ -224,17 +297,52 @@ export function getTreeCategories() {
 }
 
 /**
- * Generate a random path through the vital articles tree
- * Descends randomly from root to either a leaf or target depth
- * @param {number} minDepth - Minimum depth to reach before stopping (default 3)
- * @param {number} maxDepth - Maximum depth to reach (default 5)
- * @returns {Object} { path: [...ids], steps: [{id, name, emoji}...], destination: nodeInfo }
+ * Score a topic for "interestingness" based on heuristics
+ * Used by Wander to prefer more engaging topics
+ * @param {Object} node - Tree node with id, title, etc.
+ * @returns {number} Interest score (higher = more interesting)
  */
-export function getRandomTreePath(minDepth = 3, maxDepth = 5) {
+function scoreTopicInterestForWander(node) {
+  let score = 0
+  const id = node.id?.toLowerCase() || ''
+  const title = node.title?.toLowerCase() || ''
+
+  // Category bonuses (from the tree id prefix)
+  if (id.startsWith('people-')) score += 3           // People are inherently interesting
+  if (id.startsWith('history-')) score += 2          // Historical events/eras
+  if (id.startsWith('arts-')) score += 1             // Arts & culture
+  if (id.startsWith('technology-')) score += 1      // Tech topics
+  if (id.startsWith('biology-')) score += 1          // Life sciences
+
+  // Title-based bonuses
+  if (title.includes('war') || title.includes('battle')) score += 2
+  if (title.includes('revolution')) score += 2
+  if (title.includes('discovery')) score += 2
+  if (title.includes('invention')) score += 2
+  if (title.includes('ancient') || title.includes('medieval')) score += 1
+
+  // Penalties for boring/administrative topics
+  if (title.startsWith('list of')) score -= 5
+  if (title.startsWith('index of')) score -= 5
+  if (title.startsWith('outline of')) score -= 3
+  if (title.includes('by country')) score -= 2
+  if (title.includes('by year')) score -= 2
+  if (title.includes('demographics')) score -= 2
+  if (title.includes('administrative')) score -= 2
+
+  // Bonus for being a Wikipedia vital article (has wikiTitle)
+  if (node.wikiTitle) score += 1
+
+  return score
+}
+
+/**
+ * Generate a single random path through the tree (internal helper)
+ */
+function generateSingleRandomPath(minDepth, maxDepth) {
   const path = []
   const steps = []
 
-  // Start from a random top-level category
   const categories = vitalArticlesTree.children
   if (!categories || categories.length === 0) return null
 
@@ -246,23 +354,25 @@ export function getRandomTreePath(minDepth = 3, maxDepth = 5) {
     emoji: pickEmojiForTopic(currentNode.title),
   })
 
-  // Descend randomly until we hit a leaf or reach target depth
   const targetDepth = minDepth + Math.floor(Math.random() * (maxDepth - minDepth + 1))
   let depth = 1
 
+  const isArticleNode = (node) => {
+    if (node.wikiTitle) return true
+    if (node.isLeaf || !node.children || node.children.length === 0) return true
+    return false
+  }
+
   while (depth < targetDepth && currentNode.children && currentNode.children.length > 0) {
-    // Pick a random child (prefer non-leaf nodes if we haven't reached minDepth)
     let candidates = currentNode.children
 
     if (depth < minDepth) {
-      // Try to find non-leaf children to keep going deeper
-      const nonLeaves = candidates.filter(c => c.children && c.children.length > 0)
-      if (nonLeaves.length > 0) {
-        candidates = nonLeaves
+      const nonArticles = candidates.filter(c => !isArticleNode(c))
+      if (nonArticles.length > 0) {
+        candidates = nonArticles
       }
     }
 
-    // Pick random child from candidates
     currentNode = candidates[Math.floor(Math.random() * candidates.length)]
     path.push(currentNode.id)
     steps.push({
@@ -272,11 +382,9 @@ export function getRandomTreePath(minDepth = 3, maxDepth = 5) {
     })
     depth++
 
-    // If we hit a leaf, stop
-    if (currentNode.isLeaf) break
+    if (isArticleNode(currentNode)) break
   }
 
-  // Get destination info
   const categoryId = path[0]
   const categoryStyle = CATEGORY_STYLES[categoryId] || { gradient: 'from-gray-500 to-gray-700', borderColor: 'border-gray-300' }
 
@@ -288,13 +396,46 @@ export function getRandomTreePath(minDepth = 3, maxDepth = 5) {
       name: currentNode.title,
       title: currentNode.title,
       emoji: pickEmojiForTopic(currentNode.title),
-      isLeaf: currentNode.isLeaf || false,
+      isLeaf: currentNode.isLeaf || !currentNode.children || currentNode.children.length === 0,
       wikiTitle: currentNode.wikiTitle || null,
       articleCount: currentNode.articleCount || 0,
       gradient: categoryStyle.gradient,
       borderColor: categoryStyle.borderColor,
+      source: currentNode.wikiTitle ? 'vital-articles' : null,
+    },
+    interestScore: scoreTopicInterestForWander(currentNode)
+  }
+}
+
+/**
+ * Generate a random path through the vital articles tree
+ * Picks from multiple candidates and chooses the most interesting one
+ * @param {number} minDepth - Minimum depth to reach before stopping (default 3)
+ * @param {number} maxDepth - Maximum depth to reach (default 5)
+ * @returns {Object} { path: [...ids], steps: [{id, name, emoji}...], destination: nodeInfo }
+ */
+export function getRandomTreePath(minDepth = 3, maxDepth = 5) {
+  // Generate 20 random candidates
+  const candidates = []
+  for (let i = 0; i < 20; i++) {
+    const candidate = generateSingleRandomPath(minDepth, maxDepth)
+    if (candidate) {
+      candidates.push(candidate)
     }
   }
+
+  if (candidates.length === 0) return null
+
+  // Sort by interest score (highest first)
+  candidates.sort((a, b) => b.interestScore - a.interestScore)
+
+  // Pick randomly from top 5 to add some variety
+  const topCandidates = candidates.slice(0, Math.min(5, candidates.length))
+  const selected = topCandidates[Math.floor(Math.random() * topCandidates.length)]
+
+  // Remove the interestScore from the returned object (internal detail)
+  const { interestScore, ...result } = selected
+  return result
 }
 
 /**
@@ -569,6 +710,55 @@ export function getClaimedCardIds() {
   })
 
   return claimed
+}
+
+/**
+ * Claim a category node (creates it if needed, auto-claims on visit)
+ * Category cards are different from article cards - they're just waypoints
+ * @param {string} nodeId - The node ID to claim
+ * @param {string} title - The node title
+ * @returns {boolean} True if newly claimed, false if already claimed
+ */
+export function claimCategoryNode(nodeId, title) {
+  const data = getData()
+
+  // Check if already claimed
+  if (data.cards[nodeId]?.claimed) {
+    return false
+  }
+
+  // Create or update the category card
+  data.cards[nodeId] = {
+    id: nodeId,
+    title: title,
+    type: 'category', // Mark as category card (not article)
+    claimed: true,
+    claimedAt: new Date().toISOString()
+  }
+
+  saveData(data)
+  return true
+}
+
+/**
+ * Claim all ancestor category nodes in a path
+ * @param {Array} path - Array of node IDs from root to current
+ * @param {Function} getNodeInfo - Function to get node title by ID
+ * @returns {number} Number of newly claimed nodes
+ */
+export function claimAncestorCategories(path, getNodeInfo) {
+  let newlyClaimed = 0
+
+  // Claim each node in the path (except possibly the last one if it's an article)
+  for (const nodeId of path) {
+    const nodeInfo = getNodeInfo(nodeId)
+    if (nodeInfo && claimCategoryNode(nodeId, nodeInfo.title)) {
+      newlyClaimed++
+      console.log(`[claimAncestorCategories] Auto-claimed category: ${nodeInfo.title}`)
+    }
+  }
+
+  return newlyClaimed
 }
 
 /**
@@ -929,7 +1119,7 @@ export function getWanderableDecks(currentDeckId = null, minDepth = 2, maxDepth 
 }
 
 /**
- * Pick a random wanderable deck
+ * Pick a random wanderable deck with interest-based scoring
  * @param {string} currentDeckId - The current deck ID to exclude
  * @returns {Object|null} A random wanderable deck or null if none available
  */
@@ -951,19 +1141,23 @@ export function pickRandomWanderDeck(currentDeckId = null) {
     return null
   }
 
-  // Pick a random deck, weighted slightly toward decks with more unclaimed cards
-  // This makes exploration feel more rewarding
-  const weighted = []
-  candidates.forEach(deck => {
-    // Add deck multiple times based on unclaimed count (1-3 times)
-    const weight = Math.min(3, deck.unclaimedCount)
-    for (let i = 0; i < weight; i++) {
-      weighted.push(deck)
-    }
-  })
+  // Score each candidate for interestingness
+  const scored = candidates.map(deck => ({
+    ...deck,
+    interestScore: scoreTopicInterestForWander({
+      id: deck.deckId,
+      title: deck.deckName,
+      wikiTitle: deck.wikiTitle
+    })
+  }))
 
-  const randomIndex = Math.floor(Math.random() * weighted.length)
-  return weighted[randomIndex]
+  // Sort by interest score (highest first)
+  scored.sort((a, b) => b.interestScore - a.interestScore)
+
+  // Pick randomly from top 5 (or all if fewer) to add variety
+  const topCandidates = scored.slice(0, Math.min(5, scored.length))
+  const randomIndex = Math.floor(Math.random() * topCandidates.length)
+  return topCandidates[randomIndex]
 }
 
 /**

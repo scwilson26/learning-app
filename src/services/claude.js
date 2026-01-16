@@ -1922,38 +1922,43 @@ export async function generateCardTitles(deckName, parentPath = null) {
     ? `\nCONTEXT: This is "${deckName}" within "${parentPath}". All titles MUST be relevant to this parent context.\n`
     : '';
 
-  const prompt = `Generate 15 card titles for: "${deckName}"
+  const prompt = `Generate 15 educational flashcard titles about: "${deckName}"
 ${parentContext}
-TITLE FORMULA: [Specific Element] + [Hook/Tension]
-Every title must hint at something SPECIFIC you'll learn.
-
-TITLE RULES:
-- 4-10 words per title
-- Include a SPECIFIC element (number, name, date, place, object)
-- Create curiosity - "wait, what?!"
-- Promise a story or revelation, not a lecture
-
-✅ GREAT TITLES:
-- "The Blind Mathematician Who Outworked Everyone"
-- "Why There's No Nobel Prize for Math"
-- "The 6-Second Rule That Saved Apollo 11"
-- "When Salt Was Worth More Than Gold"
-
-❌ BANNED (generic/textbook):
-- "Definition and Core Components"
-- "Understanding [Topic]"
-- "The History of [Topic]"
-- "Why [Topic] Matters"
-- "How [Topic] Works"
-- Any title starting with "The Basics of..."
+TITLE FORMAT: "[Specific Concept]: [Clear Description]"
+Each title should clearly indicate what the card teaches.
 
 STRUCTURE:
-Cards 1-5: CORE - Answer obvious questions. Card 1 should ground the reader on "what is this?"
-Cards 6-10: DEEP DIVE 1 - The "how/why" follow-ups, mechanisms, connections
-Cards 11-15: DEEP DIVE 2 - Obscure facts, debates, expert-level surprises
+Cards 1-5 (Core Essentials): What is it? Key terms? Fundamental principles?
+  - Card 1: Definition/overview of "${deckName}"
+  - Card 2-3: Key terminology and basic concepts
+  - Card 4-5: Fundamental principles or rules
+
+Cards 6-10 (Deep Dive 1): How does it work? Methods? Processes? Types?
+  - Mechanisms and processes
+  - Types, variations, or categories
+  - Step-by-step explanations
+  - Historical context or origins
+
+Cards 11-15 (Deep Dive 2): Applications? Connections? Advanced topics?
+  - Real-world applications and examples
+  - Connections to other topics
+  - Advanced concepts or special cases
+  - Historical significance or modern developments
+
+✅ GOOD TITLES (clear, educational):
+- "Alveoli Structure: Maximizing Surface Area"
+- "The Commutative Property: Order Doesn't Matter"
+- "Photosynthesis Basics: Converting Light to Energy"
+- "Newton's First Law: Objects Resist Change"
+
+❌ BAD TITLES (vague or clickbait):
+- "Cool Facts About Breathing"
+- "Why This Topic Is Amazing"
+- "The Shocking Truth About..."
+- "Everything You Need to Know"
 
 Return ONLY JSON:
-{"cards":[{"number":1,"title":"Short Hooky Title"},{"number":2,"title":"Another Intriguing Title"}]}`;
+{"cards":[{"number":1,"title":"Clear Educational Title"},{"number":2,"title":"Another Specific Title"}]}`;
 
 
   try {
@@ -2004,14 +2009,14 @@ Return ONLY JSON:
 export async function generateSingleCardContent(deckName, cardNumber, cardTitle, allTitles, onStreamUpdate = null) {
   console.log(`[CONTENT] ${onStreamUpdate ? 'Streaming' : 'Generating'} for card ${cardNumber}: ${cardTitle}`);
 
-  // Determine tier context with tone guidance
+  // Determine tier context
   let tierContext = '';
   if (cardNumber <= 5) {
-    tierContext = 'CORE ESSENTIALS - Clear + engaging. Prioritize understanding. Reader knows NOTHING.';
+    tierContext = 'CORE ESSENTIALS - Foundational concepts. Reader is new to this topic.';
   } else if (cardNumber <= 10) {
-    tierContext = 'DEEP DIVE 1 - Surprising + connective. The "aha" moments. Reader knows basics.';
+    tierContext = 'DEEP DIVE 1 - How it works. Mechanisms, processes, types. Reader knows basics.';
   } else {
-    tierContext = 'DEEP DIVE 2 - Obscure + expert. Flex-worthy trivia. Impress them.';
+    tierContext = 'DEEP DIVE 2 - Applications and connections. Advanced topics. Reader is engaged.';
   }
 
   // Include other titles to avoid repetition
@@ -2020,38 +2025,39 @@ export async function generateSingleCardContent(deckName, cardNumber, cardTitle,
     .map(t => `Card ${t.number}: ${t.title}`)
     .join('\n');
 
-  const prompt = `Write content for this learning card:
+  const prompt = `Create educational flashcard content for a learning app.
 
-Topic: "${deckName}"
-Card ${cardNumber}: "${cardTitle}"
+TOPIC: "${deckName}"
+CARD TITLE: "${cardTitle}"
+CARD NUMBER: ${cardNumber} of 15
+TIER: ${tierContext}
 
-Tier: ${tierContext}
-
-OTHER CARDS (DO NOT REPEAT):
+OTHER CARDS (do not overlap):
 ${otherTitles}
 
-⚠️ LENGTH: 50-70 words STRICTLY. Count them.
+Generate original educational content (65-70 words) that teaches this concept clearly.
 
-STRUCTURE (all within 50-70 words):
-1. HOOK (first sentence): Grab attention with a surprising fact or question
-2. CONTEXT: Brief background
-3. MECHANISM/DETAIL: The meat of the card
-4. LANDING: End with the surprising implication
+CONTENT REQUIREMENTS:
+- Length: EXACTLY 65-70 words (count carefully!)
+- Structure:
+  * First 1-2 sentences: State what this card teaches
+  * Middle sentences: Explain with specific examples, numbers, facts
+  * Final 1-2 sentences: Why it matters or how it connects
 
-WRITING RULES:
-- Use SPECIFIC numbers, names, dates (not "many" or "often")
-- Write conversationally - like telling a friend something cool
-- Start sentences with action words, not "The" or "It"
-- Each card = ONE nugget of wisdom, not a summary
+WRITING STYLE:
+- Educational and clear, like a great teacher explaining it
+- Use concrete examples and specific numbers/facts
+- Explain WHY things work, not just WHAT they are
+- Conversational but informative
+- Every sentence should teach something
 
-❌ BANNED:
-- "Interestingly..." / "It's worth noting..."
-- "A [topic] is..." definitions
-- "throughout history" → Name the specific era
-- "changed everything" → Say HOW specifically
-- Academic throat-clearing of any kind
+❌ AVOID:
+- Dramatic hooks or clickbait openers
+- Vague statements ("many scientists believe...")
+- Filler words or throat-clearing
+- Entertainment over education
 
-Return ONLY the content text (no title, no JSON, just the paragraph):`;
+Return ONLY the text content (65-70 words):`;
 
   try {
     // Use streaming if callback provided
@@ -2117,6 +2123,217 @@ Return ONLY the content text (no title, no JSON, just the paragraph):`;
 
   } catch (error) {
     console.error('[CONTENT] Error:', error);
+    throw error;
+  }
+}
+
+// ============================================================================
+// NEW: Tier-by-tier card generation with streaming (progressive display)
+// ============================================================================
+
+const TIER_CONFIG = {
+  core: {
+    name: 'Core Essentials',
+    startNumber: 1,
+    guidance: `Card 1: What is this topic? (definition + why it matters)
+Cards 2-3: Key terminology and basic concepts
+Cards 4-5: Fundamental principles or rules`,
+  },
+  deep_dive_1: {
+    name: 'Deep Dive 1',
+    startNumber: 6,
+    guidance: `How it works - mechanisms and processes
+Types, variations, or categories
+Historical context or key figures`,
+  },
+  deep_dive_2: {
+    name: 'Deep Dive 2',
+    startNumber: 11,
+    guidance: `Real-world applications and examples
+Connections to other topics
+Advanced concepts or fascinating facts`,
+  }
+};
+
+/**
+ * Generate 5 cards for a specific tier with streaming support
+ * @param {string} topicName - The topic
+ * @param {string} tier - 'core' | 'deep_dive_1' | 'deep_dive_2'
+ * @param {Array} previousCards - Cards from previous tiers (to avoid repetition)
+ * @param {string} parentContext - Optional parent context
+ * @param {Function} onCard - Callback fired when each card is ready (for progressive display)
+ * @returns {Promise<Array>} Array of 5 card objects
+ */
+export async function generateTierCards(topicName, tier, previousCards = [], parentContext = null, onCard = null) {
+  const config = TIER_CONFIG[tier];
+  if (!config) throw new Error(`Unknown tier: ${tier}`);
+
+  console.log(`[TIER] Generating ${config.name} (5 cards) for: ${topicName}${onCard ? ' [STREAMING]' : ''}`);
+
+  // Build context from previous cards
+  let previousContext = '';
+  if (previousCards.length > 0) {
+    previousContext = `\nALREADY COVERED (do NOT repeat):
+${previousCards.map(c => `- "${c.title}": ${c.content?.substring(0, 80)}...`).join('\n')}
+
+Build on this foundation - go deeper, not sideways.\n`;
+  }
+
+  const contextHint = parentContext
+    ? `Context: "${topicName}" within "${parentContext}".\n`
+    : '';
+
+  // Use delimiters for streaming so we can parse cards as they arrive
+  const prompt = `Generate 5 educational flashcards about "${topicName}" for ${config.name}.
+${contextHint}${previousContext}
+FOCUS FOR THIS TIER:
+${config.guidance}
+
+Each card needs:
+- "title": Clear topic (4-8 words), format "[Concept]: [Description]"
+- "content": 50-60 words teaching ONE specific thing
+
+Rules:
+- Use specific facts, numbers, names (not vague statements)
+- Each card = one concept, not a summary
+- No overlap with previous cards
+
+IMPORTANT: Output each card with delimiters so it can be displayed immediately:
+###CARD###
+{"number": ${config.startNumber}, "title": "...", "content": "..."}
+###END###
+###CARD###
+{"number": ${config.startNumber + 1}, "title": "...", "content": "..."}
+###END###
+(continue for all 5 cards)`;
+
+  const timestamp = Date.now();
+  const allCards = [];
+
+  try {
+    // Use streaming if callback provided
+    if (onCard) {
+      let buffer = '';
+      let cardsFound = 0;
+
+      const stream = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1500,
+        messages: [{ role: 'user', content: prompt }],
+        stream: true
+      });
+
+      for await (const event of stream) {
+        if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+          buffer += event.delta.text;
+
+          // Look for complete cards in the buffer
+          while (buffer.includes('###CARD###') && buffer.includes('###END###')) {
+            const startIdx = buffer.indexOf('###CARD###');
+            const endIdx = buffer.indexOf('###END###');
+
+            if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+              const cardJson = buffer.substring(startIdx + 10, endIdx).trim();
+
+              try {
+                const card = JSON.parse(cardJson);
+                const formattedCard = {
+                  id: `${topicName.toLowerCase().replace(/\s+/g, '-')}-${tier}-${cardsFound}-${timestamp}`,
+                  number: card.number || config.startNumber + cardsFound,
+                  title: card.title,
+                  content: card.content,
+                  tier,
+                  tierIndex: cardsFound,
+                  contentLoaded: true
+                };
+
+                allCards.push(formattedCard);
+                cardsFound++;
+                console.log(`[TIER] 📦 Card ${cardsFound}/5 ready: ${card.title}`);
+
+                // Fire callback immediately so UI can update
+                onCard(formattedCard, cardsFound);
+
+              } catch (parseErr) {
+                console.warn('[TIER] Failed to parse card JSON:', cardJson.substring(0, 100));
+              }
+
+              // Remove processed card from buffer
+              buffer = buffer.substring(endIdx + 9);
+            } else {
+              break;
+            }
+          }
+        }
+      }
+
+      console.log(`[TIER] ✅ Streamed ${allCards.length} cards for: ${topicName}`);
+      return allCards;
+
+    } else {
+      // Non-streaming fallback (for background generation)
+      const message = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1500,
+        messages: [{ role: 'user', content: prompt }]
+      });
+
+      const responseText = message.content[0].text.trim();
+
+      // Parse all cards from delimited format
+      const cardMatches = responseText.matchAll(/###CARD###\s*([\s\S]*?)\s*###END###/g);
+
+      for (const match of cardMatches) {
+        try {
+          const card = JSON.parse(match[1].trim());
+          const formattedCard = {
+            id: `${topicName.toLowerCase().replace(/\s+/g, '-')}-${tier}-${allCards.length}-${timestamp}`,
+            number: card.number || config.startNumber + allCards.length,
+            title: card.title,
+            content: card.content,
+            tier,
+            tierIndex: allCards.length,
+            contentLoaded: true
+          };
+          allCards.push(formattedCard);
+        } catch (parseErr) {
+          console.warn('[TIER] Failed to parse card:', match[1].substring(0, 50));
+        }
+      }
+
+      // Fallback: try JSON array format if delimiter parsing failed
+      if (allCards.length === 0) {
+        let jsonText = responseText;
+        if (responseText.includes('```')) {
+          jsonText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+        }
+
+        const cards = JSON.parse(jsonText);
+        if (Array.isArray(cards)) {
+          cards.forEach((card, index) => {
+            allCards.push({
+              id: `${topicName.toLowerCase().replace(/\s+/g, '-')}-${tier}-${index}-${timestamp}`,
+              number: card.number || config.startNumber + index,
+              title: card.title,
+              content: card.content,
+              tier,
+              tierIndex: index,
+              contentLoaded: true
+            });
+          });
+        }
+      }
+
+      if (allCards.length !== 5) {
+        console.warn(`[TIER] Expected 5 cards, got ${allCards.length}`);
+      }
+
+      console.log(`[TIER] ✅ Generated ${allCards.length} cards for: ${topicName}`);
+      return allCards;
+    }
+
+  } catch (error) {
+    console.error(`[TIER] Error generating ${config.name}:`, error);
     throw error;
   }
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { generateDeckCards, generateSubDecks, generateCardTitles, generateSingleCardContent } from '../services/claude'
+import { generateSubDecks, generateSingleCardContent, generateTierCards } from '../services/claude'
 import { fetchLevel2WithSections, hasLevel2Sections } from '../services/wikipedia'
 import {
   getDeckCards,
@@ -24,7 +24,10 @@ import {
   getRandomTreePath,
   searchTopics,
   getSearchableTopicCount,
-  clearAllData
+  clearAllData,
+  claimCategoryNode,
+  countDescendants,
+  countClaimedDescendants
 } from '../services/storage'
 
 // Configuration - card counts can be adjusted here or per-deck
@@ -434,6 +437,108 @@ function LockedCard({ index }) {
     >
       <span className="text-xl mb-1">🔒</span>
       <span className="text-xs text-gray-400 text-center">Locked</span>
+    </motion.div>
+  )
+}
+
+// Category card - flippable card showing category info and progress
+function CategoryCard({ deck, claimed, onClaim, tint = '#fafbfc' }) {
+  const [isFlipped, setIsFlipped] = useState(false)
+
+  // Get progress stats
+  const totalTopics = countDescendants(deck.id)
+  const claimedTopics = countClaimedDescendants(deck.id)
+  const progressPercent = totalTopics > 0 ? Math.round((claimedTopics / totalTopics) * 100) : 0
+
+  const handleFlip = () => {
+    setIsFlipped(!isFlipped)
+  }
+
+  const handleClaim = (e) => {
+    e.stopPropagation()
+    onClaim()
+    setTimeout(() => setIsFlipped(false), 300)
+  }
+
+  return (
+    <motion.div
+      className="relative w-64 h-44 cursor-pointer"
+      style={{ perspective: 1000 }}
+      onClick={handleFlip}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+    >
+      <motion.div
+        className="relative w-full h-full"
+        style={{ transformStyle: 'preserve-3d' }}
+        animate={{ rotateY: isFlipped ? 180 : 0 }}
+        transition={{ duration: 0.5, ease: 'easeInOut' }}
+      >
+        {/* Front of card */}
+        <div
+          className={`absolute inset-0 rounded-2xl flex flex-col items-center justify-center p-6 border-2 ${claimed ? 'border-yellow-400' : 'border-gray-200'}`}
+          style={{
+            backfaceVisibility: 'hidden',
+            background: `linear-gradient(135deg, #ffffff 0%, ${tint} 100%)`,
+            boxShadow: claimed
+              ? '0 8px 20px rgba(250, 204, 21, 0.25), 0 4px 12px rgba(0, 0, 0, 0.1)'
+              : '0 8px 16px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.06)'
+          }}
+        >
+          {claimed && (
+            <div className="absolute top-3 right-3 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center shadow-md">
+              <span className="text-white text-sm">✓</span>
+            </div>
+          )}
+          <span className="text-5xl mb-2">{deck.emoji}</span>
+          <h2 className="text-lg font-bold text-gray-800 text-center">{deck.name}</h2>
+          <p className="text-xs text-gray-400 mt-2">Tap to flip</p>
+        </div>
+
+        {/* Back of card */}
+        <div
+          className={`absolute inset-0 rounded-2xl flex flex-col items-center justify-center p-6 border-2 ${claimed ? 'border-yellow-400' : 'border-gray-200'}`}
+          style={{
+            backfaceVisibility: 'hidden',
+            transform: 'rotateY(180deg)',
+            background: `linear-gradient(135deg, #ffffff 0%, ${tint} 100%)`,
+            boxShadow: '0 8px 16px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.06)'
+          }}
+        >
+          <span className="text-3xl mb-2">{deck.emoji}</span>
+          <h3 className="text-sm font-bold text-gray-800 text-center mb-3">{deck.name}</h3>
+
+          {/* Progress bar */}
+          <div className="w-full px-4 mb-3">
+            <div className="flex justify-between text-xs text-gray-500 mb-1">
+              <span>Progress</span>
+              <span>{claimedTopics}/{totalTopics}</span>
+            </div>
+            <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-yellow-400 to-amber-500 rounded-full transition-all duration-500"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+          </div>
+
+          <p className="text-xs text-gray-500 text-center mb-3">
+            Explore the topics within
+          </p>
+
+          {/* Claim button */}
+          {!claimed ? (
+            <button
+              onClick={handleClaim}
+              className="px-6 py-2 bg-gradient-to-r from-yellow-400 to-amber-500 text-white font-bold text-sm rounded-xl shadow-md hover:opacity-90 active:scale-95 transition-all"
+            >
+              ✓ Got it!
+            </button>
+          ) : (
+            <span className="text-xs text-green-600 font-semibold">✓ Collected!</span>
+          )}
+        </div>
+      </motion.div>
     </motion.div>
   )
 }
@@ -1154,6 +1259,8 @@ function DeckSpread({
   isLoadingSections,
   skeletonCount,
   isLeaf,
+  isArticle, // Whether this deck should have learning cards (vs just being a category)
+  onClaimCategory, // Handler for claiming category cards
   // Tier-related props
   tierCards,
   tierCompletion,
@@ -1181,23 +1288,59 @@ function DeckSpread({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
     >
-      {/* Deck title */}
-      <span className="text-sm font-semibold text-gray-700">{deck.emoji} {deck.name}</span>
+      {/* Deck title - only show for articles, categories show in card */}
+      {isArticle && (
+        <span className="text-sm font-semibold text-gray-700">{deck.emoji} {deck.name}</span>
+      )}
 
+      {/* Category card - for non-article nodes (categories with children) */}
+      {!isArticle && (
+        <CategoryCard
+          deck={deck}
+          claimed={claimedCards.has(deck.id)}
+          onClaim={onClaimCategory}
+          tint={getCardTint(deck.gradient)}
+        />
+      )}
 
-      {/* Skeleton cards - only show if loading AND no tier data yet */}
-      {isLoading && !hasTierData && (
-        <div className="flex flex-col items-center gap-3">
-          <div className="flex gap-2 flex-wrap justify-center">
-            {Array.from({ length: skeletonCount }).map((_, index) => (
-              <SkeletonCard key={`skeleton-${index}`} index={index} />
-            ))}
+      {/* Loading state - show progress while generating all 15 cards */}
+      {isArticle && isLoading && !hasTierData && (
+        <div className="flex flex-col items-center gap-6 py-12">
+          {/* Animated spinner */}
+          <div className="relative">
+            <div className="w-16 h-16 border-4 border-gray-200 rounded-full" />
+            <div className="absolute top-0 left-0 w-16 h-16 border-4 border-purple-500 rounded-full border-t-transparent animate-spin" />
+          </div>
+
+          {/* Progress text */}
+          <div className="text-center">
+            <p className="text-lg font-semibold text-gray-700 mb-1">
+              Creating your learning cards...
+            </p>
+            <p className="text-sm text-gray-500">
+              Generating 15 high-quality educational cards
+            </p>
+          </div>
+
+          {/* Fake progress bar that fills over ~8 seconds */}
+          <div className="w-64">
+            <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+              <motion.div
+                className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full"
+                initial={{ width: '0%' }}
+                animate={{ width: '95%' }}
+                transition={{ duration: 8, ease: 'easeOut' }}
+              />
+            </div>
+            <p className="text-xs text-gray-400 text-center mt-2">
+              This takes about 5-8 seconds
+            </p>
           </div>
         </div>
       )}
 
-      {/* NEW: Tiered card display - shows progressively as tiers complete */}
-      {hasTierData && (
+      {/* NEW: Tiered card display - shows progressively as tiers complete (only for articles) */}
+      {isArticle && hasTierData && (
         <div className="flex flex-col items-center gap-10 w-full">
           {tiers.map((tier, tierIndex) => {
             const cards = tierCards[tier.key] || []
@@ -1235,8 +1378,8 @@ function DeckSpread({
         </div>
       )}
 
-      {/* LEGACY: Flat overview cards row (for backward compatibility) */}
-      {!isLoading && !hasTierData && overviewCards.length > 0 && (
+      {/* LEGACY: Flat overview cards row (for backward compatibility, only for articles) */}
+      {isArticle && !isLoading && !hasTierData && overviewCards.length > 0 && (
         <div className="flex flex-col items-center gap-3">
           <div className="flex gap-2 flex-wrap justify-center">
             {overviewCards.map((card, index) => (
@@ -1747,17 +1890,22 @@ export default function Canvas() {
 
     // Check if this deck has children in the vital articles tree
     const treeChildren = getTreeChildren(deck.id)
-    const isBranchNode = treeChildren && treeChildren.length > 0
+    const hasChildren = treeChildren && treeChildren.length > 0
 
-    // For branch nodes: generate fewer overview cards (3)
-    // For leaf nodes: generate full set (5)
-    const cardCount = isBranchNode ? 3 : 5
+    // Determine if this is an ARTICLE node (should have learning cards)
+    // Article nodes are either:
+    // 1. Wikipedia vital articles (have wikiTitle or source === 'vital-articles')
+    // 2. Leaf nodes (no children)
+    const isArticleNode = deck.source === 'vital-articles' || deck.wikiTitle || deck.isLeaf || !hasChildren
 
-    if (isBranchNode) {
-      console.log(`[loadOrGenerateCardsForDeck] 🌿 BRANCH NODE: "${deck.name}" has ${treeChildren.length} children - will generate ${cardCount} overview cards`)
-    } else {
-      console.log(`[loadOrGenerateCardsForDeck] 🍂 LEAF NODE: "${deck.name}" - will generate ${cardCount} cards`)
+    // CATEGORY nodes (have children, not vital articles) should NOT generate cards
+    // They only show the CategoryCard with stats
+    if (!isArticleNode) {
+      console.log(`[loadOrGenerateCardsForDeck] 📁 CATEGORY NODE: "${deck.name}" has ${treeChildren?.length || 0} children - skipping card generation`)
+      return
     }
+
+    console.log(`[loadOrGenerateCardsForDeck] 📄 ARTICLE NODE: "${deck.name}" - will generate 15 learning cards`)
 
     // Check if tier cards already in memory - content generated on-demand when flipped
     if (tierCards[deck.id]?.core?.length > 0) {
@@ -1838,96 +1986,155 @@ export default function Canvas() {
       return
     }
 
-    // NEW: TITLES-FIRST APPROACH - Generate all 15 titles in ONE API call (~2 seconds)
-    // Content is generated on-demand when user flips a card
+    // STREAMING GENERATION - Cards appear progressively as they're generated
+    // User sees Card 1 in ~3 seconds, can start reading while others load
     setLoadingDeck(deck.id)
-    setGenerationProgress({ current: 0, total: 1, tiersComplete: 0 })
+    setGenerationProgress({ current: 0, total: 5, phase: 'generating' })
+
+    // Track cards as they stream in
+    const streamedCards = []
 
     try {
-      // Generate all 15 titles in one fast API call
-      const cards = await generateCardTitles(deck.name, parentPath)
+      // Generate Core tier with streaming callback
+      const coreCards = await generateTierCards(
+        deck.name,
+        'core',
+        [],
+        parentPath,
+        // Callback fired for each card as it arrives
+        (card, cardNumber) => {
+          streamedCards.push(card)
 
-      console.log(`[loadOrGenerateCardsForDeck] ✅ Generated ${cards.length} titles for ${deck.name}`)
+          // Save card immediately
+          saveCardContent(card.id, card.content)
 
-      // Group cards by tier
-      const cardsByTier = {
-        core: cards.filter(c => c.tier === 'core'),
-        deep_dive_1: cards.filter(c => c.tier === 'deep_dive_1'),
-        deep_dive_2: cards.filter(c => c.tier === 'deep_dive_2')
-      }
+          // Update progress
+          setGenerationProgress({ current: cardNumber, total: 5, phase: 'generating' })
 
-      // Save to localStorage
-      saveDeckCards(deck.id, deck.name, cardsByTier.core, 'core')
-      saveDeckCards(deck.id, deck.name, cardsByTier.deep_dive_1, 'deep_dive_1')
-      saveDeckCards(deck.id, deck.name, cardsByTier.deep_dive_2, 'deep_dive_2')
+          // Update UI immediately so card appears
+          setTierCards(prev => ({
+            ...prev,
+            [deck.id]: {
+              core: [...streamedCards],
+              deep_dive_1: prev[deck.id]?.deep_dive_1 || [],
+              deep_dive_2: prev[deck.id]?.deep_dive_2 || []
+            }
+          }))
 
-      // Auto-unlock all tiers (titles are ready, content generated on-demand)
-      unlockTier(deck.id, 'deep_dive_1')
-      unlockTier(deck.id, 'deep_dive_2')
+          // Update content cache
+          setGeneratedContent(prev => ({
+            ...prev,
+            [card.id]: card.content
+          }))
 
-      // Update in-memory state
-      setTierCards(prev => ({
-        ...prev,
-        [deck.id]: cardsByTier
-      }))
+          // Update legacy state
+          setGeneratedCards(prev => ({
+            ...prev,
+            [deck.id]: [...streamedCards]
+          }))
 
-      // Also populate legacy generatedCards for backward compatibility
-      setGeneratedCards(prev => ({
-        ...prev,
-        [deck.id]: cards
-      }))
+          console.log(`[STREAM] Card ${cardNumber}/5 displayed: ${card.title}`)
+        }
+      )
 
-      setGenerationProgress({ current: 1, total: 1, tiersComplete: 1 })
+      console.log(`[loadOrGenerateCardsForDeck] ✅ Streamed Core tier for ${deck.name}`)
 
-      // Pre-generate content for Core cards in background (parallel, fast with Haiku)
-      const coreCards = cardsByTier.core
-      coreCards.forEach(card => {
-        // Fire off content generation without awaiting - runs in background
-        generateSingleCardContent(deck.name, card.number, card.title, cards)
-          .then(content => {
-            // Save to localStorage
-            saveCardContent(card.id, content)
-            // Update in-memory state
-            setGeneratedContent(prev => ({
-              ...prev,
-              [card.id]: content
-            }))
-            console.log(`[BACKGROUND] Content ready for card ${card.number}: ${card.title}`)
-          })
-          .catch(err => console.error(`[BACKGROUND] Failed to generate content for card ${card.number}:`, err))
-      })
+      // Final save of all cards to localStorage
+      saveDeckCards(deck.id, deck.name, coreCards, 'core')
+
+      setGenerationProgress({ current: 5, total: 5, phase: 'complete' })
+
+      // Start background generation of Deep Dive 1
+      setTimeout(() => {
+        generateTierInBackground(deck, 'deep_dive_1', coreCards, parentPath)
+      }, 1000)
 
     } catch (error) {
-      console.error('Failed to generate card titles:', error)
+      console.error('Failed to generate Core tier:', error)
     } finally {
       setLoadingDeck(null)
       setGenerationProgress(null)
     }
   }
 
-  // Generate cards for a specific tier (called when user unlocks)
-  const generateTierCards = async (deck, tier, parentPath) => {
+  // Background generation for next tier (no UI updates until complete)
+  const generateTierInBackground = async (deck, tier, previousCards, parentPath) => {
+    console.log(`[BACKGROUND] Starting ${tier} generation for ${deck.name}`)
+
+    try {
+      // Generate without streaming callback (just wait for all cards)
+      const cards = await generateTierCards(deck.name, tier, previousCards, parentPath, null)
+
+      // Save to localStorage
+      saveDeckCards(deck.id, deck.name, cards, tier)
+      cards.forEach(card => {
+        if (card.content) {
+          saveCardContent(card.id, card.content)
+        }
+      })
+
+      // Update state (cards ready but tier still locked)
+      setTierCards(prev => ({
+        ...prev,
+        [deck.id]: {
+          ...prev[deck.id],
+          [tier]: cards
+        }
+      }))
+
+      // Update content cache
+      cards.forEach(card => {
+        setGeneratedContent(prev => ({
+          ...prev,
+          [card.id]: card.content
+        }))
+      })
+
+      console.log(`[BACKGROUND] ✅ ${tier} ready for ${deck.name}`)
+
+      // If DD1 just finished, start DD2
+      if (tier === 'deep_dive_1') {
+        const allPreviousCards = [...previousCards, ...cards]
+        setTimeout(() => {
+          generateTierInBackground(deck, 'deep_dive_2', allPreviousCards, parentPath)
+        }, 500)
+      }
+
+    } catch (error) {
+      console.error(`[BACKGROUND] Failed to generate ${tier}:`, error)
+    }
+  }
+
+  // Generate cards for a specific tier (called when user unlocks Deep Dive tiers)
+  const generateAndUnlockTier = async (deck, tier, parentPath) => {
     setUnlockingTier(tier)
     try {
-      // Collect titles from previous tiers to avoid duplicate content
-      let previousTierTitles = []
+      // Collect full card data from previous tiers to avoid duplicate content
+      let previousCards = []
       const existingTierCards = tierCards[deck.id] || {}
 
       if (tier === 'deep_dive_1') {
         // DD1 needs to know what Core covered
-        const coreCards = existingTierCards.core || []
-        previousTierTitles = coreCards.map(c => c.title)
+        previousCards = existingTierCards.core || []
       } else if (tier === 'deep_dive_2') {
         // DD2 needs to know what Core AND DD1 covered
         const coreCards = existingTierCards.core || []
         const dd1Cards = existingTierCards.deep_dive_1 || []
-        previousTierTitles = [...coreCards, ...dd1Cards].map(c => c.title)
+        previousCards = [...coreCards, ...dd1Cards]
       }
 
-      const cards = await generateDeckCards(deck.name, parentPath, 5, tier, previousTierTitles)
+      // Use the new generateTierCards from claude.js (5 cards with titles + content)
+      const cards = await generateTierCards(deck.name, tier, previousCards, parentPath)
 
       // Save to localStorage with tier
       saveDeckCards(deck.id, deck.name, cards, tier)
+
+      // Save all content to localStorage
+      cards.forEach(card => {
+        if (card.content) {
+          saveCardContent(card.id, card.content)
+        }
+      })
 
       // Unlock the tier in storage
       unlockTier(deck.id, tier)
@@ -1941,13 +2148,22 @@ export default function Canvas() {
         }
       }))
 
+      // Populate content cache
+      cards.forEach(card => {
+        if (card.content) {
+          setGeneratedContent(prev => ({
+            ...prev,
+            [card.id]: card.content
+          }))
+        }
+      })
+
       // Also update legacy generatedCards
       setGeneratedCards(prev => ({
         ...prev,
         [deck.id]: [...(prev[deck.id] || []), ...cards]
       }))
 
-      // Content is generated on-demand when user flips a card
     } catch (error) {
       console.error(`Failed to generate ${tier} cards:`, error)
     } finally {
@@ -1959,29 +2175,19 @@ export default function Canvas() {
   const handleUnlockTier = (tier) => {
     if (!currentDeck) return
 
-    // With titles-first approach, all tier cards already exist
-    // Just trigger background content generation if needed
-    const deckTiers = tierCards[currentDeck.id] || {}
-    const tierCardsList = deckTiers[tier] || []
+    // Check if background generation already completed this tier
+    const existingTierCards = tierCards[currentDeck.id]?.[tier] || []
 
-    if (tierCardsList.length > 0) {
-      // Cards already exist - just pre-generate content in background
-      const allCards = [...(deckTiers.core || []), ...(deckTiers.deep_dive_1 || []), ...(deckTiers.deep_dive_2 || [])]
-      console.log(`[UNLOCK] Pre-generating content for ${tier} (${tierCardsList.length} cards)`)
-      tierCardsList.forEach(card => {
-        if (!getCardContent(card.id)) {
-          generateSingleCardContent(currentDeck.name, card.number, card.title, allCards)
-            .then(content => {
-              saveCardContent(card.id, content)
-              setGeneratedContent(prev => ({ ...prev, [card.id]: content }))
-              console.log(`[UNLOCK] Content ready for card ${card.number}: ${card.title}`)
-            })
-            .catch(err => console.error(`[UNLOCK] Failed card ${card.number}:`, err))
-        }
-      })
+    if (existingTierCards.length === 5) {
+      // Cards already generated in background - just unlock!
+      console.log(`[UNLOCK] ${tier} already ready from background generation!`)
+      unlockTier(currentDeck.id, tier)
+      // Force re-render by updating state
+      setTierCards(prev => ({ ...prev }))
     } else {
-      // Fallback: generate cards if they don't exist (legacy path)
-      generateTierCards(currentDeck, tier, parentPath)
+      // Need to generate cards (background didn't finish in time)
+      console.log(`[UNLOCK] Generating ${tier} on demand...`)
+      generateAndUnlockTier(currentDeck, tier, parentPath)
     }
   }
 
@@ -2312,6 +2518,24 @@ export default function Canvas() {
     return false
   }
   const isLeaf = isLeafDeck()
+
+  // Determine if current deck is an ARTICLE (should have learning cards)
+  // Article nodes are: Wikipedia vital articles, leaf nodes, or nodes without children
+  // Category nodes are: nodes with children that aren't vital articles
+  const isArticleDeck = () => {
+    if (!currentDeck) return false
+    // Vital articles always have cards
+    if (currentDeck.source === 'vital-articles' || currentDeck.wikiTitle) return true
+    // Leaf nodes have cards
+    if (currentDeck.isLeaf) return true
+    // Check if it has children in the tree
+    const treeChildren = getTreeChildren(currentDeck.id)
+    // If no children, it's an article
+    if (!treeChildren || treeChildren.length === 0) return true
+    // Has children = category node, no cards
+    return false
+  }
+  const isArticle = isArticleDeck()
 
   // Auto-open card after wander navigation (when cards are loaded)
   useEffect(() => {
@@ -2660,6 +2884,12 @@ export default function Canvas() {
               isLoadingSections={isLoadingSectionsState}
               skeletonCount={skeletonCount}
               isLeaf={isLeaf}
+              isArticle={isArticle}
+              onClaimCategory={() => {
+                if (currentDeck && claimCategoryNode(currentDeck.id, currentDeck.name)) {
+                  setClaimedCards(getClaimedCardIds())
+                }
+              }}
               tierCards={currentTierCards}
               tierCompletion={currentTierCompletion}
               onUnlockTier={handleUnlockTier}
