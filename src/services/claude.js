@@ -2184,6 +2184,12 @@ Build on this foundation - go deeper, not sideways.\n`;
     : '';
 
   // Use delimiters for streaming so we can parse cards as they arrive
+  //
+  // OLD PROMPT (wall of text format) - kept for easy revert:
+  // Each card needs:
+  // - "title": Clear topic (4-8 words), format "[Concept]: [Description]"
+  // - "content": 50-60 words teaching ONE specific thing
+  //
   const prompt = `Generate 5 educational flashcards about "${topicName}" for ${config.name}.
 ${contextHint}${previousContext}
 FOCUS FOR THIS TIER:

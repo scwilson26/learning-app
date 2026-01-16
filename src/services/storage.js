@@ -357,9 +357,18 @@ function generateSingleRandomPath(minDepth, maxDepth) {
   const targetDepth = minDepth + Math.floor(Math.random() * (maxDepth - minDepth + 1))
   let depth = 1
 
+  // An article node MUST have wikiTitle - that's the definitive marker
+  // Nodes without wikiTitle are category/container nodes, even if they have no children loaded
   const isArticleNode = (node) => {
-    if (node.wikiTitle) return true
-    if (node.isLeaf || !node.children || node.children.length === 0) return true
+    return !!node.wikiTitle
+  }
+
+  // A category node is one that has children and no wikiTitle
+  const isCategoryNode = (node) => {
+    if (node.wikiTitle) return false // Articles are not categories
+    if (node.children && node.children.length > 0) return true
+    // If articleCount > 0 but no wikiTitle, it's a category that hasn't loaded children
+    if (node.articleCount && node.articleCount > 0 && !node.wikiTitle) return true
     return false
   }
 
@@ -383,6 +392,13 @@ function generateSingleRandomPath(minDepth, maxDepth) {
     depth++
 
     if (isArticleNode(currentNode)) break
+  }
+
+  // CRITICAL: Verify we landed on an actual article, not a category
+  // If we ended up at a category node, reject this path
+  if (!isArticleNode(currentNode)) {
+    // This path ended at a category, not an article - reject it
+    return null
   }
 
   const categoryId = path[0]

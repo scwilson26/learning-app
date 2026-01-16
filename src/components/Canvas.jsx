@@ -1069,7 +1069,7 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
               ) : error ? (
                 <p className="text-red-500 text-center text-base">{error}</p>
               ) : (
-                <p className="text-gray-700 text-sm leading-relaxed">
+                <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">
                   {displayedContent}
                 </p>
               )}
