@@ -829,6 +829,20 @@ function SkeletonCard({ index }) {
   )
 }
 
+// Simple markdown renderer for **bold** text
+function renderMarkdown(text) {
+  if (!text) return null
+
+  // Split by **bold** markers and render
+  const parts = text.split(/(\*\*[^*]+\*\*)/g)
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={i} className="font-semibold">{part.slice(2, -2)}</strong>
+    }
+    return part
+  })
+}
+
 // Expanded card - zooms in and can flip back and forth
 function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName, onContentGenerated, allCards, onNext, onPrev, hasNext, hasPrev, startFlipped = false, slideDirection = 0, tint = '#fafbfc' }) {
   const [isFlipped, setIsFlipped] = useState(startFlipped)
@@ -1069,9 +1083,9 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
               ) : error ? (
                 <p className="text-red-500 text-center text-base">{error}</p>
               ) : (
-                <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">
-                  {displayedContent}
-                </p>
+                <div className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">
+                  {renderMarkdown(displayedContent)}
+                </div>
               )}
             </div>
 

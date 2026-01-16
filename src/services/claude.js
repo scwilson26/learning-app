@@ -2135,23 +2135,17 @@ const TIER_CONFIG = {
   core: {
     name: 'Core Essentials',
     startNumber: 1,
-    guidance: `Card 1: What is this topic? (definition + why it matters)
-Cards 2-3: Key terminology and basic concepts
-Cards 4-5: Fundamental principles or rules`,
+    guidance: `Build the mental model. After these 5 cards, someone could explain this topic to a friend in 60 seconds. They GET it—what it is, why it matters, how it fits into the world.`,
   },
   deep_dive_1: {
     name: 'Deep Dive 1',
     startNumber: 6,
-    guidance: `How it works - mechanisms and processes
-Types, variations, or categories
-Historical context or key figures`,
+    guidance: `Complete the picture. Stories, context, how it actually works in practice. The details that turn "I've heard of this" into real understanding.`,
   },
   deep_dive_2: {
     name: 'Deep Dive 2',
     startNumber: 11,
-    guidance: `Real-world applications and examples
-Connections to other topics
-Advanced concepts or fascinating facts`,
+    guidance: `Expert territory. Nuance, implications, lesser-known aspects, connections to other fields. The stuff that makes someone say "I had no idea."`,
   }
 };
 
@@ -2184,32 +2178,35 @@ Build on this foundation - go deeper, not sideways.\n`;
     : '';
 
   // Use delimiters for streaming so we can parse cards as they arrive
-  //
-  // OLD PROMPT (wall of text format) - kept for easy revert:
-  // Each card needs:
-  // - "title": Clear topic (4-8 words), format "[Concept]: [Description]"
-  // - "content": 50-60 words teaching ONE specific thing
-  //
   const prompt = `Generate 5 educational flashcards about "${topicName}" for ${config.name}.
 ${contextHint}${previousContext}
 FOCUS FOR THIS TIER:
 ${config.guidance}
 
 Each card needs:
-- "title": Clear topic (4-8 words), format "[Concept]: [Description]"
-- "content": 50-60 words teaching ONE specific thing
+- "title": Clear, specific topic (4-8 words)
+- "content": 60-80 words in 2-3 SHORT paragraphs
+
+FORMATTING (critical):
+- Use \\n\\n between paragraphs (line breaks in JSON)
+- One **bold anchor** per card—the key term or most important fact. Just one.
+- No bullet points
+- No "Did you know?" or "Fascinating!" energy. Trust the material.
+- End with a clean landing—something that sticks, not a cliffhanger
+
+EXAMPLE content value:
+"The **Rosetta Stone** wasn't just one translation—it was three. The same decree written in hieroglyphics, Demotic script, and Greek.\\n\\nBefore this, hieroglyphics were a complete mystery. Scholars had guessed for centuries. The Greek portion gave them the key.\\n\\nJean-François Champollion cracked it in 1822, unlocking 3,000 years of Egyptian history in one breakthrough."
+
+TONE: Modern, clear, confident. Educational first. The content earns interest by being precise and making you feel smarter—not by trying to be fun.
 
 Rules:
-- Use specific facts, numbers, names (not vague statements)
+- Specific facts, numbers, names (not vague statements)
 - Each card = one concept, not a summary
 - No overlap with previous cards
 
-IMPORTANT: Output each card with delimiters so it can be displayed immediately:
+Output each card with delimiters:
 ###CARD###
 {"number": ${config.startNumber}, "title": "...", "content": "..."}
-###END###
-###CARD###
-{"number": ${config.startNumber + 1}, "title": "...", "content": "..."}
 ###END###
 (continue for all 5 cards)`;
 
