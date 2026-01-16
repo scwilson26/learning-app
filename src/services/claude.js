@@ -2199,6 +2199,8 @@ EXAMPLE content value:
 
 TONE: Modern, clear, confident. Educational first. The content earns interest by being precise and making you feel smarter—not by trying to be fun.
 
+Where it fits naturally, include a detail that surprises—a counterintuitive fact, an unexpected connection, a number that doesn't seem right. Don't flag it. Don't call it out. Just let it land.
+
 Rules:
 - Specific facts, numbers, names (not vague statements)
 - Each card = one concept, not a summary
