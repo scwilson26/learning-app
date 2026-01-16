@@ -997,7 +997,7 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
     >
       {/* Card container */}
       <motion.div
-        className="relative w-[85vw] max-w-[380px] h-[65vh] min-h-[300px] max-h-[500px] cursor-pointer"
+        className="relative w-[85vw] max-w-[380px] h-[75vh] min-h-[400px] max-h-[600px] cursor-pointer"
         style={{ perspective: 1000 }}
         initial={{ x: slideDirection * 300, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
