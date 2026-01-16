@@ -657,6 +657,62 @@ export function saveDeckCards(deckId, deckName, cards, tier = 'core') {
 }
 
 /**
+ * Save a single card during streaming generation
+ * Creates the card entry and adds it to the deck's cardsByTier
+ * @param {string} deckId - The deck ID
+ * @param {string} deckName - The deck name
+ * @param {Object} card - The card object
+ * @param {string} tier - The tier ('core', 'deep_dive_1', 'deep_dive_2')
+ */
+export function saveStreamedCard(deckId, deckName, card, tier) {
+  const data = getData()
+  const now = new Date().toISOString()
+
+  // Ensure deck exists
+  if (!data.decks[deckId]) {
+    data.decks[deckId] = {
+      id: deckId,
+      name: deckName,
+      cardIds: [],
+      cardsByTier: { core: [], deep_dive_1: [], deep_dive_2: [] },
+      unlockedTiers: ['core'],
+      generatedAt: now,
+    }
+  }
+
+  // Add card ID to deck if not already there
+  if (!data.decks[deckId].cardIds.includes(card.id)) {
+    data.decks[deckId].cardIds.push(card.id)
+  }
+
+  // Add to cardsByTier if not already there
+  if (!data.decks[deckId].cardsByTier) {
+    data.decks[deckId].cardsByTier = { core: [], deep_dive_1: [], deep_dive_2: [] }
+  }
+  if (!data.decks[deckId].cardsByTier[tier].includes(card.id)) {
+    data.decks[deckId].cardsByTier[tier].push(card.id)
+  }
+
+  // Save the card (preserve claimed status if already exists)
+  const existingCard = data.cards[card.id]
+  data.cards[card.id] = {
+    id: card.id,
+    deckId: deckId,
+    title: card.title,
+    content: card.content || null,
+    tier: tier,
+    tierIndex: card.tierIndex,
+    number: card.number,
+    rarity: 'common',
+    claimed: existingCard?.claimed || false,  // Preserve claimed status!
+    claimedAt: existingCard?.claimedAt || null,
+    generatedAt: now,
+  }
+
+  saveData(data)
+}
+
+/**
  * Save generated content for a card
  * @param {string} cardId - The card ID
  * @param {string} content - The generated content
@@ -691,6 +747,17 @@ export function claimCard(cardId) {
   if (data.cards[cardId]) {
     data.cards[cardId].claimed = true
     data.cards[cardId].claimedAt = new Date().toISOString()
+    saveData(data)
+    console.log(`[claimCard] ✅ Claimed card ${cardId}`)
+  } else {
+    // Card doesn't exist yet in localStorage - this can happen during streaming
+    // Create a minimal entry so the claim is persisted
+    console.warn(`[claimCard] ⚠️ Card ${cardId} not in localStorage yet, creating stub entry`)
+    data.cards[cardId] = {
+      id: cardId,
+      claimed: true,
+      claimedAt: new Date().toISOString(),
+    }
     saveData(data)
   }
 }
@@ -807,11 +874,13 @@ export function getDeckTierCompletion(deckId) {
   }
 
   // Count claimed cards per tier
+  // Each tier has exactly 5 cards - only complete when all 5 are claimed
   Object.entries(deck.cardsByTier).forEach(([tier, cardIds]) => {
     if (cardIds && result[tier]) {
       result[tier].total = cardIds.length
       result[tier].claimed = cardIds.filter(id => data.cards[id]?.claimed).length
-      result[tier].complete = result[tier].total > 0 && result[tier].claimed === result[tier].total
+      // Tier is only complete when all 5 cards exist AND all 5 are claimed
+      result[tier].complete = result[tier].total === 5 && result[tier].claimed === 5
     }
   })
 
@@ -1083,6 +1152,18 @@ export function getWanderableDecks(currentDeckId = null, minDepth = 2, maxDepth 
 
     // Check depth constraints
     if (depth < minDepth || depth > maxDepth) return
+
+    // IMPORTANT: Only wander to article pages, not category pages
+    // Check multiple sources to determine if this is an article:
+    // 1. dynamicDeck has wikiTitle or isLeaf
+    // 2. Tree node has wikiTitle or is a leaf (no children)
+    const treeNode = getTreeNode(deckId)
+    const isArticle =
+      dynamicDeck?.wikiTitle ||
+      dynamicDeck?.isLeaf ||
+      treeNode?.wikiTitle ||
+      (treeNode && (!treeNode.children || treeNode.children.length === 0))
+    if (!isArticle) return
 
     // Check if deck has cards
     if (!deck.cardIds?.length) return

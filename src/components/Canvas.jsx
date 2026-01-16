@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { generateSubDecks, generateSingleCardContent, generateTierCards } from '../services/claude'
 import { fetchLevel2WithSections, hasLevel2Sections } from '../services/wikipedia'
 import {
   getDeckCards,
   saveDeckCards,
+  saveStreamedCard,
   saveCardContent,
   getCardContent,
   claimCard,
@@ -443,7 +444,7 @@ function LockedCard({ index }) {
 
 // Category card - flippable card showing category info and progress
 function CategoryCard({ deck, claimed, onClaim, tint = '#fafbfc' }) {
-  const [isFlipped, setIsFlipped] = useState(false)
+  const [isFlipped, setIsFlipped] = useState(true) // Start showing info side
 
   // Get progress stats
   const totalTopics = countDescendants(deck.id)
@@ -646,7 +647,7 @@ function TierSection({ tier, tierName, tierEmoji, cards, claimedCards, onReadCar
 }
 
 // Tier completion celebration modal
-function TierCompleteCelebration({ tierName, nextTierName, onContinue, onUnlockNext }) {
+function TierCompleteCelebration({ tierName, nextTierName, onContinue, onUnlockNext, nextTierReady }) {
   return (
     <motion.div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
@@ -669,15 +670,25 @@ function TierCompleteCelebration({ tierName, nextTierName, onContinue, onUnlockN
         {nextTierName && (
           <div className="bg-purple-50 rounded-xl p-4 mb-6">
             <p className="text-sm text-purple-700 mb-3">
-              <span className="font-semibold">🎁 Want to go deeper?</span>
-              <br />
-              Unlock {nextTierName} for 5 bonus cards!
+              {nextTierReady ? (
+                <>
+                  <span className="font-semibold">🎉 Ready to continue!</span>
+                  <br />
+                  {nextTierName} has 5 more cards waiting for you.
+                </>
+              ) : (
+                <>
+                  <span className="font-semibold">🎁 Want to go deeper?</span>
+                  <br />
+                  Unlock {nextTierName} for 5 bonus cards!
+                </>
+              )}
             </p>
             <button
               onClick={onUnlockNext}
               className="w-full py-3 rounded-xl text-white font-bold bg-gradient-to-r from-purple-500 to-indigo-600 hover:opacity-90 active:scale-[0.98] transition-all"
             >
-              Unlock {nextTierName}
+              {nextTierReady ? `Continue to ${nextTierName} →` : `Unlock ${nextTierName}`}
             </button>
           </div>
         )}
@@ -1083,7 +1094,7 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
                   onClick={() => hasNext ? onNext() : onClose()}
                   className="w-full py-3 rounded-xl font-bold text-base text-yellow-600 bg-yellow-50 border-2 border-yellow-200 hover:bg-yellow-100 active:scale-[0.98] transition-all"
                 >
-                  {hasNext ? 'Next Card →' : '✓ All Done!'}
+                  {hasNext ? 'Next Card →' : (index < 14 ? 'Continue →' : '✓ All Done!')}
                 </button>
               )}
               {/* Hint text */}
@@ -1392,7 +1403,7 @@ function DeckSpread({
                 <OverviewCard
                   card={card}
                   index={index}
-                  total={overviewCards.length}
+                  total={15}
                   claimed={claimedCards.has(card.id)}
                   onClaim={() => {}}
                   onRead={onReadCard}
@@ -1703,6 +1714,7 @@ export default function Canvas() {
   const [unlockingTier, setUnlockingTier] = useState(null) // tier currently being unlocked/generated
   const [showCelebration, setShowCelebration] = useState(null) // { tierName, nextTierName } or null
   const [lastCompletedTier, setLastCompletedTier] = useState({}) // deckId -> last tier shown celebration for
+  const [backgroundGenerating, setBackgroundGenerating] = useState({}) // deckId -> { tier: 'deep_dive_1' | 'deep_dive_2', promise: Promise }
 
   // Section-based Level 2 data (from Wikipedia)
   const [sectionData, setSectionData] = useState({}) // categoryId -> { sections: [...] }
@@ -2005,8 +2017,8 @@ export default function Canvas() {
         (card, cardNumber) => {
           streamedCards.push(card)
 
-          // Save card immediately
-          saveCardContent(card.id, card.content)
+          // Save card immediately to localStorage (creates card entry + adds to cardsByTier)
+          saveStreamedCard(deck.id, deck.name, card, 'core')
 
           // Update progress
           setGenerationProgress({ current: cardNumber, total: 5, phase: 'generating' })
@@ -2039,8 +2051,8 @@ export default function Canvas() {
 
       console.log(`[loadOrGenerateCardsForDeck] ✅ Streamed Core tier for ${deck.name}`)
 
-      // Final save of all cards to localStorage
-      saveDeckCards(deck.id, deck.name, coreCards, 'core')
+      // Cards are already saved incrementally by saveStreamedCard during streaming
+      // No need to call saveDeckCards here (it would overwrite claimed status)
 
       setGenerationProgress({ current: 5, total: 5, phase: 'complete' })
 
@@ -2058,56 +2070,91 @@ export default function Canvas() {
   }
 
   // Background generation for next tier (no UI updates until complete)
-  const generateTierInBackground = async (deck, tier, previousCards, parentPath) => {
+  // Returns a promise that resolves when generation is complete
+  const generateTierInBackground = (deck, tier, previousCards, parentPath) => {
     console.log(`[BACKGROUND] Starting ${tier} generation for ${deck.name}`)
 
-    try {
-      // Generate without streaming callback (just wait for all cards)
-      const cards = await generateTierCards(deck.name, tier, previousCards, parentPath, null)
+    const generationPromise = (async () => {
+      try {
+        // Generate without streaming callback (just wait for all cards)
+        const cards = await generateTierCards(deck.name, tier, previousCards, parentPath, null)
 
-      // Save to localStorage
-      saveDeckCards(deck.id, deck.name, cards, tier)
-      cards.forEach(card => {
-        if (card.content) {
-          saveCardContent(card.id, card.content)
-        }
-      })
+        // Save to localStorage
+        saveDeckCards(deck.id, deck.name, cards, tier)
+        cards.forEach(card => {
+          if (card.content) {
+            saveCardContent(card.id, card.content)
+          }
+        })
 
-      // Update state (cards ready but tier still locked)
-      setTierCards(prev => ({
-        ...prev,
-        [deck.id]: {
-          ...prev[deck.id],
-          [tier]: cards
-        }
-      }))
-
-      // Update content cache
-      cards.forEach(card => {
-        setGeneratedContent(prev => ({
+        // Update state (cards ready but tier still locked)
+        setTierCards(prev => ({
           ...prev,
-          [card.id]: card.content
+          [deck.id]: {
+            ...prev[deck.id],
+            [tier]: cards
+          }
         }))
-      })
 
-      console.log(`[BACKGROUND] ✅ ${tier} ready for ${deck.name}`)
+        // Update content cache
+        cards.forEach(card => {
+          setGeneratedContent(prev => ({
+            ...prev,
+            [card.id]: card.content
+          }))
+        })
 
-      // If DD1 just finished, start DD2
-      if (tier === 'deep_dive_1') {
-        const allPreviousCards = [...previousCards, ...cards]
-        setTimeout(() => {
-          generateTierInBackground(deck, 'deep_dive_2', allPreviousCards, parentPath)
-        }, 500)
+        console.log(`[BACKGROUND] ✅ ${tier} ready for ${deck.name}`)
+
+        // Clear background tracking for this tier
+        setBackgroundGenerating(prev => {
+          const updated = { ...prev }
+          if (updated[deck.id]?.tier === tier) {
+            delete updated[deck.id]
+          }
+          return updated
+        })
+
+        // If DD1 just finished, start DD2
+        if (tier === 'deep_dive_1') {
+          const allPreviousCards = [...previousCards, ...cards]
+          setTimeout(() => {
+            generateTierInBackground(deck, 'deep_dive_2', allPreviousCards, parentPath)
+          }, 500)
+        }
+
+        return cards
+      } catch (error) {
+        console.error(`[BACKGROUND] Failed to generate ${tier}:`, error)
+        // Clear background tracking on error too
+        setBackgroundGenerating(prev => {
+          const updated = { ...prev }
+          if (updated[deck.id]?.tier === tier) {
+            delete updated[deck.id]
+          }
+          return updated
+        })
+        throw error
       }
+    })()
 
-    } catch (error) {
-      console.error(`[BACKGROUND] Failed to generate ${tier}:`, error)
-    }
+    // Track this background generation
+    setBackgroundGenerating(prev => ({
+      ...prev,
+      [deck.id]: { tier, promise: generationPromise }
+    }))
+
+    return generationPromise
   }
 
   // Generate cards for a specific tier (called when user unlocks Deep Dive tiers)
+  // Uses streaming so cards appear one-by-one while generating
   const generateAndUnlockTier = async (deck, tier, parentPath) => {
     setUnlockingTier(tier)
+
+    // Unlock the tier immediately so cards can display as they stream in
+    unlockTier(deck.id, tier)
+
     try {
       // Collect full card data from previous tiers to avoid duplicate content
       let previousCards = []
@@ -2123,40 +2170,54 @@ export default function Canvas() {
         previousCards = [...coreCards, ...dd1Cards]
       }
 
-      // Use the new generateTierCards from claude.js (5 cards with titles + content)
-      const cards = await generateTierCards(deck.name, tier, previousCards, parentPath)
+      const streamedCards = []
+      const tierOffset = tier === 'deep_dive_1' ? 5 : 10
 
-      // Save to localStorage with tier
-      saveDeckCards(deck.id, deck.name, cards, tier)
+      // Use streaming to show cards one-by-one
+      const cards = await generateTierCards(
+        deck.name,
+        tier,
+        previousCards,
+        parentPath,
+        // Streaming callback - called for each card as it completes
+        (card, cardNumber) => {
+          streamedCards.push(card)
 
-      // Save all content to localStorage
-      cards.forEach(card => {
-        if (card.content) {
-          saveCardContent(card.id, card.content)
-        }
-      })
+          // Save card immediately to localStorage
+          saveStreamedCard(deck.id, deck.name, card, tier)
 
-      // Unlock the tier in storage
-      unlockTier(deck.id, tier)
+          // Save content
+          if (card.content) {
+            saveCardContent(card.id, card.content)
+          }
 
-      // Update in-memory state
-      setTierCards(prev => ({
-        ...prev,
-        [deck.id]: {
-          ...prev[deck.id],
-          [tier]: cards
-        }
-      }))
-
-      // Populate content cache
-      cards.forEach(card => {
-        if (card.content) {
-          setGeneratedContent(prev => ({
+          // Update in-memory state with this card
+          setTierCards(prev => ({
             ...prev,
-            [card.id]: card.content
+            [deck.id]: {
+              ...prev[deck.id],
+              [tier]: [...streamedCards]
+            }
           }))
+
+          // Update content cache
+          if (card.content) {
+            setGeneratedContent(prev => ({
+              ...prev,
+              [card.id]: card.content
+            }))
+          }
+
+          // Update generation progress
+          setGenerationProgress({
+            current: tierOffset + cardNumber,
+            total: 15,
+            phase: `Generating ${tier === 'deep_dive_1' ? 'Deep Dive 1' : 'Deep Dive 2'}`
+          })
+
+          console.log(`[STREAM] ${tier} card ${cardNumber}/5: ${card.title}`)
         }
-      })
+      )
 
       // Also update legacy generatedCards
       setGeneratedCards(prev => ({
@@ -2164,15 +2225,18 @@ export default function Canvas() {
         [deck.id]: [...(prev[deck.id] || []), ...cards]
       }))
 
+      console.log(`[generateAndUnlockTier] ✅ Streamed ${tier} for ${deck.name}`)
+
     } catch (error) {
       console.error(`Failed to generate ${tier} cards:`, error)
     } finally {
       setUnlockingTier(null)
+      setGenerationProgress(null)
     }
   }
 
   // Handle tier unlock button click
-  const handleUnlockTier = (tier) => {
+  const handleUnlockTier = async (tier) => {
     if (!currentDeck) return
 
     // Check if background generation already completed this tier
@@ -2184,11 +2248,34 @@ export default function Canvas() {
       unlockTier(currentDeck.id, tier)
       // Force re-render by updating state
       setTierCards(prev => ({ ...prev }))
-    } else {
-      // Need to generate cards (background didn't finish in time)
-      console.log(`[UNLOCK] Generating ${tier} on demand...`)
-      generateAndUnlockTier(currentDeck, tier, parentPath)
+      return
     }
+
+    // Check if background generation is currently in progress for this tier
+    const bgGen = backgroundGenerating[currentDeck.id]
+    if (bgGen && bgGen.tier === tier) {
+      // Background is still generating - wait for it instead of starting a new one
+      console.log(`[UNLOCK] Waiting for background ${tier} generation to complete...`)
+      setUnlockingTier(tier)
+      try {
+        await bgGen.promise
+        // Background finished - unlock the tier
+        console.log(`[UNLOCK] Background ${tier} finished, unlocking!`)
+        unlockTier(currentDeck.id, tier)
+        setTierCards(prev => ({ ...prev }))
+      } catch (error) {
+        console.error(`[UNLOCK] Background ${tier} failed, generating on demand...`)
+        // Background failed, generate on demand with streaming
+        generateAndUnlockTier(currentDeck, tier, parentPath)
+      } finally {
+        setUnlockingTier(null)
+      }
+      return
+    }
+
+    // No background generation - generate on demand with streaming
+    console.log(`[UNLOCK] Generating ${tier} on demand (no background)...`)
+    generateAndUnlockTier(currentDeck, tier, parentPath)
   }
 
   const openDeck = (deck) => {
@@ -2607,12 +2694,18 @@ export default function Canvas() {
   // Get skeleton count for loading state
   const skeletonCount = currentDeck ? getDeckCardCount(currentDeck) : DEFAULT_OVERVIEW_CARDS
 
-  // Get tier completion data for current deck
-  const currentTierCompletion = currentDeck ? getDeckTierCompletion(currentDeck.id) : {
-    core: { claimed: 0, total: 0, complete: false },
-    deep_dive_1: { claimed: 0, total: 0, complete: false },
-    deep_dive_2: { claimed: 0, total: 0, complete: false }
-  }
+  // Get tier completion data for current deck (recompute when claimedCards changes)
+  const currentTierCompletion = useMemo(() => {
+    if (!currentDeck) {
+      return {
+        core: { claimed: 0, total: 0, complete: false },
+        deep_dive_1: { claimed: 0, total: 0, complete: false },
+        deep_dive_2: { claimed: 0, total: 0, complete: false }
+      }
+    }
+    // Force re-read from localStorage when claimedCards state changes
+    return getDeckTierCompletion(currentDeck.id)
+  }, [currentDeck?.id, claimedCards])
 
   // Get tier cards for current deck (merge with latest generated content)
   const currentTierCards = currentDeck ? (() => {
@@ -2640,6 +2733,9 @@ export default function Canvas() {
 
     const completion = getDeckTierCompletion(currentDeck.id)
     const lastCompleted = lastCompletedTier[currentDeck.id]
+
+    // Debug logging
+    console.log(`[CELEBRATION CHECK] deck=${currentDeck.id} core=${completion.core.claimed}/${completion.core.total} complete=${completion.core.complete} lastCompleted=${lastCompleted}`)
 
     // Check if core just completed
     if (completion.core.complete && lastCompleted !== 'core' && lastCompleted !== 'deep_dive_1' && lastCompleted !== 'deep_dive_2') {
@@ -2909,7 +3005,7 @@ export default function Canvas() {
             key={`${expandedCardData.id}-${expandedCardStartFlipped}`}
             card={expandedCardData}
             index={expandedCardIndex}
-            total={allCurrentCards.length}
+            total={15}
             claimed={claimedCards.has(expandedCardData.id)}
             onClaim={handleClaim}
             onClose={() => { setExpandedCard(null); setExpandedCardStartFlipped(false); setExpandedCardSlideDirection(0) }}
@@ -2947,6 +3043,12 @@ export default function Canvas() {
           <TierCompleteCelebration
             tierName={showCelebration.tierName}
             nextTierName={showCelebration.nextTierName}
+            nextTierReady={(() => {
+              // Check if next tier cards are already generated (from background pre-generation)
+              const nextTier = showCelebration.tier === 'core' ? 'deep_dive_1' : 'deep_dive_2'
+              const nextTierCards = tierCards[currentDeck?.id]?.[nextTier] || []
+              return nextTierCards.length === 5
+            })()}
             onContinue={() => setShowCelebration(null)}
             onUnlockNext={() => {
               const nextTier = showCelebration.tier === 'core' ? 'deep_dive_1' : 'deep_dive_2'
