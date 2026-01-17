@@ -220,6 +220,331 @@ function getCardTint(gradient) {
   return '#fafbfc' // Default subtle gray
 }
 
+// Get expanded card styling for each theme (matches OverviewCard)
+function getExpandedCardStyle(categoryId, theme, claimed, tint) {
+  const isThemed = hasCustomTheme(categoryId)
+
+  // Technology - dark background, grid
+  if (categoryId === 'technology') {
+    return {
+      background: theme.cardBg,
+      boxShadow: claimed
+        ? `0 0 30px ${theme.accentGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.5)`
+        : `0 25px 50px -12px rgba(0, 0, 0, 0.5)`
+    }
+  }
+
+  // History - warm parchment, no border
+  if (categoryId === 'history') {
+    return {
+      background: theme.cardBg,
+      boxShadow: claimed
+        ? `0 0 30px ${theme.accentGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.4)`
+        : `0 25px 50px -12px rgba(0, 0, 0, 0.4)`
+    }
+  }
+
+  // Arts - soft gradient, airy glow
+  if (categoryId === 'arts') {
+    return {
+      background: `linear-gradient(180deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+      boxShadow: claimed
+        ? `0 0 40px ${theme.accentGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.15)`
+        : `0 0 30px ${theme.accentGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.1)`
+    }
+  }
+
+  // Biology - organic, green border
+  if (categoryId === 'biology') {
+    return {
+      background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+      border: `2px solid ${theme.accent}`,
+      boxShadow: claimed
+        ? `0 0 30px ${theme.accentGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.15)`
+        : `0 25px 50px -12px rgba(0, 0, 0, 0.12)`
+    }
+  }
+
+  // Health - clinical, clean
+  if (categoryId === 'health') {
+    return {
+      background: theme.cardBg,
+      boxShadow: claimed
+        ? `0 0 25px ${theme.accentGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.15)`
+        : `0 25px 50px -12px rgba(0, 0, 0, 0.12)`
+    }
+  }
+
+  // Everyday - cozy, warm
+  if (categoryId === 'everyday') {
+    return {
+      background: `linear-gradient(145deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+      boxShadow: claimed
+        ? `0 0 30px ${theme.accentGlow}, 0 25px 50px -12px rgba(194, 112, 62, 0.2)`
+        : `0 8px 30px -4px rgba(194, 112, 62, 0.2), 0 25px 50px -12px rgba(0, 0, 0, 0.12)`
+    }
+  }
+
+  // Geography - maps, blue border
+  if (categoryId === 'geography') {
+    return {
+      background: `linear-gradient(180deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+      border: `2px solid ${theme.accent}`,
+      boxShadow: claimed
+        ? `0 0 25px ${theme.accentGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.15)`
+        : `0 25px 50px -12px rgba(0, 0, 0, 0.12)`
+    }
+  }
+
+  // Mathematics - graph paper, thin purple border
+  if (categoryId === 'mathematics') {
+    return {
+      background: theme.cardBg,
+      border: `1.5px solid ${theme.accent}`,
+      boxShadow: claimed
+        ? `0 0 20px ${theme.accentGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.15)`
+        : `0 25px 50px -12px rgba(0, 0, 0, 0.12)`
+    }
+  }
+
+  // People - portrait gallery, copper border
+  if (categoryId === 'people') {
+    return {
+      background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+      border: `2px solid ${theme.accent}`,
+      boxShadow: claimed
+        ? `0 0 25px ${theme.accentGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.15)`
+        : `0 25px 50px -12px rgba(0, 0, 0, 0.12)`
+    }
+  }
+
+  // Philosophy - cosmic, ethereal glow
+  if (categoryId === 'philosophy') {
+    return {
+      background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+      boxShadow: claimed
+        ? `0 0 40px ${theme.accentGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.4)`
+        : `0 0 25px ${theme.accentGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.35)`
+    }
+  }
+
+  // Physics - blueprint, left accent line
+  if (categoryId === 'physics') {
+    return {
+      background: theme.cardBg,
+      boxShadow: claimed
+        ? `0 0 20px ${theme.accentGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.15)`
+        : `0 25px 50px -12px rgba(0, 0, 0, 0.12)`
+    }
+  }
+
+  // Society - civic, slate border
+  if (categoryId === 'society') {
+    return {
+      background: theme.cardBg,
+      border: `2px solid ${theme.accent}`,
+      boxShadow: claimed
+        ? `0 0 20px ${theme.accentGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.15)`
+        : `0 25px 50px -12px rgba(0, 0, 0, 0.12)`
+    }
+  }
+
+  // Default - unthemed
+  return {
+    background: `linear-gradient(135deg, #ffffff 0%, ${tint} 100%)`,
+    border: '1px solid #e5e7eb',
+    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+  }
+}
+
+// Render decorative elements for expanded card (matches OverviewCard)
+function renderExpandedCardDecorations(categoryId, theme, isBack = false) {
+  const opacity = isBack ? 'opacity-5' : 'opacity-10'
+  const pointerClass = isBack ? 'pointer-events-none' : ''
+
+  // Technology - grid pattern + top accent line
+  if (categoryId === 'technology') {
+    return (
+      <>
+        <div
+          className={`absolute inset-0 ${opacity} ${pointerClass}`}
+          style={{
+            backgroundImage: `linear-gradient(${theme.accent} 1px, transparent 1px), linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)`,
+            backgroundSize: '16px 16px'
+          }}
+        />
+        <div
+          className={`absolute top-0 left-0 right-0 h-1.5 ${pointerClass}`}
+          style={{ background: `linear-gradient(90deg, transparent, ${theme.accent}, transparent)` }}
+        />
+      </>
+    )
+  }
+
+  // History - grid pattern + top accent line
+  if (categoryId === 'history') {
+    return (
+      <>
+        <div
+          className={`absolute inset-0 ${opacity} ${pointerClass}`}
+          style={{
+            backgroundImage: `linear-gradient(${theme.accent} 1px, transparent 1px), linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)`,
+            backgroundSize: '16px 16px'
+          }}
+        />
+        <div
+          className={`absolute top-0 left-0 right-0 h-1.5 ${pointerClass}`}
+          style={{ background: `linear-gradient(90deg, transparent, ${theme.accent}, transparent)` }}
+        />
+      </>
+    )
+  }
+
+  // Arts - no decorative elements, just gradient and glow
+  if (categoryId === 'arts') {
+    return null
+  }
+
+  // Biology - organic cellular pattern
+  if (categoryId === 'biology') {
+    return (
+      <div className={`absolute inset-0 opacity-[0.12] ${pointerClass}`}>
+        <div className="absolute top-6 right-8 w-10 h-10 rounded-full border" style={{ borderColor: theme.accent }} />
+        <div className="absolute top-16 right-4 w-5 h-5 rounded-full border" style={{ borderColor: theme.accent }} />
+        <div className="absolute bottom-10 left-6 w-8 h-8 rounded-full border" style={{ borderColor: theme.accent }} />
+        <div className="absolute bottom-6 left-16 w-3 h-3 rounded-full" style={{ background: theme.accent, opacity: 0.4 }} />
+        <div className="absolute top-24 left-8 w-3 h-3 rounded-full" style={{ background: theme.accent, opacity: 0.3 }} />
+      </div>
+    )
+  }
+
+  // Health - top accent line + heartbeat
+  if (categoryId === 'health') {
+    return (
+      <>
+        <div
+          className={`absolute top-0 left-4 right-4 h-1 rounded-b ${pointerClass}`}
+          style={{ background: theme.accent }}
+        />
+        <svg className={`absolute bottom-6 left-4 right-4 h-6 opacity-20 ${pointerClass}`} viewBox="0 0 100 20" preserveAspectRatio="none">
+          <path
+            d="M0,10 L30,10 L35,10 L40,2 L45,18 L50,6 L55,14 L60,10 L100,10"
+            fill="none"
+            stroke="#64748b"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </>
+    )
+  }
+
+  // Everyday - subtle radial dot texture
+  if (categoryId === 'everyday') {
+    return (
+      <div
+        className={`absolute inset-0 opacity-[0.04] ${pointerClass}`}
+        style={{
+          backgroundImage: `radial-gradient(${theme.accent} 1px, transparent 1px)`,
+          backgroundSize: '8px 8px'
+        }}
+      />
+    )
+  }
+
+  // Geography - topographic lines
+  if (categoryId === 'geography') {
+    return (
+      <div
+        className={`absolute inset-0 opacity-[0.08] ${pointerClass}`}
+        style={{
+          backgroundImage: `
+            repeating-linear-gradient(0deg, ${theme.accent} 0px, transparent 1px, transparent 16px),
+            repeating-linear-gradient(90deg, ${theme.accent} 0px, transparent 1px, transparent 24px)
+          `
+        }}
+      />
+    )
+  }
+
+  // Mathematics - graph paper grid
+  if (categoryId === 'mathematics') {
+    return (
+      <div
+        className={`absolute inset-0 opacity-[0.08] ${pointerClass}`}
+        style={{
+          backgroundImage: `
+            linear-gradient(${theme.accent} 1px, transparent 1px),
+            linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)
+          `,
+          backgroundSize: '14px 14px'
+        }}
+      />
+    )
+  }
+
+  // People - clean, no decorative elements
+  if (categoryId === 'people') {
+    return null
+  }
+
+  // Philosophy - celestial dots (stars)
+  if (categoryId === 'philosophy') {
+    return (
+      <div className={`absolute inset-0 opacity-30 ${pointerClass}`}>
+        <div className="absolute top-6 right-8 w-1.5 h-1.5 rounded-full" style={{ background: theme.accent }} />
+        <div className="absolute top-12 right-16 w-1 h-1 rounded-full" style={{ background: theme.accent }} />
+        <div className="absolute top-20 right-6 w-1.5 h-1.5 rounded-full" style={{ background: theme.accent }} />
+        <div className="absolute bottom-12 left-6 w-1 h-1 rounded-full" style={{ background: theme.accent }} />
+        <div className="absolute bottom-20 left-12 w-1.5 h-1.5 rounded-full" style={{ background: theme.accent }} />
+        <div className="absolute top-16 left-8 w-1 h-1 rounded-full" style={{ background: theme.accent }} />
+      </div>
+    )
+  }
+
+  // Physics - left accent line + blueprint grid
+  if (categoryId === 'physics') {
+    return (
+      <>
+        <div
+          className={`absolute top-4 bottom-4 left-0 w-1 rounded-r ${pointerClass}`}
+          style={{ background: theme.accent }}
+        />
+        <div
+          className={`absolute inset-0 opacity-[0.06] ${pointerClass}`}
+          style={{
+            backgroundImage: `
+              linear-gradient(${theme.accent} 1px, transparent 1px),
+              linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)
+            `,
+            backgroundSize: '18px 18px'
+          }}
+        />
+      </>
+    )
+  }
+
+  // Society - architectural grid
+  if (categoryId === 'society') {
+    return (
+      <div
+        className={`absolute inset-0 opacity-[0.05] ${pointerClass}`}
+        style={{
+          backgroundImage: `
+            linear-gradient(${theme.accent} 1px, transparent 1px),
+            linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)
+          `,
+          backgroundSize: '20px 20px'
+        }}
+      />
+    )
+  }
+
+  // Default - no decorations
+  return null
+}
+
 // Category data - Level 1 decks (from VISION.md)
 const CATEGORIES = [
   {
@@ -1320,21 +1645,21 @@ function Deck({ deck, onOpen, claimed, rootCategoryId = null }) {
 }
 
 // Overview card component - same size as deck cards (w-28 h-36)
+// Matches the visual style of CategoryCard for each theme
 function OverviewCard({ card, index, total, onClaim, claimed, onRead, tint = '#fafbfc', rootCategoryId = null }) {
   const theme = getCategoryTheme(rootCategoryId)
   const isThemed = hasCustomTheme(rootCategoryId)
 
-  // Technology themed card
+  // Technology themed card - grid pattern
   if (rootCategoryId === 'technology') {
     return (
       <motion.div
         className="relative w-28 h-36 rounded-xl cursor-pointer transition-all duration-200 flex flex-col items-center justify-center p-3 overflow-hidden"
         style={{
           background: theme.cardBg,
-          border: claimed ? `2px solid ${theme.accent}` : '2px solid #334155',
           boxShadow: claimed
-            ? `0 0 15px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.4)`
-            : `0 8px 16px -4px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2)`
+            ? `0 0 20px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.4)`
+            : `0 8px 16px -4px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.2)`
         }}
         onClick={() => onRead(card)}
         whileHover={{ y: -6 }}
@@ -1343,13 +1668,18 @@ function OverviewCard({ card, index, total, onClaim, claimed, onRead, tint = '#f
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: index * 0.05 }}
       >
-        {/* Grid pattern */}
+        {/* Grid pattern overlay */}
         <div
           className="absolute inset-0 opacity-10"
           style={{
             backgroundImage: `linear-gradient(${theme.accent} 1px, transparent 1px), linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)`,
-            backgroundSize: '10px 10px'
+            backgroundSize: '12px 12px'
           }}
+        />
+        {/* Accent line at top */}
+        <div
+          className="absolute top-0 left-0 right-0 h-1"
+          style={{ background: `linear-gradient(90deg, transparent, ${theme.accent}, transparent)` }}
         />
         <span className="text-xs mb-1 relative z-10" style={{ color: theme.textSecondary }}>{index + 1}/{total}</span>
         <span className="text-xs font-semibold text-center leading-tight px-1 relative z-10" style={{ color: theme.textPrimary }}>{card.title}</span>
@@ -1362,17 +1692,16 @@ function OverviewCard({ card, index, total, onClaim, claimed, onRead, tint = '#f
     )
   }
 
-  // History themed card - warm parchment with gold accents
+  // History themed card - warm parchment, no border, grid pattern
   if (rootCategoryId === 'history') {
     return (
       <motion.div
         className="relative w-28 h-36 rounded-xl cursor-pointer transition-all duration-200 flex flex-col items-center justify-center p-3 overflow-hidden"
         style={{
-          background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-          border: claimed ? `2px solid ${theme.accent}` : `2px solid ${theme.accent}60`,
+          background: theme.cardBg,
           boxShadow: claimed
-            ? `0 0 12px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.15)`
-            : `0 8px 16px -4px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)`
+            ? `0 0 20px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.4)`
+            : `0 8px 16px -4px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.2)`
         }}
         onClick={() => onRead(card)}
         whileHover={{ y: -6 }}
@@ -1381,12 +1710,19 @@ function OverviewCard({ card, index, total, onClaim, claimed, onRead, tint = '#f
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: index * 0.05 }}
       >
-        {/* Corner accents */}
-        <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 rounded-tl-lg" style={{ borderColor: theme.accent }} />
-        <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 rounded-tr-lg" style={{ borderColor: theme.accent }} />
-        <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 rounded-bl-lg" style={{ borderColor: theme.accent }} />
-        <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 rounded-br-lg" style={{ borderColor: theme.accent }} />
-
+        {/* Grid pattern overlay */}
+        <div
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: `linear-gradient(${theme.accent} 1px, transparent 1px), linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)`,
+            backgroundSize: '12px 12px'
+          }}
+        />
+        {/* Accent line at top */}
+        <div
+          className="absolute top-0 left-0 right-0 h-1"
+          style={{ background: `linear-gradient(90deg, transparent, ${theme.accent}, transparent)` }}
+        />
         <span className="text-xs mb-1 relative z-10" style={{ color: theme.textSecondary }}>{index + 1}/{total}</span>
         <span className="text-xs font-semibold text-center leading-tight px-1 relative z-10" style={{ color: theme.textPrimary }}>{card.title}</span>
         {claimed && (
@@ -1427,21 +1763,371 @@ function OverviewCard({ card, index, total, onClaim, claimed, onRead, tint = '#f
     )
   }
 
-  // Default/themed card style - works for all categories
-  const isDark = isDarkTheme(rootCategoryId)
+  // Biology themed card - organic cellular pattern
+  if (rootCategoryId === 'biology') {
+    return (
+      <motion.div
+        className="relative w-28 h-36 rounded-xl cursor-pointer transition-all duration-200 flex flex-col items-center justify-center p-3 overflow-hidden"
+        style={{
+          background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+          border: `2px solid ${theme.accent}`,
+          boxShadow: claimed
+            ? `0 0 20px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.12)`
+            : `0 8px 16px -4px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)`
+        }}
+        onClick={() => onRead(card)}
+        whileHover={{ y: -6 }}
+        whileTap={{ scale: 0.98 }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: index * 0.05 }}
+      >
+        {/* Organic cellular pattern */}
+        <div className="absolute inset-0 opacity-[0.12]">
+          <div className="absolute top-3 right-4 w-6 h-6 rounded-full border" style={{ borderColor: theme.accent }} />
+          <div className="absolute top-8 right-2 w-3 h-3 rounded-full border" style={{ borderColor: theme.accent }} />
+          <div className="absolute bottom-5 left-3 w-5 h-5 rounded-full border" style={{ borderColor: theme.accent }} />
+          <div className="absolute bottom-3 left-8 w-2 h-2 rounded-full" style={{ background: theme.accent, opacity: 0.4 }} />
+          <div className="absolute top-12 left-4 w-2 h-2 rounded-full" style={{ background: theme.accent, opacity: 0.3 }} />
+        </div>
+        <span className="text-xs mb-1 relative z-10" style={{ color: theme.textSecondary }}>{index + 1}/{total}</span>
+        <span className="text-xs font-semibold text-center leading-tight px-1 relative z-10" style={{ color: theme.textPrimary }}>{card.title}</span>
+        {claimed && (
+          <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
+            <span className="text-white text-[10px] font-bold">✓</span>
+          </div>
+        )}
+      </motion.div>
+    )
+  }
+
+  // Health themed card - clinical, top accent line, heartbeat
+  if (rootCategoryId === 'health') {
+    return (
+      <motion.div
+        className="relative w-28 h-36 rounded-xl cursor-pointer transition-all duration-200 flex flex-col items-center justify-center p-3 overflow-hidden"
+        style={{
+          background: theme.cardBg,
+          boxShadow: claimed
+            ? `0 0 18px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.1)`
+            : `0 8px 16px -4px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)`
+        }}
+        onClick={() => onRead(card)}
+        whileHover={{ y: -6 }}
+        whileTap={{ scale: 0.98 }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: index * 0.05 }}
+      >
+        {/* Top accent line */}
+        <div
+          className="absolute top-0 left-2 right-2 h-[3px] rounded-b"
+          style={{ background: theme.accent }}
+        />
+        {/* Pulse/heartbeat line */}
+        <svg className="absolute bottom-3 left-2 right-2 h-4 opacity-20" viewBox="0 0 100 20" preserveAspectRatio="none">
+          <path
+            d="M0,10 L30,10 L35,10 L40,2 L45,18 L50,6 L55,14 L60,10 L100,10"
+            fill="none"
+            stroke="#64748b"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+        <span className="text-xs mb-1 relative z-10" style={{ color: theme.textSecondary }}>{index + 1}/{total}</span>
+        <span className="text-xs font-semibold text-center leading-tight px-1 relative z-10" style={{ color: theme.textPrimary }}>{card.title}</span>
+        {claimed && (
+          <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
+            <span className="text-white text-[10px] font-bold">✓</span>
+          </div>
+        )}
+      </motion.div>
+    )
+  }
+
+  // Everyday themed card - cozy, no border, warm shadow, subtle texture
+  if (rootCategoryId === 'everyday') {
+    return (
+      <motion.div
+        className="relative w-28 h-36 rounded-xl cursor-pointer transition-all duration-200 flex flex-col items-center justify-center p-3 overflow-hidden"
+        style={{
+          background: `linear-gradient(145deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+          boxShadow: claimed
+            ? `0 0 20px ${theme.accentGlow}, 0 8px 20px -4px rgba(194, 112, 62, 0.2)`
+            : `0 4px 15px -2px rgba(194, 112, 62, 0.15), 0 8px 20px -4px rgba(0, 0, 0, 0.08)`
+        }}
+        onClick={() => onRead(card)}
+        whileHover={{ y: -6 }}
+        whileTap={{ scale: 0.98 }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: index * 0.05 }}
+      >
+        {/* Subtle texture */}
+        <div
+          className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage: `radial-gradient(${theme.accent} 1px, transparent 1px)`,
+            backgroundSize: '6px 6px'
+          }}
+        />
+        <span className="text-xs mb-1 relative z-10" style={{ color: theme.textSecondary }}>{index + 1}/{total}</span>
+        <span className="text-xs font-semibold text-center leading-tight px-1 relative z-10" style={{ color: theme.textPrimary }}>{card.title}</span>
+        {claimed && (
+          <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
+            <span className="text-white text-[10px] font-bold">✓</span>
+          </div>
+        )}
+      </motion.div>
+    )
+  }
+
+  // Geography themed card - topographic lines
+  if (rootCategoryId === 'geography') {
+    return (
+      <motion.div
+        className="relative w-28 h-36 rounded-xl cursor-pointer transition-all duration-200 flex flex-col items-center justify-center p-3 overflow-hidden"
+        style={{
+          background: `linear-gradient(180deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+          border: `2px solid ${theme.accent}`,
+          boxShadow: claimed
+            ? `0 0 18px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.12)`
+            : `0 8px 16px -4px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)`
+        }}
+        onClick={() => onRead(card)}
+        whileHover={{ y: -6 }}
+        whileTap={{ scale: 0.98 }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: index * 0.05 }}
+      >
+        {/* Topographic lines pattern */}
+        <div
+          className="absolute inset-0 opacity-[0.08]"
+          style={{
+            backgroundImage: `
+              repeating-linear-gradient(0deg, ${theme.accent} 0px, transparent 1px, transparent 12px),
+              repeating-linear-gradient(90deg, ${theme.accent} 0px, transparent 1px, transparent 20px)
+            `
+          }}
+        />
+        <span className="text-xs mb-1 relative z-10" style={{ color: theme.textSecondary }}>{index + 1}/{total}</span>
+        <span className="text-xs font-semibold text-center leading-tight px-1 relative z-10" style={{ color: theme.textPrimary }}>{card.title}</span>
+        {claimed && (
+          <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
+            <span className="text-white text-[10px] font-bold">✓</span>
+          </div>
+        )}
+      </motion.div>
+    )
+  }
+
+  // Mathematics themed card - graph paper grid
+  if (rootCategoryId === 'mathematics') {
+    return (
+      <motion.div
+        className="relative w-28 h-36 rounded-xl cursor-pointer transition-all duration-200 flex flex-col items-center justify-center p-3 overflow-hidden"
+        style={{
+          background: theme.cardBg,
+          border: `1.5px solid ${theme.accent}`,
+          boxShadow: claimed
+            ? `0 0 15px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.1)`
+            : `0 8px 16px -4px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)`
+        }}
+        onClick={() => onRead(card)}
+        whileHover={{ y: -6 }}
+        whileTap={{ scale: 0.98 }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: index * 0.05 }}
+      >
+        {/* Graph paper grid */}
+        <div
+          className="absolute inset-0 opacity-[0.08]"
+          style={{
+            backgroundImage: `
+              linear-gradient(${theme.accent} 1px, transparent 1px),
+              linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)
+            `,
+            backgroundSize: '10px 10px'
+          }}
+        />
+        <span className="text-xs mb-1 relative z-10" style={{ color: theme.textSecondary }}>{index + 1}/{total}</span>
+        <span className="text-xs font-semibold text-center leading-tight px-1 relative z-10" style={{ color: theme.textPrimary }}>{card.title}</span>
+        {claimed && (
+          <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
+            <span className="text-white text-[10px] font-bold">✓</span>
+          </div>
+        )}
+      </motion.div>
+    )
+  }
+
+  // People themed card - portrait gallery style
+  if (rootCategoryId === 'people') {
+    return (
+      <motion.div
+        className="relative w-28 h-36 rounded-xl cursor-pointer transition-all duration-200 flex flex-col items-center justify-center p-3 overflow-hidden"
+        style={{
+          background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+          border: `2px solid ${theme.accent}`,
+          boxShadow: claimed
+            ? `0 0 18px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.12)`
+            : `0 8px 16px -4px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)`
+        }}
+        onClick={() => onRead(card)}
+        whileHover={{ y: -6 }}
+        whileTap={{ scale: 0.98 }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: index * 0.05 }}
+      >
+        <span className="text-xs mb-1 relative z-10" style={{ color: theme.textSecondary }}>{index + 1}/{total}</span>
+        <span className="text-xs font-semibold text-center leading-tight px-1 relative z-10" style={{ color: theme.textPrimary }}>{card.title}</span>
+        {claimed && (
+          <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
+            <span className="text-white text-[10px] font-bold">✓</span>
+          </div>
+        )}
+      </motion.div>
+    )
+  }
+
+  // Philosophy themed card - cosmic, celestial dots
+  if (rootCategoryId === 'philosophy') {
+    return (
+      <motion.div
+        className="relative w-28 h-36 rounded-xl cursor-pointer transition-all duration-200 flex flex-col items-center justify-center p-3 overflow-hidden"
+        style={{
+          background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+          boxShadow: claimed
+            ? `0 0 25px ${theme.accentGlow}, 0 8px 20px -4px rgba(0, 0, 0, 0.4)`
+            : `0 0 15px ${theme.accentGlow}, 0 8px 20px -4px rgba(0, 0, 0, 0.3)`
+        }}
+        onClick={() => onRead(card)}
+        whileHover={{ y: -6 }}
+        whileTap={{ scale: 0.98 }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: index * 0.05 }}
+      >
+        {/* Celestial dots - stars */}
+        <div className="absolute inset-0 opacity-30">
+          <div className="absolute top-3 right-4 w-1 h-1 rounded-full" style={{ background: theme.accent }} />
+          <div className="absolute top-6 right-8 w-0.5 h-0.5 rounded-full" style={{ background: theme.accent }} />
+          <div className="absolute top-10 right-3 w-1 h-1 rounded-full" style={{ background: theme.accent }} />
+          <div className="absolute bottom-6 left-3 w-0.5 h-0.5 rounded-full" style={{ background: theme.accent }} />
+          <div className="absolute bottom-10 left-6 w-1 h-1 rounded-full" style={{ background: theme.accent }} />
+          <div className="absolute top-8 left-4 w-0.5 h-0.5 rounded-full" style={{ background: theme.accent }} />
+        </div>
+        <span className="text-xs mb-1 relative z-10" style={{ color: theme.textSecondary }}>{index + 1}/{total}</span>
+        <span className="text-xs font-semibold text-center leading-tight px-1 relative z-10" style={{ color: theme.textPrimary }}>{card.title}</span>
+        {claimed && (
+          <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
+            <span className="text-indigo-900 text-[10px] font-bold">✓</span>
+          </div>
+        )}
+      </motion.div>
+    )
+  }
+
+  // Physics themed card - blueprint, left accent line
+  if (rootCategoryId === 'physics') {
+    return (
+      <motion.div
+        className="relative w-28 h-36 rounded-xl cursor-pointer transition-all duration-200 flex flex-col items-center justify-center p-3 overflow-hidden"
+        style={{
+          background: theme.cardBg,
+          boxShadow: claimed
+            ? `0 0 15px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.1)`
+            : `0 8px 16px -4px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)`
+        }}
+        onClick={() => onRead(card)}
+        whileHover={{ y: -6 }}
+        whileTap={{ scale: 0.98 }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: index * 0.05 }}
+      >
+        {/* Left accent line */}
+        <div
+          className="absolute top-2 bottom-2 left-0 w-[3px] rounded-r"
+          style={{ background: theme.accent }}
+        />
+        {/* Blueprint/schematic lines */}
+        <div
+          className="absolute inset-0 opacity-[0.06]"
+          style={{
+            backgroundImage: `
+              linear-gradient(${theme.accent} 1px, transparent 1px),
+              linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)
+            `,
+            backgroundSize: '14px 14px'
+          }}
+        />
+        <span className="text-xs mb-1 relative z-10" style={{ color: theme.textSecondary }}>{index + 1}/{total}</span>
+        <span className="text-xs font-semibold text-center leading-tight px-1 relative z-10" style={{ color: theme.textPrimary }}>{card.title}</span>
+        {claimed && (
+          <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
+            <span className="text-white text-[10px] font-bold">✓</span>
+          </div>
+        )}
+      </motion.div>
+    )
+  }
+
+  // Society themed card - civic, structured, architectural grid
+  if (rootCategoryId === 'society') {
+    return (
+      <motion.div
+        className="relative w-28 h-36 rounded-xl cursor-pointer transition-all duration-200 flex flex-col items-center justify-center p-3 overflow-hidden"
+        style={{
+          background: theme.cardBg,
+          border: `2px solid ${theme.accent}`,
+          boxShadow: claimed
+            ? `0 0 15px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.12)`
+            : `0 8px 16px -4px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)`
+        }}
+        onClick={() => onRead(card)}
+        whileHover={{ y: -6 }}
+        whileTap={{ scale: 0.98 }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: index * 0.05 }}
+      >
+        {/* Architectural grid */}
+        <div
+          className="absolute inset-0 opacity-[0.05]"
+          style={{
+            backgroundImage: `
+              linear-gradient(${theme.accent} 1px, transparent 1px),
+              linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)
+            `,
+            backgroundSize: '16px 16px'
+          }}
+        />
+        <span className="text-xs mb-1 relative z-10" style={{ color: theme.textSecondary }}>{index + 1}/{total}</span>
+        <span className="text-xs font-semibold text-center leading-tight px-1 relative z-10" style={{ color: theme.textPrimary }}>{card.title}</span>
+        {claimed && (
+          <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
+            <span className="text-white text-[10px] font-bold">✓</span>
+          </div>
+        )}
+      </motion.div>
+    )
+  }
+
+  // Default/unthemed card style
   return (
     <motion.div
       className="relative w-28 h-36 rounded-xl cursor-pointer transition-all duration-200 flex flex-col items-center justify-center p-3 overflow-hidden"
       style={{
-        background: isThemed
-          ? `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`
-          : `linear-gradient(135deg, #ffffff 0%, ${tint} 100%)`,
-        border: claimed
-          ? `2px solid ${theme.accent}`
-          : (isThemed ? `2px solid ${theme.accent}40` : '2px solid #e5e7eb'),
+        background: `linear-gradient(135deg, #ffffff 0%, ${tint} 100%)`,
+        border: '2px solid #e5e7eb',
         boxShadow: claimed
-          ? `0 0 12px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.15)`
-          : `0 8px 16px -4px rgba(0, 0, 0, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.08)`
+          ? `0 0 12px rgba(0, 0, 0, 0.15), 0 8px 16px -4px rgba(0, 0, 0, 0.15)`
+          : `0 8px 16px -4px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)`
       }}
       onClick={() => onRead(card)}
       whileHover={{ y: -6 }}
@@ -1450,11 +2136,11 @@ function OverviewCard({ card, index, total, onClaim, claimed, onRead, tint = '#f
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
     >
-      <span className="text-xs mb-1" style={{ color: isThemed ? theme.textSecondary : '#9ca3af' }}>{index + 1}/{total}</span>
-      <span className="text-xs font-semibold text-center leading-tight px-1" style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}>{card.title}</span>
+      <span className="text-xs mb-1" style={{ color: '#9ca3af' }}>{index + 1}/{total}</span>
+      <span className="text-xs font-semibold text-center leading-tight px-1" style={{ color: '#1f2937' }}>{card.title}</span>
       {claimed && (
-        <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
-          <span className={isDark ? 'text-slate-900 text-[10px] font-bold' : 'text-white text-[10px] font-bold'}>✓</span>
+        <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: '#6b7280' }}>
+          <span className="text-white text-[10px] font-bold">✓</span>
         </div>
       )}
     </motion.div>
@@ -2141,52 +2827,23 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
           animate={{ rotateY: isFlipped ? 180 : 0 }}
           transition={{ duration: 0.5, ease: 'easeInOut' }}
         >
-          {/* Front of card */}
+          {/* Front of card - themed to match OverviewCard */}
           <div
             className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center p-6 overflow-hidden"
             style={{
               backfaceVisibility: 'hidden',
-              background: isArts
-                ? `linear-gradient(180deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`
-                : (isHistory
-                  ? `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`
-                  : (isTech ? theme.cardBg : `linear-gradient(135deg, #ffffff 0%, ${tint} 100%)`)),
-              border: claimed
-                ? (isDarkTheme(rootCategoryId) ? '2px solid rgba(255, 255, 255, 0.8)' : `2px solid ${theme.accent}`)
-                : (isArts ? 'none' : (isThemed ? `1px solid ${theme.accent}40` : '1px solid #e5e7eb')),
-              boxShadow: claimed
-                ? (isDarkTheme(rootCategoryId)
-                  ? '0 0 25px rgba(255, 255, 255, 0.6), 0 0 10px rgba(255, 255, 255, 0.4), 0 10px 25px -5px rgba(0, 0, 0, 0.15)'
-                  : `0 0 20px ${theme.accentGlow}, 0 10px 25px -5px rgba(0, 0, 0, 0.15)`)
-                : (isArts ? `0 0 30px ${theme.accentGlow}, 0 10px 25px -5px rgba(0, 0, 0, 0.1)` : '0 25px 50px -12px rgba(0, 0, 0, 0.25)')
+              ...getExpandedCardStyle(rootCategoryId, theme, claimed, tint)
             }}
           >
-            {/* Grid pattern for Technology */}
-            {isTech && (
-              <div
-                className="absolute inset-0 opacity-10"
-                style={{
-                  backgroundImage: `linear-gradient(${theme.accent} 1px, transparent 1px), linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)`,
-                  backgroundSize: '16px 16px'
-                }}
-              />
-            )}
-            {/* Corner accents for History */}
-            {isHistory && (
-              <>
-                <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 rounded-tl-xl" style={{ borderColor: theme.accent }} />
-                <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 rounded-tr-xl" style={{ borderColor: theme.accent }} />
-                <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 rounded-bl-xl" style={{ borderColor: theme.accent }} />
-                <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 rounded-br-xl" style={{ borderColor: theme.accent }} />
-              </>
-            )}
-            {/* Arts has no decorative elements - just the gradient and glow */}
+            {/* Themed decorative elements */}
+            {renderExpandedCardDecorations(rootCategoryId, theme)}
+
             <span className="text-sm mb-3 relative z-10" style={{ color: isThemed ? theme.textSecondary : '#9ca3af' }}>{index + 1} of {total}</span>
             <h2 className="text-xl font-bold text-center mb-4 leading-tight px-2 relative z-10" style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}>{card.title}</h2>
             <span className="text-sm relative z-10" style={{ color: isThemed ? theme.textSecondary : '#9ca3af' }}>Tap to read</span>
             {claimed && (
               <div className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center shadow-md" style={{ background: isThemed ? theme.accent : '#facc15' }}>
-                <span className={isTech ? 'text-slate-900 text-sm font-bold' : 'text-white text-sm'}>✓</span>
+                <span className={rootCategoryId === 'technology' ? 'text-slate-900 text-sm font-bold' : (rootCategoryId === 'philosophy' ? 'text-indigo-900 text-sm font-bold' : 'text-white text-sm font-bold')}>✓</span>
               </div>
             )}
           </div>
@@ -2197,41 +2854,11 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
             style={{
               backfaceVisibility: 'hidden',
               transform: 'rotateY(180deg)',
-              background: isArts
-                ? `linear-gradient(180deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`
-                : (isHistory
-                  ? `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`
-                  : (isTech ? theme.cardBg : `linear-gradient(135deg, #ffffff 0%, ${tint} 100%)`)),
-              border: claimed
-                ? (isDarkTheme(rootCategoryId) ? '2px solid rgba(255, 255, 255, 0.8)' : `2px solid ${theme.accent}`)
-                : (isArts ? 'none' : (isThemed ? `1px solid ${theme.accent}40` : '1px solid #e5e7eb')),
-              boxShadow: claimed
-                ? (isDarkTheme(rootCategoryId)
-                  ? '0 0 25px rgba(255, 255, 255, 0.6), 0 0 10px rgba(255, 255, 255, 0.4), 0 10px 25px -5px rgba(0, 0, 0, 0.15)'
-                  : `0 0 20px ${theme.accentGlow}, 0 10px 25px -5px rgba(0, 0, 0, 0.15)`)
-                : (isArts ? `0 0 30px ${theme.accentGlow}, 0 10px 25px -5px rgba(0, 0, 0, 0.1)` : '0 25px 50px -12px rgba(0, 0, 0, 0.25)')
+              ...getExpandedCardStyle(rootCategoryId, theme, claimed, tint)
             }}
           >
-            {/* Grid pattern for Technology */}
-            {isTech && (
-              <div
-                className="absolute inset-0 opacity-5 pointer-events-none"
-                style={{
-                  backgroundImage: `linear-gradient(${theme.accent} 1px, transparent 1px), linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)`,
-                  backgroundSize: '16px 16px'
-                }}
-              />
-            )}
-            {/* Corner accents for History */}
-            {isHistory && (
-              <>
-                <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 rounded-tl-xl pointer-events-none" style={{ borderColor: theme.accent }} />
-                <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 rounded-tr-xl pointer-events-none" style={{ borderColor: theme.accent }} />
-                <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 rounded-bl-xl pointer-events-none" style={{ borderColor: theme.accent }} />
-                <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 rounded-br-xl pointer-events-none" style={{ borderColor: theme.accent }} />
-              </>
-            )}
-            {/* Arts has no decorative elements - just the gradient and glow */}
+            {/* Themed decorative elements (more subtle on back) */}
+            {renderExpandedCardDecorations(rootCategoryId, theme, true)}
             {/* Close button */}
             <button
               onClick={(e) => { e.stopPropagation(); onClose(); }}
