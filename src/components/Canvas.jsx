@@ -5880,8 +5880,8 @@ export default function Canvas() {
         )}
       </AnimatePresence>
 
-      {/* Floating buttons */}
-      <WanderButton />
+      {/* Floating buttons - hide when preview card is open */}
+      {!showPreviewCard && <WanderButton />}
       <WanderMessage />
 
       {/* Wander card overlay - shows path animation then preview (for WANDER only) */}
