@@ -577,6 +577,17 @@ function renderExpandedCardDecorations(categoryId, theme, isBack = false) {
 }
 
 // Category data - Level 1 decks (from VISION.md)
+// Home screen decks - the top level
+const HOME_DECKS = [
+  {
+    id: 'my-decks',
+    name: 'My Decks',
+    gradient: 'from-indigo-500 to-purple-600',
+    bgColor: 'bg-indigo-50',
+    borderColor: 'border-indigo-300',
+  }
+]
+
 const CATEGORIES = [
   {
     id: 'arts',
@@ -5585,16 +5596,108 @@ export default function Canvas() {
   // Check if we have sub-decks to explore
   const hasSubDecks = childDecks.length > 0 || (currentSections?.sections?.length > 0)
 
-  // Root level - show all category decks
+  // Home screen - show Home decks (just "My Decks" for now)
   if (stack.length === 0) {
     return (
       <div className="w-screen min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 overflow-auto">
-        {/* Search bar at top */}
-        <div className="fixed top-0 left-0 right-0 z-40 pt-4 pb-2 px-4 bg-gradient-to-b from-gray-100 via-gray-100 to-transparent">
+        <div className="min-h-screen flex items-center justify-center p-8">
+          <div className="flex flex-col items-center gap-6">
+            <h1 className="text-2xl font-bold text-gray-800">Home</h1>
+            <div className="grid grid-cols-1 gap-4">
+              {HOME_DECKS.map((deck) => (
+                <Deck
+                  key={deck.id}
+                  deck={deck}
+                  claimed={false}
+                  onOpen={() => setStack([deck.id])}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Collection counter */}
+        <div className="fixed top-4 right-4 bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-200 shadow-sm">
+          <span className="text-gray-500 text-sm">Cards: </span>
+          <span className="text-gray-800 font-bold">{claimedCards.size}</span>
+        </div>
+
+        {/* Wander button */}
+        <WanderButton />
+        <WanderMessage />
+
+        {/* Wander card overlay - shows path animation then preview */}
+        <AnimatePresence>
+          {(isWandering || (showPreviewCard && showPreviewCard.navigatePath)) && wanderPathSteps.length > 0 && (
+            <WanderCard
+              pathSteps={wanderPathSteps}
+              currentStep={wanderCurrentStep}
+              isComplete={wanderComplete}
+              previewData={showPreviewCard ? {
+                title: showPreviewCard.title,
+                preview: showPreviewCard.preview,
+                isLoading: showPreviewCard.isLoading,
+                claimed: showPreviewCard.claimed,
+                cardId: showPreviewCard.cardId
+              } : null}
+              onClaim={() => {
+                claimPreviewCard(showPreviewCard.deckId)
+                setClaimedCards(getClaimedCardIds())
+                setShowPreviewCard(prev => ({ ...prev, claimed: true }))
+              }}
+              onExplore={() => {
+                if (showPreviewCard.navigatePath) {
+                  setStack(showPreviewCard.navigatePath)
+                }
+                setShowPreviewCard(null)
+                setWanderPathSteps([])
+              }}
+              onWander={() => {
+                setShowPreviewCard(null)
+                setWanderPathSteps([])
+                handleWander()
+              }}
+              onBack={() => {
+                setShowPreviewCard(null)
+                setWanderPathSteps([])
+                setIsWandering(false)
+              }}
+              rootCategoryId={showPreviewCard?.navigatePath?.[0] || wanderPathSteps[0]?.id}
+            />
+          )}
+        </AnimatePresence>
+      </div>
+    )
+  }
+
+  // My Decks screen - show all category decks
+  if (stack.length === 1 && stack[0] === 'my-decks') {
+    return (
+      <div className="w-screen min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 overflow-auto">
+        {/* Top navigation bar */}
+        <div className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200">
+          <div className="flex items-center justify-between px-3 py-2">
+            <button
+              onClick={() => setStack([])}
+              className="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 transition-colors"
+            >
+              <span className="text-lg">‹</span>
+              <span className="text-sm font-medium">Home</span>
+            </button>
+            <span className="font-semibold text-gray-800">My Decks</span>
+            <div className="bg-gray-100 rounded-full px-3 py-1">
+              <span className="text-gray-500 text-xs">Cards: </span>
+              <span className="text-gray-800 font-bold text-sm">{claimedCards.size}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Search bar */}
+        <div className="fixed top-12 left-0 right-0 z-30 pt-2 pb-2 px-4 bg-gradient-to-b from-gray-100 via-gray-100 to-transparent">
           <SearchBar onNavigate={handleSearchNavigate} />
         </div>
 
-        <div className="min-h-screen flex items-center justify-center p-8 pt-24">
+        <div className="min-h-screen flex items-center justify-center p-8 pt-32">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {CATEGORIES.map((category) => (
               <Deck
@@ -5605,12 +5708,6 @@ export default function Canvas() {
               />
             ))}
           </div>
-        </div>
-
-        {/* Collection counter - moved down to avoid search bar */}
-        <div className="fixed top-20 right-4 bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-200 shadow-sm">
-          <span className="text-gray-500 text-sm">Cards: </span>
-          <span className="text-gray-800 font-bold">{claimedCards.size}</span>
         </div>
 
         {/* Wander button */}
