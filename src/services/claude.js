@@ -17,42 +17,44 @@ export async function generateTopicPreview(topic, parentPath = null) {
   try {
     const contextNote = parentPath ? `\nContext: This is under "${parentPath}"` : '';
 
-    const prompt = `Write a preview for "${topic}" that makes someone want to learn more.${contextNote}
+    const prompt = `Write a preview for "${topic}" that helps someone decide if they want to learn about it.${contextNote}
 
 FORMAT:
 - First: 1-2 sentences explaining what it is
-- Then: One more sentence with a surprising detail that makes you go "wait, what?"
+- Then: One surprising detail (a specific fact that just lands)
+- Separate them with a blank line
 - No call to action (the UI has an Explore button)
 
+TONE: Modern, clear, confident. Trust the material—no "Did you know?" or "Fascinating!" energy. The surprising detail should just land without being flagged or called out.
+
 RULES:
-- The last sentence should be a SPECIFIC, SURPRISING fact
-- Not a summary, not a teaser - an actual interesting detail
+- Specific facts, numbers, names—not vague statements
 - Simple everyday words
-- Separate the "what it is" from the "surprising detail" with a blank line
+- Let the content earn interest by being precise
 
 EXAMPLES:
 
 Topic: "Bayeux Tapestry"
-A massive 230-foot medieval embroidered cloth that tells the dramatic story of the Norman conquest of England in 1066, stitch by intricate stitch.
+A 230-foot embroidered cloth telling the story of the Norman conquest of England in 1066, scene by scene.
 
-It's survived wars, revolutions, and nearly being cut up for wagon covers.
+It nearly got cut up for wagon covers during the French Revolution.
 
 Topic: "Tupac Shakur"
 One of hip hop's most influential artists—died at 25, still shaping the genre decades later.
 
-He recorded over 150 songs in the final year of his life alone.
+He recorded over 150 songs in his final year alone.
 
 Topic: "The Troubles"
-A decades-long violent conflict in Northern Ireland between unionists and nationalists. Over 3,500 died.
+A decades-long violent conflict in Northern Ireland between unionists and nationalists. Over 3,500 people died.
 
-The peace walls built to separate communities are still standing today.
+The peace walls separating communities are still standing today.
 
 Topic: "Atacama Large Millimeter Array"
-66 radio antennas in Chile's desert working as one giant telescope, built where it almost never rains.
+66 radio antennas in Chile's desert working together as one telescope, built where it almost never rains.
 
-It can see cold dust clouds where stars are being born 10 billion light-years away.
+It can see dust clouds where stars are forming 10 billion light-years away.
 
-Write ONLY the preview - no intro text, no "learn more" line.`;
+Write ONLY the preview - no intro, no "learn more" line.`;
 
     const message = await anthropic.messages.create({
       model: 'claude-3-5-haiku-20241022',
