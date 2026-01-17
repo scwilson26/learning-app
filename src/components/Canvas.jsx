@@ -1918,7 +1918,7 @@ function OverviewCard({ card, index, total, onClaim, claimed, onRead, tint = '#f
           {renderOverviewCardDecorations(rootCategoryId, theme)}
           <span className="text-xs font-semibold text-center leading-tight px-1 relative z-10" style={{ color: textPrimary }}>{card.title}</span>
           {claimed && (
-            <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: checkBg }}>
+            <div className="absolute top-1 left-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: checkBg }}>
               <span className={`${checkText} text-[10px] font-bold`}>✓</span>
             </div>
           )}
@@ -2978,14 +2978,31 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
             {/* Themed decorative elements */}
             {renderExpandedCardDecorations(rootCategoryId, theme)}
 
-            <span className="text-sm mb-3 relative z-10" style={{ color: isThemed ? theme.textSecondary : '#9ca3af' }}>{index + 1} of {total}</span>
-            <h2 className="text-xl font-bold text-center mb-4 leading-tight px-2 relative z-10" style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}>{card.title}</h2>
-            <span className="text-sm relative z-10" style={{ color: isThemed ? theme.textSecondary : '#9ca3af' }}>Tap to read</span>
+            {/* Claimed badge - top left */}
             {claimed && (
-              <div className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center shadow-md" style={{ background: isThemed ? theme.accent : '#facc15' }}>
+              <div className="absolute top-3 left-3 w-8 h-8 rounded-full flex items-center justify-center shadow-md z-20" style={{ background: isThemed ? theme.accent : '#facc15' }}>
                 <span className={rootCategoryId === 'technology' ? 'text-slate-900 text-sm font-bold' : (rootCategoryId === 'philosophy' ? 'text-indigo-900 text-sm font-bold' : 'text-white text-sm font-bold')}>✓</span>
               </div>
             )}
+
+            {/* Close button - top right */}
+            <button
+              onClick={(e) => { e.stopPropagation(); e.preventDefault(); onClose(); }}
+              onPointerDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full transition-colors z-20"
+              style={{
+                background: isThemed ? theme.cardBgAlt : '#f3f4f6',
+                color: isThemed ? theme.textSecondary : '#6b7280'
+              }}
+              aria-label="Close"
+            >
+              <span className="text-lg font-light">×</span>
+            </button>
+
+            <span className="text-sm mb-3 relative z-10" style={{ color: isThemed ? theme.textSecondary : '#9ca3af' }}>{index + 1} of {total}</span>
+            <h2 className="text-xl font-bold text-center mb-4 leading-tight px-2 relative z-10" style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}>{card.title}</h2>
+            <span className="text-sm relative z-10" style={{ color: isThemed ? theme.textSecondary : '#9ca3af' }}>Tap to read</span>
           </div>
 
           {/* Back of card - reading view optimized for mobile */}
