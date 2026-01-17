@@ -996,6 +996,78 @@ export function claimAncestorCategories(path, getNodeInfo) {
   return newlyClaimed
 }
 
+// ============================================================================
+// PREVIEW CARDS (Cover cards shown before committing to a topic)
+// ============================================================================
+
+/**
+ * Save a preview card for a topic
+ * @param {string} deckId - The deck/topic ID
+ * @param {string} title - The topic title
+ * @param {string} preview - The preview text (2-3 sentences)
+ */
+export function savePreviewCard(deckId, title, preview) {
+  const data = getData()
+  const previewId = `${deckId}-preview`
+
+  data.cards[previewId] = {
+    id: previewId,
+    deckId: deckId,
+    title: title,
+    content: preview,
+    type: 'preview',
+    generatedAt: new Date().toISOString(),
+    claimed: false,
+    claimedAt: null
+  }
+
+  saveData(data)
+  console.log(`[savePreviewCard] Saved preview for ${title}`)
+  return previewId
+}
+
+/**
+ * Get preview card for a topic
+ * @param {string} deckId - The deck/topic ID
+ * @returns {Object|null} The preview card or null if not generated
+ */
+export function getPreviewCard(deckId) {
+  const data = getData()
+  const previewId = `${deckId}-preview`
+  return data.cards[previewId] || null
+}
+
+/**
+ * Claim a preview card
+ * @param {string} deckId - The deck/topic ID
+ */
+export function claimPreviewCard(deckId) {
+  const data = getData()
+  const previewId = `${deckId}-preview`
+
+  if (data.cards[previewId]) {
+    data.cards[previewId].claimed = true
+    data.cards[previewId].claimedAt = new Date().toISOString()
+    saveData(data)
+    console.log(`[claimPreviewCard] Claimed preview for deck ${deckId}`)
+  }
+}
+
+/**
+ * Check if preview card exists for a topic
+ * @param {string} deckId - The deck/topic ID
+ * @returns {boolean}
+ */
+export function hasPreviewCard(deckId) {
+  const data = getData()
+  const previewId = `${deckId}-preview`
+  return !!data.cards[previewId]?.content
+}
+
+// ============================================================================
+// TIER CARDS
+// ============================================================================
+
 /**
  * Get cards for a specific tier in a deck
  * @param {string} deckId - The deck ID

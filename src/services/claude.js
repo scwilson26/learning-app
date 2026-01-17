@@ -7,6 +7,70 @@ const anthropic = new Anthropic({
 });
 
 /**
+ * Generate a preview/pitch for a topic (bullet points to hook the user)
+ * Used for the "cover card" that appears before committing to learn a topic
+ * @param {string} topic - The topic to preview
+ * @param {string} parentPath - The path context (e.g., "History > Ancient World")
+ * @returns {Promise<{preview: string}>}
+ */
+export async function generateTopicPreview(topic, parentPath = null) {
+  try {
+    const contextNote = parentPath ? `\nContext: This is under "${parentPath}"` : '';
+
+    const prompt = `Write a preview card for "${topic}" that makes someone curious to learn more.${contextNote}
+
+FORMAT:
+- 3-4 bullet points (one short line each, use • character)
+- Quick, punchy facts that spark curiosity
+- No paragraphs—scannable
+- End with: "5 cards to explore →"
+
+RULES:
+- Each bullet is ONE line, under 12 words
+- Be specific - use numbers, names, concrete details
+- Make them CURIOUS, not satisfied
+- Simple everyday words
+- No questions, no "Did you know"
+
+EXAMPLES:
+
+Topic: "History of Oceania"
+• 10,000+ islands spanning Australia to Hawaii
+• Ancient navigators crossed open ocean using stars and wave patterns
+• Transformed the biggest empty space on Earth into a human network
+
+5 cards to explore →
+
+Topic: "Greek Tragedy"
+• Invented 2,500 years ago to make audiences weep
+• Only 32 complete plays survived from thousands written
+• Still performed worldwide—same scripts, same emotions
+
+5 cards to explore →
+
+Topic: "Atacama Large Millimeter Array"
+• 66 antennas working as one giant eye
+• Built in the driest desert on Earth
+• Peers into corners of space where stars are born
+
+5 cards to explore →
+
+Write ONLY the preview card - no intro text, just bullets and the "5 cards" line.`;
+
+    const message = await anthropic.messages.create({
+      model: 'claude-3-5-haiku-20241022',
+      max_tokens: 150,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    return { preview: message.content[0].text.trim() };
+  } catch (error) {
+    console.error('Error generating topic preview:', error);
+    throw new Error('Failed to generate preview');
+  }
+}
+
+/**
  * Generate just the hook/opening for an article (fast, ~1 sentence)
  * @param {string} topic - The topic to explore
  * @param {string} quickCardText - Optional Quick Card text to build upon

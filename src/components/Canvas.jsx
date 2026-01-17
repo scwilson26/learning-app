@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { generateSubDecks, generateSingleCardContent, generateTierCards } from '../services/claude'
+import { generateSubDecks, generateSingleCardContent, generateTierCards, generateTopicPreview } from '../services/claude'
 import {
   getDeckCards,
   saveDeckCards,
@@ -27,7 +27,11 @@ import {
   clearAllData,
   claimCategoryNode,
   countDescendants,
-  countClaimedDescendants
+  countClaimedDescendants,
+  savePreviewCard,
+  getPreviewCard,
+  claimPreviewCard,
+  hasPreviewCard
 } from '../services/storage'
 
 // Configuration - card counts can be adjusted here or per-deck
@@ -1894,11 +1898,17 @@ function OverviewCard({ card, index, total, onClaim, claimed, onRead, tint = '#f
   return (
     <div
       className="relative w-28 h-36"
-      style={{ perspective: '600px' }}
+      style={{
+        perspective: '600px',
+        WebkitPerspective: '600px',
+      }}
     >
       <motion.div
         className="relative w-full h-full"
-        style={{ transformStyle: 'preserve-3d' }}
+        style={{
+          transformStyle: 'preserve-3d',
+          WebkitTransformStyle: 'preserve-3d',
+        }}
         initial={false}
         animate={{ rotateY: isRevealed ? 0 : 180 }}
         transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
@@ -1910,6 +1920,7 @@ function OverviewCard({ card, index, total, onClaim, claimed, onRead, tint = '#f
             ...cardStyles,
             backfaceVisibility: 'hidden',
             WebkitBackfaceVisibility: 'hidden',
+            zIndex: isRevealed ? 2 : 1,
           }}
           onClick={() => isRevealed && onRead(card)}
           whileHover={isRevealed ? { y: -6 } : {}}
@@ -1932,6 +1943,8 @@ function OverviewCard({ card, index, total, onClaim, claimed, onRead, tint = '#f
             backfaceVisibility: 'hidden',
             WebkitBackfaceVisibility: 'hidden',
             transform: 'rotateY(180deg)',
+            WebkitTransform: 'rotateY(180deg)',
+            zIndex: isRevealed ? 1 : 2,
           }}
         >
           {renderOverviewCardDecorations(rootCategoryId, theme)}
@@ -2656,100 +2669,546 @@ function TierCompleteCelebration({
   )
 }
 
-// Wandering screen - animated loading state while generating new path
-function WanderingScreen({ pathSteps, currentStep, isComplete }) {
+// Preview card modal - shown before committing to learn a topic
+// Styled to match ExpandedCard exactly with flip animation
+function PreviewCardModal({
+  topic,
+  preview,
+  isLoading,
+  claimed,
+  onClaim,
+  onDealMeIn,
+  onWander,
+  onBack,
+  rootCategoryId
+}) {
+  const [isFlipped, setIsFlipped] = useState(true) // Start flipped to show content
+  const theme = getCategoryTheme(rootCategoryId)
+  const isThemed = hasCustomTheme(rootCategoryId)
+
+  const handleFlip = (e) => {
+    // Don't flip if clicking buttons
+    if (e.target.closest('button')) return
+    if (!isLoading && preview) {
+      setIsFlipped(!isFlipped)
+    }
+  }
+
   return (
     <motion.div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-900"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
+      onClick={onBack}
     >
-      {/* Animated stars background */}
-      <div className="absolute inset-0 overflow-hidden">
-        {[...Array(20)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-1 h-1 bg-white rounded-full"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-            }}
-            animate={{
-              opacity: [0.2, 1, 0.2],
-              scale: [1, 1.5, 1],
-            }}
-            transition={{
-              duration: 2 + Math.random() * 2,
-              repeat: Infinity,
-              delay: Math.random() * 2,
-            }}
-          />
-        ))}
-      </div>
-
-      <div className="relative text-center px-8 max-w-md">
-        {/* Compass/dice animation */}
+      <motion.div
+        className="relative w-[85vw] max-w-[380px] h-[75vh] min-h-[400px] max-h-[600px] cursor-pointer"
+        style={{ perspective: 1000 }}
+        initial={{ scale: 0.8, y: 50 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.8, y: 50 }}
+        onClick={(e) => { e.stopPropagation(); handleFlip(e); }}
+      >
+        {/* Inner container that flips */}
         <motion.div
-          className="text-7xl mb-8"
-          animate={{
-            rotate: isComplete ? 0 : [0, 360],
-            scale: isComplete ? [1, 1.2, 1] : 1,
-          }}
-          transition={{
-            rotate: { duration: 2, repeat: isComplete ? 0 : Infinity, ease: 'linear' },
-            scale: { duration: 0.5 },
-          }}
+          className="relative w-full h-full"
+          style={{ transformStyle: 'preserve-3d' }}
+          animate={{ rotateY: isFlipped ? -180 : 0 }}
+          transition={{ duration: 0.5, ease: 'easeInOut' }}
         >
-          {isComplete ? '🎯' : '🎲'}
-        </motion.div>
-
-        <motion.h2
-          className="text-2xl font-bold text-white mb-4"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          {isComplete ? 'Found something interesting!' : 'Wandering...'}
-        </motion.h2>
-
-        {/* Path building animation */}
-        <div className="flex flex-wrap items-center justify-center gap-2 text-white/90 min-h-[60px]">
-          {pathSteps.map((step, index) => (
-            <motion.span
-              key={index}
-              className="flex items-center gap-1"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.3 }}
-            >
-              {index > 0 && <span className="text-white/50 mx-1">→</span>}
-              <span className={`font-medium ${index === pathSteps.length - 1 ? 'text-yellow-300' : ''}`}>
-                {step.name}
-              </span>
-              {index === currentStep && !isComplete && (
-                <motion.span
-                  className="ml-1"
-                  animate={{ opacity: [1, 0] }}
-                  transition={{ duration: 0.5, repeat: Infinity }}
-                >
-                  ...
-                </motion.span>
-              )}
-            </motion.span>
-          ))}
-        </div>
-
-        {/* Loading indicator */}
-        {!isComplete && (
-          <motion.p
-            className="text-white/60 text-sm mt-6"
-            animate={{ opacity: [0.5, 1, 0.5] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
+          {/* Front of card - title and "Tap to read" */}
+          <div
+            className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center p-6 overflow-hidden shadow-2xl"
+            style={{
+              backfaceVisibility: 'hidden',
+              WebkitBackfaceVisibility: 'hidden',
+              transform: 'translateZ(1px)',
+              ...getExpandedCardStyle(rootCategoryId, theme, claimed, '#fafbfc')
+            }}
           >
-            Discovering unexplored territory...
-          </motion.p>
+            {/* Themed decorations */}
+            {renderExpandedCardDecorations(rootCategoryId, theme)}
+
+            {/* Claimed badge - top left */}
+            {claimed && (
+              <div className="absolute top-3 left-3 w-8 h-8 rounded-full flex items-center justify-center shadow-md z-20" style={{ background: isThemed ? theme.accent : '#facc15' }}>
+                <span className={rootCategoryId === 'technology' ? 'text-slate-900 text-sm font-bold' : (rootCategoryId === 'philosophy' ? 'text-indigo-900 text-sm font-bold' : 'text-white text-sm font-bold')}>✓</span>
+              </div>
+            )}
+
+            {/* Close button - top right */}
+            <button
+              onClick={(e) => { e.stopPropagation(); onBack(); }}
+              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full transition-colors z-20"
+              style={{
+                background: isThemed ? theme.cardBgAlt : '#f3f4f6',
+                color: isThemed ? theme.textSecondary : '#6b7280'
+              }}
+              aria-label="Close"
+            >
+              <span className="text-lg font-light">×</span>
+            </button>
+
+            {isLoading ? (
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-8 h-8 border-3 rounded-full animate-spin" style={{
+                  borderColor: isThemed ? theme.cardBgAlt : '#e5e7eb',
+                  borderTopColor: isThemed ? theme.accent : '#eab308'
+                }} />
+                <span className="text-base" style={{ color: isThemed ? theme.textSecondary : '#9ca3af' }}>Peeking...</span>
+              </div>
+            ) : (
+              <>
+                <h2 className="text-xl font-bold text-center mb-4 leading-tight px-2 relative z-10" style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}>Introduction</h2>
+                <span className="text-sm relative z-10" style={{ color: isThemed ? theme.textSecondary : '#9ca3af' }}>Tap to read</span>
+              </>
+            )}
+          </div>
+
+          {/* Back of card - content and action buttons */}
+          <div
+            className="absolute inset-0 rounded-2xl flex flex-col p-5 overflow-hidden shadow-2xl"
+            style={{
+              backfaceVisibility: 'hidden',
+              WebkitBackfaceVisibility: 'hidden',
+              transform: 'rotateY(-180deg) translateZ(1px)',
+              ...getExpandedCardStyle(rootCategoryId, theme, claimed, '#fafbfc')
+            }}
+          >
+            {/* Themed decorations */}
+            {renderExpandedCardDecorations(rootCategoryId, theme, true)}
+
+            {/* Close button - top right */}
+            <button
+              onClick={(e) => { e.stopPropagation(); onBack(); }}
+              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full transition-colors z-20"
+              style={{
+                background: isThemed ? theme.cardBgAlt : '#f3f4f6',
+                color: isThemed ? theme.textSecondary : '#6b7280'
+              }}
+              aria-label="Close"
+            >
+              <span className="text-lg font-light">×</span>
+            </button>
+
+            {/* Header */}
+            <div className="flex justify-between items-start mb-3 pr-8 relative z-10">
+              <h2 className="text-lg font-bold leading-tight flex-1" style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}>{topic}</h2>
+            </div>
+
+            {/* Claimed badge - prominent indicator */}
+            {claimed && (
+              <div
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full mb-3 self-start relative z-10"
+                style={{
+                  background: isThemed ? theme.accent : '#10b981',
+                  boxShadow: `0 2px 8px ${isThemed ? theme.accentGlow : 'rgba(16, 185, 129, 0.4)'}`
+                }}
+              >
+                <span className={`text-sm font-bold ${rootCategoryId === 'technology' ? 'text-slate-900' : (rootCategoryId === 'philosophy' ? 'text-indigo-900' : 'text-white')}`}>✓</span>
+                <span className={`text-xs font-semibold ${rootCategoryId === 'technology' ? 'text-slate-900' : (rootCategoryId === 'philosophy' ? 'text-indigo-900' : 'text-white')}`}>Claimed</span>
+              </div>
+            )}
+
+            {/* Content area */}
+            <div className="flex-1 overflow-auto relative z-10">
+              <div className="text-sm leading-relaxed whitespace-pre-line" style={{ color: isThemed ? theme.textPrimary : '#374151' }}>
+                {preview}
+              </div>
+            </div>
+
+            {/* Action buttons - styled like ExpandedCard */}
+            <div className="mt-3 pt-3 relative z-10 space-y-2" style={{ borderTop: isThemed ? `1px solid ${theme.accent}20` : '1px solid #f3f4f6' }} onClick={e => e.stopPropagation()}>
+              {/* Claim and Explore buttons side by side */}
+              <div className="flex gap-2">
+                <button
+                  onClick={onClaim}
+                  disabled={claimed}
+                  className="flex-1 py-3 rounded-xl font-bold text-base transition-all active:scale-[0.98] disabled:opacity-50"
+                  style={{
+                    background: claimed
+                      ? (isThemed ? theme.cardBgAlt : '#e5e7eb')
+                      : (isThemed ? `linear-gradient(135deg, ${theme.accent}, ${theme.accent}cc)` : 'linear-gradient(135deg, #eab308, #d97706)'),
+                    color: claimed
+                      ? (isThemed ? theme.textSecondary : '#9ca3af')
+                      : (isThemed ? '#0f172a' : '#ffffff'),
+                    boxShadow: claimed ? 'none' : '0 4px 12px rgba(0,0,0,0.15)'
+                  }}
+                >
+                  {claimed ? 'Claimed' : 'Claim'}
+                </button>
+                <button
+                  onClick={() => {
+                    if (!claimed) onClaim()
+                    onDealMeIn()
+                  }}
+                  className="flex-1 py-3 rounded-xl font-bold text-base transition-all active:scale-[0.98]"
+                  style={{
+                    background: isThemed ? `linear-gradient(135deg, ${theme.accent}, ${theme.accent}cc)` : 'linear-gradient(135deg, #eab308, #d97706)',
+                    color: isThemed ? '#0f172a' : '#ffffff',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                  }}
+                >
+                  Explore →
+                </button>
+              </div>
+
+              {/* Secondary options */}
+              <div className="flex gap-2">
+                <button
+                  onClick={onWander}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 hover:scale-[1.02] active:scale-[0.98]"
+                  style={{
+                    background: 'linear-gradient(to right, #a855f7, #4f46e5)',
+                    color: '#ffffff',
+                    boxShadow: '0 4px 12px rgba(168, 85, 247, 0.3)'
+                  }}
+                >
+                  <span>🎲</span>
+                  <span>Wander</span>
+                </button>
+                <button
+                  onClick={onBack}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-1.5"
+                  style={{
+                    background: '#ffffff',
+                    color: '#6b7280',
+                    border: '2px solid #e5e7eb'
+                  }}
+                >
+                  <span>←</span>
+                  <span>Back</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    </motion.div>
+  )
+}
+
+// Wander Card - shows wandering animation inside a card, then transitions to preview
+function WanderCard({
+  pathSteps,
+  currentStep,
+  isComplete,
+  // Preview props (only used when isComplete and preview is ready)
+  previewData,  // { title, preview, isLoading, claimed }
+  onClaim,
+  onExplore,
+  onWander,
+  onBack,
+  rootCategoryId
+}) {
+  const [isFlipped, setIsFlipped] = useState(true) // Start flipped to show content
+  const theme = getCategoryTheme(rootCategoryId)
+  const isThemed = hasCustomTheme(rootCategoryId)
+
+  // Determine if we're still in "wandering" phase or showing preview
+  const showPreview = isComplete && previewData && !previewData.isLoading && previewData.preview
+
+  const handleFlip = (e) => {
+    // Don't flip if clicking buttons or if not showing preview yet
+    if (e.target.closest('button')) return
+    if (showPreview) {
+      setIsFlipped(!isFlipped)
+    }
+  }
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={isComplete ? onBack : undefined}
+    >
+      <motion.div
+        className="relative w-[85vw] max-w-[380px] h-[75vh] min-h-[400px] max-h-[600px] cursor-pointer"
+        style={{ perspective: 1000 }}
+        initial={{ scale: 0.8, y: 50 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.8, y: 50 }}
+        onClick={(e) => { e.stopPropagation(); handleFlip(e); }}
+      >
+        {/* WANDERING STATE - non-flipping card */}
+        {!showPreview && (
+          <div
+            className="w-full h-full rounded-2xl flex flex-col overflow-hidden relative shadow-2xl"
+            style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #4f46e5 100%)' }}
+          >
+            {/* Close button - top right (only when complete) */}
+            {isComplete && (
+              <button
+                onClick={onBack}
+                className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full transition-colors z-20"
+                style={{ background: 'rgba(255,255,255,0.2)', color: 'white' }}
+                aria-label="Close"
+              >
+                <span className="text-lg font-light">×</span>
+              </button>
+            )}
+
+            <div className="flex-1 flex flex-col items-center justify-center p-5 relative">
+              {/* Mini stars background */}
+              <div className="absolute inset-0 overflow-hidden rounded-2xl">
+                {[...Array(12)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className="absolute w-1 h-1 bg-white rounded-full"
+                    style={{
+                      left: `${10 + Math.random() * 80}%`,
+                      top: `${10 + Math.random() * 80}%`,
+                    }}
+                    animate={{
+                      opacity: [0.3, 0.8, 0.3],
+                      scale: [1, 1.3, 1],
+                    }}
+                    transition={{
+                      duration: 2 + Math.random() * 2,
+                      repeat: Infinity,
+                      delay: Math.random() * 2,
+                    }}
+                  />
+                ))}
+              </div>
+
+              {/* Dice/target animation */}
+              <motion.div
+                className="text-5xl mb-4 relative z-10"
+                animate={{
+                  rotate: isComplete ? 0 : [0, 360],
+                  scale: isComplete ? [1, 1.2, 1] : 1,
+                }}
+                transition={{
+                  rotate: { duration: 2, repeat: isComplete ? 0 : Infinity, ease: 'linear' },
+                  scale: { duration: 0.5 },
+                }}
+              >
+                {isComplete ? '🎯' : '🎲'}
+              </motion.div>
+
+              <motion.h2
+                className="text-lg font-bold text-white mb-3 relative z-10"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                {isComplete ? 'Found something!' : 'Wandering...'}
+              </motion.h2>
+
+              {/* Path building animation */}
+              <div className="flex flex-wrap items-center justify-center gap-1 text-white/90 text-sm px-2 relative z-10 min-h-[40px]">
+                {pathSteps.map((step, index) => (
+                  <motion.span
+                    key={index}
+                    className="flex items-center"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.3 }}
+                  >
+                    {index > 0 && <span className="text-white/50 mx-1">→</span>}
+                    <span className={index === pathSteps.length - 1 ? 'text-yellow-300 font-medium' : ''}>
+                      {step.name}
+                    </span>
+                    {index === currentStep && !isComplete && (
+                      <motion.span
+                        className="ml-0.5"
+                        animate={{ opacity: [1, 0] }}
+                        transition={{ duration: 0.5, repeat: Infinity }}
+                      >
+                        ...
+                      </motion.span>
+                    )}
+                  </motion.span>
+                ))}
+              </div>
+
+              {/* Loading preview indicator */}
+              {isComplete && previewData?.isLoading && (
+                <motion.div
+                  className="mt-4 flex items-center gap-2 text-white/70 text-sm"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Loading preview...</span>
+                </motion.div>
+              )}
+
+              {!isComplete && (
+                <motion.p
+                  className="text-white/60 text-xs mt-4 relative z-10"
+                  animate={{ opacity: [0.5, 1, 0.5] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                >
+                  Discovering unexplored territory...
+                </motion.p>
+              )}
+            </div>
+          </div>
         )}
-      </div>
+
+        {/* PREVIEW STATE - flipping card */}
+        {showPreview && (
+          <motion.div
+            className="relative w-full h-full"
+            style={{ transformStyle: 'preserve-3d' }}
+            animate={{ rotateY: isFlipped ? -180 : 0 }}
+            transition={{ duration: 0.5, ease: 'easeInOut' }}
+          >
+            {/* Front of card - "Introduction" and "Tap to read" */}
+            <div
+              className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center p-6 overflow-hidden shadow-2xl"
+              style={{
+                backfaceVisibility: 'hidden',
+                WebkitBackfaceVisibility: 'hidden',
+                transform: 'translateZ(1px)',
+                ...getExpandedCardStyle(rootCategoryId, theme, previewData?.claimed, '#fafbfc')
+              }}
+            >
+              {renderExpandedCardDecorations(rootCategoryId, theme)}
+
+              {/* Claimed badge - top left */}
+              {previewData.claimed && (
+                <div className="absolute top-3 left-3 w-8 h-8 rounded-full flex items-center justify-center shadow-md z-20" style={{ background: isThemed ? theme.accent : '#facc15' }}>
+                  <span className={rootCategoryId === 'technology' ? 'text-slate-900 text-sm font-bold' : (rootCategoryId === 'philosophy' ? 'text-indigo-900 text-sm font-bold' : 'text-white text-sm font-bold')}>✓</span>
+                </div>
+              )}
+
+              {/* Close button */}
+              <button
+                onClick={(e) => { e.stopPropagation(); onBack(); }}
+                className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full transition-colors z-20"
+                style={{
+                  background: isThemed ? theme.cardBgAlt : '#f3f4f6',
+                  color: isThemed ? theme.textSecondary : '#6b7280'
+                }}
+                aria-label="Close"
+              >
+                <span className="text-lg font-light">×</span>
+              </button>
+
+              <h2 className="text-xl font-bold text-center mb-4 leading-tight px-2 relative z-10" style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}>Introduction</h2>
+              <span className="text-sm relative z-10" style={{ color: isThemed ? theme.textSecondary : '#9ca3af' }}>Tap to read</span>
+            </div>
+
+            {/* Back of card - content and action buttons */}
+            <div
+              className="absolute inset-0 rounded-2xl flex flex-col p-5 overflow-hidden shadow-2xl"
+              style={{
+                backfaceVisibility: 'hidden',
+                WebkitBackfaceVisibility: 'hidden',
+                transform: 'rotateY(-180deg) translateZ(1px)',
+                ...getExpandedCardStyle(rootCategoryId, theme, previewData?.claimed, '#fafbfc')
+              }}
+            >
+              {renderExpandedCardDecorations(rootCategoryId, theme, true)}
+
+              {/* Close button */}
+              <button
+                onClick={(e) => { e.stopPropagation(); onBack(); }}
+                className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full transition-colors z-20"
+                style={{
+                  background: isThemed ? theme.cardBgAlt : '#f3f4f6',
+                  color: isThemed ? theme.textSecondary : '#6b7280'
+                }}
+                aria-label="Close"
+              >
+                <span className="text-lg font-light">×</span>
+              </button>
+
+              {/* Title */}
+              <div className="flex justify-between items-start mb-3 pr-8 relative z-10">
+                <h2 className="text-lg font-bold leading-tight flex-1" style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}>{previewData.title}</h2>
+              </div>
+
+              {/* Claimed badge */}
+              {previewData.claimed && (
+                <div
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full mb-3 self-start relative z-10"
+                  style={{
+                    background: isThemed ? theme.accent : '#10b981',
+                    boxShadow: `0 2px 8px ${isThemed ? theme.accentGlow : 'rgba(16, 185, 129, 0.4)'}`
+                  }}
+                >
+                  <span className={`text-sm font-bold ${rootCategoryId === 'technology' ? 'text-slate-900' : (rootCategoryId === 'philosophy' ? 'text-indigo-900' : 'text-white')}`}>✓</span>
+                  <span className={`text-xs font-semibold ${rootCategoryId === 'technology' ? 'text-slate-900' : (rootCategoryId === 'philosophy' ? 'text-indigo-900' : 'text-white')}`}>Claimed</span>
+                </div>
+              )}
+
+              {/* Content */}
+              <div className="flex-1 overflow-auto text-sm leading-relaxed whitespace-pre-line relative z-10" style={{ color: isThemed ? theme.textPrimary : '#374151' }}>
+                {previewData.preview}
+              </div>
+
+              {/* Action buttons */}
+              <div className="mt-3 pt-3 space-y-2 relative z-10" style={{ borderTop: isThemed ? `1px solid ${theme.accent}20` : '1px solid #f3f4f6' }} onClick={e => e.stopPropagation()}>
+                <div className="flex gap-2">
+                  <button
+                    onClick={onClaim}
+                    disabled={previewData.claimed}
+                    className="flex-1 py-3 rounded-xl font-bold text-base transition-all active:scale-[0.98] disabled:opacity-50"
+                    style={{
+                      background: previewData.claimed
+                        ? (isThemed ? theme.cardBgAlt : '#e5e7eb')
+                        : (isThemed ? `linear-gradient(135deg, ${theme.accent}, ${theme.accent}cc)` : 'linear-gradient(135deg, #eab308, #d97706)'),
+                      color: previewData.claimed
+                        ? (isThemed ? theme.textSecondary : '#9ca3af')
+                        : (isThemed ? '#0f172a' : '#ffffff'),
+                      boxShadow: previewData.claimed ? 'none' : '0 4px 12px rgba(0,0,0,0.15)'
+                    }}
+                  >
+                    {previewData.claimed ? 'Claimed' : 'Claim'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (!previewData.claimed) onClaim()
+                      onExplore()
+                    }}
+                    className="flex-1 py-3 rounded-xl font-bold text-base transition-all active:scale-[0.98]"
+                    style={{
+                      background: isThemed ? `linear-gradient(135deg, ${theme.accent}, ${theme.accent}cc)` : 'linear-gradient(135deg, #eab308, #d97706)',
+                      color: isThemed ? '#0f172a' : '#ffffff',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                    }}
+                  >
+                    Explore →
+                  </button>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={onWander}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 hover:scale-[1.02] active:scale-[0.98]"
+                    style={{
+                      background: 'linear-gradient(to right, #a855f7, #4f46e5)',
+                      color: '#ffffff',
+                      boxShadow: '0 4px 12px rgba(168, 85, 247, 0.3)'
+                    }}
+                  >
+                    <span>🎲</span>
+                    <span>Wander</span>
+                  </button>
+                  <button
+                    onClick={onBack}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-1.5"
+                    style={{
+                      background: '#ffffff',
+                      color: '#6b7280',
+                      border: '2px solid #e5e7eb'
+                    }}
+                  >
+                    <span>←</span>
+                    <span>Back</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </motion.div>
     </motion.div>
   )
 }
@@ -3353,6 +3812,46 @@ function SectionedDecks({ sections, onOpenDeck, claimedCards, parentGradient, pa
   )
 }
 
+// Cover card - shown at top of topic view after preview is claimed
+function CoverCard({ title, preview, claimed, onRead, rootCategoryId }) {
+  const theme = getCategoryTheme(rootCategoryId)
+  const isThemed = hasCustomTheme(rootCategoryId)
+  const cardStyles = getOverviewCardStyles(rootCategoryId, theme, claimed, '#fafbfc')
+
+  // Get text colors based on theme
+  const textPrimary = isThemed ? theme.textPrimary : '#1f2937'
+  const checkBg = isThemed ? theme.accent : '#6b7280'
+  const checkText = rootCategoryId === 'technology' ? 'text-slate-900' : (rootCategoryId === 'philosophy' ? 'text-indigo-900' : 'text-white')
+
+  return (
+    <motion.div
+      className="relative w-28 h-36 rounded-xl cursor-pointer flex flex-col items-center justify-center p-3 overflow-hidden"
+      style={cardStyles}
+      onClick={onRead}
+      whileHover={{ y: -6 }}
+      whileTap={{ scale: 0.98 }}
+    >
+      {/* Decorations */}
+      {renderOverviewCardDecorations(rootCategoryId, theme)}
+
+      {/* Claimed badge */}
+      {claimed && (
+        <div
+          className="absolute top-1 left-1 w-4 h-4 rounded-full flex items-center justify-center z-20"
+          style={{ background: checkBg }}
+        >
+          <span className={`${checkText} text-[10px] font-bold`}>✓</span>
+        </div>
+      )}
+
+      {/* Content */}
+      <span className="text-xs font-semibold text-center leading-tight px-1 relative z-10" style={{ color: textPrimary }}>
+        Introduction
+      </span>
+    </motion.div>
+  )
+}
+
 // The spread - overview cards + sub-decks laid out in a grid (now with tiered cards)
 function DeckSpread({
   deck,
@@ -3378,7 +3877,10 @@ function DeckSpread({
   // Progress for card generation
   generationProgress,
   // Root category for theming
-  rootCategoryId
+  rootCategoryId,
+  // Preview/cover card
+  previewCard,
+  onReadPreviewCard
 }) {
   // Tier metadata
   const tiers = [
@@ -3400,6 +3902,17 @@ function DeckSpread({
       {/* Deck title - only show for articles, categories show in card */}
       {isArticle && (
         <span className="text-sm font-semibold text-gray-700">{deck.name}</span>
+      )}
+
+      {/* Cover/Preview card - shows at top if claimed */}
+      {isArticle && previewCard && previewCard.claimed && (
+        <CoverCard
+          title={deck.name}
+          preview={previewCard.content}
+          claimed={true}
+          onRead={onReadPreviewCard}
+          rootCategoryId={rootCategoryId}
+        />
       )}
 
       {/* Category card - for non-article nodes (categories with children) */}
@@ -3815,6 +4328,10 @@ export default function Canvas() {
   const [showCelebration, setShowCelebration] = useState(null) // { tierName, nextTierName } or null
   const [lastCompletedTier, setLastCompletedTier] = useState({}) // deckId -> last tier shown celebration for
   const [backgroundGenerating, setBackgroundGenerating] = useState({}) // deckId -> { tier: 'deep_dive_1' | 'deep_dive_2', promise: Promise }
+
+  // Preview card state (shown before committing to a topic)
+  const [showPreviewCard, setShowPreviewCard] = useState(null) // { deckId, title, preview, isLoading } or null
+  const [previewCards, setPreviewCards] = useState({}) // deckId -> { preview, claimed }
 
   // Section-based Level 2 data (from Wikipedia)
   const [sectionData, setSectionData] = useState({}) // categoryId -> { sections: [...] }
@@ -4383,8 +4900,61 @@ export default function Canvas() {
     generateAndUnlockTier(currentDeck, tier, parentPath)
   }
 
-  const openDeck = (deck) => {
-    setStack(prev => [...prev, deck.id])
+  const openDeck = async (deck) => {
+    // Check if this is a leaf topic that should show a preview card first
+    const isLeafTopic = deck.isLeaf || deck.source === 'vital-articles' ||
+      (getTreeNode(deck.id)?.children?.length === 0)
+
+    if (isLeafTopic) {
+      // Check if we already have the preview card
+      const existingPreview = getPreviewCard(deck.id)
+      if (existingPreview) {
+        // Show existing preview
+        setShowPreviewCard({
+          deckId: deck.id,
+          title: deck.name || deck.title,
+          preview: existingPreview.content,
+          isLoading: false,
+          claimed: existingPreview.claimed
+        })
+      } else {
+        // Show loading state and generate preview
+        setShowPreviewCard({
+          deckId: deck.id,
+          title: deck.name || deck.title,
+          preview: null,
+          isLoading: true,
+          claimed: false
+        })
+
+        try {
+          // Build parent path for context
+          const parentPath = stackDecks.length > 0
+            ? stackDecks.map(d => d.name).join(' > ')
+            : null
+
+          const { preview } = await generateTopicPreview(deck.name || deck.title, parentPath)
+
+          // Save to storage
+          savePreviewCard(deck.id, deck.name || deck.title, preview)
+
+          // Update state
+          setShowPreviewCard(prev => prev?.deckId === deck.id ? {
+            ...prev,
+            preview,
+            isLoading: false
+          } : prev)
+        } catch (error) {
+          console.error('Failed to generate preview:', error)
+          // On error, just navigate directly
+          setShowPreviewCard(null)
+          setStack(prev => [...prev, deck.id])
+        }
+      }
+    } else {
+      // Not a leaf topic, navigate directly
+      setStack(prev => [...prev, deck.id])
+    }
   }
 
   const goBack = () => {
@@ -4464,6 +5034,7 @@ export default function Canvas() {
     console.log('[Wander] Final destination:', treePath.destination.name)
     return {
       id: treePath.destination.id,
+      name: treePath.destination.name,
       path: treePath.path,
       parentPath: treePath.steps.slice(0, -1).map(s => s.name).join(' > ') || null
     }
@@ -4522,11 +5093,45 @@ export default function Canvas() {
         // Brief pause to show completion animation
         await new Promise(resolve => setTimeout(resolve, 800))
 
-        // Navigate to destination
-        setStack(generated.path)
+        // DON'T navigate yet - just show the preview card
+        // Store the path so "Explore" can navigate when user commits
+        const existingPreview = getPreviewCard(generated.id)
+        if (existingPreview) {
+          // Show existing preview
+          setShowPreviewCard({
+            deckId: generated.id,
+            title: generated.name,
+            preview: existingPreview.content,
+            isLoading: false,
+            claimed: existingPreview.claimed,
+            navigatePath: generated.path  // Store path for later navigation
+          })
+        } else {
+          // Show loading state and generate preview
+          setShowPreviewCard({
+            deckId: generated.id,
+            title: generated.name,
+            preview: null,
+            isLoading: true,
+            claimed: false,
+            navigatePath: generated.path  // Store path for later navigation
+          })
 
-        // Auto-open first UNCLAIMED card for instant engagement
-        setAutoOpenCardId('__first_unclaimed__')
+          try {
+            const { preview } = await generateTopicPreview(generated.name, generated.parentPath)
+            savePreviewCard(generated.id, generated.name, preview)
+            setShowPreviewCard(prev => prev?.deckId === generated.id ? {
+              ...prev,
+              preview,
+              isLoading: false
+            } : prev)
+          } catch (error) {
+            console.error('Failed to generate preview after wander:', error)
+            // On error, navigate directly
+            setShowPreviewCard(null)
+            setStack(generated.path)
+          }
+        }
       } else {
         setWanderMessage('Could not find new content. Try again!')
         setTimeout(() => setWanderMessage(null), 3000)
@@ -4952,13 +5557,42 @@ export default function Canvas() {
         <WanderButton />
         <WanderMessage />
 
-        {/* Wandering screen overlay */}
+        {/* Wander card overlay - shows path animation then preview */}
         <AnimatePresence>
-          {isWandering && wanderPathSteps.length > 0 && (
-            <WanderingScreen
+          {(isWandering || (showPreviewCard && showPreviewCard.navigatePath)) && wanderPathSteps.length > 0 && (
+            <WanderCard
               pathSteps={wanderPathSteps}
               currentStep={wanderCurrentStep}
               isComplete={wanderComplete}
+              previewData={showPreviewCard ? {
+                title: showPreviewCard.title,
+                preview: showPreviewCard.preview,
+                isLoading: showPreviewCard.isLoading,
+                claimed: showPreviewCard.claimed
+              } : null}
+              onClaim={() => {
+                claimPreviewCard(showPreviewCard.deckId)
+                setClaimedCards(getClaimedCardIds())
+                setShowPreviewCard(prev => ({ ...prev, claimed: true }))
+              }}
+              onExplore={() => {
+                if (showPreviewCard.navigatePath) {
+                  setStack(showPreviewCard.navigatePath)
+                }
+                setShowPreviewCard(null)
+                setWanderPathSteps([])
+              }}
+              onWander={() => {
+                setShowPreviewCard(null)
+                setWanderPathSteps([])
+                handleWander()
+              }}
+              onBack={() => {
+                setShowPreviewCard(null)
+                setWanderPathSteps([])
+                setIsWandering(false)
+              }}
+              rootCategoryId={showPreviewCard?.navigatePath?.[0] || wanderPathSteps[0]?.id}
             />
           )}
         </AnimatePresence>
@@ -5016,6 +5650,21 @@ export default function Canvas() {
               sections={currentSections}
               generationProgress={generationProgress}
               rootCategoryId={stackDecks[0]?.id}
+              previewCard={currentDeck ? getPreviewCard(currentDeck.id) : null}
+              onReadPreviewCard={() => {
+                const preview = currentDeck ? getPreviewCard(currentDeck.id) : null
+                if (preview) {
+                  // Open the preview as an expanded card-like view
+                  // For now, just show an alert or we can create a proper modal
+                  setShowPreviewCard({
+                    deckId: currentDeck.id,
+                    title: currentDeck.name,
+                    preview: preview.content,
+                    isLoading: false,
+                    claimed: preview.claimed
+                  })
+                }
+              }}
             />
           </AnimatePresence>
         </div>
@@ -5187,17 +5836,77 @@ export default function Canvas() {
         )}
       </AnimatePresence>
 
+      {/* Preview card modal (shown before committing to a topic - for DIRECT clicks only) */}
+      <AnimatePresence>
+        {showPreviewCard && !showPreviewCard.navigatePath && (
+          <PreviewCardModal
+            topic={showPreviewCard.title}
+            preview={showPreviewCard.preview}
+            isLoading={showPreviewCard.isLoading}
+            claimed={showPreviewCard.claimed}
+            rootCategoryId={stackDecks[0]?.id}
+            onClaim={() => {
+              // Claim the preview card
+              claimPreviewCard(showPreviewCard.deckId)
+              setClaimedCards(getClaimedCardIds())
+              setShowPreviewCard(prev => ({ ...prev, claimed: true }))
+            }}
+            onDealMeIn={() => {
+              // From clicking a topic - just add to current stack
+              setStack(prev => [...prev, showPreviewCard.deckId])
+              setShowPreviewCard(null)
+            }}
+            onWander={() => {
+              setShowPreviewCard(null)
+              handleWander()
+            }}
+            onBack={() => {
+              setShowPreviewCard(null)
+            }}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Floating buttons */}
       <WanderButton />
       <WanderMessage />
 
-      {/* Wandering screen overlay */}
+      {/* Wander card overlay - shows path animation then preview (for WANDER only) */}
       <AnimatePresence>
-        {isWandering && wanderPathSteps.length > 0 && (
-          <WanderingScreen
+        {(isWandering || (showPreviewCard && showPreviewCard.navigatePath)) && wanderPathSteps.length > 0 && (
+          <WanderCard
             pathSteps={wanderPathSteps}
             currentStep={wanderCurrentStep}
             isComplete={wanderComplete}
+            previewData={showPreviewCard ? {
+              title: showPreviewCard.title,
+              preview: showPreviewCard.preview,
+              isLoading: showPreviewCard.isLoading,
+              claimed: showPreviewCard.claimed
+            } : null}
+            onClaim={() => {
+              claimPreviewCard(showPreviewCard.deckId)
+              setClaimedCards(getClaimedCardIds())
+              setShowPreviewCard(prev => ({ ...prev, claimed: true }))
+            }}
+            onExplore={() => {
+              if (showPreviewCard.navigatePath) {
+                setStack(showPreviewCard.navigatePath)
+              }
+              setShowPreviewCard(null)
+              setWanderPathSteps([])
+            }}
+            onWander={() => {
+              setShowPreviewCard(null)
+              setWanderPathSteps([])
+              handleWander()
+            }}
+            onBack={() => {
+              setShowPreviewCard(null)
+              setWanderPathSteps([])
+              setIsWandering(false)
+            }}
+            rootCategoryId={showPreviewCard?.navigatePath?.[0] || wanderPathSteps[0]?.id}
           />
         )}
       </AnimatePresence>
