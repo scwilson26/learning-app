@@ -37,6 +37,19 @@ import {
 // Configuration - card counts can be adjusted here or per-deck
 const DEFAULT_OVERVIEW_CARDS = 5
 
+// Helper to convert text to title case (e.g., "Magellan expedition" -> "Magellan Expedition")
+const toTitleCase = (str) => {
+  if (!str) return ''
+  const smallWords = ['a', 'an', 'and', 'as', 'at', 'but', 'by', 'for', 'in', 'nor', 'of', 'on', 'or', 'so', 'the', 'to', 'up', 'yet']
+  return str.split(' ').map((word, index) => {
+    // Always capitalize first word, otherwise check if it's a small word
+    if (index === 0 || !smallWords.includes(word.toLowerCase())) {
+      return word.charAt(0).toUpperCase() + word.slice(1)
+    }
+    return word.toLowerCase()
+  }).join(' ')
+}
+
 // Category visual themes - each category has its own visual world
 const CATEGORY_THEMES = {
   technology: {
@@ -2775,7 +2788,7 @@ function PreviewCardModal({
               </div>
             ) : (
               <>
-                <h2 className="text-xl font-bold text-center mb-4 leading-tight px-2 relative z-10" style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}>Introduction</h2>
+                <h2 className="text-xl font-bold text-center mb-4 leading-tight px-2 relative z-10" style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}>{toTitleCase(topic)}</h2>
                 <span className="text-sm relative z-10" style={{ color: isThemed ? theme.textSecondary : '#9ca3af' }}>Tap to read</span>
               </>
             )}
@@ -3117,7 +3130,7 @@ function WanderCard({
                 <span className="text-lg font-light">×</span>
               </button>
 
-              <h2 className="text-xl font-bold text-center mb-4 leading-tight px-2 relative z-10" style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}>Introduction</h2>
+              <h2 className="text-xl font-bold text-center mb-4 leading-tight px-2 relative z-10" style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}>{toTitleCase(previewData?.title)}</h2>
               <span className="text-sm relative z-10" style={{ color: isThemed ? theme.textSecondary : '#9ca3af' }}>Tap to read</span>
             </div>
 
@@ -3883,7 +3896,7 @@ function CoverCard({ title, preview, claimed, onRead, rootCategoryId }) {
 
       {/* Content */}
       <span className="text-xs font-semibold text-center leading-tight px-1 relative z-10" style={{ color: textPrimary }}>
-        Introduction
+        {toTitleCase(title)}
       </span>
     </motion.div>
   )
