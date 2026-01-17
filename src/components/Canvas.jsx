@@ -2693,6 +2693,7 @@ function TierSection({ tier, tierName, cards, claimedCards, onReadCard, completi
   }
 
   // Tier accessible but not yet generated - show unlock prompt
+  const tierEmoji = tier === 'core' ? '📚' : tier === 'deep_dive_1' ? '🔬' : '🎓'
   return (
     <div className="flex flex-col items-center gap-3">
       <div className="flex items-center gap-2">
