@@ -1916,7 +1916,6 @@ function OverviewCard({ card, index, total, onClaim, claimed, onRead, tint = '#f
           whileTap={isRevealed ? { scale: 0.98 } : {}}
         >
           {renderOverviewCardDecorations(rootCategoryId, theme)}
-          <span className="text-xs mb-1 relative z-10" style={{ color: textSecondary }}>{index + 1}/{total}</span>
           <span className="text-xs font-semibold text-center leading-tight px-1 relative z-10" style={{ color: textPrimary }}>{card.title}</span>
           {claimed && (
             <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: checkBg }}>
@@ -1945,10 +1944,6 @@ function OverviewCard({ card, index, total, onClaim, claimed, onRead, tint = '#f
               }}
             />
           </div>
-          {/* Card back indicator - subtle card number */}
-          <span className="text-xs font-medium opacity-30 relative z-10" style={{ color: textSecondary }}>
-            {index + 1}
-          </span>
         </div>
       </motion.div>
     </div>
