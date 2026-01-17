@@ -4902,21 +4902,25 @@ export default function Canvas() {
       setLastCompletedTier(prev => ({ ...prev, [currentDeck.id]: 'core' }))
 
       // Pre-generate Deep Dive 1 content in background
-      const deckTiers = tierCards[currentDeck.id] || {}
-      const dd1Cards = deckTiers.deep_dive_1 || []
-      const allCards = [...(deckTiers.core || []), ...dd1Cards, ...(deckTiers.deep_dive_2 || [])]
-      console.log(`[BACKGROUND] Starting DD1 pre-generation for ${dd1Cards.length} cards`)
-      dd1Cards.forEach(card => {
-        if (!getCardContent(card.id)) {
-          generateSingleCardContent(currentDeck.name, card.number, card.title, allCards)
-            .then(content => {
-              saveCardContent(card.id, content)
-              setGeneratedContent(prev => ({ ...prev, [card.id]: content }))
-              console.log(`[BACKGROUND] DD1 content ready for card ${card.number}: ${card.title}`)
-            })
-            .catch(err => console.error(`[BACKGROUND] Failed DD1 card ${card.number}:`, err))
-        }
-      })
+      try {
+        const deckTiers = tierCards[currentDeck.id] || {}
+        const dd1Cards = deckTiers.deep_dive_1 || []
+        const allCards = [...(deckTiers.core || []), ...dd1Cards, ...(deckTiers.deep_dive_2 || [])]
+        console.log(`[BACKGROUND] Starting DD1 pre-generation for ${dd1Cards.length} cards`)
+        dd1Cards.forEach(card => {
+          if (card?.id && card?.number && card?.title && !getCardContent(card.id)) {
+            generateSingleCardContent(currentDeck.name, card.number, card.title, allCards)
+              .then(content => {
+                saveCardContent(card.id, content)
+                setGeneratedContent(prev => ({ ...prev, [card.id]: content }))
+                console.log(`[BACKGROUND] DD1 content ready for card ${card.number}: ${card.title}`)
+              })
+              .catch(err => console.error(`[BACKGROUND] Failed DD1 card ${card?.number}:`, err))
+          }
+        })
+      } catch (err) {
+        console.error('[BACKGROUND] DD1 pre-generation error:', err)
+      }
     }
     // Check if deep_dive_1 just completed
     else if (completion.deep_dive_1.complete && lastCompleted === 'core') {
@@ -4928,21 +4932,25 @@ export default function Canvas() {
       setLastCompletedTier(prev => ({ ...prev, [currentDeck.id]: 'deep_dive_1' }))
 
       // Pre-generate Deep Dive 2 content in background
-      const deckTiers = tierCards[currentDeck.id] || {}
-      const dd2Cards = deckTiers.deep_dive_2 || []
-      const allCards = [...(deckTiers.core || []), ...(deckTiers.deep_dive_1 || []), ...dd2Cards]
-      console.log(`[BACKGROUND] Starting DD2 pre-generation for ${dd2Cards.length} cards`)
-      dd2Cards.forEach(card => {
-        if (!getCardContent(card.id)) {
-          generateSingleCardContent(currentDeck.name, card.number, card.title, allCards)
-            .then(content => {
-              saveCardContent(card.id, content)
-              setGeneratedContent(prev => ({ ...prev, [card.id]: content }))
-              console.log(`[BACKGROUND] DD2 content ready for card ${card.number}: ${card.title}`)
-            })
-            .catch(err => console.error(`[BACKGROUND] Failed DD2 card ${card.number}:`, err))
-        }
-      })
+      try {
+        const deckTiers = tierCards[currentDeck.id] || {}
+        const dd2Cards = deckTiers.deep_dive_2 || []
+        const allCards = [...(deckTiers.core || []), ...(deckTiers.deep_dive_1 || []), ...dd2Cards]
+        console.log(`[BACKGROUND] Starting DD2 pre-generation for ${dd2Cards.length} cards`)
+        dd2Cards.forEach(card => {
+          if (card?.id && card?.number && card?.title && !getCardContent(card.id)) {
+            generateSingleCardContent(currentDeck.name, card.number, card.title, allCards)
+              .then(content => {
+                saveCardContent(card.id, content)
+                setGeneratedContent(prev => ({ ...prev, [card.id]: content }))
+                console.log(`[BACKGROUND] DD2 content ready for card ${card.number}: ${card.title}`)
+              })
+              .catch(err => console.error(`[BACKGROUND] Failed DD2 card ${card?.number}:`, err))
+          }
+        })
+      } catch (err) {
+        console.error('[BACKGROUND] DD2 pre-generation error:', err)
+      }
     }
     // Check if deep_dive_2 just completed
     else if (completion.deep_dive_2.complete && lastCompleted === 'deep_dive_1') {
