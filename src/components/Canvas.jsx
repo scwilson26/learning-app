@@ -1534,7 +1534,7 @@ function Deck({ deck, onOpen, claimed, rootCategoryId = null }) {
     )
   }
 
-  // History: warm parchment with gold accents
+  // History: warm parchment with grid pattern and top accent (no border)
   if (themeId === 'history') {
     return (
       <motion.div
@@ -1550,7 +1550,6 @@ function Deck({ deck, onOpen, claimed, rootCategoryId = null }) {
           style={{
             transform: 'translate(4px, 4px) rotate(2deg)',
             background: theme.cardBgAlt,
-            border: `1px solid ${theme.accent}40`,
             boxShadow: '0 1px 2px rgba(0,0,0,0.08)'
           }}
         />
@@ -1559,7 +1558,6 @@ function Deck({ deck, onOpen, claimed, rootCategoryId = null }) {
           style={{
             transform: 'translate(2px, 2px) rotate(0.5deg)',
             background: theme.cardBgAlt,
-            border: `1px solid ${theme.accent}40`,
             boxShadow: '0 1px 2px rgba(0,0,0,0.06)'
           }}
         />
@@ -1569,26 +1567,25 @@ function Deck({ deck, onOpen, claimed, rootCategoryId = null }) {
           <div
             className="absolute inset-0 rounded-xl overflow-hidden"
             style={{
-              background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-              border: `2px solid ${theme.accent}`,
+              background: theme.cardBg,
               boxShadow: claimed
-                ? `0 0 15px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.15)`
-                : `0 8px 16px -4px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)`
+                ? `0 0 20px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.4)`
+                : `0 8px 16px -4px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.2)`
             }}
           >
-            {/* Subtle aged texture */}
+            {/* Grid pattern overlay */}
             <div
-              className="absolute inset-0 opacity-30"
+              className="absolute inset-0 opacity-10"
               style={{
-                backgroundImage: `radial-gradient(${theme.accent}15 1px, transparent 1px)`,
-                backgroundSize: '8px 8px'
+                backgroundImage: `linear-gradient(${theme.accent} 1px, transparent 1px), linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)`,
+                backgroundSize: '12px 12px'
               }}
             />
-            {/* Gold corner accents */}
-            <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 rounded-tl-lg" style={{ borderColor: theme.accent }} />
-            <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 rounded-tr-lg" style={{ borderColor: theme.accent }} />
-            <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 rounded-bl-lg" style={{ borderColor: theme.accent }} />
-            <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 rounded-br-lg" style={{ borderColor: theme.accent }} />
+            {/* Accent line at top */}
+            <div
+              className="absolute top-0 left-0 right-0 h-1"
+              style={{ background: `linear-gradient(90deg, transparent, ${theme.accent}, transparent)` }}
+            />
           </div>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-xs font-semibold text-center px-2 leading-tight" style={{ color: theme.textPrimary }}>{deck.name}</span>
