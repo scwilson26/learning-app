@@ -5859,17 +5859,20 @@ export default function Canvas() {
               <p>No cards in this category yet</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {deckList.map((deck) => (
+            <div className="flex gap-2 flex-wrap justify-center max-w-4xl mx-auto">
+              {deckList.map((deck, index) => (
                 <motion.div
                   key={deck.id}
-                  className="bg-white rounded-xl p-4 shadow-md cursor-pointer border border-gray-200"
-                  onClick={() => setStack(['collections', categoryId, deck.id])}
-                  whileHover={{ y: -4 }}
-                  whileTap={{ scale: 0.98 }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.03 }}
                 >
-                  <h3 className="text-sm font-semibold text-gray-800 mb-2 line-clamp-2">{toTitleCase(deck.name)}</h3>
-                  <p className="text-xs text-gray-500">{deck.cards.length} {deck.cards.length === 1 ? 'card' : 'cards'}</p>
+                  <Deck
+                    deck={{ id: deck.id, name: toTitleCase(deck.name) }}
+                    onOpen={() => setStack(['collections', categoryId, deck.id])}
+                    claimed={false}
+                    rootCategoryId={categoryId}
+                  />
                 </motion.div>
               ))}
             </div>
@@ -5914,22 +5917,23 @@ export default function Canvas() {
               <p>No cards in this deck yet</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {deckCards.map((card) => (
+            <div className="flex gap-2 flex-wrap justify-center max-w-4xl mx-auto">
+              {deckCards.map((card, index) => (
                 <motion.div
                   key={card.id}
-                  className="bg-white rounded-xl p-4 shadow-md cursor-pointer border border-gray-200"
-                  onClick={() => {
-                    setExpandedCard(card)
-                    setExpandedCardStartFlipped(true)
-                  }}
-                  whileHover={{ y: -4 }}
-                  whileTap={{ scale: 0.98 }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.03 }}
                 >
-                  <h3 className="text-sm font-semibold text-gray-800 mb-2 line-clamp-2">{card.title}</h3>
-                  {card.cardId && (
-                    <p className="text-xs text-gray-400 font-mono">{card.cardId}</p>
-                  )}
+                  <Deck
+                    deck={{ id: card.id, name: card.title }}
+                    onOpen={() => {
+                      setExpandedCard(card)
+                      setExpandedCardStartFlipped(true)
+                    }}
+                    claimed={claimedCards.has(card.id)}
+                    rootCategoryId={categoryId}
+                  />
                 </motion.div>
               ))}
             </div>
