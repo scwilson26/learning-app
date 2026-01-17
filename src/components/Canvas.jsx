@@ -2621,10 +2621,10 @@ function TierCompleteCelebration({
               onClick={onUnlockNext}
               className="w-full py-4 rounded-xl text-white font-bold bg-gradient-to-r from-purple-500 to-indigo-600 hover:opacity-90 active:scale-[0.98] transition-all shadow-lg"
             >
-              {nextTierReady ? `Continue to ${nextTierName} →` : `Unlock ${nextTierName}`}
+              Unlock {nextTierName}
             </button>
             <p className="text-center text-xs text-gray-500 mt-2">
-              {nextTierReady ? '5 more cards ready' : '5 bonus cards await'}
+              5 bonus cards await
             </p>
           </div>
         )}
