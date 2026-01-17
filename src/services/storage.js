@@ -101,6 +101,237 @@ export function getSearchableTopicCount() {
   return searchIndex.length
 }
 
+// ============================================================================
+// CARD ID SYSTEM
+// Format: [CODE]-[TIER]-[YYMMDD]-[SEQ]
+// Example: ANC-1-250116-0042
+// ============================================================================
+
+// Root category codes (12)
+const ROOT_CATEGORY_CODES = {
+  'arts': 'ART',
+  'biology': 'BIO',
+  'health': 'HLT',
+  'everyday': 'EVD',
+  'geography': 'GEO',
+  'history': 'HIS',
+  'mathematics': 'MAT',
+  'people': 'PPL',
+  'philosophy': 'PHI',
+  'physics': 'PHY',
+  'society': 'SOC',
+  'technology': 'TEC',
+}
+
+// Subcategory codes (82)
+const SUBCATEGORY_CODES = {
+  // Arts (8)
+  'architecture': 'ARC',
+  'literature': 'LIT',
+  'music': 'MUS',
+  'visual-arts': 'VIS',
+  'film-tv': 'FLM',
+  'performing-arts': 'PRF',
+  'photography': 'PHO',
+  'fashion-design': 'FAS',
+
+  // Biology (6)
+  'animals': 'ANM',
+  'plants': 'PLT',
+  'ecology': 'ECO',
+  'genetics': 'GEN',
+  'microbes': 'MIC',
+  'marine-life': 'MAR',
+
+  // Health (5)
+  'human-body': 'BOD',
+  'medicine': 'MED',
+  'nutrition': 'NUT',
+  'mental-health': 'MNT',
+  'fitness': 'FIT',
+
+  // Everyday (7)
+  'food-drink': 'FOD',
+  'sports-games': 'SPT',
+  'hobbies': 'HOB',
+  'holidays': 'HOL',
+  'fashion-clothing': 'CLO',
+  'home-living': 'HOM',
+  'travel-transport': 'TRV',
+
+  // Geography (8)
+  'countries': 'CTY',
+  'cities': 'CIT',
+  'mountains-volcanoes': 'MTN',
+  'rivers-lakes': 'RIV',
+  'oceans-seas': 'OCN',
+  'islands': 'ISL',
+  'deserts-forests': 'DST',
+  'landmarks-wonders': 'LMK',
+
+  // History (8 + 7 ancient children = 15)
+  'ancient': 'ANC',
+  'medieval': 'MDV',
+  'renaissance': 'REN',
+  'modern': 'MOD',
+  'world-wars': 'WAR',
+  'empires': 'EMP',
+  'revolutions': 'REV',
+  'exploration': 'EXP',
+  'egypt': 'EGY',
+  'rome': 'ROM',
+  'greece': 'GRC',
+  'persia': 'PRS',
+  'china-ancient': 'CHN',
+  'mesopotamia': 'MSP',
+  'maya': 'MAY',
+
+  // Mathematics (6)
+  'numbers-arithmetic': 'NUM',
+  'algebra': 'ALG',
+  'geometry': 'GMY',
+  'statistics-probability': 'STA',
+  'famous-problems': 'PRB',
+  'mathematicians': 'MTH',
+
+  // People (8)
+  'leaders-politicians': 'LDR',
+  'scientists-inventors': 'SCI',
+  'artists-writers': 'AWT',
+  'musicians-performers': 'MSC',
+  'explorers-adventurers': 'ADV',
+  'philosophers-thinkers': 'THK',
+  'athletes': 'ATH',
+  'villains-outlaws': 'VLN',
+
+  // Philosophy (7)
+  'world-religions': 'REL',
+  'mythology': 'MYT',
+  'ethics-morality': 'ETH',
+  'logic-reasoning': 'LOG',
+  'eastern-philosophy': 'EST',
+  'western-philosophy': 'WST',
+  'spirituality-mysticism': 'SPR',
+
+  // Physical Sciences (6)
+  'physics': 'PHS',
+  'chemistry': 'CHM',
+  'astronomy-space': 'AST',
+  'earth-science': 'ERT',
+  'energy-forces': 'NRG',
+  'elements-materials': 'ELM',
+
+  // Society (8)
+  'politics-government': 'POL',
+  'economics-money': 'ECN',
+  'law-justice': 'LAW',
+  'education': 'EDU',
+  'media-communication': 'MDA',
+  'social-movements': 'MVT',
+  'war-military': 'MIL',
+  'culture-customs': 'CUL',
+
+  // Technology (8)
+  'computers-internet': 'CMP',
+  'engineering': 'ENG',
+  'inventions': 'INV',
+  'transportation': 'TRN',
+  'weapons-defense': 'WPN',
+  'communication-tech': 'COM',
+  'energy-power': 'PWR',
+  'future-tech-ai': 'AIR',
+}
+
+// Tier number mapping
+const TIER_NUMBERS = {
+  'core': '1',
+  'deep_dive_1': '2',
+  'deep_dive_2': '3',
+}
+
+/**
+ * Get the 3-letter code for a deck ID
+ * @param {string} deckId - The deck ID (e.g., 'ancient', 'history', 'egypt')
+ * @returns {string} The 3-letter code (e.g., 'ANC', 'HIS', 'EGY')
+ */
+function getDeckCode(deckId) {
+  // Check root categories first
+  if (ROOT_CATEGORY_CODES[deckId]) {
+    return ROOT_CATEGORY_CODES[deckId]
+  }
+  // Check subcategories
+  if (SUBCATEGORY_CODES[deckId]) {
+    return SUBCATEGORY_CODES[deckId]
+  }
+  // For dynamic/deep decks, generate a code from the ID
+  // Take first 3 consonants or first 3 chars
+  const cleaned = deckId.replace(/-/g, '').toUpperCase()
+  const consonants = cleaned.replace(/[AEIOU]/g, '')
+  if (consonants.length >= 3) {
+    return consonants.substring(0, 3)
+  }
+  return cleaned.substring(0, 3).padEnd(3, 'X')
+}
+
+/**
+ * Get current date as YYMMDD string
+ * @returns {string} Date string like '250116'
+ */
+function getDateCode() {
+  const now = new Date()
+  const yy = String(now.getFullYear()).slice(-2)
+  const mm = String(now.getMonth() + 1).padStart(2, '0')
+  const dd = String(now.getDate()).padStart(2, '0')
+  return `${yy}${mm}${dd}`
+}
+
+/**
+ * Get and increment the sequence counter for a given deck+tier+date combination
+ * @param {string} deckCode - The 3-letter deck code
+ * @param {string} tier - The tier ('core', 'deep_dive_1', 'deep_dive_2')
+ * @param {string} dateCode - The date code (YYMMDD)
+ * @returns {string} The 4-digit sequence number (e.g., '0042')
+ */
+function getNextSequenceNumber(deckCode, tier, dateCode) {
+  const data = getData()
+
+  // Initialize sequence counters if needed
+  if (!data.cardSequences) {
+    data.cardSequences = {}
+  }
+
+  // Key format: CODE-TIER-DATE
+  const tierNum = TIER_NUMBERS[tier] || '1'
+  const key = `${deckCode}-${tierNum}-${dateCode}`
+
+  // Get current counter and increment
+  const current = data.cardSequences[key] || 0
+  const next = current + 1
+  data.cardSequences[key] = next
+
+  saveData(data)
+
+  return String(next).padStart(4, '0')
+}
+
+/**
+ * Generate a unique card ID
+ * Format: [CODE]-[TIER]-[YYMMDD]-[SEQ]
+ * Example: ANC-1-250116-0042
+ *
+ * @param {string} deckId - The deck ID
+ * @param {string} tier - The tier ('core', 'deep_dive_1', 'deep_dive_2')
+ * @returns {string} The unique card ID
+ */
+export function generateCardId(deckId, tier = 'core') {
+  const deckCode = getDeckCode(deckId)
+  const tierNum = TIER_NUMBERS[tier] || '1'
+  const dateCode = getDateCode()
+  const seqNum = getNextSequenceNumber(deckCode, tier, dateCode)
+
+  return `${deckCode}-${tierNum}-${dateCode}-${seqNum}`
+}
+
 /**
  * Find a node in the vital articles tree by ID (O(1) lookup)
  * @param {Object} _node - Unused, kept for API compatibility
@@ -146,7 +377,6 @@ export function getTreeChildren(deckId) {
     isLeaf: child.isLeaf || false,
     wikiTitle: child.wikiTitle || null,
     articleCount: child.articleCount || 0,
-    emoji: pickEmojiForTopic(child.title),
   }))
 }
 
@@ -269,7 +499,6 @@ export function getTreeNode(deckId) {
     id: node.id,
     name: node.title,
     title: node.title,
-    emoji: pickEmojiForTopic(node.title),
     isLeaf: node.isLeaf || false,
     wikiTitle: node.wikiTitle || null,
     articleCount: node.articleCount || 0,
@@ -292,7 +521,6 @@ export function getTreeCategories() {
     name: cat.title,
     title: cat.title,
     articleCount: cat.articleCount || 0,
-    emoji: pickEmojiForTopic(cat.title),
   }))
 }
 
@@ -351,7 +579,6 @@ function generateSingleRandomPath(minDepth, maxDepth) {
   steps.push({
     id: currentNode.id,
     name: currentNode.title,
-    emoji: pickEmojiForTopic(currentNode.title),
   })
 
   const targetDepth = minDepth + Math.floor(Math.random() * (maxDepth - minDepth + 1))
@@ -387,7 +614,6 @@ function generateSingleRandomPath(minDepth, maxDepth) {
     steps.push({
       id: currentNode.id,
       name: currentNode.title,
-      emoji: pickEmojiForTopic(currentNode.title),
     })
     depth++
 
@@ -411,7 +637,6 @@ function generateSingleRandomPath(minDepth, maxDepth) {
       id: currentNode.id,
       name: currentNode.title,
       title: currentNode.title,
-      emoji: pickEmojiForTopic(currentNode.title),
       isLeaf: currentNode.isLeaf || !currentNode.children || currentNode.children.length === 0,
       wikiTitle: currentNode.wikiTitle || null,
       articleCount: currentNode.articleCount || 0,
@@ -428,7 +653,7 @@ function generateSingleRandomPath(minDepth, maxDepth) {
  * Picks from multiple candidates and chooses the most interesting one
  * @param {number} minDepth - Minimum depth to reach before stopping (default 3)
  * @param {number} maxDepth - Maximum depth to reach (default 5)
- * @returns {Object} { path: [...ids], steps: [{id, name, emoji}...], destination: nodeInfo }
+ * @returns {Object} { path: [...ids], steps: [{id, name}...], destination: nodeInfo }
  */
 export function getRandomTreePath(minDepth = 3, maxDepth = 5) {
   // Generate 20 random candidates
@@ -452,91 +677,6 @@ export function getRandomTreePath(minDepth = 3, maxDepth = 5) {
   // Remove the interestScore from the returned object (internal detail)
   const { interestScore, ...result } = selected
   return result
-}
-
-/**
- * Pick an appropriate emoji for a topic
- * @param {string} topic - The topic name
- * @returns {string} An emoji
- */
-function pickEmojiForTopic(topic) {
-  const lower = topic.toLowerCase()
-
-  // People categories
-  if (/scientist|inventor|physicist|chemist|biologist/.test(lower)) return '🔬'
-  if (/mathematician|math/.test(lower)) return '🔢'
-  if (/artist|painter|sculptor/.test(lower)) return '🎨'
-  if (/musician|composer|music/.test(lower)) return '🎵'
-  if (/writer|poet|author|novel/.test(lower)) return '✍️'
-  if (/philosopher|philosophy/.test(lower)) return '🤔'
-  if (/leader|president|king|queen|emperor|politician/.test(lower)) return '👑'
-  if (/explorer|adventurer/.test(lower)) return '🧭'
-  if (/athlete|sport/.test(lower)) return '🏆'
-  if (/actor|entertainer|film/.test(lower)) return '🎬'
-
-  // Science categories
-  if (/physics|quantum|relativity|mechanics/.test(lower)) return '⚛️'
-  if (/chemistry|chemical|element/.test(lower)) return '🧪'
-  if (/biology|life|organism|animal|plant/.test(lower)) return '🧬'
-  if (/astronomy|space|star|planet|galaxy/.test(lower)) return '🌌'
-  if (/earth|geology|climate|weather/.test(lower)) return '🌍'
-  if (/medicine|health|disease/.test(lower)) return '🏥'
-
-  // History categories
-  if (/ancient|classical|empire|civilization/.test(lower)) return '🏛️'
-  if (/medieval|middle age/.test(lower)) return '🏰'
-  if (/war|military|battle|conflict/.test(lower)) return '⚔️'
-  if (/revolution|political/.test(lower)) return '✊'
-  if (/modern|contemporary|20th|21st/.test(lower)) return '🕐'
-
-  // Geography categories
-  if (/country|nation/.test(lower)) return '🗺️'
-  if (/city|capital/.test(lower)) return '🏙️'
-  if (/mountain|volcano/.test(lower)) return '🏔️'
-  if (/river|lake|water/.test(lower)) return '💧'
-  if (/ocean|sea|marine/.test(lower)) return '🌊'
-  if (/island|archipelago/.test(lower)) return '🏝️'
-
-  // Arts categories
-  if (/architecture|building|monument/.test(lower)) return '🏗️'
-  if (/literature|book|written/.test(lower)) return '📚'
-  if (/visual|painting|art/.test(lower)) return '🖼️'
-  if (/dance|ballet|performance/.test(lower)) return '💃'
-  if (/theater|drama|play/.test(lower)) return '🎭'
-
-  // Technology categories
-  if (/computer|software|internet/.test(lower)) return '💻'
-  if (/engineering|machine/.test(lower)) return '⚙️'
-  if (/transport|vehicle|aircraft/.test(lower)) return '🚀'
-  if (/communication|media/.test(lower)) return '📡'
-
-  // Society categories
-  if (/economic|money|business/.test(lower)) return '💰'
-  if (/law|legal|justice/.test(lower)) return '⚖️'
-  if (/language|linguistic/.test(lower)) return '🗣️'
-  if (/education|university/.test(lower)) return '🎓'
-  if (/religion|spiritual|faith/.test(lower)) return '🙏'
-
-  // Everyday categories
-  if (/food|cuisine|cooking/.test(lower)) return '🍽️'
-  if (/game|play|recreation/.test(lower)) return '🎮'
-  if (/holiday|festival|celebration/.test(lower)) return '🎉'
-
-  // Top-level fallbacks
-  if (lower === 'people') return '👥'
-  if (lower === 'biology') return '🧬'
-  if (lower === 'geography') return '🌍'
-  if (lower === 'physics') return '⚛️'
-  if (lower === 'society') return '🏛️'
-  if (lower === 'technology') return '💻'
-  if (lower === 'arts') return '🎨'
-  if (lower === 'history') return '📜'
-  if (lower === 'everyday') return '🏠'
-  if (lower === 'philosophy') return '🤔'
-  if (lower === 'mathematics') return '🔢'
-
-  // Default
-  return '📖'
 }
 
 // Default data structure
@@ -613,6 +753,7 @@ export function getDeckCards(deckId) {
     const card = data.cards[cardId]
     return card ? {
       id: card.id,
+      cardId: card.cardId || null,  // Unique display ID
       title: card.title,
       content: card.content || null,
     } : null
@@ -654,8 +795,12 @@ export function saveDeckCards(deckId, deckName, cards, tier = 'core') {
 
   // Save individual cards with tier info
   cards.forEach((card, index) => {
+    // Generate unique card ID
+    const cardId = generateCardId(deckId, tier)
+
     data.cards[card.id] = {
       id: card.id,
+      cardId: cardId,  // Unique display ID (e.g., ANC-1-250116-0042)
       deckId: deckId,
       title: card.title,
       content: null,  // Content generated on flip
@@ -709,10 +854,14 @@ export function saveStreamedCard(deckId, deckName, card, tier) {
     data.decks[deckId].cardsByTier[tier].push(card.id)
   }
 
-  // Save the card (preserve claimed status if already exists)
+  // Save the card (preserve claimed status and cardId if already exists)
   const existingCard = data.cards[card.id]
+  // Generate unique card ID only if this is a new card
+  const cardId = existingCard?.cardId || generateCardId(deckId, tier)
+
   data.cards[card.id] = {
     id: card.id,
+    cardId: cardId,  // Unique display ID (e.g., ANC-1-250116-0042)
     deckId: deckId,
     title: card.title,
     content: card.content || null,
@@ -726,6 +875,9 @@ export function saveStreamedCard(deckId, deckName, card, tier) {
   }
 
   saveData(data)
+
+  // Return the cardId so caller can use it
+  return cardId
 }
 
 /**
@@ -862,6 +1014,7 @@ export function getTierCards(deckId, tier) {
     const card = data.cards[cardId]
     return card ? {
       id: card.id,
+      cardId: card.cardId || null,  // Unique display ID
       title: card.title,
       content: card.content || null,
       tier: card.tier,
@@ -1088,7 +1241,6 @@ export function saveDeckChildren(deckId, deckName, children, parentPath, depth, 
         data.dynamicDecks[childId] = {
           id: childId,
           name: child.name,
-          emoji: child.emoji,
           gradient: gradient,
           borderColor: borderColor,
           parentId: deckId,
@@ -1208,7 +1360,6 @@ export function getWanderableDecks(currentDeckId = null, minDepth = 2, maxDepth 
       parentPath: dynamicDeck?.parentPath || null,
       gradient: dynamicDeck?.gradient,
       borderColor: dynamicDeck?.borderColor,
-      emoji: dynamicDeck?.emoji,
     })
   })
 

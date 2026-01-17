@@ -799,57 +799,50 @@ function addRecentTopic(topic) {
 export const TOPIC_CATEGORIES = {
   arts: {
     name: 'Arts',
-    emoji: '🎨',
     page: 'Wikipedia:Vital_articles/Level/4/Arts',
   },
   biology: {
-    name: 'Biology & Health',
-    emoji: '🧬',
+    name: 'Biology',
+    page: 'Wikipedia:Vital_articles/Level/4/Biology_and_health_sciences',
+  },
+  health: {
+    name: 'Health',
     page: 'Wikipedia:Vital_articles/Level/4/Biology_and_health_sciences',
   },
   everyday: {
     name: 'Everyday Life',
-    emoji: '☕',
     page: 'Wikipedia:Vital_articles/Level/4/Everyday_life',
   },
   geography: {
     name: 'Geography',
-    emoji: '🌍',
     page: 'Wikipedia:Vital_articles/Level/4/Geography',
   },
   history: {
     name: 'History',
-    emoji: '📜',
     page: 'Wikipedia:Vital_articles/Level/4/History',
   },
   mathematics: {
     name: 'Mathematics',
-    emoji: '🔢',
     page: 'Wikipedia:Vital_articles/Level/4/Mathematics',
   },
   people: {
     name: 'People',
-    emoji: '👤',
     page: 'Wikipedia:Vital_articles/Level/4/People',
   },
   philosophy: {
     name: 'Philosophy & Religion',
-    emoji: '🧘',
     page: 'Wikipedia:Vital_articles/Level/4/Philosophy_and_religion',
   },
   physics: {
     name: 'Physical Sciences',
-    emoji: '⚛️',
     page: 'Wikipedia:Vital_articles/Level/4/Physical_sciences',
   },
   society: {
     name: 'Society',
-    emoji: '🏛️',
     page: 'Wikipedia:Vital_articles/Level/4/Society_and_social_sciences',
   },
   technology: {
     name: 'Technology',
-    emoji: '💻',
     page: 'Wikipedia:Vital_articles/Level/4/Technology',
   },
 };
@@ -1338,7 +1331,7 @@ Return ONLY the hook, no quotes, no explanation.`
  * @param {string} deckName - The name of the current deck (e.g., "Ancient Egypt")
  * @param {string} parentPath - The path to this deck (e.g., "History > Ancient World")
  * @param {number} depth - How deep we are (2 = sub-category, 3+ = dynamic)
- * @returns {Promise<Array<{id: string, name: string, emoji: string}> | null>} Array of sub-deck objects, or null if this is a leaf
+ * @returns {Promise<Array<{id: string, name: string}> | null>} Array of sub-deck objects, or null if this is a leaf
  */
 export async function generateSubDecks(deckName, parentPath = null, depth = 2, userArchetype = null) {
   try {
@@ -1456,7 +1449,7 @@ ${depth >= 4 ? `At depth ${depth}, prefer making "${deckName}" a LEAF unless it 
 Return ONLY valid JSON (no markdown, no explanation):
 
 If generating sub-topics:
-{"subDecks": [{"id": "kebab-case-id", "name": "Display Name", "emoji": "🎯"}, ...], "isLeaf": false}
+{"subDecks": [{"id": "kebab-case-id", "name": "Display Name"}, ...], "isLeaf": false}
 
 If this is a leaf topic:
 {"subDecks": [], "isLeaf": true}`;
@@ -1480,8 +1473,7 @@ If this is a leaf topic:
     // Normalize the sub-deck data
     const normalizedDecks = result.subDecks.map(deck => ({
       id: deck.id || deck.name.toLowerCase().replace(/\s+/g, '-'),
-      name: deck.name || deck.title,
-      emoji: deck.emoji || deck.icon || '📄'
+      name: deck.name || deck.title
     }));
 
     // Validate and filter out bad sub-decks

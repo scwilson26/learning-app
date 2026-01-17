@@ -75,7 +75,6 @@ export default function CategoryFilter({ selectedCategories, onCategoriesChange 
                   : 'bg-gray-100 text-gray-500 border-2 border-transparent hover:bg-gray-200'
               }`}
             >
-              <span className="mr-1">{category.emoji}</span>
               {category.name}
             </button>
           )

@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { generateSubDecks, generateSingleCardContent, generateTierCards } from '../services/claude'
-import { fetchLevel2WithSections, hasLevel2Sections } from '../services/wikipedia'
 import {
   getDeckCards,
   saveDeckCards,
@@ -34,6 +33,168 @@ import {
 // Configuration - card counts can be adjusted here or per-deck
 const DEFAULT_OVERVIEW_CARDS = 5
 
+// Category visual themes - each category has its own visual world
+const CATEGORY_THEMES = {
+  technology: {
+    // Dark slate with circuit/grid energy, cyan accents
+    cardBg: '#0f172a',           // Dark slate
+    cardBgAlt: '#1e293b',        // Slightly lighter slate
+    textPrimary: '#f1f5f9',      // Light text
+    textSecondary: '#94a3b8',    // Muted light text
+    accent: '#22d3ee',           // Cyan
+    accentGlow: 'rgba(34, 211, 238, 0.4)',
+    pattern: 'grid',             // Grid pattern
+    borderStyle: 'glow',         // Glowing border effect
+  },
+  history: {
+    // Warm parchment with gold accents
+    cardBg: '#faf6f1',           // Warm cream
+    cardBgAlt: '#f5ebe0',        // Slightly darker cream
+    textPrimary: '#44403c',      // Warm dark brown
+    textSecondary: '#78716c',    // Muted brown
+    accent: '#b8860b',           // Dark gold
+    accentGlow: 'rgba(184, 134, 11, 0.3)',
+    pattern: 'texture',          // Paper texture
+    borderStyle: 'classic',      // Classic border
+  },
+  arts: {
+    // Creative studio - soft gradient, airy and expressive
+    cardBg: '#fffcfa',           // Warm white (top of gradient)
+    cardBgAlt: '#f5e6eb',        // Soft blush/lavender (bottom of gradient)
+    textPrimary: '#4a3540',      // Warm dark
+    textSecondary: '#7a636b',    // Muted rose-brown
+    accent: '#d4627a',           // Softer rose (lighter than before)
+    accentGlow: 'rgba(212, 98, 122, 0.4)',
+    pattern: 'gradient',         // Painterly gradient
+    borderStyle: 'glow',         // Soft glow instead of hard border
+  },
+  biology: {
+    // Beautiful science - organic but precise, like a natural history museum
+    cardBg: '#e8f0e8',           // Soft sage/muted green
+    cardBgAlt: '#dce8dc',        // Slightly deeper sage
+    textPrimary: '#1a3a2a',      // Deep forest
+    textSecondary: '#3d5c4a',    // Muted forest
+    accent: '#2d6a4f',           // Deep teal/forest green
+    accentGlow: 'rgba(45, 106, 79, 0.35)',
+    pattern: 'cellular',         // Organic cellular pattern
+    borderStyle: 'organic',
+  },
+  health: {
+    // Clinical, trustworthy - doctor's office, medical journal
+    cardBg: '#f0f7fa',           // Clean pale blue-white
+    cardBgAlt: '#e4eff5',        // Slightly deeper clinical blue
+    textPrimary: '#1e3a5f',      // Deep medical blue
+    textSecondary: '#4a6785',    // Muted blue
+    accent: '#3b82f6',           // Medical blue
+    accentGlow: 'rgba(59, 130, 246, 0.3)',
+    pattern: 'pulse',            // Heartbeat/pulse pattern
+    borderStyle: 'clinical',
+  },
+  everyday: {
+    // Cozy café, cookbook, weekend morning
+    cardBg: '#fdf6e9',           // Warm peachy-cream
+    cardBgAlt: '#f5ead8',        // Soft warm
+    textPrimary: '#4a3728',      // Rich coffee brown
+    textSecondary: '#7a6352',    // Warm muted brown
+    accent: '#c2703e',           // Warm terracotta
+    accentGlow: 'rgba(194, 112, 62, 0.35)',
+    pattern: 'cozy',
+    borderStyle: 'shadow',       // No border, warm shadow
+  },
+  geography: {
+    // Maps, exploration, atlas, world traveler
+    cardBg: '#e8f4fa',           // Soft sky blue
+    cardBgAlt: '#d4e9f7',        // Deeper sky
+    textPrimary: '#1a3a4a',      // Deep ocean
+    textSecondary: '#3d6070',    // Muted ocean
+    accent: '#1e5f8a',           // Deep ocean blue
+    accentGlow: 'rgba(30, 95, 138, 0.35)',
+    pattern: 'topographic',
+    borderStyle: 'border',
+  },
+  mathematics: {
+    // Graph paper, precision, elegant logic
+    cardBg: '#fafafa',           // Clean white
+    cardBgAlt: '#f5f5f5',        // Slight gray
+    textPrimary: '#2e1a47',      // Deep purple
+    textSecondary: '#5b4670',    // Muted purple
+    accent: '#5b21b6',           // Deep purple
+    accentGlow: 'rgba(91, 33, 182, 0.3)',
+    pattern: 'grid',
+    borderStyle: 'precise',
+  },
+  people: {
+    // Portrait gallery, biography, personal and warm
+    cardBg: '#f7f4f0',           // Warm neutral
+    cardBgAlt: '#efe9e2',        // Slightly deeper
+    textPrimary: '#3d2e1f',      // Warm dark
+    textSecondary: '#6b5a48',    // Muted warm
+    accent: '#b45309',           // Warm amber/copper
+    accentGlow: 'rgba(180, 83, 9, 0.3)',
+    pattern: 'subtle',
+    borderStyle: 'border',
+  },
+  philosophy: {
+    // Contemplative, cosmic, transcendent, nighttime
+    cardBg: '#1e1b4b',           // Deep indigo
+    cardBgAlt: '#312e81',        // Slightly lighter indigo
+    textPrimary: '#e0e7ff',      // Light text
+    textSecondary: '#a5b4fc',    // Muted light
+    accent: '#818cf8',           // Soft purple glow
+    accentGlow: 'rgba(129, 140, 248, 0.4)',
+    pattern: 'celestial',
+    borderStyle: 'glow',         // Ethereal glow, no border
+  },
+  physics: {
+    // Lab notebook, precision, technical diagram
+    cardBg: '#f8fafc',           // White with blue tint
+    cardBgAlt: '#f0f7fa',        // Slight blue
+    textPrimary: '#0c4a6e',      // Deep teal
+    textSecondary: '#3d7a98',    // Muted teal
+    accent: '#0891b2',           // Sharp teal
+    accentGlow: 'rgba(8, 145, 178, 0.3)',
+    pattern: 'blueprint',
+    borderStyle: 'accent-left',  // Accent line on left only
+  },
+  society: {
+    // Civic, institutional, newspaper, structured
+    cardBg: '#f5f5f4',           // Light warm gray
+    cardBgAlt: '#e7e5e4',        // Slightly deeper
+    textPrimary: '#1c1917',      // Near black
+    textSecondary: '#57534e',    // Muted gray
+    accent: '#475569',           // Slate blue
+    accentGlow: 'rgba(71, 85, 105, 0.3)',
+    pattern: 'architectural',
+    borderStyle: 'border',
+  },
+  // Default theme for categories without custom themes
+  default: {
+    cardBg: '#ffffff',
+    cardBgAlt: '#f8fafc',
+    textPrimary: '#1e293b',
+    textSecondary: '#64748b',
+    accent: '#6366f1',
+    accentGlow: 'rgba(99, 102, 241, 0.3)',
+    pattern: 'none',
+    borderStyle: 'gradient',
+  }
+}
+
+// Get theme for a category
+function getCategoryTheme(categoryId) {
+  return CATEGORY_THEMES[categoryId] || CATEGORY_THEMES.default
+}
+
+// Check if category has a custom theme (not default)
+function hasCustomTheme(categoryId) {
+  return categoryId && CATEGORY_THEMES[categoryId] !== undefined
+}
+
+// Check if category uses dark background (needs light text)
+function isDarkTheme(categoryId) {
+  return categoryId === 'technology' || categoryId === 'philosophy'
+}
+
 // Helper to get card count for a deck (uses deck's overviewCardCount or default)
 function getDeckCardCount(deck) {
   return deck?.overviewCardCount ?? DEFAULT_OVERVIEW_CARDS
@@ -64,7 +225,6 @@ const CATEGORIES = [
   {
     id: 'arts',
     name: 'Arts',
-    emoji: '🎨',
     gradient: 'from-pink-500 to-rose-600',
     bgColor: 'bg-pink-50',
     borderColor: 'border-pink-300',
@@ -72,17 +232,22 @@ const CATEGORIES = [
   },
   {
     id: 'biology',
-    name: 'Biology & Health',
-    emoji: '🧬',
-    gradient: 'from-emerald-500 to-teal-600',
+    name: 'Biology',
+    gradient: 'from-emerald-500 to-green-600',
     bgColor: 'bg-emerald-50',
     borderColor: 'border-emerald-300',
-    children: ['human-body', 'animals', 'plants', 'ecology', 'medicine', 'genetics', 'microbes', 'marine-life']
+    children: ['animals', 'plants', 'ecology', 'genetics', 'microbes', 'marine-life']
+  },
+  {
+    id: 'health',
+    name: 'Health',
+    gradient: 'from-teal-500 to-cyan-600',
+    bgColor: 'bg-teal-50',
+    borderColor: 'border-teal-300',
   },
   {
     id: 'everyday',
     name: 'Everyday Life',
-    emoji: '☕',
     gradient: 'from-amber-500 to-orange-600',
     bgColor: 'bg-amber-50',
     borderColor: 'border-amber-300',
@@ -91,7 +256,6 @@ const CATEGORIES = [
   {
     id: 'geography',
     name: 'Geography',
-    emoji: '🌍',
     gradient: 'from-cyan-500 to-blue-600',
     bgColor: 'bg-cyan-50',
     borderColor: 'border-cyan-300',
@@ -100,7 +264,6 @@ const CATEGORIES = [
   {
     id: 'history',
     name: 'History',
-    emoji: '📜',
     gradient: 'from-yellow-600 to-amber-700',
     bgColor: 'bg-yellow-50',
     borderColor: 'border-yellow-400',
@@ -109,7 +272,6 @@ const CATEGORIES = [
   {
     id: 'mathematics',
     name: 'Mathematics',
-    emoji: '🔢',
     gradient: 'from-indigo-500 to-purple-600',
     bgColor: 'bg-indigo-50',
     borderColor: 'border-indigo-300',
@@ -118,7 +280,6 @@ const CATEGORIES = [
   {
     id: 'people',
     name: 'People',
-    emoji: '👤',
     gradient: 'from-sky-500 to-blue-600',
     bgColor: 'bg-sky-50',
     borderColor: 'border-sky-300',
@@ -127,7 +288,6 @@ const CATEGORIES = [
   {
     id: 'philosophy',
     name: 'Philosophy & Religion',
-    emoji: '🧘',
     gradient: 'from-violet-500 to-purple-700',
     bgColor: 'bg-violet-50',
     borderColor: 'border-violet-300',
@@ -136,7 +296,6 @@ const CATEGORIES = [
   {
     id: 'physics',
     name: 'Physical Sciences',
-    emoji: '⚛️',
     gradient: 'from-blue-500 to-indigo-700',
     bgColor: 'bg-blue-50',
     borderColor: 'border-blue-300',
@@ -145,7 +304,6 @@ const CATEGORIES = [
   {
     id: 'society',
     name: 'Society',
-    emoji: '🏛️',
     gradient: 'from-slate-500 to-gray-700',
     bgColor: 'bg-slate-50',
     borderColor: 'border-slate-300',
@@ -154,7 +312,6 @@ const CATEGORIES = [
   {
     id: 'technology',
     name: 'Technology',
-    emoji: '💻',
     gradient: 'from-green-500 to-emerald-700',
     bgColor: 'bg-green-50',
     borderColor: 'border-green-300',
@@ -165,117 +322,122 @@ const CATEGORIES = [
 // Subcategory data - Level 2 decks (from VISION.md)
 const SUBCATEGORIES = {
   // ===== ARTS (8 sub-categories) =====
-  'architecture': { id: 'architecture', name: 'Architecture', emoji: '🏗️', gradient: 'from-pink-500 to-rose-600', borderColor: 'border-pink-300', children: [] },
-  'literature': { id: 'literature', name: 'Literature', emoji: '📚', gradient: 'from-pink-500 to-rose-600', borderColor: 'border-pink-300', children: [] },
-  'music': { id: 'music', name: 'Music', emoji: '🎵', gradient: 'from-pink-500 to-rose-600', borderColor: 'border-pink-300', children: [] },
-  'visual-arts': { id: 'visual-arts', name: 'Visual Arts', emoji: '🖼️', gradient: 'from-pink-500 to-rose-600', borderColor: 'border-pink-300', children: [] },
-  'film-tv': { id: 'film-tv', name: 'Film & Television', emoji: '🎬', gradient: 'from-pink-500 to-rose-600', borderColor: 'border-pink-300', children: [] },
-  'performing-arts': { id: 'performing-arts', name: 'Performing Arts', emoji: '🎭', gradient: 'from-pink-500 to-rose-600', borderColor: 'border-pink-300', children: [] },
-  'photography': { id: 'photography', name: 'Photography', emoji: '📷', gradient: 'from-pink-500 to-rose-600', borderColor: 'border-pink-300', children: [] },
-  'fashion-design': { id: 'fashion-design', name: 'Fashion & Design', emoji: '👗', gradient: 'from-pink-500 to-rose-600', borderColor: 'border-pink-300', children: [] },
+  'architecture': { id: 'architecture', name: 'Architecture', gradient: 'from-pink-500 to-rose-600', borderColor: 'border-pink-300', children: [] },
+  'literature': { id: 'literature', name: 'Literature', gradient: 'from-pink-500 to-rose-600', borderColor: 'border-pink-300', children: [] },
+  'music': { id: 'music', name: 'Music', gradient: 'from-pink-500 to-rose-600', borderColor: 'border-pink-300', children: [] },
+  'visual-arts': { id: 'visual-arts', name: 'Visual Arts', gradient: 'from-pink-500 to-rose-600', borderColor: 'border-pink-300', children: [] },
+  'film-tv': { id: 'film-tv', name: 'Film & Television', gradient: 'from-pink-500 to-rose-600', borderColor: 'border-pink-300', children: [] },
+  'performing-arts': { id: 'performing-arts', name: 'Performing Arts', gradient: 'from-pink-500 to-rose-600', borderColor: 'border-pink-300', children: [] },
+  'photography': { id: 'photography', name: 'Photography', gradient: 'from-pink-500 to-rose-600', borderColor: 'border-pink-300', children: [] },
+  'fashion-design': { id: 'fashion-design', name: 'Fashion & Design', gradient: 'from-pink-500 to-rose-600', borderColor: 'border-pink-300', children: [] },
 
-  // ===== BIOLOGY & HEALTH (8 sub-categories) =====
-  'human-body': { id: 'human-body', name: 'Human Body', emoji: '🫀', gradient: 'from-emerald-500 to-teal-600', borderColor: 'border-emerald-300', children: [] },
-  'animals': { id: 'animals', name: 'Animals', emoji: '🦁', gradient: 'from-emerald-500 to-teal-600', borderColor: 'border-emerald-300', children: [] },
-  'plants': { id: 'plants', name: 'Plants', emoji: '🌿', gradient: 'from-emerald-500 to-teal-600', borderColor: 'border-emerald-300', children: [] },
-  'ecology': { id: 'ecology', name: 'Ecology & Environment', emoji: '🌍', gradient: 'from-emerald-500 to-teal-600', borderColor: 'border-emerald-300', children: [] },
-  'medicine': { id: 'medicine', name: 'Medicine & Disease', emoji: '💊', gradient: 'from-emerald-500 to-teal-600', borderColor: 'border-emerald-300', children: [] },
-  'genetics': { id: 'genetics', name: 'Genetics & Evolution', emoji: '🧬', gradient: 'from-emerald-500 to-teal-600', borderColor: 'border-emerald-300', children: [] },
-  'microbes': { id: 'microbes', name: 'Microbes & Viruses', emoji: '🦠', gradient: 'from-emerald-500 to-teal-600', borderColor: 'border-emerald-300', children: [] },
-  'marine-life': { id: 'marine-life', name: 'Marine Life', emoji: '🐙', gradient: 'from-emerald-500 to-teal-600', borderColor: 'border-emerald-300', children: [] },
+  // ===== BIOLOGY (6 sub-categories) =====
+  'animals': { id: 'animals', name: 'Animals', gradient: 'from-emerald-500 to-green-600', borderColor: 'border-emerald-300', children: [] },
+  'plants': { id: 'plants', name: 'Plants', gradient: 'from-emerald-500 to-green-600', borderColor: 'border-emerald-300', children: [] },
+  'ecology': { id: 'ecology', name: 'Ecology & Environment', gradient: 'from-emerald-500 to-green-600', borderColor: 'border-emerald-300', children: [] },
+  'genetics': { id: 'genetics', name: 'Genetics & Evolution', gradient: 'from-emerald-500 to-green-600', borderColor: 'border-emerald-300', children: [] },
+  'microbes': { id: 'microbes', name: 'Microbes & Viruses', gradient: 'from-emerald-500 to-green-600', borderColor: 'border-emerald-300', children: [] },
+  'marine-life': { id: 'marine-life', name: 'Marine Life', gradient: 'from-emerald-500 to-green-600', borderColor: 'border-emerald-300', children: [] },
+
+  // ===== HEALTH (5 sub-categories) =====
+  'human-body': { id: 'human-body', name: 'Human Body', gradient: 'from-teal-500 to-cyan-600', borderColor: 'border-teal-300', children: [] },
+  'medicine': { id: 'medicine', name: 'Medicine & Disease', gradient: 'from-teal-500 to-cyan-600', borderColor: 'border-teal-300', children: [] },
+  'nutrition': { id: 'nutrition', name: 'Nutrition', gradient: 'from-teal-500 to-cyan-600', borderColor: 'border-teal-300', children: [] },
+  'mental-health': { id: 'mental-health', name: 'Mental Health', gradient: 'from-teal-500 to-cyan-600', borderColor: 'border-teal-300', children: [] },
+  'fitness': { id: 'fitness', name: 'Fitness & Exercise', gradient: 'from-teal-500 to-cyan-600', borderColor: 'border-teal-300', children: [] },
 
   // ===== EVERYDAY LIFE (7 sub-categories) =====
-  'food-drink': { id: 'food-drink', name: 'Food & Drink', emoji: '🍕', gradient: 'from-amber-500 to-orange-600', borderColor: 'border-amber-300', children: [] },
-  'sports-games': { id: 'sports-games', name: 'Sports & Games', emoji: '⚽', gradient: 'from-amber-500 to-orange-600', borderColor: 'border-amber-300', children: [] },
-  'hobbies': { id: 'hobbies', name: 'Hobbies & Recreation', emoji: '🎮', gradient: 'from-amber-500 to-orange-600', borderColor: 'border-amber-300', children: [] },
-  'holidays': { id: 'holidays', name: 'Holidays & Traditions', emoji: '🎄', gradient: 'from-amber-500 to-orange-600', borderColor: 'border-amber-300', children: [] },
-  'fashion-clothing': { id: 'fashion-clothing', name: 'Fashion & Clothing', emoji: '👔', gradient: 'from-amber-500 to-orange-600', borderColor: 'border-amber-300', children: [] },
-  'home-living': { id: 'home-living', name: 'Home & Living', emoji: '🏠', gradient: 'from-amber-500 to-orange-600', borderColor: 'border-amber-300', children: [] },
-  'travel-transport': { id: 'travel-transport', name: 'Travel & Transport', emoji: '✈️', gradient: 'from-amber-500 to-orange-600', borderColor: 'border-amber-300', children: [] },
+  'food-drink': { id: 'food-drink', name: 'Food & Drink', gradient: 'from-amber-500 to-orange-600', borderColor: 'border-amber-300', children: [] },
+  'sports-games': { id: 'sports-games', name: 'Sports & Games', gradient: 'from-amber-500 to-orange-600', borderColor: 'border-amber-300', children: [] },
+  'hobbies': { id: 'hobbies', name: 'Hobbies & Recreation', gradient: 'from-amber-500 to-orange-600', borderColor: 'border-amber-300', children: [] },
+  'holidays': { id: 'holidays', name: 'Holidays & Traditions', gradient: 'from-amber-500 to-orange-600', borderColor: 'border-amber-300', children: [] },
+  'fashion-clothing': { id: 'fashion-clothing', name: 'Fashion & Clothing', gradient: 'from-amber-500 to-orange-600', borderColor: 'border-amber-300', children: [] },
+  'home-living': { id: 'home-living', name: 'Home & Living', gradient: 'from-amber-500 to-orange-600', borderColor: 'border-amber-300', children: [] },
+  'travel-transport': { id: 'travel-transport', name: 'Travel & Transport', gradient: 'from-amber-500 to-orange-600', borderColor: 'border-amber-300', children: [] },
 
   // ===== GEOGRAPHY (8 sub-categories) =====
-  'countries': { id: 'countries', name: 'Countries', emoji: '🗺️', gradient: 'from-cyan-500 to-blue-600', borderColor: 'border-cyan-300', children: [] },
-  'cities': { id: 'cities', name: 'Cities', emoji: '🌆', gradient: 'from-cyan-500 to-blue-600', borderColor: 'border-cyan-300', children: [] },
-  'mountains-volcanoes': { id: 'mountains-volcanoes', name: 'Mountains & Volcanoes', emoji: '🏔️', gradient: 'from-cyan-500 to-blue-600', borderColor: 'border-cyan-300', children: [] },
-  'rivers-lakes': { id: 'rivers-lakes', name: 'Rivers & Lakes', emoji: '🏞️', gradient: 'from-cyan-500 to-blue-600', borderColor: 'border-cyan-300', children: [] },
-  'oceans-seas': { id: 'oceans-seas', name: 'Oceans & Seas', emoji: '🌊', gradient: 'from-cyan-500 to-blue-600', borderColor: 'border-cyan-300', children: [] },
-  'islands': { id: 'islands', name: 'Islands', emoji: '🏝️', gradient: 'from-cyan-500 to-blue-600', borderColor: 'border-cyan-300', children: [] },
-  'deserts-forests': { id: 'deserts-forests', name: 'Deserts & Forests', emoji: '🏜️', gradient: 'from-cyan-500 to-blue-600', borderColor: 'border-cyan-300', children: [] },
-  'landmarks-wonders': { id: 'landmarks-wonders', name: 'Landmarks & Wonders', emoji: '🗽', gradient: 'from-cyan-500 to-blue-600', borderColor: 'border-cyan-300', children: [] },
+  'countries': { id: 'countries', name: 'Countries', gradient: 'from-cyan-500 to-blue-600', borderColor: 'border-cyan-300', children: [] },
+  'cities': { id: 'cities', name: 'Cities', gradient: 'from-cyan-500 to-blue-600', borderColor: 'border-cyan-300', children: [] },
+  'mountains-volcanoes': { id: 'mountains-volcanoes', name: 'Mountains & Volcanoes', gradient: 'from-cyan-500 to-blue-600', borderColor: 'border-cyan-300', children: [] },
+  'rivers-lakes': { id: 'rivers-lakes', name: 'Rivers & Lakes', gradient: 'from-cyan-500 to-blue-600', borderColor: 'border-cyan-300', children: [] },
+  'oceans-seas': { id: 'oceans-seas', name: 'Oceans & Seas', gradient: 'from-cyan-500 to-blue-600', borderColor: 'border-cyan-300', children: [] },
+  'islands': { id: 'islands', name: 'Islands', gradient: 'from-cyan-500 to-blue-600', borderColor: 'border-cyan-300', children: [] },
+  'deserts-forests': { id: 'deserts-forests', name: 'Deserts & Forests', gradient: 'from-cyan-500 to-blue-600', borderColor: 'border-cyan-300', children: [] },
+  'landmarks-wonders': { id: 'landmarks-wonders', name: 'Landmarks & Wonders', gradient: 'from-cyan-500 to-blue-600', borderColor: 'border-cyan-300', children: [] },
 
   // ===== HISTORY (8 sub-categories) =====
-  'ancient': { id: 'ancient', name: 'Ancient World', emoji: '🏛️', gradient: 'from-yellow-600 to-amber-700', borderColor: 'border-yellow-400', children: ['egypt', 'rome', 'greece', 'persia', 'china-ancient', 'mesopotamia', 'maya'] },
-  'medieval': { id: 'medieval', name: 'Medieval', emoji: '⚔️', gradient: 'from-yellow-600 to-amber-700', borderColor: 'border-yellow-400', children: [] },
-  'renaissance': { id: 'renaissance', name: 'Renaissance & Early Modern', emoji: '🎨', gradient: 'from-yellow-600 to-amber-700', borderColor: 'border-yellow-400', children: [] },
-  'modern': { id: 'modern', name: 'Modern History', emoji: '🏭', gradient: 'from-yellow-600 to-amber-700', borderColor: 'border-yellow-400', children: [] },
-  'world-wars': { id: 'world-wars', name: 'World Wars', emoji: '💣', gradient: 'from-yellow-600 to-amber-700', borderColor: 'border-yellow-400', children: [] },
-  'empires': { id: 'empires', name: 'Empires & Civilizations', emoji: '👑', gradient: 'from-yellow-600 to-amber-700', borderColor: 'border-yellow-400', children: [] },
-  'revolutions': { id: 'revolutions', name: 'Revolutions & Conflicts', emoji: '✊', gradient: 'from-yellow-600 to-amber-700', borderColor: 'border-yellow-400', children: [] },
-  'exploration': { id: 'exploration', name: 'Exploration & Discovery', emoji: '🧭', gradient: 'from-yellow-600 to-amber-700', borderColor: 'border-yellow-400', children: [] },
+  'ancient': { id: 'ancient', name: 'Ancient World', gradient: 'from-yellow-600 to-amber-700', borderColor: 'border-yellow-400', children: ['egypt', 'rome', 'greece', 'persia', 'china-ancient', 'mesopotamia', 'maya'] },
+  'medieval': { id: 'medieval', name: 'Medieval', gradient: 'from-yellow-600 to-amber-700', borderColor: 'border-yellow-400', children: [] },
+  'renaissance': { id: 'renaissance', name: 'Renaissance & Early Modern', gradient: 'from-yellow-600 to-amber-700', borderColor: 'border-yellow-400', children: [] },
+  'modern': { id: 'modern', name: 'Modern History', gradient: 'from-yellow-600 to-amber-700', borderColor: 'border-yellow-400', children: [] },
+  'world-wars': { id: 'world-wars', name: 'World Wars', gradient: 'from-yellow-600 to-amber-700', borderColor: 'border-yellow-400', children: [] },
+  'empires': { id: 'empires', name: 'Empires & Civilizations', gradient: 'from-yellow-600 to-amber-700', borderColor: 'border-yellow-400', children: [] },
+  'revolutions': { id: 'revolutions', name: 'Revolutions & Conflicts', gradient: 'from-yellow-600 to-amber-700', borderColor: 'border-yellow-400', children: [] },
+  'exploration': { id: 'exploration', name: 'Exploration & Discovery', gradient: 'from-yellow-600 to-amber-700', borderColor: 'border-yellow-400', children: [] },
 
   // Ancient World children (Level 3)
-  'egypt': { id: 'egypt', name: 'Ancient Egypt', emoji: '🏺', gradient: 'from-yellow-600 to-amber-700', borderColor: 'border-yellow-400', children: [] },
-  'rome': { id: 'rome', name: 'Ancient Rome', emoji: '🏛️', gradient: 'from-yellow-600 to-amber-700', borderColor: 'border-yellow-400', children: [] },
-  'greece': { id: 'greece', name: 'Ancient Greece', emoji: '🏺', gradient: 'from-yellow-600 to-amber-700', borderColor: 'border-yellow-400', children: [] },
-  'persia': { id: 'persia', name: 'Persian Empire', emoji: '🦁', gradient: 'from-yellow-600 to-amber-700', borderColor: 'border-yellow-400', children: [] },
-  'china-ancient': { id: 'china-ancient', name: 'Ancient China', emoji: '🐉', gradient: 'from-yellow-600 to-amber-700', borderColor: 'border-yellow-400', children: [] },
-  'mesopotamia': { id: 'mesopotamia', name: 'Mesopotamia', emoji: '🌙', gradient: 'from-yellow-600 to-amber-700', borderColor: 'border-yellow-400', children: [] },
-  'maya': { id: 'maya', name: 'Maya Civilization', emoji: '🌽', gradient: 'from-yellow-600 to-amber-700', borderColor: 'border-yellow-400', children: [] },
+  'egypt': { id: 'egypt', name: 'Ancient Egypt', gradient: 'from-yellow-600 to-amber-700', borderColor: 'border-yellow-400', children: [] },
+  'rome': { id: 'rome', name: 'Ancient Rome', gradient: 'from-yellow-600 to-amber-700', borderColor: 'border-yellow-400', children: [] },
+  'greece': { id: 'greece', name: 'Ancient Greece', gradient: 'from-yellow-600 to-amber-700', borderColor: 'border-yellow-400', children: [] },
+  'persia': { id: 'persia', name: 'Persian Empire', gradient: 'from-yellow-600 to-amber-700', borderColor: 'border-yellow-400', children: [] },
+  'china-ancient': { id: 'china-ancient', name: 'Ancient China', gradient: 'from-yellow-600 to-amber-700', borderColor: 'border-yellow-400', children: [] },
+  'mesopotamia': { id: 'mesopotamia', name: 'Mesopotamia', gradient: 'from-yellow-600 to-amber-700', borderColor: 'border-yellow-400', children: [] },
+  'maya': { id: 'maya', name: 'Maya Civilization', gradient: 'from-yellow-600 to-amber-700', borderColor: 'border-yellow-400', children: [] },
 
   // ===== MATHEMATICS (6 sub-categories) =====
-  'numbers-arithmetic': { id: 'numbers-arithmetic', name: 'Numbers & Arithmetic', emoji: '🔢', gradient: 'from-indigo-500 to-purple-600', borderColor: 'border-indigo-300', children: [] },
-  'algebra': { id: 'algebra', name: 'Algebra', emoji: '➗', gradient: 'from-indigo-500 to-purple-600', borderColor: 'border-indigo-300', children: [] },
-  'geometry': { id: 'geometry', name: 'Geometry', emoji: '📐', gradient: 'from-indigo-500 to-purple-600', borderColor: 'border-indigo-300', children: [] },
-  'statistics-probability': { id: 'statistics-probability', name: 'Statistics & Probability', emoji: '📊', gradient: 'from-indigo-500 to-purple-600', borderColor: 'border-indigo-300', children: [] },
-  'famous-problems': { id: 'famous-problems', name: 'Famous Problems', emoji: '🧩', gradient: 'from-indigo-500 to-purple-600', borderColor: 'border-indigo-300', children: [] },
-  'mathematicians': { id: 'mathematicians', name: 'Mathematicians', emoji: '🧠', gradient: 'from-indigo-500 to-purple-600', borderColor: 'border-indigo-300', children: [] },
+  'numbers-arithmetic': { id: 'numbers-arithmetic', name: 'Numbers & Arithmetic', gradient: 'from-indigo-500 to-purple-600', borderColor: 'border-indigo-300', children: [] },
+  'algebra': { id: 'algebra', name: 'Algebra', gradient: 'from-indigo-500 to-purple-600', borderColor: 'border-indigo-300', children: [] },
+  'geometry': { id: 'geometry', name: 'Geometry', gradient: 'from-indigo-500 to-purple-600', borderColor: 'border-indigo-300', children: [] },
+  'statistics-probability': { id: 'statistics-probability', name: 'Statistics & Probability', gradient: 'from-indigo-500 to-purple-600', borderColor: 'border-indigo-300', children: [] },
+  'famous-problems': { id: 'famous-problems', name: 'Famous Problems', gradient: 'from-indigo-500 to-purple-600', borderColor: 'border-indigo-300', children: [] },
+  'mathematicians': { id: 'mathematicians', name: 'Mathematicians', gradient: 'from-indigo-500 to-purple-600', borderColor: 'border-indigo-300', children: [] },
 
   // ===== PEOPLE (8 sub-categories) =====
-  'leaders-politicians': { id: 'leaders-politicians', name: 'Leaders & Politicians', emoji: '👔', gradient: 'from-sky-500 to-blue-600', borderColor: 'border-sky-300', children: [] },
-  'scientists-inventors': { id: 'scientists-inventors', name: 'Scientists & Inventors', emoji: '🔬', gradient: 'from-sky-500 to-blue-600', borderColor: 'border-sky-300', children: [] },
-  'artists-writers': { id: 'artists-writers', name: 'Artists & Writers', emoji: '✍️', gradient: 'from-sky-500 to-blue-600', borderColor: 'border-sky-300', children: [] },
-  'musicians-performers': { id: 'musicians-performers', name: 'Musicians & Performers', emoji: '🎤', gradient: 'from-sky-500 to-blue-600', borderColor: 'border-sky-300', children: [] },
-  'explorers-adventurers': { id: 'explorers-adventurers', name: 'Explorers & Adventurers', emoji: '🧭', gradient: 'from-sky-500 to-blue-600', borderColor: 'border-sky-300', children: [] },
-  'philosophers-thinkers': { id: 'philosophers-thinkers', name: 'Philosophers & Thinkers', emoji: '💭', gradient: 'from-sky-500 to-blue-600', borderColor: 'border-sky-300', children: [] },
-  'athletes': { id: 'athletes', name: 'Athletes', emoji: '🏅', gradient: 'from-sky-500 to-blue-600', borderColor: 'border-sky-300', children: [] },
-  'villains-outlaws': { id: 'villains-outlaws', name: 'Villains & Outlaws', emoji: '🦹', gradient: 'from-sky-500 to-blue-600', borderColor: 'border-sky-300', children: [] },
+  'leaders-politicians': { id: 'leaders-politicians', name: 'Leaders & Politicians', gradient: 'from-sky-500 to-blue-600', borderColor: 'border-sky-300', children: [] },
+  'scientists-inventors': { id: 'scientists-inventors', name: 'Scientists & Inventors', gradient: 'from-sky-500 to-blue-600', borderColor: 'border-sky-300', children: [] },
+  'artists-writers': { id: 'artists-writers', name: 'Artists & Writers', gradient: 'from-sky-500 to-blue-600', borderColor: 'border-sky-300', children: [] },
+  'musicians-performers': { id: 'musicians-performers', name: 'Musicians & Performers', gradient: 'from-sky-500 to-blue-600', borderColor: 'border-sky-300', children: [] },
+  'explorers-adventurers': { id: 'explorers-adventurers', name: 'Explorers & Adventurers', gradient: 'from-sky-500 to-blue-600', borderColor: 'border-sky-300', children: [] },
+  'philosophers-thinkers': { id: 'philosophers-thinkers', name: 'Philosophers & Thinkers', gradient: 'from-sky-500 to-blue-600', borderColor: 'border-sky-300', children: [] },
+  'athletes': { id: 'athletes', name: 'Athletes', gradient: 'from-sky-500 to-blue-600', borderColor: 'border-sky-300', children: [] },
+  'villains-outlaws': { id: 'villains-outlaws', name: 'Villains & Outlaws', gradient: 'from-sky-500 to-blue-600', borderColor: 'border-sky-300', children: [] },
 
   // ===== PHILOSOPHY & RELIGION (7 sub-categories) =====
-  'world-religions': { id: 'world-religions', name: 'World Religions', emoji: '🕌', gradient: 'from-violet-500 to-purple-700', borderColor: 'border-violet-300', children: [] },
-  'mythology': { id: 'mythology', name: 'Mythology', emoji: '🐉', gradient: 'from-violet-500 to-purple-700', borderColor: 'border-violet-300', children: [] },
-  'ethics-morality': { id: 'ethics-morality', name: 'Ethics & Morality', emoji: '⚖️', gradient: 'from-violet-500 to-purple-700', borderColor: 'border-violet-300', children: [] },
-  'logic-reasoning': { id: 'logic-reasoning', name: 'Logic & Reasoning', emoji: '🧠', gradient: 'from-violet-500 to-purple-700', borderColor: 'border-violet-300', children: [] },
-  'eastern-philosophy': { id: 'eastern-philosophy', name: 'Eastern Philosophy', emoji: '☯️', gradient: 'from-violet-500 to-purple-700', borderColor: 'border-violet-300', children: [] },
-  'western-philosophy': { id: 'western-philosophy', name: 'Western Philosophy', emoji: '🏛️', gradient: 'from-violet-500 to-purple-700', borderColor: 'border-violet-300', children: [] },
-  'spirituality-mysticism': { id: 'spirituality-mysticism', name: 'Spirituality & Mysticism', emoji: '✨', gradient: 'from-violet-500 to-purple-700', borderColor: 'border-violet-300', children: [] },
+  'world-religions': { id: 'world-religions', name: 'World Religions', gradient: 'from-violet-500 to-purple-700', borderColor: 'border-violet-300', children: [] },
+  'mythology': { id: 'mythology', name: 'Mythology', gradient: 'from-violet-500 to-purple-700', borderColor: 'border-violet-300', children: [] },
+  'ethics-morality': { id: 'ethics-morality', name: 'Ethics & Morality', gradient: 'from-violet-500 to-purple-700', borderColor: 'border-violet-300', children: [] },
+  'logic-reasoning': { id: 'logic-reasoning', name: 'Logic & Reasoning', gradient: 'from-violet-500 to-purple-700', borderColor: 'border-violet-300', children: [] },
+  'eastern-philosophy': { id: 'eastern-philosophy', name: 'Eastern Philosophy', gradient: 'from-violet-500 to-purple-700', borderColor: 'border-violet-300', children: [] },
+  'western-philosophy': { id: 'western-philosophy', name: 'Western Philosophy', gradient: 'from-violet-500 to-purple-700', borderColor: 'border-violet-300', children: [] },
+  'spirituality-mysticism': { id: 'spirituality-mysticism', name: 'Spirituality & Mysticism', gradient: 'from-violet-500 to-purple-700', borderColor: 'border-violet-300', children: [] },
 
   // ===== PHYSICAL SCIENCES (6 sub-categories) =====
-  'physics': { id: 'physics', name: 'Physics', emoji: '⚛️', gradient: 'from-blue-500 to-indigo-700', borderColor: 'border-blue-300', children: [] },
-  'chemistry': { id: 'chemistry', name: 'Chemistry', emoji: '🧪', gradient: 'from-blue-500 to-indigo-700', borderColor: 'border-blue-300', children: [] },
-  'astronomy-space': { id: 'astronomy-space', name: 'Astronomy & Space', emoji: '🔭', gradient: 'from-blue-500 to-indigo-700', borderColor: 'border-blue-300', children: [] },
-  'earth-science': { id: 'earth-science', name: 'Earth Science', emoji: '🌋', gradient: 'from-blue-500 to-indigo-700', borderColor: 'border-blue-300', children: [] },
-  'energy-forces': { id: 'energy-forces', name: 'Energy & Forces', emoji: '⚡', gradient: 'from-blue-500 to-indigo-700', borderColor: 'border-blue-300', children: [] },
-  'elements-materials': { id: 'elements-materials', name: 'Elements & Materials', emoji: '💎', gradient: 'from-blue-500 to-indigo-700', borderColor: 'border-blue-300', children: [] },
+  'physics': { id: 'physics', name: 'Physics', gradient: 'from-blue-500 to-indigo-700', borderColor: 'border-blue-300', children: [] },
+  'chemistry': { id: 'chemistry', name: 'Chemistry', gradient: 'from-blue-500 to-indigo-700', borderColor: 'border-blue-300', children: [] },
+  'astronomy-space': { id: 'astronomy-space', name: 'Astronomy & Space', gradient: 'from-blue-500 to-indigo-700', borderColor: 'border-blue-300', children: [] },
+  'earth-science': { id: 'earth-science', name: 'Earth Science', gradient: 'from-blue-500 to-indigo-700', borderColor: 'border-blue-300', children: [] },
+  'energy-forces': { id: 'energy-forces', name: 'Energy & Forces', gradient: 'from-blue-500 to-indigo-700', borderColor: 'border-blue-300', children: [] },
+  'elements-materials': { id: 'elements-materials', name: 'Elements & Materials', gradient: 'from-blue-500 to-indigo-700', borderColor: 'border-blue-300', children: [] },
 
   // ===== SOCIETY (8 sub-categories) =====
-  'politics-government': { id: 'politics-government', name: 'Politics & Government', emoji: '🏛️', gradient: 'from-slate-500 to-gray-700', borderColor: 'border-slate-300', children: [] },
-  'economics-money': { id: 'economics-money', name: 'Economics & Money', emoji: '💰', gradient: 'from-slate-500 to-gray-700', borderColor: 'border-slate-300', children: [] },
-  'law-justice': { id: 'law-justice', name: 'Law & Justice', emoji: '⚖️', gradient: 'from-slate-500 to-gray-700', borderColor: 'border-slate-300', children: [] },
-  'education': { id: 'education', name: 'Education', emoji: '🎓', gradient: 'from-slate-500 to-gray-700', borderColor: 'border-slate-300', children: [] },
-  'media-communication': { id: 'media-communication', name: 'Media & Communication', emoji: '📺', gradient: 'from-slate-500 to-gray-700', borderColor: 'border-slate-300', children: [] },
-  'social-movements': { id: 'social-movements', name: 'Social Movements', emoji: '✊', gradient: 'from-slate-500 to-gray-700', borderColor: 'border-slate-300', children: [] },
-  'war-military': { id: 'war-military', name: 'War & Military', emoji: '🎖️', gradient: 'from-slate-500 to-gray-700', borderColor: 'border-slate-300', children: [] },
-  'culture-customs': { id: 'culture-customs', name: 'Culture & Customs', emoji: '🎎', gradient: 'from-slate-500 to-gray-700', borderColor: 'border-slate-300', children: [] },
+  'politics-government': { id: 'politics-government', name: 'Politics & Government', gradient: 'from-slate-500 to-gray-700', borderColor: 'border-slate-300', children: [] },
+  'economics-money': { id: 'economics-money', name: 'Economics & Money', gradient: 'from-slate-500 to-gray-700', borderColor: 'border-slate-300', children: [] },
+  'law-justice': { id: 'law-justice', name: 'Law & Justice', gradient: 'from-slate-500 to-gray-700', borderColor: 'border-slate-300', children: [] },
+  'education': { id: 'education', name: 'Education', gradient: 'from-slate-500 to-gray-700', borderColor: 'border-slate-300', children: [] },
+  'media-communication': { id: 'media-communication', name: 'Media & Communication', gradient: 'from-slate-500 to-gray-700', borderColor: 'border-slate-300', children: [] },
+  'social-movements': { id: 'social-movements', name: 'Social Movements', gradient: 'from-slate-500 to-gray-700', borderColor: 'border-slate-300', children: [] },
+  'war-military': { id: 'war-military', name: 'War & Military', gradient: 'from-slate-500 to-gray-700', borderColor: 'border-slate-300', children: [] },
+  'culture-customs': { id: 'culture-customs', name: 'Culture & Customs', gradient: 'from-slate-500 to-gray-700', borderColor: 'border-slate-300', children: [] },
 
   // ===== TECHNOLOGY (8 sub-categories) =====
-  'computers-internet': { id: 'computers-internet', name: 'Computers & Internet', emoji: '💻', gradient: 'from-green-500 to-emerald-700', borderColor: 'border-green-300', children: [] },
-  'engineering': { id: 'engineering', name: 'Engineering', emoji: '🔧', gradient: 'from-green-500 to-emerald-700', borderColor: 'border-green-300', children: [] },
-  'inventions': { id: 'inventions', name: 'Inventions', emoji: '💡', gradient: 'from-green-500 to-emerald-700', borderColor: 'border-green-300', children: [] },
-  'transportation': { id: 'transportation', name: 'Transportation', emoji: '🚀', gradient: 'from-green-500 to-emerald-700', borderColor: 'border-green-300', children: [] },
-  'weapons-defense': { id: 'weapons-defense', name: 'Weapons & Defense', emoji: '🛡️', gradient: 'from-green-500 to-emerald-700', borderColor: 'border-green-300', children: [] },
-  'communication-tech': { id: 'communication-tech', name: 'Communication Tech', emoji: '📡', gradient: 'from-green-500 to-emerald-700', borderColor: 'border-green-300', children: [] },
-  'energy-power': { id: 'energy-power', name: 'Energy & Power', emoji: '🔋', gradient: 'from-green-500 to-emerald-700', borderColor: 'border-green-300', children: [] },
-  'future-tech-ai': { id: 'future-tech-ai', name: 'Future Tech & AI', emoji: '🤖', gradient: 'from-green-500 to-emerald-700', borderColor: 'border-green-300', children: [] },
+  'computers-internet': { id: 'computers-internet', name: 'Computers & Internet', gradient: 'from-green-500 to-emerald-700', borderColor: 'border-green-300', children: [] },
+  'engineering': { id: 'engineering', name: 'Engineering', gradient: 'from-green-500 to-emerald-700', borderColor: 'border-green-300', children: [] },
+  'inventions': { id: 'inventions', name: 'Inventions', gradient: 'from-green-500 to-emerald-700', borderColor: 'border-green-300', children: [] },
+  'transportation': { id: 'transportation', name: 'Transportation', gradient: 'from-green-500 to-emerald-700', borderColor: 'border-green-300', children: [] },
+  'weapons-defense': { id: 'weapons-defense', name: 'Weapons & Defense', gradient: 'from-green-500 to-emerald-700', borderColor: 'border-green-300', children: [] },
+  'communication-tech': { id: 'communication-tech', name: 'Communication Tech', gradient: 'from-green-500 to-emerald-700', borderColor: 'border-green-300', children: [] },
+  'energy-power': { id: 'energy-power', name: 'Energy & Power', gradient: 'from-green-500 to-emerald-700', borderColor: 'border-green-300', children: [] },
+  'future-tech-ai': { id: 'future-tech-ai', name: 'Future Tech & AI', gradient: 'from-green-500 to-emerald-700', borderColor: 'border-green-300', children: [] },
 }
 
 // Overview cards are now generated dynamically by AI when a deck is first opened
@@ -314,7 +476,6 @@ function getDeck(id) {
     return {
       id: dynamicDeck.id,
       name: dynamicDeck.name,
-      emoji: dynamicDeck.emoji || '📄',
       gradient: dynamicDeck.gradient,
       borderColor: dynamicDeck.borderColor,
       children: dynamicDeck.children || [],
@@ -328,7 +489,782 @@ function getDeck(id) {
 }
 
 // Deck component - a card with subtle stack effect (cards underneath)
-function Deck({ deck, onOpen, claimed }) {
+function Deck({ deck, onOpen, claimed, rootCategoryId = null }) {
+  // Use the root category for theming, or fall back to deck's own id
+  const themeId = rootCategoryId || deck.id
+  const theme = getCategoryTheme(themeId)
+
+  // Technology: dark card with grid pattern and cyan glow
+  if (themeId === 'technology') {
+    return (
+      <motion.div
+        className="relative cursor-pointer group"
+        onClick={() => onOpen(deck)}
+        whileHover={{ y: -4 }}
+        whileTap={{ scale: 0.98 }}
+        style={{ paddingRight: 6, paddingBottom: 6 }}
+      >
+        {/* Stack layers */}
+        <div
+          className="absolute w-28 h-36 rounded-xl"
+          style={{
+            transform: 'translate(4px, 4px) rotate(2deg)',
+            background: theme.cardBgAlt,
+            boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
+          }}
+        />
+        <div
+          className="absolute w-28 h-36 rounded-xl"
+          style={{
+            transform: 'translate(2px, 2px) rotate(0.5deg)',
+            background: theme.cardBgAlt,
+            boxShadow: '0 1px 2px rgba(0,0,0,0.15)'
+          }}
+        />
+
+        {/* Top card */}
+        <div className="relative w-28 h-36">
+          <div
+            className="absolute inset-0 rounded-xl overflow-hidden"
+            style={{
+              background: theme.cardBg,
+              boxShadow: claimed
+                ? `0 0 20px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.4)`
+                : `0 8px 16px -4px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.2)`
+            }}
+          >
+            {/* Grid pattern overlay */}
+            <div
+              className="absolute inset-0 opacity-10"
+              style={{
+                backgroundImage: `
+                  linear-gradient(${theme.accent} 1px, transparent 1px),
+                  linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)
+                `,
+                backgroundSize: '12px 12px'
+              }}
+            />
+            {/* Accent line at top */}
+            <div
+              className="absolute top-0 left-0 right-0 h-1"
+              style={{ background: `linear-gradient(90deg, transparent, ${theme.accent}, transparent)` }}
+            />
+          </div>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-xs font-semibold text-center px-2 leading-tight" style={{ color: theme.textPrimary }}>{deck.name}</span>
+            {claimed && (
+              <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
+                <span className="text-slate-900 text-[10px] font-bold">✓</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    )
+  }
+
+  // Arts: creative studio - soft gradient, airy, expressive glow
+  if (themeId === 'arts') {
+    return (
+      <motion.div
+        className="relative cursor-pointer group"
+        onClick={() => onOpen(deck)}
+        whileHover={{ y: -4 }}
+        whileTap={{ scale: 0.98 }}
+        style={{ paddingRight: 6, paddingBottom: 6 }}
+      >
+        {/* Stack layers - soft, airy */}
+        <div
+          className="absolute w-28 h-36 rounded-xl"
+          style={{
+            transform: 'translate(4px, 4px) rotate(2deg)',
+            background: theme.cardBgAlt,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+          }}
+        />
+        <div
+          className="absolute w-28 h-36 rounded-xl"
+          style={{
+            transform: 'translate(2px, 2px) rotate(0.5deg)',
+            background: theme.cardBgAlt,
+            boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
+          }}
+        />
+
+        {/* Top card */}
+        <div className="relative w-28 h-36">
+          <div
+            className="absolute inset-0 rounded-xl overflow-hidden"
+            style={{
+              background: `linear-gradient(180deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+              boxShadow: claimed
+                ? `0 0 25px ${theme.accentGlow}, 0 8px 20px -4px rgba(212, 98, 122, 0.2)`
+                : `0 4px 15px -2px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.06)`
+            }}
+          />
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-xs font-semibold text-center px-2 leading-tight" style={{ color: theme.textPrimary }}>{deck.name}</span>
+            {claimed && (
+              <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
+                <span className="text-white text-[10px] font-bold">✓</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    )
+  }
+
+  // Biology: beautiful science - organic but precise, natural history museum feel
+  if (themeId === 'biology') {
+    return (
+      <motion.div
+        className="relative cursor-pointer group"
+        onClick={() => onOpen(deck)}
+        whileHover={{ y: -4 }}
+        whileTap={{ scale: 0.98 }}
+        style={{ paddingRight: 6, paddingBottom: 6 }}
+      >
+        {/* Stack layers */}
+        <div
+          className="absolute w-28 h-36 rounded-xl"
+          style={{
+            transform: 'translate(4px, 4px) rotate(2deg)',
+            background: theme.cardBgAlt,
+            border: `1px solid ${theme.accent}40`,
+            boxShadow: '0 1px 2px rgba(0,0,0,0.06)'
+          }}
+        />
+        <div
+          className="absolute w-28 h-36 rounded-xl"
+          style={{
+            transform: 'translate(2px, 2px) rotate(0.5deg)',
+            background: theme.cardBgAlt,
+            border: `1px solid ${theme.accent}40`,
+            boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
+          }}
+        />
+
+        {/* Top card */}
+        <div className="relative w-28 h-36">
+          <div
+            className="absolute inset-0 rounded-xl overflow-hidden"
+            style={{
+              background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+              border: `2px solid ${theme.accent}`,
+              boxShadow: claimed
+                ? `0 0 20px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.12)`
+                : `0 8px 16px -4px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)`
+            }}
+          >
+            {/* Organic cellular pattern - soft circles like looking through a microscope */}
+            <div className="absolute inset-0 opacity-[0.12]">
+              <div className="absolute top-3 right-4 w-6 h-6 rounded-full border" style={{ borderColor: theme.accent }} />
+              <div className="absolute top-8 right-2 w-3 h-3 rounded-full border" style={{ borderColor: theme.accent }} />
+              <div className="absolute bottom-5 left-3 w-5 h-5 rounded-full border" style={{ borderColor: theme.accent }} />
+              <div className="absolute bottom-3 left-8 w-2 h-2 rounded-full" style={{ background: theme.accent, opacity: 0.4 }} />
+              <div className="absolute top-12 left-4 w-2 h-2 rounded-full" style={{ background: theme.accent, opacity: 0.3 }} />
+            </div>
+          </div>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-xs font-semibold text-center px-2 leading-tight" style={{ color: theme.textPrimary }}>{deck.name}</span>
+            {claimed && (
+              <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
+                <span className="text-white text-[10px] font-bold">✓</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    )
+  }
+
+  // Health: clinical, clean - top accent line only
+  if (themeId === 'health') {
+    return (
+      <motion.div
+        className="relative cursor-pointer group"
+        onClick={() => onOpen(deck)}
+        whileHover={{ y: -4 }}
+        whileTap={{ scale: 0.98 }}
+        style={{ paddingRight: 6, paddingBottom: 6 }}
+      >
+        {/* Stack layers */}
+        <div
+          className="absolute w-28 h-36 rounded-xl"
+          style={{
+            transform: 'translate(4px, 4px) rotate(2deg)',
+            background: theme.cardBgAlt,
+            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+          }}
+        />
+        <div
+          className="absolute w-28 h-36 rounded-xl"
+          style={{
+            transform: 'translate(2px, 2px) rotate(0.5deg)',
+            background: theme.cardBgAlt,
+            boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
+          }}
+        />
+
+        {/* Top card - top accent line only */}
+        <div className="relative w-28 h-36">
+          <div
+            className="absolute inset-0 rounded-xl overflow-hidden"
+            style={{
+              background: theme.cardBg,
+              boxShadow: claimed
+                ? `0 0 18px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.1)`
+                : `0 8px 16px -4px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)`
+            }}
+          >
+            {/* Top accent line */}
+            <div
+              className="absolute top-0 left-2 right-2 h-[3px] rounded-b"
+              style={{ background: theme.accent }}
+            />
+            {/* Pulse/heartbeat line - soft gray */}
+            <svg className="absolute bottom-3 left-2 right-2 h-4 opacity-20" viewBox="0 0 100 20" preserveAspectRatio="none">
+              <path
+                d="M0,10 L30,10 L35,10 L40,2 L45,18 L50,6 L55,14 L60,10 L100,10"
+                fill="none"
+                stroke="#64748b"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-xs font-semibold text-center px-2 leading-tight" style={{ color: theme.textPrimary }}>{deck.name}</span>
+            {claimed && (
+              <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
+                <span className="text-white text-[10px] font-bold">✓</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    )
+  }
+
+  // Everyday: cozy café, no border, warm shadow
+  if (themeId === 'everyday') {
+    return (
+      <motion.div
+        className="relative cursor-pointer group"
+        onClick={() => onOpen(deck)}
+        whileHover={{ y: -4 }}
+        whileTap={{ scale: 0.98 }}
+        style={{ paddingRight: 6, paddingBottom: 6 }}
+      >
+        {/* Stack layers */}
+        <div
+          className="absolute w-28 h-36 rounded-xl"
+          style={{
+            transform: 'translate(4px, 4px) rotate(2deg)',
+            background: theme.cardBgAlt,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.06)'
+          }}
+        />
+        <div
+          className="absolute w-28 h-36 rounded-xl"
+          style={{
+            transform: 'translate(2px, 2px) rotate(0.5deg)',
+            background: theme.cardBgAlt,
+            boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
+          }}
+        />
+
+        {/* Top card - no border, warm shadow */}
+        <div className="relative w-28 h-36">
+          <div
+            className="absolute inset-0 rounded-xl overflow-hidden"
+            style={{
+              background: `linear-gradient(145deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+              boxShadow: claimed
+                ? `0 0 20px ${theme.accentGlow}, 0 8px 20px -4px rgba(194, 112, 62, 0.2)`
+                : `0 4px 15px -2px rgba(194, 112, 62, 0.15), 0 8px 20px -4px rgba(0, 0, 0, 0.08)`
+            }}
+          >
+            {/* Subtle texture */}
+            <div
+              className="absolute inset-0 opacity-[0.04]"
+              style={{
+                backgroundImage: `radial-gradient(${theme.accent} 1px, transparent 1px)`,
+                backgroundSize: '6px 6px'
+              }}
+            />
+          </div>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-xs font-semibold text-center px-2 leading-tight" style={{ color: theme.textPrimary }}>{deck.name}</span>
+            {claimed && (
+              <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
+                <span className="text-white text-[10px] font-bold">✓</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    )
+  }
+
+  // Geography: maps, exploration, atlas - deep ocean border
+  if (themeId === 'geography') {
+    return (
+      <motion.div
+        className="relative cursor-pointer group"
+        onClick={() => onOpen(deck)}
+        whileHover={{ y: -4 }}
+        whileTap={{ scale: 0.98 }}
+        style={{ paddingRight: 6, paddingBottom: 6 }}
+      >
+        {/* Stack layers */}
+        <div
+          className="absolute w-28 h-36 rounded-xl"
+          style={{
+            transform: 'translate(4px, 4px) rotate(2deg)',
+            background: theme.cardBgAlt,
+            border: `1px solid ${theme.accent}40`,
+            boxShadow: '0 1px 2px rgba(0,0,0,0.06)'
+          }}
+        />
+        <div
+          className="absolute w-28 h-36 rounded-xl"
+          style={{
+            transform: 'translate(2px, 2px) rotate(0.5deg)',
+            background: theme.cardBgAlt,
+            border: `1px solid ${theme.accent}40`,
+            boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
+          }}
+        />
+
+        {/* Top card */}
+        <div className="relative w-28 h-36">
+          <div
+            className="absolute inset-0 rounded-xl overflow-hidden"
+            style={{
+              background: `linear-gradient(180deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+              border: `2px solid ${theme.accent}`,
+              boxShadow: claimed
+                ? `0 0 18px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.12)`
+                : `0 8px 16px -4px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)`
+            }}
+          >
+            {/* Topographic lines pattern */}
+            <div
+              className="absolute inset-0 opacity-[0.08]"
+              style={{
+                backgroundImage: `
+                  repeating-linear-gradient(0deg, ${theme.accent} 0px, transparent 1px, transparent 12px),
+                  repeating-linear-gradient(90deg, ${theme.accent} 0px, transparent 1px, transparent 20px)
+                `
+              }}
+            />
+          </div>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-xs font-semibold text-center px-2 leading-tight" style={{ color: theme.textPrimary }}>{deck.name}</span>
+            {claimed && (
+              <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
+                <span className="text-white text-[10px] font-bold">✓</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    )
+  }
+
+  // Mathematics: graph paper, precision, thin purple border
+  if (themeId === 'mathematics') {
+    return (
+      <motion.div
+        className="relative cursor-pointer group"
+        onClick={() => onOpen(deck)}
+        whileHover={{ y: -4 }}
+        whileTap={{ scale: 0.98 }}
+        style={{ paddingRight: 6, paddingBottom: 6 }}
+      >
+        {/* Stack layers */}
+        <div
+          className="absolute w-28 h-36 rounded-xl"
+          style={{
+            transform: 'translate(4px, 4px) rotate(2deg)',
+            background: theme.cardBgAlt,
+            border: `1px solid ${theme.accent}30`,
+            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+          }}
+        />
+        <div
+          className="absolute w-28 h-36 rounded-xl"
+          style={{
+            transform: 'translate(2px, 2px) rotate(0.5deg)',
+            background: theme.cardBgAlt,
+            border: `1px solid ${theme.accent}30`,
+            boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
+          }}
+        />
+
+        {/* Top card */}
+        <div className="relative w-28 h-36">
+          <div
+            className="absolute inset-0 rounded-xl overflow-hidden"
+            style={{
+              background: theme.cardBg,
+              border: `1.5px solid ${theme.accent}`,
+              boxShadow: claimed
+                ? `0 0 15px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.1)`
+                : `0 8px 16px -4px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)`
+            }}
+          >
+            {/* Faint grid pattern - graph paper */}
+            <div
+              className="absolute inset-0 opacity-[0.08]"
+              style={{
+                backgroundImage: `
+                  linear-gradient(${theme.accent} 1px, transparent 1px),
+                  linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)
+                `,
+                backgroundSize: '10px 10px'
+              }}
+            />
+          </div>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-xs font-semibold text-center px-2 leading-tight" style={{ color: theme.textPrimary }}>{deck.name}</span>
+            {claimed && (
+              <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
+                <span className="text-white text-[10px] font-bold">✓</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    )
+  }
+
+  // People: portrait gallery, warm amber/copper border
+  if (themeId === 'people') {
+    return (
+      <motion.div
+        className="relative cursor-pointer group"
+        onClick={() => onOpen(deck)}
+        whileHover={{ y: -4 }}
+        whileTap={{ scale: 0.98 }}
+        style={{ paddingRight: 6, paddingBottom: 6 }}
+      >
+        {/* Stack layers */}
+        <div
+          className="absolute w-28 h-36 rounded-xl"
+          style={{
+            transform: 'translate(4px, 4px) rotate(2deg)',
+            background: theme.cardBgAlt,
+            border: `1px solid ${theme.accent}40`,
+            boxShadow: '0 1px 2px rgba(0,0,0,0.06)'
+          }}
+        />
+        <div
+          className="absolute w-28 h-36 rounded-xl"
+          style={{
+            transform: 'translate(2px, 2px) rotate(0.5deg)',
+            background: theme.cardBgAlt,
+            border: `1px solid ${theme.accent}40`,
+            boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
+          }}
+        />
+
+        {/* Top card */}
+        <div className="relative w-28 h-36">
+          <div
+            className="absolute inset-0 rounded-xl overflow-hidden"
+            style={{
+              background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+              border: `2px solid ${theme.accent}`,
+              boxShadow: claimed
+                ? `0 0 18px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.12)`
+                : `0 8px 16px -4px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)`
+            }}
+          />
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-xs font-semibold text-center px-2 leading-tight" style={{ color: theme.textPrimary }}>{deck.name}</span>
+            {claimed && (
+              <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
+                <span className="text-white text-[10px] font-bold">✓</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    )
+  }
+
+  // Philosophy: cosmic, ethereal glow, no hard border
+  if (themeId === 'philosophy') {
+    return (
+      <motion.div
+        className="relative cursor-pointer group"
+        onClick={() => onOpen(deck)}
+        whileHover={{ y: -4 }}
+        whileTap={{ scale: 0.98 }}
+        style={{ paddingRight: 6, paddingBottom: 6 }}
+      >
+        {/* Stack layers - dark */}
+        <div
+          className="absolute w-28 h-36 rounded-xl"
+          style={{
+            transform: 'translate(4px, 4px) rotate(2deg)',
+            background: theme.cardBgAlt,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+          }}
+        />
+        <div
+          className="absolute w-28 h-36 rounded-xl"
+          style={{
+            transform: 'translate(2px, 2px) rotate(0.5deg)',
+            background: theme.cardBgAlt,
+            boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
+          }}
+        />
+
+        {/* Top card - ethereal glow, no border */}
+        <div className="relative w-28 h-36">
+          <div
+            className="absolute inset-0 rounded-xl overflow-hidden"
+            style={{
+              background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+              boxShadow: claimed
+                ? `0 0 25px ${theme.accentGlow}, 0 8px 20px -4px rgba(0, 0, 0, 0.4)`
+                : `0 0 15px ${theme.accentGlow}, 0 8px 20px -4px rgba(0, 0, 0, 0.3)`
+            }}
+          >
+            {/* Celestial dots - stars */}
+            <div className="absolute inset-0 opacity-30">
+              <div className="absolute top-3 right-4 w-1 h-1 rounded-full" style={{ background: theme.accent }} />
+              <div className="absolute top-6 right-8 w-0.5 h-0.5 rounded-full" style={{ background: theme.accent }} />
+              <div className="absolute top-10 right-3 w-1 h-1 rounded-full" style={{ background: theme.accent }} />
+              <div className="absolute bottom-6 left-3 w-0.5 h-0.5 rounded-full" style={{ background: theme.accent }} />
+              <div className="absolute bottom-10 left-6 w-1 h-1 rounded-full" style={{ background: theme.accent }} />
+              <div className="absolute top-8 left-4 w-0.5 h-0.5 rounded-full" style={{ background: theme.accent }} />
+            </div>
+          </div>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-xs font-semibold text-center px-2 leading-tight" style={{ color: theme.textPrimary }}>{deck.name}</span>
+            {claimed && (
+              <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
+                <span className="text-indigo-900 text-[10px] font-bold">✓</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    )
+  }
+
+  // Physical Sciences: blueprint, accent line on left only
+  if (themeId === 'physics') {
+    return (
+      <motion.div
+        className="relative cursor-pointer group"
+        onClick={() => onOpen(deck)}
+        whileHover={{ y: -4 }}
+        whileTap={{ scale: 0.98 }}
+        style={{ paddingRight: 6, paddingBottom: 6 }}
+      >
+        {/* Stack layers */}
+        <div
+          className="absolute w-28 h-36 rounded-xl"
+          style={{
+            transform: 'translate(4px, 4px) rotate(2deg)',
+            background: theme.cardBgAlt,
+            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+          }}
+        />
+        <div
+          className="absolute w-28 h-36 rounded-xl"
+          style={{
+            transform: 'translate(2px, 2px) rotate(0.5deg)',
+            background: theme.cardBgAlt,
+            boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
+          }}
+        />
+
+        {/* Top card - accent line on left only */}
+        <div className="relative w-28 h-36">
+          <div
+            className="absolute inset-0 rounded-xl overflow-hidden"
+            style={{
+              background: theme.cardBg,
+              boxShadow: claimed
+                ? `0 0 15px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.1)`
+                : `0 8px 16px -4px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)`
+            }}
+          >
+            {/* Left accent line */}
+            <div
+              className="absolute top-2 bottom-2 left-0 w-[3px] rounded-r"
+              style={{ background: theme.accent }}
+            />
+            {/* Blueprint/schematic lines */}
+            <div
+              className="absolute inset-0 opacity-[0.06]"
+              style={{
+                backgroundImage: `
+                  linear-gradient(${theme.accent} 1px, transparent 1px),
+                  linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)
+                `,
+                backgroundSize: '14px 14px'
+              }}
+            />
+          </div>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-xs font-semibold text-center px-2 leading-tight" style={{ color: theme.textPrimary }}>{deck.name}</span>
+            {claimed && (
+              <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
+                <span className="text-white text-[10px] font-bold">✓</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    )
+  }
+
+  // Society: civic, structured, slate border
+  if (themeId === 'society') {
+    return (
+      <motion.div
+        className="relative cursor-pointer group"
+        onClick={() => onOpen(deck)}
+        whileHover={{ y: -4 }}
+        whileTap={{ scale: 0.98 }}
+        style={{ paddingRight: 6, paddingBottom: 6 }}
+      >
+        {/* Stack layers */}
+        <div
+          className="absolute w-28 h-36 rounded-xl"
+          style={{
+            transform: 'translate(4px, 4px) rotate(2deg)',
+            background: theme.cardBgAlt,
+            border: `1px solid ${theme.accent}40`,
+            boxShadow: '0 1px 2px rgba(0,0,0,0.06)'
+          }}
+        />
+        <div
+          className="absolute w-28 h-36 rounded-xl"
+          style={{
+            transform: 'translate(2px, 2px) rotate(0.5deg)',
+            background: theme.cardBgAlt,
+            border: `1px solid ${theme.accent}40`,
+            boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
+          }}
+        />
+
+        {/* Top card */}
+        <div className="relative w-28 h-36">
+          <div
+            className="absolute inset-0 rounded-xl overflow-hidden"
+            style={{
+              background: theme.cardBg,
+              border: `2px solid ${theme.accent}`,
+              boxShadow: claimed
+                ? `0 0 15px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.12)`
+                : `0 8px 16px -4px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)`
+            }}
+          >
+            {/* Architectural grid */}
+            <div
+              className="absolute inset-0 opacity-[0.05]"
+              style={{
+                backgroundImage: `
+                  linear-gradient(${theme.accent} 1px, transparent 1px),
+                  linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)
+                `,
+                backgroundSize: '16px 16px'
+              }}
+            />
+          </div>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-xs font-semibold text-center px-2 leading-tight" style={{ color: theme.textPrimary }}>{deck.name}</span>
+            {claimed && (
+              <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
+                <span className="text-white text-[10px] font-bold">✓</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    )
+  }
+
+  // History: warm parchment with gold accents
+  if (themeId === 'history') {
+    return (
+      <motion.div
+        className="relative cursor-pointer group"
+        onClick={() => onOpen(deck)}
+        whileHover={{ y: -4 }}
+        whileTap={{ scale: 0.98 }}
+        style={{ paddingRight: 6, paddingBottom: 6 }}
+      >
+        {/* Stack layers */}
+        <div
+          className="absolute w-28 h-36 rounded-xl"
+          style={{
+            transform: 'translate(4px, 4px) rotate(2deg)',
+            background: theme.cardBgAlt,
+            border: `1px solid ${theme.accent}40`,
+            boxShadow: '0 1px 2px rgba(0,0,0,0.08)'
+          }}
+        />
+        <div
+          className="absolute w-28 h-36 rounded-xl"
+          style={{
+            transform: 'translate(2px, 2px) rotate(0.5deg)',
+            background: theme.cardBgAlt,
+            border: `1px solid ${theme.accent}40`,
+            boxShadow: '0 1px 2px rgba(0,0,0,0.06)'
+          }}
+        />
+
+        {/* Top card */}
+        <div className="relative w-28 h-36">
+          <div
+            className="absolute inset-0 rounded-xl overflow-hidden"
+            style={{
+              background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+              border: `2px solid ${theme.accent}`,
+              boxShadow: claimed
+                ? `0 0 15px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.15)`
+                : `0 8px 16px -4px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)`
+            }}
+          >
+            {/* Subtle aged texture */}
+            <div
+              className="absolute inset-0 opacity-30"
+              style={{
+                backgroundImage: `radial-gradient(${theme.accent}15 1px, transparent 1px)`,
+                backgroundSize: '8px 8px'
+              }}
+            />
+            {/* Gold corner accents */}
+            <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 rounded-tl-lg" style={{ borderColor: theme.accent }} />
+            <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 rounded-tr-lg" style={{ borderColor: theme.accent }} />
+            <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 rounded-bl-lg" style={{ borderColor: theme.accent }} />
+            <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 rounded-br-lg" style={{ borderColor: theme.accent }} />
+          </div>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-xs font-semibold text-center px-2 leading-tight" style={{ color: theme.textPrimary }}>{deck.name}</span>
+            {claimed && (
+              <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
+                <span className="text-white text-[10px] font-bold">✓</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    )
+  }
+
+  // Default: original gradient border style
   return (
     <motion.div
       className="relative cursor-pointer group"
@@ -371,7 +1307,6 @@ function Deck({ deck, onOpen, claimed }) {
           }}
         />
         <div className="absolute inset-[3px] rounded-lg bg-white flex flex-col items-center justify-center">
-          <span className="text-2xl mb-1">{deck.emoji}</span>
           <span className="text-xs font-semibold text-gray-800 text-center px-2 leading-tight">{deck.name}</span>
           {claimed && (
             <div className="absolute top-1 right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center">
@@ -385,42 +1320,141 @@ function Deck({ deck, onOpen, claimed }) {
 }
 
 // Overview card component - same size as deck cards (w-28 h-36)
-function OverviewCard({ card, index, total, onClaim, claimed, onRead, tint = '#fafbfc' }) {
+function OverviewCard({ card, index, total, onClaim, claimed, onRead, tint = '#fafbfc', rootCategoryId = null }) {
+  const theme = getCategoryTheme(rootCategoryId)
+  const isThemed = hasCustomTheme(rootCategoryId)
+
+  // Technology themed card
+  if (rootCategoryId === 'technology') {
+    return (
+      <motion.div
+        className="relative w-28 h-36 rounded-xl cursor-pointer transition-all duration-200 flex flex-col items-center justify-center p-3 overflow-hidden"
+        style={{
+          background: theme.cardBg,
+          border: claimed ? `2px solid ${theme.accent}` : '2px solid #334155',
+          boxShadow: claimed
+            ? `0 0 15px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.4)`
+            : `0 8px 16px -4px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2)`
+        }}
+        onClick={() => onRead(card)}
+        whileHover={{ y: -6 }}
+        whileTap={{ scale: 0.98 }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: index * 0.05 }}
+      >
+        {/* Grid pattern */}
+        <div
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: `linear-gradient(${theme.accent} 1px, transparent 1px), linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)`,
+            backgroundSize: '10px 10px'
+          }}
+        />
+        <span className="text-xs mb-1 relative z-10" style={{ color: theme.textSecondary }}>{index + 1}/{total}</span>
+        <span className="text-xs font-semibold text-center leading-tight px-1 relative z-10" style={{ color: theme.textPrimary }}>{card.title}</span>
+        {claimed && (
+          <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
+            <span className="text-slate-900 text-[10px] font-bold">✓</span>
+          </div>
+        )}
+      </motion.div>
+    )
+  }
+
+  // History themed card - warm parchment with gold accents
+  if (rootCategoryId === 'history') {
+    return (
+      <motion.div
+        className="relative w-28 h-36 rounded-xl cursor-pointer transition-all duration-200 flex flex-col items-center justify-center p-3 overflow-hidden"
+        style={{
+          background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+          border: claimed ? `2px solid ${theme.accent}` : `2px solid ${theme.accent}60`,
+          boxShadow: claimed
+            ? `0 0 12px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.15)`
+            : `0 8px 16px -4px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)`
+        }}
+        onClick={() => onRead(card)}
+        whileHover={{ y: -6 }}
+        whileTap={{ scale: 0.98 }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: index * 0.05 }}
+      >
+        {/* Corner accents */}
+        <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 rounded-tl-lg" style={{ borderColor: theme.accent }} />
+        <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 rounded-tr-lg" style={{ borderColor: theme.accent }} />
+        <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 rounded-bl-lg" style={{ borderColor: theme.accent }} />
+        <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 rounded-br-lg" style={{ borderColor: theme.accent }} />
+
+        <span className="text-xs mb-1 relative z-10" style={{ color: theme.textSecondary }}>{index + 1}/{total}</span>
+        <span className="text-xs font-semibold text-center leading-tight px-1 relative z-10" style={{ color: theme.textPrimary }}>{card.title}</span>
+        {claimed && (
+          <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
+            <span className="text-white text-[10px] font-bold">✓</span>
+          </div>
+        )}
+      </motion.div>
+    )
+  }
+
+  // Arts themed card - soft gradient, airy glow
+  if (rootCategoryId === 'arts') {
+    return (
+      <motion.div
+        className="relative w-28 h-36 rounded-xl cursor-pointer transition-all duration-200 flex flex-col items-center justify-center p-3 overflow-hidden"
+        style={{
+          background: `linear-gradient(180deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+          boxShadow: claimed
+            ? `0 0 20px ${theme.accentGlow}, 0 8px 16px -4px rgba(212, 98, 122, 0.15)`
+            : `0 4px 12px -2px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.05)`
+        }}
+        onClick={() => onRead(card)}
+        whileHover={{ y: -6 }}
+        whileTap={{ scale: 0.98 }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: index * 0.05 }}
+      >
+        <span className="text-xs mb-1 relative z-10" style={{ color: theme.textSecondary }}>{index + 1}/{total}</span>
+        <span className="text-xs font-semibold text-center leading-tight px-1 relative z-10" style={{ color: theme.textPrimary }}>{card.title}</span>
+        {claimed && (
+          <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
+            <span className="text-white text-[10px] font-bold">✓</span>
+          </div>
+        )}
+      </motion.div>
+    )
+  }
+
+  // Default/themed card style - works for all categories
+  const isDark = isDarkTheme(rootCategoryId)
   return (
     <motion.div
-      className={`
-        relative w-28 h-36 rounded-xl cursor-pointer
-        border-2 ${claimed ? 'border-yellow-400' : 'border-gray-200'}
-        transition-all duration-200
-        flex flex-col items-center justify-center p-3
-      `}
+      className="relative w-28 h-36 rounded-xl cursor-pointer transition-all duration-200 flex flex-col items-center justify-center p-3 overflow-hidden"
       style={{
-        background: `linear-gradient(135deg, #ffffff 0%, ${tint} 100%)`,
-        boxShadow: `
-          0 8px 16px -4px rgba(0, 0, 0, 0.15),
-          0 4px 6px -2px rgba(0, 0, 0, 0.08),
-          inset 0 1px 0 rgba(255, 255, 255, 0.5)
-        `
+        background: isThemed
+          ? `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`
+          : `linear-gradient(135deg, #ffffff 0%, ${tint} 100%)`,
+        border: claimed
+          ? `2px solid ${theme.accent}`
+          : (isThemed ? `2px solid ${theme.accent}40` : '2px solid #e5e7eb'),
+        boxShadow: claimed
+          ? `0 0 12px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.15)`
+          : `0 8px 16px -4px rgba(0, 0, 0, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.08)`
       }}
       onClick={() => onRead(card)}
-      whileHover={{
-        y: -6,
-        boxShadow: `
-          0 12px 24px -4px rgba(0, 0, 0, 0.2),
-          0 6px 10px -2px rgba(0, 0, 0, 0.1),
-          inset 0 1px 0 rgba(255, 255, 255, 0.5)
-        `
-      }}
+      whileHover={{ y: -6 }}
       whileTap={{ scale: 0.98 }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
     >
-      <span className="text-xs text-gray-400 mb-1">{index + 1}/{total}</span>
-      <span className="text-xs font-semibold text-gray-800 text-center leading-tight px-1">{card.title}</span>
+      <span className="text-xs mb-1" style={{ color: isThemed ? theme.textSecondary : '#9ca3af' }}>{index + 1}/{total}</span>
+      <span className="text-xs font-semibold text-center leading-tight px-1" style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}>{card.title}</span>
       {claimed && (
-        <div className="absolute top-1 right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center">
-          <span className="text-white text-[10px]">✓</span>
+        <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
+          <span className={isDark ? 'text-slate-900 text-[10px] font-bold' : 'text-white text-[10px] font-bold'}>✓</span>
         </div>
       )}
     </motion.div>
@@ -428,23 +1462,89 @@ function OverviewCard({ card, index, total, onClaim, claimed, onRead, tint = '#f
 }
 
 // Locked card placeholder for locked tiers
-function LockedCard({ index }) {
+function LockedCard({ index, rootCategoryId = null }) {
+  const theme = getCategoryTheme(rootCategoryId)
+
+  // Technology themed locked card
+  if (rootCategoryId === 'technology') {
+    return (
+      <motion.div
+        className="relative w-28 h-36 rounded-xl border-2 border-dashed flex flex-col items-center justify-center p-3 opacity-50"
+        style={{
+          background: theme.cardBgAlt,
+          borderColor: '#334155'
+        }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 0.5, y: 0 }}
+        transition={{ delay: index * 0.05 }}
+      >
+        <span className="text-xl mb-1">🔒</span>
+        <span className="text-xs text-center" style={{ color: theme.textSecondary }}>Locked</span>
+      </motion.div>
+    )
+  }
+
+  // History themed locked card
+  if (rootCategoryId === 'history') {
+    return (
+      <motion.div
+        className="relative w-28 h-36 rounded-xl border-2 border-dashed flex flex-col items-center justify-center p-3 opacity-50"
+        style={{
+          background: theme.cardBgAlt,
+          borderColor: `${theme.accent}60`
+        }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 0.5, y: 0 }}
+        transition={{ delay: index * 0.05 }}
+      >
+        <span className="text-xl mb-1">🔒</span>
+        <span className="text-xs text-center" style={{ color: theme.textSecondary }}>Locked</span>
+      </motion.div>
+    )
+  }
+
+  // Arts themed locked card - soft gradient, airy
+  if (rootCategoryId === 'arts') {
+    return (
+      <motion.div
+        className="relative w-28 h-36 rounded-xl flex flex-col items-center justify-center p-3 opacity-50 overflow-hidden"
+        style={{
+          background: `linear-gradient(180deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+          boxShadow: `0 4px 10px -2px ${theme.accentGlow}`
+        }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 0.5, y: 0 }}
+        transition={{ delay: index * 0.05 }}
+      >
+        <span className="text-xl mb-1">🔒</span>
+        <span className="text-xs text-center" style={{ color: theme.textSecondary }}>Locked</span>
+      </motion.div>
+    )
+  }
+
+  // Default/themed locked card
   return (
     <motion.div
-      className="relative w-28 h-36 rounded-xl bg-gray-100 border-2 border-gray-200 border-dashed flex flex-col items-center justify-center p-3 opacity-60"
+      className="relative w-28 h-36 rounded-xl border-2 border-dashed flex flex-col items-center justify-center p-3 opacity-50"
+      style={{
+        background: theme.cardBgAlt,
+        borderColor: `${theme.accent}60`
+      }}
       initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 0.6, y: 0 }}
+      animate={{ opacity: 0.5, y: 0 }}
       transition={{ delay: index * 0.05 }}
     >
       <span className="text-xl mb-1">🔒</span>
-      <span className="text-xs text-gray-400 text-center">Locked</span>
+      <span className="text-xs text-center" style={{ color: theme.textSecondary }}>Locked</span>
     </motion.div>
   )
 }
 
 // Category card - flippable card showing category info and progress
-function CategoryCard({ deck, claimed, onClaim, tint = '#fafbfc' }) {
+function CategoryCard({ deck, tint = '#fafbfc', rootCategoryId = null }) {
   const [isFlipped, setIsFlipped] = useState(true) // Start showing info side
+  const theme = getCategoryTheme(rootCategoryId)
+  const isThemed = hasCustomTheme(rootCategoryId)
 
   // Get progress stats
   const totalTopics = countDescendants(deck.id)
@@ -453,12 +1553,6 @@ function CategoryCard({ deck, claimed, onClaim, tint = '#fafbfc' }) {
 
   const handleFlip = () => {
     setIsFlipped(!isFlipped)
-  }
-
-  const handleClaim = (e) => {
-    e.stopPropagation()
-    onClaim()
-    setTimeout(() => setIsFlipped(false), 300)
   }
 
   return (
@@ -477,67 +1571,55 @@ function CategoryCard({ deck, claimed, onClaim, tint = '#fafbfc' }) {
       >
         {/* Front of card */}
         <div
-          className={`absolute inset-0 rounded-2xl flex flex-col items-center justify-center p-6 border-2 ${claimed ? 'border-yellow-400' : 'border-gray-200'}`}
+          className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center p-6 border-2"
           style={{
             backfaceVisibility: 'hidden',
-            background: `linear-gradient(135deg, #ffffff 0%, ${tint} 100%)`,
-            boxShadow: claimed
-              ? '0 8px 20px rgba(250, 204, 21, 0.25), 0 4px 12px rgba(0, 0, 0, 0.1)'
-              : '0 8px 16px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.06)'
+            background: isThemed
+              ? `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`
+              : `linear-gradient(135deg, #ffffff 0%, ${tint} 100%)`,
+            borderColor: isThemed ? `${theme.accent}40` : '#e5e7eb',
+            boxShadow: '0 8px 16px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.06)'
           }}
         >
-          {claimed && (
-            <div className="absolute top-3 right-3 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center shadow-md">
-              <span className="text-white text-sm">✓</span>
-            </div>
-          )}
-          <span className="text-5xl mb-2">{deck.emoji}</span>
-          <h2 className="text-lg font-bold text-gray-800 text-center">{deck.name}</h2>
-          <p className="text-xs text-gray-400 mt-2">Tap to flip</p>
+          <h2 className="text-lg font-bold text-center" style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}>{deck.name}</h2>
+          <p className="text-xs mt-2" style={{ color: isThemed ? theme.textSecondary : '#9ca3af' }}>Tap to flip</p>
         </div>
 
         {/* Back of card */}
         <div
-          className={`absolute inset-0 rounded-2xl flex flex-col items-center justify-center p-6 border-2 ${claimed ? 'border-yellow-400' : 'border-gray-200'}`}
+          className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center p-6 border-2"
           style={{
             backfaceVisibility: 'hidden',
             transform: 'rotateY(180deg)',
-            background: `linear-gradient(135deg, #ffffff 0%, ${tint} 100%)`,
+            background: isThemed
+              ? `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`
+              : `linear-gradient(135deg, #ffffff 0%, ${tint} 100%)`,
+            borderColor: isThemed ? `${theme.accent}40` : '#e5e7eb',
             boxShadow: '0 8px 16px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.06)'
           }}
         >
-          <span className="text-3xl mb-2">{deck.emoji}</span>
-          <h3 className="text-sm font-bold text-gray-800 text-center mb-3">{deck.name}</h3>
+          <h3 className="text-sm font-bold text-center mb-3" style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}>{deck.name}</h3>
 
           {/* Progress bar */}
           <div className="w-full px-4 mb-3">
-            <div className="flex justify-between text-xs text-gray-500 mb-1">
+            <div className="flex justify-between text-xs mb-1" style={{ color: isThemed ? theme.textSecondary : '#6b7280' }}>
               <span>Progress</span>
               <span>{claimedTopics}/{totalTopics}</span>
             </div>
-            <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: isThemed ? `${theme.accent}20` : '#e5e7eb' }}>
               <div
-                className="h-full bg-gradient-to-r from-yellow-400 to-amber-500 rounded-full transition-all duration-500"
-                style={{ width: `${progressPercent}%` }}
+                className="h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${progressPercent}%`,
+                  background: `linear-gradient(90deg, ${theme.accent}, ${theme.accent}cc)`
+                }}
               />
             </div>
           </div>
 
-          <p className="text-xs text-gray-500 text-center mb-3">
+          <p className="text-xs text-center" style={{ color: isThemed ? theme.textSecondary : '#6b7280' }}>
             Explore the topics within
           </p>
-
-          {/* Claim button */}
-          {!claimed ? (
-            <button
-              onClick={handleClaim}
-              className="px-6 py-2 bg-gradient-to-r from-yellow-400 to-amber-500 text-white font-bold text-sm rounded-xl shadow-md hover:opacity-90 active:scale-95 transition-all"
-            >
-              ✓ Got it!
-            </button>
-          ) : (
-            <span className="text-xs text-green-600 font-semibold">✓ Collected!</span>
-          )}
         </div>
       </motion.div>
     </motion.div>
@@ -545,7 +1627,7 @@ function CategoryCard({ deck, claimed, onClaim, tint = '#fafbfc' }) {
 }
 
 // Tier section component - shows cards for one tier with header and progress
-function TierSection({ tier, tierName, tierEmoji, cards, claimedCards, onReadCard, completion, isLocked, onUnlock, isUnlocking, totalCards = 15, tint }) {
+function TierSection({ tier, tierName, cards, claimedCards, onReadCard, completion, isLocked, onUnlock, isUnlocking, totalCards = 15, tint, rootCategoryId }) {
   const { claimed, total } = completion
   const isComplete = total > 0 && claimed === total
 
@@ -553,14 +1635,13 @@ function TierSection({ tier, tierName, tierEmoji, cards, claimedCards, onReadCar
     return (
       <div className="flex flex-col items-center gap-3">
         <div className="flex items-center gap-2">
-          <span className="text-lg">{tierEmoji}</span>
           <span className="text-sm font-semibold text-gray-400">{tierName}</span>
           <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Locked</span>
         </div>
         <p className="text-xs text-gray-400 mb-2">Complete the previous tier to unlock!</p>
         <div className="flex gap-2 flex-wrap justify-center opacity-50">
           {Array.from({ length: 5 }).map((_, index) => (
-            <LockedCard key={`locked-${tier}-${index}`} index={index} />
+            <LockedCard key={`locked-${tier}-${index}`} index={index} rootCategoryId={rootCategoryId} />
           ))}
         </div>
       </div>
@@ -572,7 +1653,6 @@ function TierSection({ tier, tierName, tierEmoji, cards, claimedCards, onReadCar
     return (
       <div className="flex flex-col items-center gap-3">
         <div className="flex items-center gap-2">
-          <span className="text-lg">{tierEmoji}</span>
           <span className="text-sm font-semibold text-gray-700">{tierName}</span>
           <span className={`text-xs px-2 py-0.5 rounded-full ${
             isComplete
@@ -604,6 +1684,7 @@ function TierSection({ tier, tierName, tierEmoji, cards, claimedCards, onReadCar
                   onClaim={() => {}}
                   onRead={onReadCard}
                   tint={tint}
+                  rootCategoryId={rootCategoryId}
                 />
               </motion.div>
             )
@@ -771,7 +1852,6 @@ function WanderingScreen({ pathSteps, currentStep, isComplete }) {
               transition={{ delay: index * 0.3 }}
             >
               {index > 0 && <span className="text-white/50 mx-1">→</span>}
-              <span className="text-lg">{step.emoji}</span>
               <span className={`font-medium ${index === pathSteps.length - 1 ? 'text-yellow-300' : ''}`}>
                 {step.name}
               </span>
@@ -804,10 +1884,17 @@ function WanderingScreen({ pathSteps, currentStep, isComplete }) {
 }
 
 // Skeleton card - shown while generating cards for the first time
-function SkeletonCard({ index }) {
+function SkeletonCard({ index, rootCategoryId = null }) {
+  const theme = getCategoryTheme(rootCategoryId)
+  const isThemed = hasCustomTheme(rootCategoryId)
+
   return (
     <motion.div
-      className="relative w-28 h-36 rounded-xl bg-gray-100 border-2 border-gray-200 overflow-hidden"
+      className="relative w-28 h-36 rounded-xl border-2 overflow-hidden"
+      style={{
+        background: isThemed ? theme.cardBgAlt : '#f3f4f6',
+        borderColor: isThemed ? `${theme.accent}30` : '#e5e7eb'
+      }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
@@ -820,10 +1907,10 @@ function SkeletonCard({ index }) {
       {/* Placeholder content */}
       <div className="flex flex-col items-center justify-center h-full p-3 gap-2">
         {/* Index placeholder */}
-        <div className="w-6 h-3 bg-gray-200 rounded" />
+        <div className="w-6 h-3 rounded" style={{ background: isThemed ? `${theme.accent}20` : '#e5e7eb' }} />
         {/* Title placeholder - two lines */}
-        <div className="w-16 h-2 bg-gray-200 rounded" />
-        <div className="w-14 h-2 bg-gray-200 rounded" />
+        <div className="w-16 h-2 rounded" style={{ background: isThemed ? `${theme.accent}20` : '#e5e7eb' }} />
+        <div className="w-14 h-2 rounded" style={{ background: isThemed ? `${theme.accent}20` : '#e5e7eb' }} />
       </div>
     </motion.div>
   )
@@ -843,15 +1930,55 @@ function renderMarkdown(text) {
   })
 }
 
+// Swipe hint that hides after 5 swipes
+function SwipeHint({ hasPrev, hasNext }) {
+  const [swipeCount, setSwipeCount] = useState(() => {
+    const stored = localStorage.getItem('swipeHintCount')
+    return stored ? parseInt(stored, 10) : 0
+  })
+
+  // Track swipe count when navigation happens
+  useEffect(() => {
+    const count = parseInt(localStorage.getItem('swipeHintCount') || '0', 10)
+    setSwipeCount(count)
+  }, [hasPrev, hasNext]) // Re-check when navigation state changes
+
+  // Increment swipe count (called from parent via effect)
+  useEffect(() => {
+    const handleSwipe = () => {
+      const newCount = swipeCount + 1
+      localStorage.setItem('swipeHintCount', newCount.toString())
+      setSwipeCount(newCount)
+    }
+
+    // Listen for custom swipe event
+    window.addEventListener('cardSwiped', handleSwipe)
+    return () => window.removeEventListener('cardSwiped', handleSwipe)
+  }, [swipeCount])
+
+  // Hide after 5 swipes
+  if (swipeCount >= 5) return null
+
+  return (
+    <p className="text-center text-gray-400 text-xs mt-2">
+      {hasPrev || hasNext ? 'Swipe to navigate' : 'Tap to flip'}
+    </p>
+  )
+}
+
 // Expanded card - zooms in and can flip back and forth
-function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName, onContentGenerated, allCards, onNext, onPrev, hasNext, hasPrev, startFlipped = false, slideDirection = 0, tint = '#fafbfc' }) {
+function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName, onContentGenerated, allCards, onNext, onPrev, hasNext, hasPrev, startFlipped = false, slideDirection = 0, tint = '#fafbfc', rootCategoryId = null }) {
   const [isFlipped, setIsFlipped] = useState(startFlipped)
+  const theme = getCategoryTheme(rootCategoryId)
+  const isThemed = hasCustomTheme(rootCategoryId)
+  const isTech = rootCategoryId === 'technology'
+  const isHistory = rootCategoryId === 'history'
+  const isArts = rootCategoryId === 'arts'
   const [content, setContent] = useState(card.content || null)
   const [displayedContent, setDisplayedContent] = useState(card.content || '')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
   const [prevCardId, setPrevCardId] = useState(card.id)
-  const [justClaimed, setJustClaimed] = useState(false)
   // Track initial rotation for new cards entering (to skip flip animation)
   const initialRotation = useRef(startFlipped ? 180 : 0)
 
@@ -960,17 +2087,9 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
     }
   }
 
-  // Handle claim and advance to next card
-  const handleClaimAndNext = () => {
-    setJustClaimed(true)
+  // Handle claim (no auto-advance)
+  const handleClaim = () => {
     onClaim(card.id)
-    // Show shimmer animation, then advance
-    setTimeout(() => {
-      setJustClaimed(false)
-      if (hasNext) {
-        onNext()
-      }
-    }, 600)
   }
 
   // Handle swipe gestures
@@ -980,10 +2099,16 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
 
     if (info.offset.x > threshold || info.velocity.x > velocity) {
       // Swiped right - go to previous
-      if (hasPrev) onPrev()
+      if (hasPrev) {
+        window.dispatchEvent(new CustomEvent('cardSwiped'))
+        onPrev()
+      }
     } else if (info.offset.x < -threshold || info.velocity.x < -velocity) {
       // Swiped left - go to next
-      if (hasNext) onNext()
+      if (hasNext) {
+        window.dispatchEvent(new CustomEvent('cardSwiped'))
+        onNext()
+      }
     }
   }
 
@@ -1018,101 +2143,181 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
         >
           {/* Front of card */}
           <div
-            className="absolute inset-0 rounded-2xl border border-gray-200 shadow-2xl flex flex-col items-center justify-center p-6"
+            className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center p-6 overflow-hidden"
             style={{
               backfaceVisibility: 'hidden',
-              background: `linear-gradient(135deg, #ffffff 0%, ${tint} 100%)`
+              background: isArts
+                ? `linear-gradient(180deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`
+                : (isHistory
+                  ? `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`
+                  : (isTech ? theme.cardBg : `linear-gradient(135deg, #ffffff 0%, ${tint} 100%)`)),
+              border: claimed
+                ? (isDarkTheme(rootCategoryId) ? '2px solid rgba(255, 255, 255, 0.8)' : `2px solid ${theme.accent}`)
+                : (isArts ? 'none' : (isThemed ? `1px solid ${theme.accent}40` : '1px solid #e5e7eb')),
+              boxShadow: claimed
+                ? (isDarkTheme(rootCategoryId)
+                  ? '0 0 25px rgba(255, 255, 255, 0.6), 0 0 10px rgba(255, 255, 255, 0.4), 0 10px 25px -5px rgba(0, 0, 0, 0.15)'
+                  : `0 0 20px ${theme.accentGlow}, 0 10px 25px -5px rgba(0, 0, 0, 0.15)`)
+                : (isArts ? `0 0 30px ${theme.accentGlow}, 0 10px 25px -5px rgba(0, 0, 0, 0.1)` : '0 25px 50px -12px rgba(0, 0, 0, 0.25)')
             }}
           >
-            <span className="text-sm text-gray-400 mb-3">{index + 1} of {total}</span>
-            <h2 className="text-xl font-bold text-gray-800 text-center mb-4 leading-tight px-2">{card.title}</h2>
-            <span className="text-gray-400 text-sm">Tap to read</span>
+            {/* Grid pattern for Technology */}
+            {isTech && (
+              <div
+                className="absolute inset-0 opacity-10"
+                style={{
+                  backgroundImage: `linear-gradient(${theme.accent} 1px, transparent 1px), linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)`,
+                  backgroundSize: '16px 16px'
+                }}
+              />
+            )}
+            {/* Corner accents for History */}
+            {isHistory && (
+              <>
+                <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 rounded-tl-xl" style={{ borderColor: theme.accent }} />
+                <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 rounded-tr-xl" style={{ borderColor: theme.accent }} />
+                <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 rounded-bl-xl" style={{ borderColor: theme.accent }} />
+                <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 rounded-br-xl" style={{ borderColor: theme.accent }} />
+              </>
+            )}
+            {/* Arts has no decorative elements - just the gradient and glow */}
+            <span className="text-sm mb-3 relative z-10" style={{ color: isThemed ? theme.textSecondary : '#9ca3af' }}>{index + 1} of {total}</span>
+            <h2 className="text-xl font-bold text-center mb-4 leading-tight px-2 relative z-10" style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}>{card.title}</h2>
+            <span className="text-sm relative z-10" style={{ color: isThemed ? theme.textSecondary : '#9ca3af' }}>Tap to read</span>
             {claimed && (
-              <div className="absolute top-3 right-3 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center shadow-md">
-                <span className="text-white text-sm">✓</span>
+              <div className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center shadow-md" style={{ background: isThemed ? theme.accent : '#facc15' }}>
+                <span className={isTech ? 'text-slate-900 text-sm font-bold' : 'text-white text-sm'}>✓</span>
               </div>
             )}
           </div>
 
           {/* Back of card - reading view optimized for mobile */}
           <div
-            className="absolute inset-0 rounded-2xl border border-gray-200 shadow-2xl flex flex-col p-5 overflow-hidden"
+            className="absolute inset-0 rounded-2xl flex flex-col p-5 overflow-hidden"
             style={{
               backfaceVisibility: 'hidden',
               transform: 'rotateY(180deg)',
-              background: `linear-gradient(135deg, #ffffff 0%, ${tint} 100%)`
+              background: isArts
+                ? `linear-gradient(180deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`
+                : (isHistory
+                  ? `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`
+                  : (isTech ? theme.cardBg : `linear-gradient(135deg, #ffffff 0%, ${tint} 100%)`)),
+              border: claimed
+                ? (isDarkTheme(rootCategoryId) ? '2px solid rgba(255, 255, 255, 0.8)' : `2px solid ${theme.accent}`)
+                : (isArts ? 'none' : (isThemed ? `1px solid ${theme.accent}40` : '1px solid #e5e7eb')),
+              boxShadow: claimed
+                ? (isDarkTheme(rootCategoryId)
+                  ? '0 0 25px rgba(255, 255, 255, 0.6), 0 0 10px rgba(255, 255, 255, 0.4), 0 10px 25px -5px rgba(0, 0, 0, 0.15)'
+                  : `0 0 20px ${theme.accentGlow}, 0 10px 25px -5px rgba(0, 0, 0, 0.15)`)
+                : (isArts ? `0 0 30px ${theme.accentGlow}, 0 10px 25px -5px rgba(0, 0, 0, 0.1)` : '0 25px 50px -12px rgba(0, 0, 0, 0.25)')
             }}
           >
-            {/* Claim shimmer effect */}
-            {justClaimed && (
-              <motion.div
-                className="absolute inset-0 pointer-events-none z-20"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: [0, 1, 0] }}
-                transition={{ duration: 0.6, ease: 'easeOut' }}
+            {/* Grid pattern for Technology */}
+            {isTech && (
+              <div
+                className="absolute inset-0 opacity-5 pointer-events-none"
                 style={{
-                  background: 'linear-gradient(135deg, transparent 0%, rgba(250, 204, 21, 0.4) 50%, transparent 100%)',
-                  boxShadow: 'inset 0 0 60px rgba(250, 204, 21, 0.5)'
+                  backgroundImage: `linear-gradient(${theme.accent} 1px, transparent 1px), linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)`,
+                  backgroundSize: '16px 16px'
                 }}
               />
             )}
+            {/* Corner accents for History */}
+            {isHistory && (
+              <>
+                <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 rounded-tl-xl pointer-events-none" style={{ borderColor: theme.accent }} />
+                <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 rounded-tr-xl pointer-events-none" style={{ borderColor: theme.accent }} />
+                <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 rounded-bl-xl pointer-events-none" style={{ borderColor: theme.accent }} />
+                <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 rounded-br-xl pointer-events-none" style={{ borderColor: theme.accent }} />
+              </>
+            )}
+            {/* Arts has no decorative elements - just the gradient and glow */}
             {/* Close button */}
             <button
               onClick={(e) => { e.stopPropagation(); onClose(); }}
-              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 active:bg-gray-300 transition-colors z-10"
+              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full transition-colors z-10"
+              style={{
+                background: isThemed ? theme.cardBgAlt : '#f3f4f6',
+                color: isThemed ? theme.textSecondary : '#6b7280'
+              }}
               aria-label="Close"
             >
-              <span className="text-gray-500 text-lg font-light">×</span>
+              <span className="text-lg font-light">×</span>
             </button>
 
             {/* Header */}
-            <div className="flex justify-between items-start mb-3 pr-8">
-              <h2 className="text-lg font-bold text-gray-800 leading-tight flex-1">{card.title}</h2>
-              <span className="text-xs text-gray-400 whitespace-nowrap">{index + 1}/{total}</span>
+            <div className="flex justify-between items-start mb-3 pr-8 relative z-10">
+              <h2 className="text-lg font-bold leading-tight flex-1" style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}>{card.title}</h2>
+              <span className="text-xs whitespace-nowrap" style={{ color: isThemed ? theme.textSecondary : '#9ca3af' }}>{index + 1}/{total}</span>
             </div>
 
             {/* Content area with loading state */}
-            <div className="flex-1 overflow-auto">
+            <div className="flex-1 overflow-auto relative z-10">
               {isLoading && !displayedContent ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="flex flex-col items-center gap-3">
-                    <div className="w-8 h-8 border-3 border-gray-200 border-t-yellow-500 rounded-full animate-spin" />
-                    <span className="text-base text-gray-400">Generating...</span>
+                    <div className="w-8 h-8 border-3 rounded-full animate-spin" style={{
+                      borderColor: isThemed ? theme.cardBgAlt : '#e5e7eb',
+                      borderTopColor: isThemed ? theme.accent : '#eab308'
+                    }} />
+                    <span className="text-base" style={{ color: isThemed ? theme.textSecondary : '#9ca3af' }}>Generating...</span>
                   </div>
                 </div>
               ) : error ? (
                 <p className="text-red-500 text-center text-base">{error}</p>
               ) : (
-                <div className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">
+                <div className="text-sm leading-relaxed whitespace-pre-line" style={{ color: isThemed ? theme.textPrimary : '#374151' }}>
                   {renderMarkdown(displayedContent)}
                 </div>
               )}
             </div>
 
+            {/* Card ID - bottom left corner */}
+            {card.cardId && (
+              <div
+                className="absolute bottom-3 left-4 text-xs font-mono z-10"
+                style={{ color: isThemed ? `${theme.textSecondary}80` : '#9ca3af' }}
+              >
+                {card.cardId}
+              </div>
+            )}
+
             {/* Action button - compact at bottom */}
-            <div className="mt-3 pt-3 border-t border-gray-100" onClick={e => e.stopPropagation()}>
+            <div className="mt-3 pt-3 relative z-10" style={{ borderTop: isThemed ? `1px solid ${theme.accent}20` : '1px solid #f3f4f6' }} onClick={e => e.stopPropagation()}>
               {!claimed ? (
                 <button
-                  onClick={handleClaimAndNext}
+                  onClick={handleClaim}
                   disabled={isLoading || !content}
-                  className={`w-full py-3 rounded-xl text-white font-bold text-base transition-all ${
-                    isLoading || !content
-                      ? 'bg-gray-300 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-yellow-500 to-amber-600 hover:opacity-90 active:scale-[0.98] shadow-lg'
-                  }`}
+                  className="w-full py-3 rounded-xl font-bold text-base transition-all active:scale-[0.98]"
+                  style={{
+                    background: isLoading || !content
+                      ? (isThemed ? theme.cardBgAlt : '#d1d5db')
+                      : (isThemed ? `linear-gradient(135deg, ${theme.accent}, ${theme.accent}cc)` : 'linear-gradient(135deg, #eab308, #d97706)'),
+                    color: isLoading || !content
+                      ? (isThemed ? theme.textSecondary : '#9ca3af')
+                      : (isThemed ? '#0f172a' : '#ffffff'),
+                    cursor: isLoading || !content ? 'not-allowed' : 'pointer',
+                    boxShadow: isLoading || !content ? 'none' : '0 4px 12px rgba(0,0,0,0.15)'
+                  }}
                 >
-                  {isLoading ? 'Loading...' : '✓ Got it!'}
+                  {isLoading ? 'Loading...' : 'Claim'}
                 </button>
               ) : (
                 <button
                   onClick={() => hasNext ? onNext() : onClose()}
-                  className="w-full py-3 rounded-xl font-bold text-base text-yellow-600 bg-yellow-50 border-2 border-yellow-200 hover:bg-yellow-100 active:scale-[0.98] transition-all"
+                  className="w-full py-3 rounded-xl font-semibold text-base active:scale-[0.98] transition-all"
+                  style={{
+                    background: '#ffffff',
+                    color: '#1f2937',
+                    border: '2px solid #d1d5db',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.08)'
+                  }}
                 >
-                  {hasNext ? 'Next Card →' : (index < 14 ? 'Continue →' : '✓ All Done!')}
+                  {hasNext ? 'Next Card →' : (index < 14 ? 'Continue →' : 'Done')}
                 </button>
               )}
-              {/* Hint text */}
-              <p className="text-center text-gray-400 text-xs mt-2">{hasPrev || hasNext ? 'Swipe to navigate' : 'Tap to flip'}</p>
+              {/* Hint text - hide after 5 swipes */}
+              <SwipeHint hasPrev={hasPrev} hasNext={hasNext} />
             </div>
           </div>
         </motion.div>
@@ -1142,7 +2347,7 @@ function DeckHeader({ stackDecks, onGoBack }) {
       {/* Current location */}
       <div className="flex-1 min-w-0">
         <h1 className="text-base font-semibold text-gray-800 truncate">
-          {currentDeck.emoji} {currentDeck.name}
+          {currentDeck.name}
         </h1>
       </div>
     </div>
@@ -1150,7 +2355,10 @@ function DeckHeader({ stackDecks, onGoBack }) {
 }
 
 // Skeleton deck placeholder while loading children
-function SkeletonDeck({ index }) {
+function SkeletonDeck({ index, rootCategoryId = null }) {
+  const theme = getCategoryTheme(rootCategoryId)
+  const isThemed = hasCustomTheme(rootCategoryId)
+
   return (
     <motion.div
       className="relative overflow-hidden"
@@ -1161,21 +2369,35 @@ function SkeletonDeck({ index }) {
     >
       {/* Stack layers */}
       <div
-        className="absolute w-28 h-36 rounded-xl bg-gray-200 border border-gray-300"
-        style={{ transform: 'translate(4px, 4px) rotate(2deg)' }}
+        className="absolute w-28 h-36 rounded-xl"
+        style={{
+          transform: 'translate(4px, 4px) rotate(2deg)',
+          background: isThemed ? theme.cardBgAlt : '#e5e7eb',
+          border: isThemed ? `1px solid ${theme.accent}30` : '1px solid #d1d5db'
+        }}
       />
       <div
-        className="absolute w-28 h-36 rounded-xl bg-gray-200 border border-gray-300"
-        style={{ transform: 'translate(2px, 2px) rotate(0.5deg)' }}
+        className="absolute w-28 h-36 rounded-xl"
+        style={{
+          transform: 'translate(2px, 2px) rotate(0.5deg)',
+          background: isThemed ? theme.cardBgAlt : '#e5e7eb',
+          border: isThemed ? `1px solid ${theme.accent}30` : '1px solid #d1d5db'
+        }}
       />
       {/* Top card */}
-      <div className="relative w-28 h-36 rounded-xl bg-gray-100 border-2 border-gray-200 overflow-hidden">
+      <div
+        className="relative w-28 h-36 rounded-xl border-2 overflow-hidden"
+        style={{
+          background: isThemed ? theme.cardBg : '#f3f4f6',
+          borderColor: isThemed ? `${theme.accent}30` : '#e5e7eb'
+        }}
+      >
         <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite]">
           <div className="h-full w-1/2 bg-gradient-to-r from-transparent via-white/40 to-transparent" />
         </div>
         <div className="flex flex-col items-center justify-center h-full gap-2">
-          <div className="w-8 h-8 bg-gray-200 rounded-full" />
-          <div className="w-14 h-2 bg-gray-200 rounded" />
+          <div className="w-8 h-8 rounded-full" style={{ background: isThemed ? `${theme.accent}20` : '#e5e7eb' }} />
+          <div className="w-14 h-2 rounded" style={{ background: isThemed ? `${theme.accent}20` : '#e5e7eb' }} />
         </div>
       </div>
     </motion.div>
@@ -1192,7 +2414,6 @@ function SectionHeader({ section, isExpanded, onToggle, deckCount }) {
       whileTap={{ scale: 0.99 }}
     >
       <div className="flex items-center gap-3">
-        <span className="text-2xl">{section.emoji}</span>
         <span className="font-semibold text-gray-800">{section.name}</span>
         <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{deckCount} topics</span>
       </div>
@@ -1208,7 +2429,7 @@ function SectionHeader({ section, isExpanded, onToggle, deckCount }) {
 }
 
 // Sectioned decks display for Level 1 categories
-function SectionedDecks({ sections, onOpenDeck, claimedCards, parentGradient, parentBorderColor }) {
+function SectionedDecks({ sections, onOpenDeck, claimedCards, parentGradient, parentBorderColor, rootCategoryId }) {
   const [expandedSections, setExpandedSections] = useState(() => {
     // Start with first section expanded
     return { 0: true }
@@ -1258,6 +2479,7 @@ function SectionedDecks({ sections, onOpenDeck, claimedCards, parentGradient, pa
                         }}
                         onOpen={onOpenDeck}
                         claimed={claimedCards.has(subDeck.id)}
+                        rootCategoryId={rootCategoryId}
                       />
                     </motion.div>
                   ))}
@@ -1294,13 +2516,15 @@ function DeckSpread({
   // Section-related props (for Level 1)
   sections,
   // Progress for card generation
-  generationProgress
+  generationProgress,
+  // Root category for theming
+  rootCategoryId
 }) {
   // Tier metadata
   const tiers = [
-    { key: 'core', name: 'Core Essentials', emoji: '📚' },
-    { key: 'deep_dive_1', name: 'Deep Dive 1', emoji: '🔍' },
-    { key: 'deep_dive_2', name: 'Deep Dive 2', emoji: '🎓' },
+    { key: 'core', name: 'Core Essentials' },
+    { key: 'deep_dive_1', name: 'Deep Dive 1' },
+    { key: 'deep_dive_2', name: 'Deep Dive 2' },
   ]
 
   // Check if we have tier data (new system) or legacy data
@@ -1315,16 +2539,15 @@ function DeckSpread({
     >
       {/* Deck title - only show for articles, categories show in card */}
       {isArticle && (
-        <span className="text-sm font-semibold text-gray-700">{deck.emoji} {deck.name}</span>
+        <span className="text-sm font-semibold text-gray-700">{deck.name}</span>
       )}
 
       {/* Category card - for non-article nodes (categories with children) */}
       {!isArticle && (
         <CategoryCard
           deck={deck}
-          claimed={claimedCards.has(deck.id)}
-          onClaim={onClaimCategory}
           tint={getCardTint(deck.gradient)}
+          rootCategoryId={rootCategoryId}
         />
       )}
 
@@ -1387,7 +2610,6 @@ function DeckSpread({
                 key={tier.key}
                 tier={tier.key}
                 tierName={tier.name}
-                tierEmoji={tier.emoji}
                 cards={cards}
                 claimedCards={claimedCards}
                 onReadCard={onReadCard}
@@ -1397,6 +2619,7 @@ function DeckSpread({
                 isUnlocking={unlockingTier === tier.key}
                 totalCards={allTierCards || 15}
                 tint={getCardTint(deck.gradient)}
+                rootCategoryId={rootCategoryId}
               />
             )
           })}
@@ -1422,6 +2645,7 @@ function DeckSpread({
                   onClaim={() => {}}
                   onRead={onReadCard}
                   tint={getCardTint(deck.gradient)}
+                  rootCategoryId={rootCategoryId}
                 />
               </motion.div>
             ))}
@@ -1435,7 +2659,7 @@ function DeckSpread({
           <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Loading sub-topics...</span>
           <div className="flex gap-2 flex-wrap justify-center max-w-4xl">
             {Array.from({ length: 6 }).map((_, index) => (
-              <SkeletonDeck key={`skeleton-deck-${index}`} index={index} />
+              <SkeletonDeck key={`skeleton-deck-${index}`} index={index} rootCategoryId={rootCategoryId} />
             ))}
           </div>
         </div>
@@ -1447,7 +2671,7 @@ function DeckSpread({
           <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Loading topics...</span>
           <div className="flex gap-2 flex-wrap justify-center max-w-4xl">
             {Array.from({ length: 4 }).map((_, index) => (
-              <SkeletonDeck key={`skeleton-section-${index}`} index={index} />
+              <SkeletonDeck key={`skeleton-section-${index}`} index={index} rootCategoryId={rootCategoryId} />
             ))}
           </div>
         </div>
@@ -1463,6 +2687,7 @@ function DeckSpread({
             claimedCards={claimedCards}
             parentGradient={deck.gradient}
             parentBorderColor={deck.borderColor}
+            rootCategoryId={rootCategoryId}
           />
         </div>
       )}
@@ -1483,6 +2708,7 @@ function DeckSpread({
                   deck={childDeck}
                   onOpen={onOpenDeck}
                   claimed={claimedCards.has(childDeck.id)}
+                  rootCategoryId={rootCategoryId}
                 />
               </motion.div>
             ))}
@@ -1804,7 +3030,6 @@ export default function Canvas() {
       const childDeckObjects = treeChildren.map(child => ({
         id: child.id,
         name: child.name,
-        emoji: child.emoji || '📖',
         gradient: deck.gradient,
         borderColor: deck.borderColor,
         level: deckLevel + 1,
@@ -1840,7 +3065,6 @@ export default function Canvas() {
         const childDeckObjects = cachedChildren.map(child => ({
           id: child.id,
           name: child.name,
-          emoji: child.emoji,
           gradient: deck.gradient,
           borderColor: deck.borderColor,
           level: deckLevel + 1,
@@ -1884,7 +3108,6 @@ export default function Canvas() {
         ? subDecks.map(child => ({
             id: child.id,
             name: child.name,
-            emoji: child.emoji,
             gradient: deck.gradient,
             borderColor: deck.borderColor,
             level: deckLevel + 1,
@@ -1914,20 +3137,23 @@ export default function Canvas() {
   const loadOrGenerateCardsForDeck = async (deck, parentPath) => {
     console.log(`[loadOrGenerateCardsForDeck] Called for deck.id="${deck.id}", deck.name="${deck.name}"`)
 
+    // Check if deck has hardcoded children property (categories like Health, Arts, etc.)
+    const hasHardcodedChildren = deck.children && deck.children.length > 0
+
     // Check if this deck has children in the vital articles tree
     const treeChildren = getTreeChildren(deck.id)
-    const hasChildren = treeChildren && treeChildren.length > 0
+    const hasTreeChildren = treeChildren && treeChildren.length > 0
 
     // Determine if this is an ARTICLE node (should have learning cards)
     // Article nodes are either:
     // 1. Wikipedia vital articles (have wikiTitle or source === 'vital-articles')
-    // 2. Leaf nodes (no children)
-    const isArticleNode = deck.source === 'vital-articles' || deck.wikiTitle || deck.isLeaf || !hasChildren
+    // 2. Leaf nodes (no children - neither hardcoded nor tree children)
+    const isArticleNode = deck.source === 'vital-articles' || deck.wikiTitle || deck.isLeaf || (!hasHardcodedChildren && !hasTreeChildren)
 
     // CATEGORY nodes (have children, not vital articles) should NOT generate cards
     // They only show the CategoryCard with stats
     if (!isArticleNode) {
-      console.log(`[loadOrGenerateCardsForDeck] 📁 CATEGORY NODE: "${deck.name}" has ${treeChildren?.length || 0} children - skipping card generation`)
+      console.log(`[loadOrGenerateCardsForDeck] 📁 CATEGORY NODE: "${deck.name}" has children - skipping card generation`)
       return
     }
 
@@ -2029,10 +3255,13 @@ export default function Canvas() {
         parentPath,
         // Callback fired for each card as it arrives
         (card, cardNumber) => {
-          streamedCards.push(card)
-
           // Save card immediately to localStorage (creates card entry + adds to cardsByTier)
-          saveStreamedCard(deck.id, deck.name, card, 'core')
+          // Returns the generated cardId
+          const cardId = saveStreamedCard(deck.id, deck.name, card, 'core')
+
+          // Add cardId to the card object
+          const cardWithId = { ...card, cardId }
+          streamedCards.push(cardWithId)
 
           // Update progress
           setGenerationProgress({ current: cardNumber, total: 5, phase: 'generating' })
@@ -2195,10 +3424,12 @@ export default function Canvas() {
         parentPath,
         // Streaming callback - called for each card as it completes
         (card, cardNumber) => {
-          streamedCards.push(card)
+          // Save card immediately to localStorage - returns the generated cardId
+          const cardId = saveStreamedCard(deck.id, deck.name, card, tier)
 
-          // Save card immediately to localStorage
-          saveStreamedCard(deck.id, deck.name, card, tier)
+          // Add cardId to the card object
+          const cardWithId = { ...card, cardId }
+          streamedCards.push(cardWithId)
 
           // Save content
           if (card.content) {
@@ -2471,73 +3702,11 @@ export default function Canvas() {
     ? stackDecks.slice(0, -1).map(d => d.name).join(' > ')
     : null
 
-  // Load section data for Level 1 categories
-  const loadSectionsForCategory = async (categoryId) => {
-    // Check if already loaded
-    if (sectionData[categoryId]) return
-
-    // Check if this category has section mappings
-    if (!hasLevel2Sections(categoryId)) return
-
-    setLoadingSections(categoryId)
-    try {
-      const sections = await fetchLevel2WithSections(categoryId)
-      if (sections) {
-        setSectionData(prev => ({
-          ...prev,
-          [categoryId]: sections
-        }))
-
-        // Get parent category for styling
-        const parentCategory = CATEGORIES.find(c => c.id === categoryId)
-
-        // Register all section decks as dynamic decks so getDeck() can find them
-        sections.sections.forEach(section => {
-          section.subDecks.forEach(subDeck => {
-            // Save each section deck to localStorage as a dynamic deck
-            const data = getData()
-            if (!data.dynamicDecks) data.dynamicDecks = {}
-
-            // Only add if not already exists
-            if (!data.dynamicDecks[subDeck.id]) {
-              data.dynamicDecks[subDeck.id] = {
-                id: subDeck.id,
-                name: subDeck.name,
-                emoji: subDeck.emoji,
-                gradient: parentCategory?.gradient || 'from-gray-500 to-gray-700',
-                borderColor: parentCategory?.borderColor || 'border-gray-300',
-                depth: 2,
-                parentPath: parentCategory?.name || categoryId,
-                children: null,
-                childrenGenerated: false,
-                wikiCategory: subDeck.wikiCategory, // Store for future Wikipedia lookups
-                source: 'wikipedia-section'
-              }
-              saveData(data)
-            }
-          })
-        })
-      }
-    } catch (error) {
-      console.error('Failed to load sections:', error)
-    } finally {
-      setLoadingSections(null)
-    }
-  }
-
   // Load or generate cards and children when entering any deck
   useEffect(() => {
     if (currentDeck) {
       loadOrGenerateCardsForDeck(currentDeck, parentPath)
       loadOrGenerateChildDecks(currentDeck, parentPath)
-
-      // Load sections for Level 1 categories - BUT only if tree doesn't have children
-      // The vital articles tree replaces the Wikipedia sections system
-      const deckLevel = currentDeck.level || getDeckLevel(currentDeck.id)
-      const treeChildren = getTreeChildren(currentDeck.id)
-      if (deckLevel === 1 && (!treeChildren || treeChildren.length === 0)) {
-        loadSectionsForCategory(currentDeck.id)
-      }
     }
   }, [currentDeck?.id])
 
@@ -2629,6 +3798,8 @@ export default function Canvas() {
     if (currentDeck.source === 'vital-articles' || currentDeck.wikiTitle) return true
     // Leaf nodes have cards
     if (currentDeck.isLeaf) return true
+    // Check if deck itself has children property (hardcoded categories)
+    if (currentDeck.children && currentDeck.children.length > 0) return false
     // Check if it has children in the tree
     const treeChildren = getTreeChildren(currentDeck.id)
     // If no children, it's an article
@@ -3006,6 +4177,7 @@ export default function Canvas() {
               unlockingTier={unlockingTier}
               sections={currentSections}
               generationProgress={generationProgress}
+              rootCategoryId={stackDecks[0]?.id}
             />
           </AnimatePresence>
         </div>
@@ -3031,6 +4203,7 @@ export default function Canvas() {
             startFlipped={expandedCardStartFlipped}
             slideDirection={expandedCardSlideDirection}
             tint={getCardTint(currentDeck?.gradient)}
+            rootCategoryId={stackDecks[0]?.id}
             onNext={() => {
               const nextCard = allCurrentCards[expandedCardIndex + 1]
               if (nextCard) {
