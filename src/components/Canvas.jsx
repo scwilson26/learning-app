@@ -1892,17 +1892,14 @@ function OverviewCard({ card, index, total, onClaim, claimed, onRead, tint = '#f
   const checkText = rootCategoryId === 'technology' ? 'text-slate-900' : (rootCategoryId === 'philosophy' ? 'text-indigo-900' : 'text-white')
 
   return (
-    <motion.div
+    <div
       className="relative w-28 h-36"
       style={{ perspective: '600px' }}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
     >
       <motion.div
         className="relative w-full h-full"
         style={{ transformStyle: 'preserve-3d' }}
-        initial={{ rotateY: 180 }}
+        initial={false}
         animate={{ rotateY: isRevealed ? 0 : 180 }}
         transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
       >
@@ -1954,7 +1951,7 @@ function OverviewCard({ card, index, total, onClaim, claimed, onRead, tint = '#f
           </span>
         </div>
       </motion.div>
-    </motion.div>
+    </div>
   )
 }
 
