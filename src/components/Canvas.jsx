@@ -2682,9 +2682,22 @@ function PreviewCardModal({
   onBack,
   rootCategoryId
 }) {
-  const [isFlipped, setIsFlipped] = useState(true) // Start flipped to show content
+  const [isFlipped, setIsFlipped] = useState(false) // Start on front, flip when content arrives
+  const [hasAutoFlipped, setHasAutoFlipped] = useState(false)
   const theme = getCategoryTheme(rootCategoryId)
   const isThemed = hasCustomTheme(rootCategoryId)
+
+  // Auto-flip when content arrives
+  useEffect(() => {
+    if (preview && !isLoading && !hasAutoFlipped) {
+      // Small delay so user sees the transition
+      const timer = setTimeout(() => {
+        setIsFlipped(true)
+        setHasAutoFlipped(true)
+      }, 300)
+      return () => clearTimeout(timer)
+    }
+  }, [preview, isLoading, hasAutoFlipped])
 
   const handleFlip = (e) => {
     // Don't flip if clicking buttons
