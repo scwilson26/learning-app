@@ -3010,8 +3010,10 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
             {renderExpandedCardDecorations(rootCategoryId, theme, true)}
             {/* Close button */}
             <button
-              onClick={(e) => { e.stopPropagation(); onClose(); }}
-              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full transition-colors z-10"
+              onClick={(e) => { e.stopPropagation(); e.preventDefault(); onClose(); }}
+              onPointerDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full transition-colors z-20"
               style={{
                 background: isThemed ? theme.cardBgAlt : '#f3f4f6',
                 color: isThemed ? theme.textSecondary : '#6b7280'
