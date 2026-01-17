@@ -31,7 +31,8 @@ import {
   savePreviewCard,
   getPreviewCard,
   claimPreviewCard,
-  hasPreviewCard
+  hasPreviewCard,
+  getClaimedCardsByCategory
 } from '../services/storage'
 
 // Configuration - card counts can be adjusted here or per-deck
@@ -585,6 +586,13 @@ const HOME_DECKS = [
     gradient: 'from-indigo-500 to-purple-600',
     bgColor: 'bg-indigo-50',
     borderColor: 'border-indigo-300',
+  },
+  {
+    id: 'collections',
+    name: 'Collections',
+    gradient: 'from-amber-500 to-orange-600',
+    bgColor: 'bg-amber-50',
+    borderColor: 'border-amber-300',
   }
 ]
 
@@ -5754,6 +5762,120 @@ export default function Canvas() {
             />
           )}
         </AnimatePresence>
+      </div>
+    )
+  }
+
+  // Collections screen - show categories with claimed cards
+  if (stack.length === 1 && stack[0] === 'collections') {
+    const cardsByCategory = getClaimedCardsByCategory()
+    const categoriesWithCards = CATEGORIES.filter(cat => cardsByCategory[cat.id]?.length > 0)
+
+    return (
+      <div className="w-screen min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 overflow-auto">
+        {/* Top navigation bar */}
+        <div className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200">
+          <div className="flex items-center justify-between px-3 py-2">
+            <button
+              onClick={() => setStack([])}
+              className="flex items-center gap-2 text-amber-600 hover:text-amber-800 transition-colors"
+            >
+              <span className="text-lg">‹</span>
+              <span className="text-sm font-medium">Home</span>
+            </button>
+            <span className="font-semibold text-gray-800">Collections</span>
+            <div className="bg-gray-100 rounded-full px-3 py-1">
+              <span className="text-gray-500 text-xs">Cards: </span>
+              <span className="text-gray-800 font-bold text-sm">{claimedCards.size}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="min-h-screen flex items-center justify-center p-8 pt-20">
+          {categoriesWithCards.length === 0 ? (
+            <div className="text-center text-gray-500">
+              <p className="text-lg mb-2">No cards collected yet</p>
+              <p className="text-sm">Explore topics and claim cards to see them here</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {categoriesWithCards.map((category) => (
+                <motion.div
+                  key={category.id}
+                  className={`relative w-32 h-40 rounded-xl cursor-pointer ${category.bgColor} ${category.borderColor} border-2 flex flex-col items-center justify-center p-3 overflow-hidden shadow-md`}
+                  onClick={() => setStack(['collections', category.id])}
+                  whileHover={{ y: -6, scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <span className="text-base font-bold text-center text-gray-800 mb-2">{category.name}</span>
+                  <span className="text-xs text-gray-600">{cardsByCategory[category.id]?.length || 0} cards</span>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Wander button */}
+        <WanderButton />
+        <WanderMessage />
+      </div>
+    )
+  }
+
+  // Collection category view - show all cards in a category
+  if (stack.length === 2 && stack[0] === 'collections') {
+    const categoryId = stack[1]
+    const category = CATEGORIES.find(c => c.id === categoryId)
+    const cardsByCategory = getClaimedCardsByCategory()
+    const categoryCards = cardsByCategory[categoryId] || []
+
+    return (
+      <div className="w-screen min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 overflow-auto">
+        {/* Top navigation bar */}
+        <div className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200">
+          <div className="flex items-center justify-between px-3 py-2">
+            <button
+              onClick={() => setStack(['collections'])}
+              className="flex items-center gap-2 text-amber-600 hover:text-amber-800 transition-colors"
+            >
+              <span className="text-lg">‹</span>
+              <span className="text-sm font-medium">Collections</span>
+            </button>
+            <span className="font-semibold text-gray-800">{category?.name || 'Category'}</span>
+            <div className="bg-gray-100 rounded-full px-3 py-1">
+              <span className="text-gray-500 text-xs">Cards: </span>
+              <span className="text-gray-800 font-bold text-sm">{categoryCards.length}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="min-h-screen p-4 pt-16">
+          {categoryCards.length === 0 ? (
+            <div className="flex items-center justify-center h-full text-center text-gray-500">
+              <p>No cards in this category yet</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {categoryCards.map((card) => (
+                <motion.div
+                  key={card.id}
+                  className="bg-white rounded-xl p-4 shadow-md cursor-pointer border border-gray-200"
+                  onClick={() => {
+                    setExpandedCard(card)
+                    setExpandedCardStartFlipped(true)
+                  }}
+                  whileHover={{ y: -4 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <h3 className="text-sm font-semibold text-gray-800 mb-2 line-clamp-2">{card.title}</h3>
+                  {card.cardId && (
+                    <p className="text-xs text-gray-400 font-mono">{card.cardId}</p>
+                  )}
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     )
   }

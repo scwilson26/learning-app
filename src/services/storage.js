@@ -949,6 +949,68 @@ export function getClaimedCardIds() {
 }
 
 /**
+ * Get all claimed cards grouped by root category
+ * @returns {Object} { categoryId: [card1, card2, ...], ... }
+ */
+export function getClaimedCardsByCategory() {
+  const data = getData()
+  const byCategory = {}
+
+  Object.values(data.cards).forEach(card => {
+    if (card.claimed && card.deckId) {
+      // Find the root category from the deckId or path
+      // The deckId often contains the category path
+      const rootCategory = findRootCategory(card.deckId)
+      if (rootCategory) {
+        if (!byCategory[rootCategory]) {
+          byCategory[rootCategory] = []
+        }
+        byCategory[rootCategory].push(card)
+      }
+    }
+  })
+
+  return byCategory
+}
+
+/**
+ * Find the root category for a deck ID
+ * @param {string} deckId - The deck ID
+ * @returns {string|null} The root category ID or null
+ */
+function findRootCategory(deckId) {
+  // Check if it's a direct category
+  const categories = ['arts', 'biology', 'health', 'everyday', 'geography', 'history', 'mathematics', 'people', 'philosophy', 'physics', 'society', 'technology']
+
+  if (categories.includes(deckId)) {
+    return deckId
+  }
+
+  // Try to find from the tree
+  const node = nodeIndex.get(deckId)
+  if (node) {
+    // Walk up to find the root category
+    let current = node
+    while (current) {
+      if (categories.includes(current.id)) {
+        return current.id
+      }
+      // Find parent by checking all nodes
+      let foundParent = null
+      for (const [id, n] of nodeIndex.entries()) {
+        if (n.children && n.children.some(c => c.id === current.id)) {
+          foundParent = n
+          break
+        }
+      }
+      current = foundParent
+    }
+  }
+
+  return null
+}
+
+/**
  * Claim a category node (creates it if needed, auto-claims on visit)
  * Category cards are different from article cards - they're just waypoints
  * @param {string} nodeId - The node ID to claim
