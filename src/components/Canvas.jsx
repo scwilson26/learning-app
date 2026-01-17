@@ -2551,8 +2551,20 @@ function TierSection({ tier, tierName, cards, claimedCards, onReadCard, completi
   )
 }
 
-// Tier completion celebration modal
-function TierCompleteCelebration({ tierName, nextTierName, onContinue, onUnlockNext, nextTierReady }) {
+// Tier completion celebration modal - "What's Next?" screen
+function TierCompleteCelebration({
+  tierName,
+  nextTierName,
+  onContinue,
+  onUnlockNext,
+  nextTierReady,
+  topicName,
+  siblingTopics,
+  onSelectTopic,
+  onWander,
+  onHome,
+  isFullyMastered
+}) {
   return (
     <motion.div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
@@ -2561,7 +2573,7 @@ function TierCompleteCelebration({ tierName, nextTierName, onContinue, onUnlockN
       exit={{ opacity: 0 }}
     >
       <motion.div
-        className="bg-white rounded-2xl p-8 max-w-md text-center shadow-2xl relative"
+        className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl relative max-h-[90vh] overflow-y-auto"
         initial={{ scale: 0.8, y: 50 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.8, y: 50 }}
@@ -2569,49 +2581,76 @@ function TierCompleteCelebration({ tierName, nextTierName, onContinue, onUnlockN
         {/* Close button */}
         <button
           onClick={onContinue}
-          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors z-10"
           aria-label="Close"
         >
           <span className="text-lg font-light text-gray-500">×</span>
         </button>
-        <span className="text-6xl block mb-4">🎉</span>
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">{tierName} Complete!</h2>
-        <p className="text-gray-600 mb-6">
-          You've mastered the essentials. You now understand this topic!
-        </p>
 
+        {/* Section 1: Celebration (subtle) */}
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1.5 rounded-full text-sm font-medium mb-3">
+            <span>✓</span>
+            <span>{tierName} Complete</span>
+          </div>
+          <p className="text-gray-600 text-sm">
+            {isFullyMastered
+              ? `You've fully mastered ${topicName}!`
+              : `You understand ${topicName}`
+            }
+          </p>
+        </div>
+
+        {/* Section 2: Go Deeper (primary action) - only if not fully mastered */}
         {nextTierName && (
-          <div className="bg-purple-50 rounded-xl p-4 mb-6">
-            <p className="text-sm text-purple-700 mb-3">
-              {nextTierReady ? (
-                <>
-                  <span className="font-semibold">🎉 Ready to continue!</span>
-                  <br />
-                  {nextTierName} has 5 more cards waiting for you.
-                </>
-              ) : (
-                <>
-                  <span className="font-semibold">🎁 Want to go deeper?</span>
-                  <br />
-                  Unlock {nextTierName} for 5 bonus cards!
-                </>
-              )}
-            </p>
+          <div className="mb-6">
             <button
               onClick={onUnlockNext}
-              className="w-full py-3 rounded-xl text-white font-bold bg-gradient-to-r from-purple-500 to-indigo-600 hover:opacity-90 active:scale-[0.98] transition-all"
+              className="w-full py-4 rounded-xl text-white font-bold bg-gradient-to-r from-purple-500 to-indigo-600 hover:opacity-90 active:scale-[0.98] transition-all shadow-lg"
             >
               {nextTierReady ? `Continue to ${nextTierName} →` : `Unlock ${nextTierName}`}
             </button>
+            <p className="text-center text-xs text-gray-500 mt-2">
+              {nextTierReady ? '5 more cards ready' : '5 bonus cards await'}
+            </p>
           </div>
         )}
 
-        <button
-          onClick={onContinue}
-          className="text-gray-500 hover:text-gray-700 text-sm underline"
-        >
-          {nextTierName ? 'Maybe later' : 'Continue exploring'}
-        </button>
+        {/* Section 3: Related Topics (rabbit hole) */}
+        {siblingTopics && siblingTopics.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">Related Topics</h3>
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              {siblingTopics.slice(0, 3).map((topic) => (
+                <button
+                  key={topic.id}
+                  onClick={() => onSelectTopic(topic)}
+                  className="flex-shrink-0 px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-200 transition-colors text-left min-w-[140px]"
+                >
+                  <span className="text-sm font-medium text-gray-800 line-clamp-2">{topic.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Section 4: Other paths (subtle, bottom) */}
+        <div className="flex gap-3 pt-4 border-t border-gray-100">
+          <button
+            onClick={onWander}
+            className="flex-1 py-2.5 rounded-lg text-sm font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 transition-colors flex items-center justify-center gap-2"
+          >
+            <span>🌀</span>
+            <span>Wander</span>
+          </button>
+          <button
+            onClick={onHome}
+            className="flex-1 py-2.5 rounded-lg text-sm font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors flex items-center justify-center gap-2"
+          >
+            <span>🏠</span>
+            <span>Home</span>
+          </button>
+        </div>
       </motion.div>
     </motion.div>
   )
@@ -4817,6 +4856,17 @@ export default function Canvas() {
     }
   }, [claimedCards, currentDeck?.id, tierCards])
 
+  // Load parent's children when celebration shows (for related topics)
+  useEffect(() => {
+    if (showCelebration && stackDecks.length > 1) {
+      const parentDeck = stackDecks[stackDecks.length - 2]
+      if (parentDeck && dynamicChildren[parentDeck.id] === undefined) {
+        console.log('[CELEBRATION] Loading parent children for related topics:', parentDeck.name)
+        loadOrGenerateChildDecks(parentDeck, stackDecks.slice(0, -2).map(d => d.name).join(' > ') || null)
+      }
+    }
+  }, [showCelebration, stackDecks])
+
   // Find the expanded card data (check both tier cards and legacy cards)
   const allCurrentCards = currentTierCards.core.length > 0
     ? [...currentTierCards.core, ...currentTierCards.deep_dive_1, ...currentTierCards.deep_dive_2]
@@ -5099,11 +5149,39 @@ export default function Canvas() {
               const nextTierCards = tierCards[currentDeck?.id]?.[nextTier] || []
               return nextTierCards.length === 5
             })()}
+            topicName={currentDeck?.name || 'this topic'}
+            isFullyMastered={showCelebration.tier === 'deep_dive_2'}
+            siblingTopics={(() => {
+              // Get sibling topics (other children of parent deck)
+              const parentDeck = stackDecks.length > 1 ? stackDecks[stackDecks.length - 2] : null
+              console.log('[CELEBRATION] Parent deck:', parentDeck?.name, 'Stack length:', stackDecks.length)
+              if (!parentDeck) return []
+              const parentChildren = dynamicChildren[parentDeck.id] || []
+              console.log('[CELEBRATION] Parent children:', parentChildren.length, parentChildren.map(c => c.name))
+              // Filter out current deck and return siblings
+              const siblings = parentChildren.filter(child => child.id !== currentDeck?.id)
+              console.log('[CELEBRATION] Siblings:', siblings.length, siblings.map(c => c.name))
+              return siblings
+            })()}
+            onSelectTopic={(topic) => {
+              setShowCelebration(null)
+              // Navigate to the sibling topic
+              const newStack = [...stack.slice(0, -1), topic.id]
+              setStack(newStack)
+            }}
             onContinue={() => setShowCelebration(null)}
             onUnlockNext={() => {
               const nextTier = showCelebration.tier === 'core' ? 'deep_dive_1' : 'deep_dive_2'
               handleUnlockTier(nextTier)
               setShowCelebration(null)
+            }}
+            onWander={() => {
+              setShowCelebration(null)
+              handleWander()
+            }}
+            onHome={() => {
+              setShowCelebration(null)
+              setStack([])
             }}
           />
         )}
