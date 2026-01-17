@@ -3272,7 +3272,7 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
                     boxShadow: '0 4px 12px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.08)'
                   }}
                 >
-                  {hasNext ? 'Next Card →' : (index < 14 ? 'Continue →' : 'Done')}
+                  {hasNext ? 'Next Card →' : 'Done'}
                 </button>
               )}
               {/* Hint text - hide after 5 swipes */}
