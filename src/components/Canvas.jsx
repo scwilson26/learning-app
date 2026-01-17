@@ -3008,7 +3008,6 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
               <span className="text-lg font-light">×</span>
             </button>
 
-            <span className="text-sm mb-3 relative z-10" style={{ color: isThemed ? theme.textSecondary : '#9ca3af' }}>{index + 1} of {total}</span>
             <h2 className="text-xl font-bold text-center mb-4 leading-tight px-2 relative z-10" style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}>{card.title}</h2>
             <span className="text-sm relative z-10" style={{ color: isThemed ? theme.textSecondary : '#9ca3af' }}>Tap to read</span>
           </div>
@@ -3043,7 +3042,6 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
             {/* Header */}
             <div className="flex justify-between items-start mb-3 pr-8 relative z-10">
               <h2 className="text-lg font-bold leading-tight flex-1" style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}>{card.title}</h2>
-              <span className="text-xs whitespace-nowrap" style={{ color: isThemed ? theme.textSecondary : '#9ca3af' }}>{index + 1}/{total}</span>
             </div>
 
             {/* Claimed badge - prominent indicator */}
@@ -4991,17 +4989,16 @@ export default function Canvas() {
             hasNext={(() => {
               const coreCards = currentTierCards.core
               const dd1Cards = currentTierCards.deep_dive_1
+              const completion = currentDeck ? getDeckTierCompletion(currentDeck.id) : null
 
-              // At last Core card - can loop back if there are unclaimed Core cards
+              // At last Core card - can loop back to card 1 if Core tier not complete
               if (expandedCardIndex === coreCards.length - 1) {
-                const hasUnclaimedCore = coreCards.some(card => !claimedCards[card.id])
-                if (hasUnclaimedCore) return true
+                if (!completion?.core?.complete) return true // Loop back
               }
 
-              // At last Deep Dive 1 card - can loop back if there are unclaimed DD1 cards
+              // At last Deep Dive 1 card - can loop back to card 6 if DD1 tier not complete
               if (expandedCardIndex === coreCards.length + dd1Cards.length - 1) {
-                const hasUnclaimedDD1 = dd1Cards.some(card => !claimedCards[card.id])
-                if (hasUnclaimedDD1) return true
+                if (!completion?.deep_dive_1?.complete) return true // Loop back
               }
 
               // Default: check if there's a next card in the list
@@ -5015,27 +5012,26 @@ export default function Canvas() {
             onNext={() => {
               const coreCards = currentTierCards.core
               const dd1Cards = currentTierCards.deep_dive_1
+              const completion = currentDeck ? getDeckTierCompletion(currentDeck.id) : null
 
-              // Check if we're at the last card of Core tier (index 4)
-              if (expandedCardIndex === coreCards.length - 1) {
-                // Find first unclaimed Core card
-                const firstUnclaimedCore = coreCards.find(card => !claimedCards[card.id])
-                if (firstUnclaimedCore) {
+              // At last Core card - loop back to card 1 if Core tier not complete
+              if (expandedCardIndex === coreCards.length - 1 && !completion?.core?.complete) {
+                const firstCoreCard = coreCards[0]
+                if (firstCoreCard) {
                   setExpandedCardSlideDirection(1)
                   setExpandedCardStartFlipped(true)
-                  setExpandedCard(firstUnclaimedCore.id)
+                  setExpandedCard(firstCoreCard.id)
                   return
                 }
               }
 
-              // Check if we're at the last card of Deep Dive 1 tier (index 9)
-              if (expandedCardIndex === coreCards.length + dd1Cards.length - 1) {
-                // Find first unclaimed Deep Dive 1 card
-                const firstUnclaimedDD1 = dd1Cards.find(card => !claimedCards[card.id])
-                if (firstUnclaimedDD1) {
+              // At last Deep Dive 1 card - loop back to card 6 if DD1 tier not complete
+              if (expandedCardIndex === coreCards.length + dd1Cards.length - 1 && !completion?.deep_dive_1?.complete) {
+                const firstDD1Card = dd1Cards[0]
+                if (firstDD1Card) {
                   setExpandedCardSlideDirection(1)
                   setExpandedCardStartFlipped(true)
-                  setExpandedCard(firstUnclaimedDD1.id)
+                  setExpandedCard(firstDD1Card.id)
                   return
                 }
               }
