@@ -244,6 +244,7 @@ const SUBCATEGORY_CODES = {
 
 // Tier number mapping
 const TIER_NUMBERS = {
+  'preview': '0',
   'core': '1',
   'deep_dive_1': '2',
   'deep_dive_2': '3',
@@ -1010,9 +1011,13 @@ export function savePreviewCard(deckId, title, preview) {
   const data = getData()
   const previewId = `${deckId}-preview`
 
+  // Generate cardId for preview (tier 0)
+  const cardId = generateCardId(deckId, 'preview')
+
   data.cards[previewId] = {
     id: previewId,
     deckId: deckId,
+    cardId: cardId,
     title: title,
     content: preview,
     type: 'preview',
@@ -1022,7 +1027,7 @@ export function savePreviewCard(deckId, title, preview) {
   }
 
   saveData(data)
-  console.log(`[savePreviewCard] Saved preview for ${title}`)
+  console.log(`[savePreviewCard] Saved preview for ${title} (${cardId})`)
   return previewId
 }
 

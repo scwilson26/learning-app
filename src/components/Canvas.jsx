@@ -2676,6 +2676,7 @@ function PreviewCardModal({
   preview,
   isLoading,
   claimed,
+  cardId,
   onClaim,
   onDealMeIn,
   onWander,
@@ -2832,6 +2833,16 @@ function PreviewCardModal({
               </div>
             </div>
 
+            {/* Card ID - bottom left corner */}
+            {cardId && (
+              <div
+                className="absolute bottom-3 left-4 text-xs font-mono z-10"
+                style={{ color: isThemed ? `${theme.textSecondary}80` : '#9ca3af' }}
+              >
+                {cardId}
+              </div>
+            )}
+
             {/* Action buttons - hide if already on this page and claimed */}
             {!(isCurrentPage && claimed) && (
               <div className="mt-3 pt-3 relative z-10 space-y-2" style={{ borderTop: isThemed ? `1px solid ${theme.accent}20` : '1px solid #f3f4f6' }} onClick={e => e.stopPropagation()}>
@@ -2911,7 +2922,7 @@ function WanderCard({
   currentStep,
   isComplete,
   // Preview props (only used when isComplete and preview is ready)
-  previewData,  // { title, preview, isLoading, claimed }
+  previewData,  // { title, preview, isLoading, claimed, cardId }
   onClaim,
   onExplore,
   onWander,
@@ -3158,6 +3169,16 @@ function WanderCard({
               <div className="flex-1 overflow-auto text-sm leading-relaxed whitespace-pre-line relative z-10" style={{ color: isThemed ? theme.textPrimary : '#374151' }}>
                 {previewData.preview}
               </div>
+
+              {/* Card ID - bottom left corner */}
+              {previewData.cardId && (
+                <div
+                  className="absolute bottom-3 left-4 text-xs font-mono z-10"
+                  style={{ color: isThemed ? `${theme.textSecondary}80` : '#9ca3af' }}
+                >
+                  {previewData.cardId}
+                </div>
+              )}
 
               {/* Action buttons */}
               <div className="mt-3 pt-3 space-y-2 relative z-10" style={{ borderTop: isThemed ? `1px solid ${theme.accent}20` : '1px solid #f3f4f6' }} onClick={e => e.stopPropagation()}>
@@ -4930,6 +4951,7 @@ export default function Canvas() {
           deckId: deck.id,
           title: deck.name || deck.title,
           preview: existingPreview.content,
+          cardId: existingPreview.cardId,
           isLoading: false,
           claimed: existingPreview.claimed
         })
@@ -4939,6 +4961,7 @@ export default function Canvas() {
           deckId: deck.id,
           title: deck.name || deck.title,
           preview: null,
+          cardId: null,
           isLoading: true,
           claimed: false
         })
@@ -4954,10 +4977,14 @@ export default function Canvas() {
           // Save to storage
           savePreviewCard(deck.id, deck.name || deck.title, preview)
 
+          // Get the saved card to get the cardId
+          const savedPreview = getPreviewCard(deck.id)
+
           // Update state
           setShowPreviewCard(prev => prev?.deckId === deck.id ? {
             ...prev,
             preview,
+            cardId: savedPreview?.cardId || null,
             isLoading: false
           } : prev)
         } catch (error) {
@@ -5118,6 +5145,7 @@ export default function Canvas() {
             deckId: generated.id,
             title: generated.name,
             preview: existingPreview.content,
+            cardId: existingPreview.cardId,
             isLoading: false,
             claimed: existingPreview.claimed,
             navigatePath: generated.path  // Store path for later navigation
@@ -5128,6 +5156,7 @@ export default function Canvas() {
             deckId: generated.id,
             title: generated.name,
             preview: null,
+            cardId: null,
             isLoading: true,
             claimed: false,
             navigatePath: generated.path  // Store path for later navigation
@@ -5136,9 +5165,11 @@ export default function Canvas() {
           try {
             const { preview } = await generateTopicPreview(generated.name, generated.parentPath)
             savePreviewCard(generated.id, generated.name, preview)
+            const savedPreview = getPreviewCard(generated.id)
             setShowPreviewCard(prev => prev?.deckId === generated.id ? {
               ...prev,
               preview,
+              cardId: savedPreview?.cardId || null,
               isLoading: false
             } : prev)
           } catch (error) {
@@ -5584,7 +5615,8 @@ export default function Canvas() {
                 title: showPreviewCard.title,
                 preview: showPreviewCard.preview,
                 isLoading: showPreviewCard.isLoading,
-                claimed: showPreviewCard.claimed
+                claimed: showPreviewCard.claimed,
+                cardId: showPreviewCard.cardId
               } : null}
               onClaim={() => {
                 claimPreviewCard(showPreviewCard.deckId)
@@ -5671,11 +5703,11 @@ export default function Canvas() {
                 const preview = currentDeck ? getPreviewCard(currentDeck.id) : null
                 if (preview) {
                   // Open the preview as an expanded card-like view
-                  // For now, just show an alert or we can create a proper modal
                   setShowPreviewCard({
                     deckId: currentDeck.id,
                     title: currentDeck.name,
                     preview: preview.content,
+                    cardId: preview.cardId,
                     isLoading: false,
                     claimed: preview.claimed
                   })
@@ -5860,6 +5892,7 @@ export default function Canvas() {
             preview={showPreviewCard.preview}
             isLoading={showPreviewCard.isLoading}
             claimed={showPreviewCard.claimed}
+            cardId={showPreviewCard.cardId}
             rootCategoryId={stackDecks[0]?.id}
             isCurrentPage={showPreviewCard.deckId === stackDecks[stackDecks.length - 1]?.id}
             onClaim={() => {
@@ -5899,7 +5932,8 @@ export default function Canvas() {
               title: showPreviewCard.title,
               preview: showPreviewCard.preview,
               isLoading: showPreviewCard.isLoading,
-              claimed: showPreviewCard.claimed
+              claimed: showPreviewCard.claimed,
+              cardId: showPreviewCard.cardId
             } : null}
             onClaim={() => {
               claimPreviewCard(showPreviewCard.deckId)
