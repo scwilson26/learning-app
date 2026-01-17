@@ -2680,7 +2680,8 @@ function PreviewCardModal({
   onDealMeIn,
   onWander,
   onBack,
-  rootCategoryId
+  rootCategoryId,
+  isCurrentPage = false // True if we're already on this topic's page
 }) {
   const [isFlipped, setIsFlipped] = useState(false) // Start on front, flip when content arrives
   const [hasAutoFlipped, setHasAutoFlipped] = useState(false)
@@ -2831,70 +2832,72 @@ function PreviewCardModal({
               </div>
             </div>
 
-            {/* Action buttons - styled like ExpandedCard */}
-            <div className="mt-3 pt-3 relative z-10 space-y-2" style={{ borderTop: isThemed ? `1px solid ${theme.accent}20` : '1px solid #f3f4f6' }} onClick={e => e.stopPropagation()}>
-              {/* Claim and Explore buttons side by side */}
-              <div className="flex gap-2">
-                <button
-                  onClick={onClaim}
-                  disabled={claimed}
-                  className="flex-1 py-3 rounded-xl font-bold text-base transition-all active:scale-[0.98] disabled:opacity-50"
-                  style={{
-                    background: claimed
-                      ? (isThemed ? theme.cardBgAlt : '#e5e7eb')
-                      : (isThemed ? `linear-gradient(135deg, ${theme.accent}, ${theme.accent}cc)` : 'linear-gradient(135deg, #eab308, #d97706)'),
-                    color: claimed
-                      ? (isThemed ? theme.textSecondary : '#9ca3af')
-                      : (isThemed ? '#0f172a' : '#ffffff'),
-                    boxShadow: claimed ? 'none' : '0 4px 12px rgba(0,0,0,0.15)'
-                  }}
-                >
-                  {claimed ? 'Claimed' : 'Claim'}
-                </button>
-                <button
-                  onClick={() => {
-                    if (!claimed) onClaim()
-                    onDealMeIn()
-                  }}
-                  className="flex-1 py-3 rounded-xl font-bold text-base transition-all active:scale-[0.98]"
-                  style={{
-                    background: isThemed ? `linear-gradient(135deg, ${theme.accent}, ${theme.accent}cc)` : 'linear-gradient(135deg, #eab308, #d97706)',
-                    color: isThemed ? '#0f172a' : '#ffffff',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-                  }}
-                >
-                  Explore →
-                </button>
-              </div>
+            {/* Action buttons - hide if already on this page and claimed */}
+            {!(isCurrentPage && claimed) && (
+              <div className="mt-3 pt-3 relative z-10 space-y-2" style={{ borderTop: isThemed ? `1px solid ${theme.accent}20` : '1px solid #f3f4f6' }} onClick={e => e.stopPropagation()}>
+                {/* Claim and Explore buttons side by side */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={onClaim}
+                    disabled={claimed}
+                    className="flex-1 py-3 rounded-xl font-bold text-base transition-all active:scale-[0.98] disabled:opacity-50"
+                    style={{
+                      background: claimed
+                        ? (isThemed ? theme.cardBgAlt : '#e5e7eb')
+                        : (isThemed ? `linear-gradient(135deg, ${theme.accent}, ${theme.accent}cc)` : 'linear-gradient(135deg, #eab308, #d97706)'),
+                      color: claimed
+                        ? (isThemed ? theme.textSecondary : '#9ca3af')
+                        : (isThemed ? '#0f172a' : '#ffffff'),
+                      boxShadow: claimed ? 'none' : '0 4px 12px rgba(0,0,0,0.15)'
+                    }}
+                  >
+                    {claimed ? 'Claimed' : 'Claim'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (!claimed) onClaim()
+                      onDealMeIn()
+                    }}
+                    className="flex-1 py-3 rounded-xl font-bold text-base transition-all active:scale-[0.98]"
+                    style={{
+                      background: isThemed ? `linear-gradient(135deg, ${theme.accent}, ${theme.accent}cc)` : 'linear-gradient(135deg, #eab308, #d97706)',
+                      color: isThemed ? '#0f172a' : '#ffffff',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                    }}
+                  >
+                    Explore →
+                  </button>
+                </div>
 
-              {/* Secondary options */}
-              <div className="flex gap-2">
-                <button
-                  onClick={onWander}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 hover:scale-[1.02] active:scale-[0.98]"
-                  style={{
-                    background: 'linear-gradient(to right, #a855f7, #4f46e5)',
-                    color: '#ffffff',
-                    boxShadow: '0 4px 12px rgba(168, 85, 247, 0.3)'
-                  }}
-                >
-                  <span>🎲</span>
-                  <span>Wander</span>
-                </button>
-                <button
-                  onClick={onBack}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-1.5"
-                  style={{
-                    background: '#ffffff',
-                    color: '#6b7280',
-                    border: '2px solid #e5e7eb'
-                  }}
-                >
-                  <span>←</span>
-                  <span>Back</span>
-                </button>
+                {/* Secondary options */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={onWander}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 hover:scale-[1.02] active:scale-[0.98]"
+                    style={{
+                      background: 'linear-gradient(to right, #a855f7, #4f46e5)',
+                      color: '#ffffff',
+                      boxShadow: '0 4px 12px rgba(168, 85, 247, 0.3)'
+                    }}
+                  >
+                    <span>🎲</span>
+                    <span>Wander</span>
+                  </button>
+                  <button
+                    onClick={onBack}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-1.5"
+                    style={{
+                      background: '#ffffff',
+                      color: '#6b7280',
+                      border: '2px solid #e5e7eb'
+                    }}
+                  >
+                    <span>←</span>
+                    <span>Back</span>
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </motion.div>
       </motion.div>
@@ -5858,6 +5861,7 @@ export default function Canvas() {
             isLoading={showPreviewCard.isLoading}
             claimed={showPreviewCard.claimed}
             rootCategoryId={stackDecks[0]?.id}
+            isCurrentPage={showPreviewCard.deckId === stackDecks[stackDecks.length - 1]?.id}
             onClaim={() => {
               // Claim the preview card
               claimPreviewCard(showPreviewCard.deckId)
