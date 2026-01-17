@@ -2561,11 +2561,19 @@ function TierCompleteCelebration({ tierName, nextTierName, onContinue, onUnlockN
       exit={{ opacity: 0 }}
     >
       <motion.div
-        className="bg-white rounded-2xl p-8 max-w-md text-center shadow-2xl"
+        className="bg-white rounded-2xl p-8 max-w-md text-center shadow-2xl relative"
         initial={{ scale: 0.8, y: 50 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.8, y: 50 }}
       >
+        {/* Close button */}
+        <button
+          onClick={onContinue}
+          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+          aria-label="Close"
+        >
+          <span className="text-lg font-light text-gray-500">×</span>
+        </button>
         <span className="text-6xl block mb-4">🎉</span>
         <h2 className="text-2xl font-bold text-gray-800 mb-2">{tierName} Complete!</h2>
         <p className="text-gray-600 mb-6">
@@ -4739,6 +4747,7 @@ export default function Canvas() {
 
     // Check if core just completed
     if (completion.core.complete && lastCompleted !== 'core' && lastCompleted !== 'deep_dive_1' && lastCompleted !== 'deep_dive_2') {
+      setExpandedCard(null) // Close expanded card so only celebration shows
       setShowCelebration({
         tierName: 'Core Essentials',
         nextTierName: 'Deep Dive 1',
@@ -4769,6 +4778,7 @@ export default function Canvas() {
     }
     // Check if deep_dive_1 just completed
     else if (completion.deep_dive_1.complete && lastCompleted === 'core') {
+      setExpandedCard(null) // Close expanded card so only celebration shows
       setShowCelebration({
         tierName: 'Deep Dive 1',
         nextTierName: 'Deep Dive 2',
@@ -4799,6 +4809,7 @@ export default function Canvas() {
     }
     // Check if deep_dive_2 just completed
     else if (completion.deep_dive_2.complete && lastCompleted === 'deep_dive_1') {
+      setExpandedCard(null) // Close expanded card so only celebration shows
       setShowCelebration({
         tierName: 'Deep Dive 2',
         nextTierName: null,
@@ -4977,13 +4988,59 @@ export default function Canvas() {
             deckName={currentDeck?.name || ''}
             onContentGenerated={handleContentGenerated}
             allCards={allCurrentCards}
-            hasNext={expandedCardIndex < allCurrentCards.length - 1}
+            hasNext={(() => {
+              const coreCards = currentTierCards.core
+              const dd1Cards = currentTierCards.deep_dive_1
+
+              // At last Core card - can loop back if there are unclaimed Core cards
+              if (expandedCardIndex === coreCards.length - 1) {
+                const hasUnclaimedCore = coreCards.some(card => !claimedCards[card.id])
+                if (hasUnclaimedCore) return true
+              }
+
+              // At last Deep Dive 1 card - can loop back if there are unclaimed DD1 cards
+              if (expandedCardIndex === coreCards.length + dd1Cards.length - 1) {
+                const hasUnclaimedDD1 = dd1Cards.some(card => !claimedCards[card.id])
+                if (hasUnclaimedDD1) return true
+              }
+
+              // Default: check if there's a next card in the list
+              return expandedCardIndex < allCurrentCards.length - 1
+            })()}
             hasPrev={expandedCardIndex > 0}
             startFlipped={expandedCardStartFlipped}
             slideDirection={expandedCardSlideDirection}
             tint={getCardTint(currentDeck?.gradient)}
             rootCategoryId={stackDecks[0]?.id}
             onNext={() => {
+              const coreCards = currentTierCards.core
+              const dd1Cards = currentTierCards.deep_dive_1
+
+              // Check if we're at the last card of Core tier (index 4)
+              if (expandedCardIndex === coreCards.length - 1) {
+                // Find first unclaimed Core card
+                const firstUnclaimedCore = coreCards.find(card => !claimedCards[card.id])
+                if (firstUnclaimedCore) {
+                  setExpandedCardSlideDirection(1)
+                  setExpandedCardStartFlipped(true)
+                  setExpandedCard(firstUnclaimedCore.id)
+                  return
+                }
+              }
+
+              // Check if we're at the last card of Deep Dive 1 tier (index 9)
+              if (expandedCardIndex === coreCards.length + dd1Cards.length - 1) {
+                // Find first unclaimed Deep Dive 1 card
+                const firstUnclaimedDD1 = dd1Cards.find(card => !claimedCards[card.id])
+                if (firstUnclaimedDD1) {
+                  setExpandedCardSlideDirection(1)
+                  setExpandedCardStartFlipped(true)
+                  setExpandedCard(firstUnclaimedDD1.id)
+                  return
+                }
+              }
+
+              // Default: go to next card
               const nextCard = allCurrentCards[expandedCardIndex + 1]
               if (nextCard) {
                 setExpandedCardSlideDirection(1) // Next card slides in from right
