@@ -138,8 +138,8 @@ const CATEGORY_THEMES = {
     // Contemplative, cosmic, transcendent, nighttime
     cardBg: '#1e1b4b',           // Deep indigo
     cardBgAlt: '#312e81',        // Slightly lighter indigo
-    textPrimary: '#e0e7ff',      // Light text
-    textSecondary: '#a5b4fc',    // Muted light
+    textPrimary: '#ffffff',      // White for high contrast
+    textSecondary: '#c7d2fe',    // Lighter lavender for secondary
     accent: '#818cf8',           // Soft purple glow
     accentGlow: 'rgba(129, 140, 248, 0.4)',
     pattern: 'celestial',
