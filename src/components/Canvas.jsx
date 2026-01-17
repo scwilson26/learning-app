@@ -2812,20 +2812,6 @@ function PreviewCardModal({
               <h2 className="text-lg font-bold leading-tight flex-1" style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}>{topic}</h2>
             </div>
 
-            {/* Claimed badge - prominent indicator */}
-            {claimed && (
-              <div
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full mb-3 self-start relative z-10"
-                style={{
-                  background: isThemed ? theme.accent : '#10b981',
-                  boxShadow: `0 2px 8px ${isThemed ? theme.accentGlow : 'rgba(16, 185, 129, 0.4)'}`
-                }}
-              >
-                <span className={`text-sm font-bold ${rootCategoryId === 'technology' ? 'text-slate-900' : (rootCategoryId === 'philosophy' ? 'text-indigo-900' : 'text-white')}`}>✓</span>
-                <span className={`text-xs font-semibold ${rootCategoryId === 'technology' ? 'text-slate-900' : (rootCategoryId === 'philosophy' ? 'text-indigo-900' : 'text-white')}`}>Claimed</span>
-              </div>
-            )}
-
             {/* Content area */}
             <div className="flex-1 overflow-auto relative z-10">
               <div className="text-sm leading-relaxed whitespace-pre-line" style={{ color: isThemed ? theme.textPrimary : '#374151' }}>
@@ -2840,6 +2826,20 @@ function PreviewCardModal({
                 style={{ color: isThemed ? `${theme.textSecondary}80` : '#9ca3af' }}
               >
                 {cardId}
+              </div>
+            )}
+
+            {/* Claimed badge - bottom right corner */}
+            {claimed && (
+              <div
+                className="absolute bottom-3 right-4 flex items-center gap-1 px-2 py-1 rounded-full z-10"
+                style={{
+                  background: isThemed ? theme.accent : '#10b981',
+                  boxShadow: `0 1px 4px ${isThemed ? theme.accentGlow : 'rgba(16, 185, 129, 0.3)'}`
+                }}
+              >
+                <span className={`text-xs font-bold ${rootCategoryId === 'technology' ? 'text-slate-900' : (rootCategoryId === 'philosophy' ? 'text-indigo-900' : 'text-white')}`}>✓</span>
+                <span className={`text-[10px] font-semibold ${rootCategoryId === 'technology' ? 'text-slate-900' : (rootCategoryId === 'philosophy' ? 'text-indigo-900' : 'text-white')}`}>Claimed</span>
               </div>
             )}
 
@@ -3151,20 +3151,6 @@ function WanderCard({
                 <h2 className="text-lg font-bold leading-tight flex-1" style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}>{previewData.title}</h2>
               </div>
 
-              {/* Claimed badge */}
-              {previewData.claimed && (
-                <div
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full mb-3 self-start relative z-10"
-                  style={{
-                    background: isThemed ? theme.accent : '#10b981',
-                    boxShadow: `0 2px 8px ${isThemed ? theme.accentGlow : 'rgba(16, 185, 129, 0.4)'}`
-                  }}
-                >
-                  <span className={`text-sm font-bold ${rootCategoryId === 'technology' ? 'text-slate-900' : (rootCategoryId === 'philosophy' ? 'text-indigo-900' : 'text-white')}`}>✓</span>
-                  <span className={`text-xs font-semibold ${rootCategoryId === 'technology' ? 'text-slate-900' : (rootCategoryId === 'philosophy' ? 'text-indigo-900' : 'text-white')}`}>Claimed</span>
-                </div>
-              )}
-
               {/* Content */}
               <div className="flex-1 overflow-auto text-sm leading-relaxed whitespace-pre-line relative z-10" style={{ color: isThemed ? theme.textPrimary : '#374151' }}>
                 {previewData.preview}
@@ -3177,6 +3163,20 @@ function WanderCard({
                   style={{ color: isThemed ? `${theme.textSecondary}80` : '#9ca3af' }}
                 >
                   {previewData.cardId}
+                </div>
+              )}
+
+              {/* Claimed badge - bottom right corner */}
+              {previewData.claimed && (
+                <div
+                  className="absolute bottom-3 right-4 flex items-center gap-1 px-2 py-1 rounded-full z-10"
+                  style={{
+                    background: isThemed ? theme.accent : '#10b981',
+                    boxShadow: `0 1px 4px ${isThemed ? theme.accentGlow : 'rgba(16, 185, 129, 0.3)'}`
+                  }}
+                >
+                  <span className={`text-xs font-bold ${rootCategoryId === 'technology' ? 'text-slate-900' : (rootCategoryId === 'philosophy' ? 'text-indigo-900' : 'text-white')}`}>✓</span>
+                  <span className={`text-[10px] font-semibold ${rootCategoryId === 'technology' ? 'text-slate-900' : (rootCategoryId === 'philosophy' ? 'text-indigo-900' : 'text-white')}`}>Claimed</span>
                 </div>
               )}
 
