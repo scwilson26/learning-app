@@ -7,7 +7,7 @@ const anthropic = new Anthropic({
 });
 
 /**
- * Generate a preview/pitch for a topic (one paragraph explanation + hook)
+ * Generate a preview/pitch for a topic (1-2 sentences to identify and hook)
  * Used for the "cover card" that appears before committing to learn a topic
  * @param {string} topic - The topic to preview
  * @param {string} parentPath - The path context (e.g., "History > Ancient World")
@@ -17,36 +17,34 @@ export async function generateTopicPreview(topic, parentPath = null) {
   try {
     const contextNote = parentPath ? `\nContext: This is under "${parentPath}"` : '';
 
-    const prompt = `Write a preview for "${topic}" that helps someone decide if they want to learn about it.${contextNote}
+    const prompt = `Write a very short preview for "${topic}" - just enough to know what it is and spark curiosity.${contextNote}
 
 FORMAT:
-- One short paragraph (2-3 sentences) explaining what it is and why it matters
-- End with: "5 cards on how it actually works →" (or similar promise of substance)
+- 1-2 sentences MAX
+- Identify what it is + one intriguing detail
+- No call to action at the end (the UI has an Explore button)
 
 RULES:
-- Be INFORMATIVE, not mysterious or teasing
-- Explain what it IS, not vague "wizardry" or "magic"
+- VERY short - this is a label + hook, not an explanation
+- One specific detail that makes them curious
 - Simple everyday words
-- Give them enough to decide if they care
+- Don't teach - just identify and intrigue
 
 EXAMPLES:
 
+Topic: "Tupac Shakur"
+One of hip hop's most influential artists—died at 25, still shaping the genre decades later.
+
+Topic: "The Troubles"
+A decades-long violent conflict in Northern Ireland between unionists and nationalists. Over 3,500 died.
+
 Topic: "Filter (signal processing)"
-Filters separate the signals you want from the noise you don't. Every phone call, radio station, and WiFi connection depends on them—they're how your phone hears your voice clearly in a noisy room.
-
-5 cards on how they actually work →
-
-Topic: "Greek Tragedy"
-Ancient Greek plays designed to make audiences feel intense emotions through stories of downfall and fate. Only 32 complete plays survived from thousands written, but they're still performed worldwide today.
-
-5 cards on the stories and their power →
+Filters separate signals you want from noise you don't—how your phone hears your voice in a loud room.
 
 Topic: "Atacama Large Millimeter Array"
-A group of 66 radio antennas in Chile's desert that work together as one giant telescope. Built in the driest place on Earth because water vapor blocks the radio waves they're trying to detect.
+66 radio antennas in Chile's desert working as one giant telescope, built where it almost never rains.
 
-5 cards on what it sees →
-
-Write ONLY the preview - no intro text, just the paragraph and the "5 cards" line.`;
+Write ONLY the preview - 1-2 sentences, no intro text, no "learn more" line.`;
 
     const message = await anthropic.messages.create({
       model: 'claude-3-5-haiku-20241022',
