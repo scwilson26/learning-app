@@ -221,25 +221,32 @@ function getCardTint(gradient) {
 }
 
 // Get expanded card styling for each theme (matches OverviewCard)
+// When claimed: adds prominent border + stronger glow for all themes
 function getExpandedCardStyle(categoryId, theme, claimed, tint) {
   const isThemed = hasCustomTheme(categoryId)
+
+  // Claimed state adds a prominent border and stronger glow for ALL themes
+  const claimedBorder = claimed ? `3px solid ${theme.accent}` : undefined
+  const claimedGlow = claimed ? `0 0 40px ${theme.accentGlow}, 0 0 20px ${theme.accentGlow}` : ''
 
   // Technology - dark background, grid
   if (categoryId === 'technology') {
     return {
       background: theme.cardBg,
+      border: claimedBorder,
       boxShadow: claimed
-        ? `0 0 30px ${theme.accentGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.5)`
+        ? `${claimedGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.5)`
         : `0 25px 50px -12px rgba(0, 0, 0, 0.5)`
     }
   }
 
-  // History - warm parchment, no border
+  // History - warm parchment
   if (categoryId === 'history') {
     return {
       background: theme.cardBg,
+      border: claimedBorder,
       boxShadow: claimed
-        ? `0 0 30px ${theme.accentGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.4)`
+        ? `${claimedGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.4)`
         : `0 25px 50px -12px rgba(0, 0, 0, 0.4)`
     }
   }
@@ -248,8 +255,9 @@ function getExpandedCardStyle(categoryId, theme, claimed, tint) {
   if (categoryId === 'arts') {
     return {
       background: `linear-gradient(180deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+      border: claimedBorder,
       boxShadow: claimed
-        ? `0 0 40px ${theme.accentGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.15)`
+        ? `${claimedGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.15)`
         : `0 0 30px ${theme.accentGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.1)`
     }
   }
@@ -258,9 +266,9 @@ function getExpandedCardStyle(categoryId, theme, claimed, tint) {
   if (categoryId === 'biology') {
     return {
       background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-      border: `2px solid ${theme.accent}`,
+      border: claimed ? claimedBorder : `2px solid ${theme.accent}`,
       boxShadow: claimed
-        ? `0 0 30px ${theme.accentGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.15)`
+        ? `${claimedGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.15)`
         : `0 25px 50px -12px rgba(0, 0, 0, 0.12)`
     }
   }
@@ -269,8 +277,9 @@ function getExpandedCardStyle(categoryId, theme, claimed, tint) {
   if (categoryId === 'health') {
     return {
       background: theme.cardBg,
+      border: claimedBorder,
       boxShadow: claimed
-        ? `0 0 25px ${theme.accentGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.15)`
+        ? `${claimedGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.15)`
         : `0 25px 50px -12px rgba(0, 0, 0, 0.12)`
     }
   }
@@ -279,8 +288,9 @@ function getExpandedCardStyle(categoryId, theme, claimed, tint) {
   if (categoryId === 'everyday') {
     return {
       background: `linear-gradient(145deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+      border: claimedBorder,
       boxShadow: claimed
-        ? `0 0 30px ${theme.accentGlow}, 0 25px 50px -12px rgba(194, 112, 62, 0.2)`
+        ? `${claimedGlow}, 0 25px 50px -12px rgba(194, 112, 62, 0.2)`
         : `0 8px 30px -4px rgba(194, 112, 62, 0.2), 0 25px 50px -12px rgba(0, 0, 0, 0.12)`
     }
   }
@@ -289,20 +299,20 @@ function getExpandedCardStyle(categoryId, theme, claimed, tint) {
   if (categoryId === 'geography') {
     return {
       background: `linear-gradient(180deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-      border: `2px solid ${theme.accent}`,
+      border: claimed ? claimedBorder : `2px solid ${theme.accent}`,
       boxShadow: claimed
-        ? `0 0 25px ${theme.accentGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.15)`
+        ? `${claimedGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.15)`
         : `0 25px 50px -12px rgba(0, 0, 0, 0.12)`
     }
   }
 
-  // Mathematics - graph paper, thin purple border
+  // Mathematics - graph paper, purple border
   if (categoryId === 'mathematics') {
     return {
       background: theme.cardBg,
-      border: `1.5px solid ${theme.accent}`,
+      border: claimed ? claimedBorder : `1.5px solid ${theme.accent}`,
       boxShadow: claimed
-        ? `0 0 20px ${theme.accentGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.15)`
+        ? `${claimedGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.15)`
         : `0 25px 50px -12px rgba(0, 0, 0, 0.12)`
     }
   }
@@ -311,9 +321,9 @@ function getExpandedCardStyle(categoryId, theme, claimed, tint) {
   if (categoryId === 'people') {
     return {
       background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-      border: `2px solid ${theme.accent}`,
+      border: claimed ? claimedBorder : `2px solid ${theme.accent}`,
       boxShadow: claimed
-        ? `0 0 25px ${theme.accentGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.15)`
+        ? `${claimedGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.15)`
         : `0 25px 50px -12px rgba(0, 0, 0, 0.12)`
     }
   }
@@ -322,18 +332,20 @@ function getExpandedCardStyle(categoryId, theme, claimed, tint) {
   if (categoryId === 'philosophy') {
     return {
       background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+      border: claimedBorder,
       boxShadow: claimed
-        ? `0 0 40px ${theme.accentGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.4)`
+        ? `${claimedGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.4)`
         : `0 0 25px ${theme.accentGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.35)`
     }
   }
 
-  // Physics - blueprint, left accent line
+  // Physics - blueprint
   if (categoryId === 'physics') {
     return {
       background: theme.cardBg,
+      border: claimedBorder,
       boxShadow: claimed
-        ? `0 0 20px ${theme.accentGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.15)`
+        ? `${claimedGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.15)`
         : `0 25px 50px -12px rgba(0, 0, 0, 0.12)`
     }
   }
@@ -342,9 +354,9 @@ function getExpandedCardStyle(categoryId, theme, claimed, tint) {
   if (categoryId === 'society') {
     return {
       background: theme.cardBg,
-      border: `2px solid ${theme.accent}`,
+      border: claimed ? claimedBorder : `2px solid ${theme.accent}`,
       boxShadow: claimed
-        ? `0 0 20px ${theme.accentGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.15)`
+        ? `${claimedGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.15)`
         : `0 25px 50px -12px rgba(0, 0, 0, 0.12)`
     }
   }
@@ -352,8 +364,10 @@ function getExpandedCardStyle(categoryId, theme, claimed, tint) {
   // Default - unthemed
   return {
     background: `linear-gradient(135deg, #ffffff 0%, ${tint} 100%)`,
-    border: '1px solid #e5e7eb',
-    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+    border: claimed ? '3px solid #10b981' : '1px solid #e5e7eb',
+    boxShadow: claimed
+      ? '0 0 40px rgba(16, 185, 129, 0.4), 0 0 20px rgba(16, 185, 129, 0.3), 0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+      : '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
   }
 }
 
@@ -2227,6 +2241,7 @@ function LockedCard({ index, rootCategoryId = null }) {
 }
 
 // Category card - flippable card showing category info and progress
+// Styled to match the themed child cards
 function CategoryCard({ deck, tint = '#fafbfc', rootCategoryId = null }) {
   const [isFlipped, setIsFlipped] = useState(true) // Start showing info side
   const theme = getCategoryTheme(rootCategoryId)
@@ -2240,6 +2255,309 @@ function CategoryCard({ deck, tint = '#fafbfc', rootCategoryId = null }) {
   const handleFlip = () => {
     setIsFlipped(!isFlipped)
   }
+
+  // Get themed card styling (same as child deck cards)
+  const getCardStyle = () => {
+    if (!isThemed) {
+      return {
+        background: `linear-gradient(135deg, #ffffff 0%, ${tint} 100%)`,
+        border: '2px solid #e5e7eb',
+        boxShadow: '0 8px 16px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.06)'
+      }
+    }
+
+    // Technology - dark, no border
+    if (rootCategoryId === 'technology') {
+      return {
+        background: theme.cardBg,
+        boxShadow: `0 8px 16px rgba(0, 0, 0, 0.4), 0 4px 8px rgba(0, 0, 0, 0.2)`
+      }
+    }
+
+    // History - warm, no border
+    if (rootCategoryId === 'history') {
+      return {
+        background: theme.cardBg,
+        boxShadow: `0 8px 16px rgba(0, 0, 0, 0.4), 0 4px 8px rgba(0, 0, 0, 0.2)`
+      }
+    }
+
+    // Arts - soft gradient, no border
+    if (rootCategoryId === 'arts') {
+      return {
+        background: `linear-gradient(180deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+        boxShadow: `0 4px 12px -2px ${theme.accentGlow}, 0 8px 16px rgba(0, 0, 0, 0.05)`
+      }
+    }
+
+    // Biology - green border
+    if (rootCategoryId === 'biology') {
+      return {
+        background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+        border: `2px solid ${theme.accent}`,
+        boxShadow: `0 8px 16px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04)`
+      }
+    }
+
+    // Health - clean, no border
+    if (rootCategoryId === 'health') {
+      return {
+        background: theme.cardBg,
+        boxShadow: `0 8px 16px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04)`
+      }
+    }
+
+    // Everyday - warm, no border
+    if (rootCategoryId === 'everyday') {
+      return {
+        background: `linear-gradient(145deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+        boxShadow: `0 4px 15px -2px rgba(194, 112, 62, 0.15), 0 8px 16px rgba(0, 0, 0, 0.08)`
+      }
+    }
+
+    // Geography - blue border
+    if (rootCategoryId === 'geography') {
+      return {
+        background: `linear-gradient(180deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+        border: `2px solid ${theme.accent}`,
+        boxShadow: `0 8px 16px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04)`
+      }
+    }
+
+    // Mathematics - thin purple border
+    if (rootCategoryId === 'mathematics') {
+      return {
+        background: theme.cardBg,
+        border: `1.5px solid ${theme.accent}`,
+        boxShadow: `0 8px 16px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04)`
+      }
+    }
+
+    // People - copper border
+    if (rootCategoryId === 'people') {
+      return {
+        background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+        border: `2px solid ${theme.accent}`,
+        boxShadow: `0 8px 16px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04)`
+      }
+    }
+
+    // Philosophy - cosmic, no border
+    if (rootCategoryId === 'philosophy') {
+      return {
+        background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+        boxShadow: `0 0 15px ${theme.accentGlow}, 0 8px 16px rgba(0, 0, 0, 0.3)`
+      }
+    }
+
+    // Physics - clean, no border
+    if (rootCategoryId === 'physics') {
+      return {
+        background: theme.cardBg,
+        boxShadow: `0 8px 16px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04)`
+      }
+    }
+
+    // Society - slate border
+    if (rootCategoryId === 'society') {
+      return {
+        background: theme.cardBg,
+        border: `2px solid ${theme.accent}`,
+        boxShadow: `0 8px 16px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04)`
+      }
+    }
+
+    // Default themed
+    return {
+      background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+      border: `2px solid ${theme.accent}`,
+      boxShadow: `0 8px 16px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04)`
+    }
+  }
+
+  // Render decorative elements (scaled up for larger card)
+  const renderDecorations = () => {
+    if (!isThemed) return null
+
+    // Technology - grid pattern + top accent
+    if (rootCategoryId === 'technology') {
+      return (
+        <>
+          <div
+            className="absolute inset-0 opacity-10 rounded-2xl overflow-hidden"
+            style={{
+              backgroundImage: `linear-gradient(${theme.accent} 1px, transparent 1px), linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)`,
+              backgroundSize: '14px 14px'
+            }}
+          />
+          <div
+            className="absolute top-0 left-0 right-0 h-1.5 rounded-t-2xl"
+            style={{ background: `linear-gradient(90deg, transparent, ${theme.accent}, transparent)` }}
+          />
+        </>
+      )
+    }
+
+    // History - grid pattern + top accent
+    if (rootCategoryId === 'history') {
+      return (
+        <>
+          <div
+            className="absolute inset-0 opacity-10 rounded-2xl overflow-hidden"
+            style={{
+              backgroundImage: `linear-gradient(${theme.accent} 1px, transparent 1px), linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)`,
+              backgroundSize: '14px 14px'
+            }}
+          />
+          <div
+            className="absolute top-0 left-0 right-0 h-1.5 rounded-t-2xl"
+            style={{ background: `linear-gradient(90deg, transparent, ${theme.accent}, transparent)` }}
+          />
+        </>
+      )
+    }
+
+    // Arts - no decorations
+    if (rootCategoryId === 'arts') return null
+
+    // Biology - organic circles
+    if (rootCategoryId === 'biology') {
+      return (
+        <div className="absolute inset-0 opacity-[0.12] pointer-events-none">
+          <div className="absolute top-4 right-6 w-8 h-8 rounded-full border" style={{ borderColor: theme.accent }} />
+          <div className="absolute top-12 right-3 w-4 h-4 rounded-full border" style={{ borderColor: theme.accent }} />
+          <div className="absolute bottom-6 left-4 w-6 h-6 rounded-full border" style={{ borderColor: theme.accent }} />
+          <div className="absolute bottom-4 left-12 w-2.5 h-2.5 rounded-full" style={{ background: theme.accent, opacity: 0.4 }} />
+          <div className="absolute top-16 left-5 w-2.5 h-2.5 rounded-full" style={{ background: theme.accent, opacity: 0.3 }} />
+        </div>
+      )
+    }
+
+    // Health - top accent + heartbeat
+    if (rootCategoryId === 'health') {
+      return (
+        <>
+          <div
+            className="absolute top-0 left-3 right-3 h-1 rounded-b"
+            style={{ background: theme.accent }}
+          />
+          <svg className="absolute bottom-4 left-3 right-3 h-5 opacity-20" viewBox="0 0 100 20" preserveAspectRatio="none">
+            <path
+              d="M0,10 L30,10 L35,10 L40,2 L45,18 L50,6 L55,14 L60,10 L100,10"
+              fill="none"
+              stroke="#64748b"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </>
+      )
+    }
+
+    // Everyday - subtle dot texture
+    if (rootCategoryId === 'everyday') {
+      return (
+        <div
+          className="absolute inset-0 opacity-[0.04] rounded-2xl overflow-hidden"
+          style={{
+            backgroundImage: `radial-gradient(${theme.accent} 1px, transparent 1px)`,
+            backgroundSize: '7px 7px'
+          }}
+        />
+      )
+    }
+
+    // Geography - topographic lines
+    if (rootCategoryId === 'geography') {
+      return (
+        <div
+          className="absolute inset-0 opacity-[0.08] rounded-2xl overflow-hidden"
+          style={{
+            backgroundImage: `
+              repeating-linear-gradient(0deg, ${theme.accent} 0px, transparent 1px, transparent 14px),
+              repeating-linear-gradient(90deg, ${theme.accent} 0px, transparent 1px, transparent 22px)
+            `
+          }}
+        />
+      )
+    }
+
+    // Mathematics - graph paper
+    if (rootCategoryId === 'mathematics') {
+      return (
+        <div
+          className="absolute inset-0 opacity-[0.08] rounded-2xl overflow-hidden"
+          style={{
+            backgroundImage: `
+              linear-gradient(${theme.accent} 1px, transparent 1px),
+              linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)
+            `,
+            backgroundSize: '12px 12px'
+          }}
+        />
+      )
+    }
+
+    // People - clean, no decorations
+    if (rootCategoryId === 'people') return null
+
+    // Philosophy - celestial dots
+    if (rootCategoryId === 'philosophy') {
+      return (
+        <div className="absolute inset-0 opacity-30 pointer-events-none">
+          <div className="absolute top-4 right-6 w-1.5 h-1.5 rounded-full" style={{ background: theme.accent }} />
+          <div className="absolute top-8 right-12 w-1 h-1 rounded-full" style={{ background: theme.accent }} />
+          <div className="absolute top-14 right-4 w-1.5 h-1.5 rounded-full" style={{ background: theme.accent }} />
+          <div className="absolute bottom-8 left-4 w-1 h-1 rounded-full" style={{ background: theme.accent }} />
+          <div className="absolute bottom-14 left-10 w-1.5 h-1.5 rounded-full" style={{ background: theme.accent }} />
+          <div className="absolute top-12 left-6 w-1 h-1 rounded-full" style={{ background: theme.accent }} />
+        </div>
+      )
+    }
+
+    // Physics - left accent + blueprint
+    if (rootCategoryId === 'physics') {
+      return (
+        <>
+          <div
+            className="absolute top-3 bottom-3 left-0 w-1 rounded-r"
+            style={{ background: theme.accent }}
+          />
+          <div
+            className="absolute inset-0 opacity-[0.06] rounded-2xl overflow-hidden"
+            style={{
+              backgroundImage: `
+                linear-gradient(${theme.accent} 1px, transparent 1px),
+                linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)
+              `,
+              backgroundSize: '16px 16px'
+            }}
+          />
+        </>
+      )
+    }
+
+    // Society - architectural grid
+    if (rootCategoryId === 'society') {
+      return (
+        <div
+          className="absolute inset-0 opacity-[0.05] rounded-2xl overflow-hidden"
+          style={{
+            backgroundImage: `
+              linear-gradient(${theme.accent} 1px, transparent 1px),
+              linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)
+            `,
+            backgroundSize: '18px 18px'
+          }}
+        />
+      )
+    }
+
+    return null
+  }
+
+  const cardStyle = getCardStyle()
 
   return (
     <motion.div
@@ -2257,37 +2575,34 @@ function CategoryCard({ deck, tint = '#fafbfc', rootCategoryId = null }) {
       >
         {/* Front of card */}
         <div
-          className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center p-6 border-2"
+          className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center p-6 overflow-hidden"
           style={{
             backfaceVisibility: 'hidden',
-            background: isThemed
-              ? `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`
-              : `linear-gradient(135deg, #ffffff 0%, ${tint} 100%)`,
-            borderColor: isThemed ? `${theme.accent}40` : '#e5e7eb',
-            boxShadow: '0 8px 16px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.06)'
+            WebkitBackfaceVisibility: 'hidden',
+            transform: 'translateZ(1px)',
+            ...cardStyle
           }}
         >
-          <h2 className="text-lg font-bold text-center" style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}>{deck.name}</h2>
-          <p className="text-xs mt-2" style={{ color: isThemed ? theme.textSecondary : '#9ca3af' }}>Tap to flip</p>
+          {renderDecorations()}
+          <h2 className="text-lg font-bold text-center relative z-10" style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}>{deck.name}</h2>
+          <p className="text-xs mt-2 relative z-10" style={{ color: isThemed ? theme.textSecondary : '#9ca3af' }}>Tap to flip</p>
         </div>
 
         {/* Back of card */}
         <div
-          className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center p-6 border-2"
+          className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center p-6 overflow-hidden"
           style={{
             backfaceVisibility: 'hidden',
-            transform: 'rotateY(180deg)',
-            background: isThemed
-              ? `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`
-              : `linear-gradient(135deg, #ffffff 0%, ${tint} 100%)`,
-            borderColor: isThemed ? `${theme.accent}40` : '#e5e7eb',
-            boxShadow: '0 8px 16px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.06)'
+            WebkitBackfaceVisibility: 'hidden',
+            transform: 'rotateY(180deg) translateZ(1px)',
+            ...cardStyle
           }}
         >
-          <h3 className="text-sm font-bold text-center mb-3" style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}>{deck.name}</h3>
+          {renderDecorations()}
+          <h3 className="text-sm font-bold text-center mb-3 relative z-10" style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}>{deck.name}</h3>
 
           {/* Progress bar */}
-          <div className="w-full px-4 mb-3">
+          <div className="w-full px-4 mb-3 relative z-10">
             <div className="flex justify-between text-xs mb-1" style={{ color: isThemed ? theme.textSecondary : '#6b7280' }}>
               <span>Progress</span>
               <span>{claimedTopics}/{totalTopics}</span>
@@ -2303,7 +2618,7 @@ function CategoryCard({ deck, tint = '#fafbfc', rootCategoryId = null }) {
             </div>
           </div>
 
-          <p className="text-xs text-center" style={{ color: isThemed ? theme.textSecondary : '#6b7280' }}>
+          <p className="text-xs text-center relative z-10" style={{ color: isThemed ? theme.textSecondary : '#6b7280' }}>
             Explore the topics within
           </p>
         </div>
@@ -2832,6 +3147,8 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
             className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center p-6 overflow-hidden"
             style={{
               backfaceVisibility: 'hidden',
+              WebkitBackfaceVisibility: 'hidden',
+              transform: 'translateZ(1px)',
               ...getExpandedCardStyle(rootCategoryId, theme, claimed, tint)
             }}
           >
@@ -2853,7 +3170,8 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
             className="absolute inset-0 rounded-2xl flex flex-col p-5 overflow-hidden"
             style={{
               backfaceVisibility: 'hidden',
-              transform: 'rotateY(180deg)',
+              WebkitBackfaceVisibility: 'hidden',
+              transform: 'rotateY(180deg) translateZ(1px)',
               ...getExpandedCardStyle(rootCategoryId, theme, claimed, tint)
             }}
           >
@@ -2877,6 +3195,20 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
               <h2 className="text-lg font-bold leading-tight flex-1" style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}>{card.title}</h2>
               <span className="text-xs whitespace-nowrap" style={{ color: isThemed ? theme.textSecondary : '#9ca3af' }}>{index + 1}/{total}</span>
             </div>
+
+            {/* Claimed badge - prominent indicator */}
+            {claimed && (
+              <div
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full mb-3 self-start relative z-10"
+                style={{
+                  background: isThemed ? theme.accent : '#10b981',
+                  boxShadow: `0 2px 8px ${isThemed ? theme.accentGlow : 'rgba(16, 185, 129, 0.4)'}`
+                }}
+              >
+                <span className={`text-sm font-bold ${rootCategoryId === 'technology' ? 'text-slate-900' : (rootCategoryId === 'philosophy' ? 'text-indigo-900' : 'text-white')}`}>✓</span>
+                <span className={`text-xs font-semibold ${rootCategoryId === 'technology' ? 'text-slate-900' : (rootCategoryId === 'philosophy' ? 'text-indigo-900' : 'text-white')}`}>Claimed</span>
+              </div>
+            )}
 
             {/* Content area with loading state */}
             <div className="flex-1 overflow-auto relative z-10">
