@@ -4994,52 +4994,8 @@ export default function Canvas() {
     </AnimatePresence>
   )
 
-  // Calculate topic count for Explore button
-  const getTopicCount = () => {
-    if (currentSections?.sections) {
-      return currentSections.sections.reduce((sum, section) => sum + section.subDecks.length, 0)
-    }
-    return childDecks.length
-  }
-
   // Check if we have sub-decks to explore
   const hasSubDecks = childDecks.length > 0 || (currentSections?.sections?.length > 0)
-
-  // Scroll to explore section
-  const scrollToExplore = () => {
-    const exploreSection = document.getElementById('explore-section')
-    if (exploreSection) {
-      exploreSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }
-  }
-
-  // Explore Deeper button component (floating)
-  // Calculate topic count once to avoid re-calculating on every render
-  const topicCount = getTopicCount()
-  const showExploreButton = hasSubDecks && !isLeaf && topicCount > 0
-
-  const ExploreButton = () => {
-    if (!showExploreButton) return null
-
-    return (
-      <button
-        onClick={scrollToExplore}
-        className="
-          fixed bottom-6 left-6 z-50
-          px-5 py-3 rounded-full
-          bg-gradient-to-r from-emerald-500 to-teal-600
-          text-white font-semibold text-sm
-          shadow-lg hover:shadow-xl
-          flex items-center gap-2
-          transition-transform
-          hover:scale-105 active:scale-95
-        "
-      >
-        <span className="text-lg">↓</span>
-        <span>More Topics</span>
-      </button>
-    )
-  }
 
   // Root level - show all category decks
   if (stack.length === 0) {
@@ -5206,7 +5162,6 @@ export default function Canvas() {
       </AnimatePresence>
 
       {/* Floating buttons */}
-      <ExploreButton />
       <WanderButton />
       <WanderMessage />
 
