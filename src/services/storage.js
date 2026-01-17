@@ -974,6 +974,40 @@ export function getClaimedCardsByCategory() {
 }
 
 /**
+ * Get all claimed cards grouped by root category, then by deck
+ * @returns {Object} { categoryId: { deckId: { name, cards: [...] }, ... }, ... }
+ */
+export function getClaimedCardsByCategoryAndDeck() {
+  const data = getData()
+  const byCategory = {}
+
+  Object.values(data.cards).forEach(card => {
+    if (card.claimed && card.deckId) {
+      const rootCategory = findRootCategory(card.deckId)
+      if (rootCategory) {
+        if (!byCategory[rootCategory]) {
+          byCategory[rootCategory] = {}
+        }
+        if (!byCategory[rootCategory][card.deckId]) {
+          // Get the deck name from tree or storage
+          const treeNode = nodeIndex.get(card.deckId)
+          const deckData = data.decks[card.deckId]
+          const deckName = treeNode?.title || deckData?.name || card.deckId
+          byCategory[rootCategory][card.deckId] = {
+            id: card.deckId,
+            name: deckName,
+            cards: []
+          }
+        }
+        byCategory[rootCategory][card.deckId].cards.push(card)
+      }
+    }
+  })
+
+  return byCategory
+}
+
+/**
  * Find the root category for a deck ID
  * @param {string} deckId - The deck ID
  * @returns {string|null} The root category ID or null

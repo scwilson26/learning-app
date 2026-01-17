@@ -32,7 +32,8 @@ import {
   getPreviewCard,
   claimPreviewCard,
   hasPreviewCard,
-  getClaimedCardsByCategory
+  getClaimedCardsByCategory,
+  getClaimedCardsByCategoryAndDeck
 } from '../services/storage'
 
 // Configuration - card counts can be adjusted here or per-deck
@@ -5555,11 +5556,12 @@ export default function Canvas() {
   const allCurrentCards = currentTierCards.core.length > 0
     ? [...currentTierCards.core, ...currentTierCards.deep_dive_1, ...currentTierCards.deep_dive_2]
     : overviewCards
+  // expandedCard can be either a card ID (string) or full card object (from Collections view)
   const expandedCardData = expandedCard
-    ? allCurrentCards.find(c => c.id === expandedCard)
+    ? (typeof expandedCard === 'object' ? expandedCard : allCurrentCards.find(c => c.id === expandedCard))
     : null
   const expandedCardIndex = expandedCardData
-    ? allCurrentCards.findIndex(c => c.id === expandedCard)
+    ? allCurrentCards.findIndex(c => c.id === (typeof expandedCard === 'object' ? expandedCard.id : expandedCard))
     : -1
 
   // Wander button component (floating) - always visible and functional
@@ -5822,12 +5824,14 @@ export default function Canvas() {
     )
   }
 
-  // Collection category view - show all cards in a category
+  // Collection category view - show decks within a category
   if (stack.length === 2 && stack[0] === 'collections') {
     const categoryId = stack[1]
     const category = CATEGORIES.find(c => c.id === categoryId)
-    const cardsByCategory = getClaimedCardsByCategory()
-    const categoryCards = cardsByCategory[categoryId] || []
+    const cardsByCategoryAndDeck = getClaimedCardsByCategoryAndDeck()
+    const categoryDecks = cardsByCategoryAndDeck[categoryId] || {}
+    const deckList = Object.values(categoryDecks)
+    const totalCards = deckList.reduce((sum, deck) => sum + deck.cards.length, 0)
 
     return (
       <div className="w-screen min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 overflow-auto">
@@ -5844,19 +5848,74 @@ export default function Canvas() {
             <span className="font-semibold text-gray-800">{category?.name || 'Category'}</span>
             <div className="bg-gray-100 rounded-full px-3 py-1">
               <span className="text-gray-500 text-xs">Cards: </span>
-              <span className="text-gray-800 font-bold text-sm">{categoryCards.length}</span>
+              <span className="text-gray-800 font-bold text-sm">{totalCards}</span>
             </div>
           </div>
         </div>
 
         <div className="min-h-screen p-4 pt-16">
-          {categoryCards.length === 0 ? (
+          {deckList.length === 0 ? (
             <div className="flex items-center justify-center h-full text-center text-gray-500">
               <p>No cards in this category yet</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {categoryCards.map((card) => (
+              {deckList.map((deck) => (
+                <motion.div
+                  key={deck.id}
+                  className="bg-white rounded-xl p-4 shadow-md cursor-pointer border border-gray-200"
+                  onClick={() => setStack(['collections', categoryId, deck.id])}
+                  whileHover={{ y: -4 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <h3 className="text-sm font-semibold text-gray-800 mb-2 line-clamp-2">{toTitleCase(deck.name)}</h3>
+                  <p className="text-xs text-gray-500">{deck.cards.length} {deck.cards.length === 1 ? 'card' : 'cards'}</p>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // Collection deck view - show cards within a specific deck
+  if (stack.length === 3 && stack[0] === 'collections') {
+    const categoryId = stack[1]
+    const deckId = stack[2]
+    const category = CATEGORIES.find(c => c.id === categoryId)
+    const cardsByCategoryAndDeck = getClaimedCardsByCategoryAndDeck()
+    const deck = cardsByCategoryAndDeck[categoryId]?.[deckId]
+    const deckCards = deck?.cards || []
+
+    return (
+      <div className="w-screen min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 overflow-auto">
+        {/* Top navigation bar */}
+        <div className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200">
+          <div className="flex items-center justify-between px-3 py-2">
+            <button
+              onClick={() => setStack(['collections', categoryId])}
+              className="flex items-center gap-2 text-amber-600 hover:text-amber-800 transition-colors"
+            >
+              <span className="text-lg">‹</span>
+              <span className="text-sm font-medium">{category?.name || 'Category'}</span>
+            </button>
+            <span className="font-semibold text-gray-800 text-center flex-1 mx-2 truncate">{toTitleCase(deck?.name || 'Deck')}</span>
+            <div className="bg-gray-100 rounded-full px-3 py-1 shrink-0">
+              <span className="text-gray-500 text-xs">Cards: </span>
+              <span className="text-gray-800 font-bold text-sm">{deckCards.length}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="min-h-screen p-4 pt-16">
+          {deckCards.length === 0 ? (
+            <div className="flex items-center justify-center h-full text-center text-gray-500">
+              <p>No cards in this deck yet</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {deckCards.map((card) => (
                 <motion.div
                   key={card.id}
                   className="bg-white rounded-xl p-4 shadow-md cursor-pointer border border-gray-200"
@@ -5876,6 +5935,30 @@ export default function Canvas() {
             </div>
           )}
         </div>
+
+        {/* Expanded card modal for Collections view */}
+        <AnimatePresence>
+          {expandedCardData && (
+            <ExpandedCard
+              key={`${expandedCardData.id}-${expandedCardStartFlipped}`}
+              card={expandedCardData}
+              index={0}
+              total={deckCards.length}
+              claimed={claimedCards.has(expandedCardData.id)}
+              onClaim={handleClaim}
+              onClose={() => { setExpandedCard(null); setExpandedCardStartFlipped(false); setExpandedCardSlideDirection(0) }}
+              deckName={deck?.name || 'Collection'}
+              onContentGenerated={handleContentGenerated}
+              allCards={deckCards}
+              hasNext={false}
+              hasPrev={false}
+              startFlipped={expandedCardStartFlipped}
+              slideDirection={expandedCardSlideDirection}
+              tint="#fafbfc"
+              rootCategoryId={categoryId}
+            />
+          )}
+        </AnimatePresence>
       </div>
     )
   }
