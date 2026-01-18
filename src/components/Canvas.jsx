@@ -927,7 +927,7 @@ function Deck({ deck, onOpen, claimed, rootCategoryId = null }) {
             />
           </div>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xs font-semibold text-center px-2 leading-tight" style={{ color: theme.textPrimary }}>{deck.name}</span>
+            <span className="text-xs font-semibold text-center px-2 leading-tight whitespace-pre-line" style={{ color: theme.textPrimary }}>{deck.name}</span>
             {claimed && (
               <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
                 <span className="text-slate-900 text-[10px] font-bold">✓</span>
@@ -979,7 +979,7 @@ function Deck({ deck, onOpen, claimed, rootCategoryId = null }) {
             }}
           />
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xs font-semibold text-center px-2 leading-tight" style={{ color: theme.textPrimary }}>{deck.name}</span>
+            <span className="text-xs font-semibold text-center px-2 leading-tight whitespace-pre-line" style={{ color: theme.textPrimary }}>{deck.name}</span>
             {claimed && (
               <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
                 <span className="text-white text-[10px] font-bold">✓</span>
@@ -1043,7 +1043,7 @@ function Deck({ deck, onOpen, claimed, rootCategoryId = null }) {
             </div>
           </div>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xs font-semibold text-center px-2 leading-tight" style={{ color: theme.textPrimary }}>{deck.name}</span>
+            <span className="text-xs font-semibold text-center px-2 leading-tight whitespace-pre-line" style={{ color: theme.textPrimary }}>{deck.name}</span>
             {claimed && (
               <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
                 <span className="text-white text-[10px] font-bold">✓</span>
@@ -1112,7 +1112,7 @@ function Deck({ deck, onOpen, claimed, rootCategoryId = null }) {
             </svg>
           </div>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xs font-semibold text-center px-2 leading-tight" style={{ color: theme.textPrimary }}>{deck.name}</span>
+            <span className="text-xs font-semibold text-center px-2 leading-tight whitespace-pre-line" style={{ color: theme.textPrimary }}>{deck.name}</span>
             {claimed && (
               <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
                 <span className="text-white text-[10px] font-bold">✓</span>
@@ -1173,7 +1173,7 @@ function Deck({ deck, onOpen, claimed, rootCategoryId = null }) {
             />
           </div>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xs font-semibold text-center px-2 leading-tight" style={{ color: theme.textPrimary }}>{deck.name}</span>
+            <span className="text-xs font-semibold text-center px-2 leading-tight whitespace-pre-line" style={{ color: theme.textPrimary }}>{deck.name}</span>
             {claimed && (
               <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
                 <span className="text-white text-[10px] font-bold">✓</span>
@@ -1239,7 +1239,7 @@ function Deck({ deck, onOpen, claimed, rootCategoryId = null }) {
             />
           </div>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xs font-semibold text-center px-2 leading-tight" style={{ color: theme.textPrimary }}>{deck.name}</span>
+            <span className="text-xs font-semibold text-center px-2 leading-tight whitespace-pre-line" style={{ color: theme.textPrimary }}>{deck.name}</span>
             {claimed && (
               <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
                 <span className="text-white text-[10px] font-bold">✓</span>
@@ -1306,7 +1306,7 @@ function Deck({ deck, onOpen, claimed, rootCategoryId = null }) {
             />
           </div>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xs font-semibold text-center px-2 leading-tight" style={{ color: theme.textPrimary }}>{deck.name}</span>
+            <span className="text-xs font-semibold text-center px-2 leading-tight whitespace-pre-line" style={{ color: theme.textPrimary }}>{deck.name}</span>
             {claimed && (
               <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
                 <span className="text-white text-[10px] font-bold">✓</span>
@@ -1361,7 +1361,7 @@ function Deck({ deck, onOpen, claimed, rootCategoryId = null }) {
             }}
           />
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xs font-semibold text-center px-2 leading-tight" style={{ color: theme.textPrimary }}>{deck.name}</span>
+            <span className="text-xs font-semibold text-center px-2 leading-tight whitespace-pre-line" style={{ color: theme.textPrimary }}>{deck.name}</span>
             {claimed && (
               <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
                 <span className="text-white text-[10px] font-bold">✓</span>
@@ -1423,7 +1423,7 @@ function Deck({ deck, onOpen, claimed, rootCategoryId = null }) {
             </div>
           </div>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xs font-semibold text-center px-2 leading-tight" style={{ color: theme.textPrimary }}>{deck.name}</span>
+            <span className="text-xs font-semibold text-center px-2 leading-tight whitespace-pre-line" style={{ color: theme.textPrimary }}>{deck.name}</span>
             {claimed && (
               <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
                 <span className="text-indigo-900 text-[10px] font-bold">✓</span>
@@ -1492,7 +1492,7 @@ function Deck({ deck, onOpen, claimed, rootCategoryId = null }) {
             />
           </div>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xs font-semibold text-center px-2 leading-tight" style={{ color: theme.textPrimary }}>{deck.name}</span>
+            <span className="text-xs font-semibold text-center px-2 leading-tight whitespace-pre-line" style={{ color: theme.textPrimary }}>{deck.name}</span>
             {claimed && (
               <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
                 <span className="text-white text-[10px] font-bold">✓</span>
@@ -1559,7 +1559,7 @@ function Deck({ deck, onOpen, claimed, rootCategoryId = null }) {
             />
           </div>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xs font-semibold text-center px-2 leading-tight" style={{ color: theme.textPrimary }}>{deck.name}</span>
+            <span className="text-xs font-semibold text-center px-2 leading-tight whitespace-pre-line" style={{ color: theme.textPrimary }}>{deck.name}</span>
             {claimed && (
               <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
                 <span className="text-white text-[10px] font-bold">✓</span>
@@ -1625,7 +1625,7 @@ function Deck({ deck, onOpen, claimed, rootCategoryId = null }) {
             />
           </div>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xs font-semibold text-center px-2 leading-tight" style={{ color: theme.textPrimary }}>{deck.name}</span>
+            <span className="text-xs font-semibold text-center px-2 leading-tight whitespace-pre-line" style={{ color: theme.textPrimary }}>{deck.name}</span>
             {claimed && (
               <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
                 <span className="text-white text-[10px] font-bold">✓</span>
@@ -5871,7 +5871,7 @@ export default function Canvas() {
                   transition={{ delay: index * 0.03 }}
                 >
                   <Deck
-                    deck={{ id: deck.id, name: toTitleCase(deck.name) }}
+                    deck={{ id: deck.id, name: `${toTitleCase(deck.name)}\n${deck.cards.length} ${deck.cards.length === 1 ? 'card' : 'cards'}` }}
                     onOpen={() => setStack(['collections', categoryId, deck.id])}
                     claimed={false}
                     rootCategoryId={categoryId}
@@ -5914,7 +5914,7 @@ export default function Canvas() {
           </div>
         </div>
 
-        <div className="min-h-screen p-4 pt-16">
+        <div className="min-h-screen p-4 pt-16 pb-24">
           {deckCards.length === 0 ? (
             <div className="flex items-center justify-center h-full text-center text-gray-500">
               <p>No cards in this deck yet</p>
@@ -5939,6 +5939,25 @@ export default function Canvas() {
                   />
                 </motion.div>
               ))}
+            </div>
+          )}
+
+          {/* Continue Learning / Completed button */}
+          {deckCards.length > 0 && (
+            <div className="fixed bottom-6 left-0 right-0 flex justify-center z-30">
+              {deckCards.length >= 16 ? (
+                <div className="px-6 py-3 rounded-full bg-green-100 text-green-700 font-semibold text-sm border border-green-200 flex items-center gap-2">
+                  <span>✓</span>
+                  <span>Completed all cards</span>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setStack([categoryId, deckId])}
+                  className="px-6 py-3 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold text-sm shadow-lg hover:shadow-xl transition-all active:scale-95"
+                >
+                  Continue Learning →
+                </button>
+              )}
             </div>
           )}
         </div>
