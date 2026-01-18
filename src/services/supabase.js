@@ -83,8 +83,7 @@ export async function upsertCanonicalCard(card) {
       card_number: card.card_number,
       title: card.title,
       content: card.content,
-      rarity: card.rarity || 'common',
-      tier: card.tier || 'core'
+      rarity: card.rarity || 'common'
     }, {
       onConflict: 'topic_id,card_number'
     })
@@ -122,88 +121,6 @@ export async function getCanonicalCardsForTopic(topicId) {
     .select('*')
     .eq('topic_id', topicId)
     .order('card_number')
-
-  return { data, error }
-}
-
-/**
- * Get preview card for a topic (card_number = 0)
- * @param {string} topicId - The topic ID
- * @returns {Promise<{data: Object|null, error: Error|null}>}
- */
-export async function getPreviewCardRemote(topicId) {
-  const { data, error } = await supabase
-    .from('canonical_cards')
-    .select('*')
-    .eq('topic_id', topicId)
-    .eq('card_number', 0)
-    .single()
-
-  return { data, error }
-}
-
-/**
- * Save preview card to Supabase (card_number = 0)
- * @param {string} topicId - The topic ID
- * @param {string} title - The topic name
- * @param {string} content - The preview content
- * @returns {Promise<{data: Object|null, error: Error|null}>}
- */
-export async function savePreviewCardRemote(topicId, title, content) {
-  const { data, error } = await supabase
-    .from('canonical_cards')
-    .upsert({
-      topic_id: topicId,
-      card_number: 0,
-      title: title,
-      content: content,
-      rarity: 'common',
-      tier: 'preview'
-    }, {
-      onConflict: 'topic_id,card_number'
-    })
-    .select()
-    .single()
-
-  return { data, error }
-}
-
-// ============================================================================
-// TOPIC OUTLINES
-// ============================================================================
-
-/**
- * Get outline for a topic
- * @param {string} topicId - The topic ID
- * @returns {Promise<{data: Object|null, error: Error|null}>}
- */
-export async function getOutline(topicId) {
-  const { data, error } = await supabase
-    .from('topic_outlines')
-    .select('*')
-    .eq('topic_id', topicId)
-    .single()
-
-  return { data, error }
-}
-
-/**
- * Save outline for a topic
- * @param {string} topicId - The topic ID
- * @param {Object} outline - The outline JSON { core: [...], deep_dive_1: [...], deep_dive_2: [...] }
- * @returns {Promise<{data: Object|null, error: Error|null}>}
- */
-export async function saveOutline(topicId, outline) {
-  const { data, error } = await supabase
-    .from('topic_outlines')
-    .upsert({
-      topic_id: topicId,
-      outline_json: outline
-    }, {
-      onConflict: 'topic_id'
-    })
-    .select()
-    .single()
 
   return { data, error }
 }
