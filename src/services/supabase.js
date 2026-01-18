@@ -128,18 +128,23 @@ export async function getCanonicalCardsForTopic(topicId) {
 /**
  * Claim a card for the current user
  * @param {string} cardId - The canonical card UUID
+ * @param {string} userId - Optional user ID to use directly
  * @returns {Promise<{data: Object|null, error: Error|null}>}
  */
-export async function claimCardRemote(cardId) {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
+export async function claimCardRemote(cardId, userId = null) {
+  let uid = userId
+  if (!uid) {
+    const { data: { user } } = await supabase.auth.getUser()
+    uid = user?.id
+  }
+  if (!uid) {
     return { data: null, error: new Error('Not authenticated') }
   }
 
   const { data, error } = await supabase
     .from('user_claimed_cards')
     .upsert({
-      user_id: user.id,
+      user_id: uid,
       card_id: cardId
     }, {
       onConflict: 'user_id,card_id'
@@ -152,31 +157,35 @@ export async function claimCardRemote(cardId) {
 
 /**
  * Get all claimed cards for the current user
+ * @param {string} userId - Optional user ID to use directly
  * @returns {Promise<{data: Array|null, error: Error|null}>}
  */
-export async function getClaimedCardsRemote() {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
+export async function getClaimedCardsRemote(userId = null) {
+  let uid = userId
+  if (!uid) {
+    const { data: { user } } = await supabase.auth.getUser()
+    uid = user?.id
+  }
+  if (!uid) {
     return { data: [], error: null }
   }
 
-  const { data, error } = await supabase
-    .from('user_claimed_cards')
-    .select(`
-      card_id,
-      claimed_at,
-      canonical_cards (
-        id,
-        topic_id,
-        card_number,
-        title,
-        content,
-        rarity
-      )
-    `)
-    .eq('user_id', user.id)
-
-  return { data, error }
+  try {
+    // Use fetch directly (Supabase client has issues with auth token handling)
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/user_claimed_cards?user_id=eq.${uid}&select=*`
+    const response = await fetch(url, {
+      headers: {
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    })
+    const data = await response.json()
+    return { data: data || [], error: null }
+  } catch (err) {
+    console.error('[getClaimedCardsRemote] Exception:', err)
+    return { data: [], error: err }
+  }
 }
 
 /**
@@ -184,8 +193,15 @@ export async function getClaimedCardsRemote() {
  * @param {Object} localData - Local storage data with cards
  * @returns {Promise<{uploaded: number, downloaded: number, error: Error|null}>}
  */
-export async function syncCards(localData) {
-  const { data: { user } } = await supabase.auth.getUser()
+export async function syncCards(localData, sessionUser = null) {
+
+  // Use passed user or get from session
+  let user = sessionUser
+  if (!user) {
+    const { data: { session } } = await supabase.auth.getSession()
+    user = session?.user
+  }
+
   if (!user) {
     return { uploaded: 0, downloaded: 0, error: new Error('Not authenticated') }
   }
@@ -195,7 +211,7 @@ export async function syncCards(localData) {
 
   try {
     // 1. Get all user's claimed cards from Supabase
-    const { data: remoteClaimed, error: fetchError } = await getClaimedCardsRemote()
+    const { data: remoteClaimed, error: fetchError } = await getClaimedCardsRemote(user.id)
     if (fetchError) throw fetchError
 
     // 2. Upload local cards that aren't in Supabase
@@ -222,23 +238,21 @@ export async function syncCards(localData) {
 
         // Claim the card for this user
         if (newCard) {
-          await claimCardRemote(newCard.id)
+          await claimCardRemote(newCard.id, user.id)
           uploaded++
         }
       } else {
         // Card exists, just claim it if not already claimed
         const alreadyClaimed = remoteClaimed?.some(rc => rc.card_id === existingCard.id)
         if (!alreadyClaimed) {
-          await claimCardRemote(existingCard.id)
+          await claimCardRemote(existingCard.id, user.id)
           uploaded++
         }
       }
     }
 
-    console.log(`[sync] Uploaded ${uploaded} cards, downloaded ${downloaded} cards`)
     return { uploaded, downloaded, error: null }
   } catch (error) {
-    console.error('[sync] Sync failed:', error)
     return { uploaded, downloaded, error }
   }
 }

@@ -4393,16 +4393,18 @@ export default function Canvas() {
     })
 
     // Subscribe to auth changes
+    let hasSynced = false
     const unsubscribe = onAuthStateChange(async (event, session) => {
       setUser(session?.user || null)
-      if (event === 'SIGNED_IN') {
+      if (event === 'SIGNED_IN' && session?.user && !hasSynced) {
+        hasSynced = true
         setShowAuth(false)
         // Sync cards when user signs in
         setIsSyncing(true)
         setSyncStatus(null)
         try {
           const localData = getData()
-          const result = await syncCards(localData)
+          const result = await syncCards(localData, session.user)
           if (!result.error) {
             setSyncStatus({ uploaded: result.uploaded, downloaded: result.downloaded })
             // Clear sync status after 3 seconds
