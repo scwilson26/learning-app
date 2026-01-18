@@ -4923,21 +4923,21 @@ export default function Canvas() {
 
   // Background generation for next tier (no UI updates until complete)
   // Returns a promise that resolves when generation is complete
-  const generateTierInBackground = async (deck, tier, previousCards, parentPath) => {
+  const generateTierInBackground = (deck, tier, previousCards, parentPath) => {
     console.log(`[BACKGROUND] Starting ${tier} generation for ${deck.name}`)
 
-    // Try to get outline for better quality
-    let outline = null
-    try {
-      outline = await getOutlineForTopic(deck.id)
-      if (outline) {
-        console.log(`[BACKGROUND] Using outline for ${tier} generation`)
-      }
-    } catch (err) {
-      console.warn(`[BACKGROUND] Error fetching outline:`, err)
-    }
-
     const generationPromise = (async () => {
+      // Try to get outline for better quality
+      let outline = null
+      try {
+        outline = await getOutlineForTopic(deck.id)
+        if (outline) {
+          console.log(`[BACKGROUND] Using outline for ${tier} generation`)
+        }
+      } catch (err) {
+        console.warn(`[BACKGROUND] Error fetching outline:`, err)
+      }
+
       try {
         // Generate without streaming callback (just wait for all cards)
         const cards = await generateTierCards(deck.name, tier, previousCards, parentPath, null, outline)
