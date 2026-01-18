@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { generateSubDecks, generateSingleCardContent, generateTierCards, generateTopicPreview } from '../services/claude'
-import { supabase, onAuthStateChange, signOut, syncCards } from '../services/supabase'
+import { generateSubDecks, generateSingleCardContent, generateTierCards, generateTopicPreview, generateTopicOutline } from '../services/claude'
+import { supabase, onAuthStateChange, signOut, syncCards, getCanonicalCardsForTopic, upsertCanonicalCard, getPreviewCardRemote, savePreviewCardRemote, getOutline, saveOutline } from '../services/supabase'
 import Auth from './Auth'
 import {
   getDeckCards,
@@ -4451,6 +4451,9 @@ export default function Canvas() {
   const [showPreviewCard, setShowPreviewCard] = useState(null) // { deckId, title, preview, isLoading } or null
   const [previewCards, setPreviewCards] = useState({}) // deckId -> { preview, claimed }
 
+  // Track in-flight outline generation promises (to avoid duplicate requests)
+  const outlinePromisesRef = useRef({}) // deckId -> Promise<outline>
+
   // Section-based Level 2 data (from Wikipedia)
   const [sectionData, setSectionData] = useState({}) // categoryId -> { sections: [...] }
   const [loadingSections, setLoadingSections] = useState(null) // categoryId currently loading sections
@@ -4733,16 +4736,105 @@ export default function Canvas() {
       return
     }
 
+    // ========================================================================
+    // SHARED MAP: Check Supabase for existing canonical cards first
+    // ========================================================================
+    setLoadingDeck(deck.id)
+    setGenerationProgress({ current: 0, total: 5, phase: 'checking' })
+
+    try {
+      // Check if canonical cards already exist in Supabase
+      const { data: canonicalCards, error: fetchError } = await getCanonicalCardsForTopic(deck.id)
+
+      if (!fetchError && canonicalCards && canonicalCards.length > 0) {
+        console.log(`[SHARED MAP] Found ${canonicalCards.length} canonical cards for "${deck.name}" in Supabase`)
+
+        // Use the canonical cards from Supabase
+        const coreCards = canonicalCards.filter(c => c.tier === 'core' || !c.tier).slice(0, 5)
+        const dd1Cards = canonicalCards.filter(c => c.tier === 'deep_dive_1')
+        const dd2Cards = canonicalCards.filter(c => c.tier === 'deep_dive_2')
+
+        // Convert Supabase format to local format
+        const convertCard = (card, index) => ({
+          id: `${deck.id}-card-${card.card_number || index + 1}`,
+          title: card.title,
+          content: card.content,
+          rarity: card.rarity || 'common',
+          tier: card.tier || 'core',
+          tierIndex: card.card_number ? card.card_number - 1 : index,
+          number: card.card_number || index + 1,
+          supabaseId: card.id // Keep reference to Supabase ID
+        })
+
+        const localCoreCards = coreCards.map((c, i) => convertCard(c, i))
+        const localDD1Cards = dd1Cards.map((c, i) => convertCard(c, i))
+        const localDD2Cards = dd2Cards.map((c, i) => convertCard(c, i))
+
+        // Save to localStorage for offline access
+        localCoreCards.forEach(card => {
+          saveStreamedCard(deck.id, deck.name, card, 'core')
+        })
+
+        // Update UI state
+        setTierCards(prev => ({
+          ...prev,
+          [deck.id]: {
+            core: localCoreCards,
+            deep_dive_1: localDD1Cards,
+            deep_dive_2: localDD2Cards
+          }
+        }))
+
+        setGeneratedCards(prev => ({
+          ...prev,
+          [deck.id]: [...localCoreCards, ...localDD1Cards, ...localDD2Cards]
+        }))
+
+        // Cache content
+        const allLocalCards = [...localCoreCards, ...localDD1Cards, ...localDD2Cards]
+        allLocalCards.forEach(card => {
+          if (card.content) {
+            setGeneratedContent(prev => ({
+              ...prev,
+              [card.id]: card.content
+            }))
+          }
+        })
+
+        setGenerationProgress({ current: 5, total: 5, phase: 'complete' })
+        setLoadingDeck(null)
+        return
+      }
+
+      console.log(`[SHARED MAP] No canonical cards found for "${deck.name}" - generating new cards`)
+    } catch (supabaseError) {
+      console.warn('[SHARED MAP] Could not check Supabase, falling back to generation:', supabaseError)
+    }
+
+    // ========================================================================
     // STREAMING GENERATION - Cards appear progressively as they're generated
     // User sees Card 1 in ~3 seconds, can start reading while others load
-    setLoadingDeck(deck.id)
+    // ========================================================================
     setGenerationProgress({ current: 0, total: 5, phase: 'generating' })
 
     // Track cards as they stream in
     const streamedCards = []
 
+    // Try to get outline for better card generation quality
+    let outline = null
     try {
-      // Generate Core tier with streaming callback
+      outline = await getOutlineForTopic(deck.id)
+      if (outline) {
+        console.log(`[OUTLINE] Using pre-generated outline for: ${deck.name}`)
+      } else {
+        console.log(`[OUTLINE] No outline available for: ${deck.name} - generating cards without outline`)
+      }
+    } catch (err) {
+      console.warn(`[OUTLINE] Error fetching outline:`, err)
+    }
+
+    try {
+      // Generate Core tier with streaming callback (and optional outline)
       const coreCards = await generateTierCards(
         deck.name,
         'core',
@@ -4784,13 +4876,35 @@ export default function Canvas() {
           }))
 
           console.log(`[STREAM] Card ${cardNumber}/5 displayed: ${card.title}`)
-        }
+        },
+        outline // Pass outline for better card generation quality
       )
 
       console.log(`[loadOrGenerateCardsForDeck] ✅ Streamed Core tier for ${deck.name}`)
 
       // Cards are already saved incrementally by saveStreamedCard during streaming
       // No need to call saveDeckCards here (it would overwrite claimed status)
+
+      // ========================================================================
+      // SHARED MAP: Save newly generated cards to Supabase as canonical
+      // ========================================================================
+      console.log(`[SHARED MAP] Saving ${coreCards.length} cards to Supabase for "${deck.name}"`)
+      for (let i = 0; i < coreCards.length; i++) {
+        const card = coreCards[i]
+        try {
+          await upsertCanonicalCard({
+            topic_id: deck.id,
+            card_number: i + 1,
+            title: card.title,
+            content: card.content,
+            rarity: card.rarity || 'common',
+            tier: 'core'
+          })
+        } catch (err) {
+          console.warn(`[SHARED MAP] Failed to save card ${i + 1} to Supabase:`, err)
+        }
+      }
+      console.log(`[SHARED MAP] ✅ Saved canonical cards to Supabase`)
 
       setGenerationProgress({ current: 5, total: 5, phase: 'complete' })
 
@@ -4809,13 +4923,24 @@ export default function Canvas() {
 
   // Background generation for next tier (no UI updates until complete)
   // Returns a promise that resolves when generation is complete
-  const generateTierInBackground = (deck, tier, previousCards, parentPath) => {
+  const generateTierInBackground = async (deck, tier, previousCards, parentPath) => {
     console.log(`[BACKGROUND] Starting ${tier} generation for ${deck.name}`)
+
+    // Try to get outline for better quality
+    let outline = null
+    try {
+      outline = await getOutlineForTopic(deck.id)
+      if (outline) {
+        console.log(`[BACKGROUND] Using outline for ${tier} generation`)
+      }
+    } catch (err) {
+      console.warn(`[BACKGROUND] Error fetching outline:`, err)
+    }
 
     const generationPromise = (async () => {
       try {
         // Generate without streaming callback (just wait for all cards)
-        const cards = await generateTierCards(deck.name, tier, previousCards, parentPath, null)
+        const cards = await generateTierCards(deck.name, tier, previousCards, parentPath, null, outline)
 
         // Save to localStorage
         saveDeckCards(deck.id, deck.name, cards, tier)
@@ -4824,6 +4949,24 @@ export default function Canvas() {
             saveCardContent(card.id, card.content)
           }
         })
+
+        // Save to Supabase as canonical cards
+        console.log(`[BACKGROUND] Saving ${cards.length} ${tier} cards to Supabase for "${deck.name}"`)
+        for (let i = 0; i < cards.length; i++) {
+          const card = cards[i]
+          try {
+            await upsertCanonicalCard({
+              topic_id: deck.id,
+              card_number: (tier === 'deep_dive_1' ? 6 : 11) + i, // core: 1-5, dd1: 6-10, dd2: 11-15
+              title: card.title,
+              content: card.content,
+              rarity: card.rarity || 'common',
+              tier: tier
+            })
+          } catch (err) {
+            console.warn(`[BACKGROUND] Failed to save ${tier} card ${i + 1} to Supabase:`, err)
+          }
+        }
 
         // Update state (cards ready but tier still locked)
         setTierCards(prev => ({
@@ -4911,6 +5054,17 @@ export default function Canvas() {
       const streamedCards = []
       const tierOffset = tier === 'deep_dive_1' ? 5 : 10
 
+      // Try to get outline for better quality
+      let outline = null
+      try {
+        outline = await getOutlineForTopic(deck.id)
+        if (outline) {
+          console.log(`[UNLOCK] Using outline for ${tier} generation`)
+        }
+      } catch (err) {
+        console.warn(`[UNLOCK] Error fetching outline:`, err)
+      }
+
       // Use streaming to show cards one-by-one
       const cards = await generateTierCards(
         deck.name,
@@ -4956,7 +5110,8 @@ export default function Canvas() {
           })
 
           console.log(`[STREAM] ${tier} card ${cardNumber}/5: ${card.title}`)
-        }
+        },
+        outline // Pass outline for better card generation quality
       )
 
       // Also update legacy generatedCards
@@ -5018,13 +5173,93 @@ export default function Canvas() {
     generateAndUnlockTier(currentDeck, tier, parentPath)
   }
 
+  // Start background outline generation for a topic
+  // Returns existing promise if already in flight, or starts new one
+  const startOutlineGeneration = async (deckId, topicName, parentContext, previewText = null) => {
+    // Check if we already have an in-flight promise
+    if (outlinePromisesRef.current[deckId]) {
+      console.log(`[OUTLINE] Already generating outline for: ${topicName}`)
+      return outlinePromisesRef.current[deckId]
+    }
+
+    // Check if outline already exists in Supabase
+    try {
+      const { data: existingOutline, error } = await getOutline(deckId)
+      if (!error && existingOutline && existingOutline.outline_json) {
+        console.log(`[OUTLINE] Found existing outline for: ${topicName}`)
+        return existingOutline.outline_json
+      }
+    } catch (err) {
+      console.warn(`[OUTLINE] Error checking for existing outline:`, err)
+    }
+
+    // Start new generation
+    console.log(`[OUTLINE] Starting background outline generation for: ${topicName}${previewText ? ' (with preview context)' : ''}`)
+    const promise = (async () => {
+      try {
+        const { outline } = await generateTopicOutline(topicName, parentContext, previewText)
+
+        // Save to Supabase
+        try {
+          await saveOutline(deckId, outline)
+          console.log(`[OUTLINE] Saved outline to Supabase for: ${topicName}`)
+        } catch (err) {
+          console.warn(`[OUTLINE] Failed to save outline to Supabase:`, err)
+        }
+
+        return outline
+      } catch (err) {
+        console.error(`[OUTLINE] Failed to generate outline for: ${topicName}`, err)
+        throw err
+      } finally {
+        // Clean up promise ref after completion
+        delete outlinePromisesRef.current[deckId]
+      }
+    })()
+
+    outlinePromisesRef.current[deckId] = promise
+    return promise
+  }
+
+  // Get outline for a topic (from cache, in-flight, or Supabase)
+  const getOutlineForTopic = async (deckId) => {
+    // Check if there's an in-flight promise
+    if (outlinePromisesRef.current[deckId]) {
+      console.log(`[OUTLINE] Waiting for in-flight outline generation...`)
+      try {
+        return await outlinePromisesRef.current[deckId]
+      } catch (err) {
+        console.warn(`[OUTLINE] In-flight generation failed:`, err)
+        return null
+      }
+    }
+
+    // Check Supabase
+    try {
+      const { data: existingOutline, error } = await getOutline(deckId)
+      if (!error && existingOutline && existingOutline.outline_json) {
+        console.log(`[OUTLINE] Retrieved outline from Supabase`)
+        return existingOutline.outline_json
+      }
+    } catch (err) {
+      console.warn(`[OUTLINE] Error fetching outline:`, err)
+    }
+
+    return null
+  }
+
   const openDeck = async (deck) => {
     // Check if this is a leaf topic that should show a preview card first
     const isLeafTopic = deck.isLeaf || deck.source === 'vital-articles' ||
       (getTreeNode(deck.id)?.children?.length === 0)
 
     if (isLeafTopic) {
-      // Check if we already have the preview card
+      // Build parent path for context (used by both preview and outline)
+      const parentPath = stackDecks.length > 0
+        ? stackDecks.map(d => d.name).join(' > ')
+        : null
+
+      // Check if we already have the preview card locally
       const existingPreview = getPreviewCard(deck.id)
       if (existingPreview) {
         // Show existing preview
@@ -5036,8 +5271,12 @@ export default function Canvas() {
           isLoading: false,
           claimed: existingPreview.claimed
         })
+
+        // [BACKGROUND OUTLINE] Start outline generation while user reads preview
+        // Pass the preview content so outline knows what not to repeat
+        startOutlineGeneration(deck.id, deck.name || deck.title, parentPath, existingPreview.content)
       } else {
-        // Show loading state and generate preview
+        // Show loading state
         setShowPreviewCard({
           deckId: deck.id,
           title: deck.name || deck.title,
@@ -5048,26 +5287,61 @@ export default function Canvas() {
         })
 
         try {
-          // Build parent path for context
-          const parentPath = stackDecks.length > 0
-            ? stackDecks.map(d => d.name).join(' > ')
-            : null
+          // [SHARED MAP] Check Supabase first for existing preview
+          const { data: remotePreview, error: fetchError } = await getPreviewCardRemote(deck.id)
 
-          const { preview } = await generateTopicPreview(deck.name || deck.title, parentPath)
+          if (!fetchError && remotePreview && remotePreview.content) {
+            console.log(`[SHARED MAP] Found preview card for "${deck.name || deck.title}" in Supabase`)
 
-          // Save to storage
-          savePreviewCard(deck.id, deck.name || deck.title, preview)
+            // Save to local storage
+            savePreviewCard(deck.id, deck.name || deck.title, remotePreview.content)
 
-          // Get the saved card to get the cardId
-          const savedPreview = getPreviewCard(deck.id)
+            // Get the saved card to get the cardId
+            const savedPreview = getPreviewCard(deck.id)
 
-          // Update state
-          setShowPreviewCard(prev => prev?.deckId === deck.id ? {
-            ...prev,
-            preview,
-            cardId: savedPreview?.cardId || null,
-            isLoading: false
-          } : prev)
+            // Update state
+            setShowPreviewCard(prev => prev?.deckId === deck.id ? {
+              ...prev,
+              preview: remotePreview.content,
+              cardId: savedPreview?.cardId || null,
+              isLoading: false
+            } : prev)
+
+            // [BACKGROUND OUTLINE] Start outline generation while user reads preview
+            // Pass the preview content so outline knows what not to repeat
+            startOutlineGeneration(deck.id, deck.name || deck.title, parentPath, remotePreview.content)
+          } else {
+            // No preview in Supabase, generate one
+            console.log(`[SHARED MAP] No preview found for "${deck.name || deck.title}", generating...`)
+
+            const { preview } = await generateTopicPreview(deck.name || deck.title, parentPath)
+
+            // Save to local storage
+            savePreviewCard(deck.id, deck.name || deck.title, preview)
+
+            // [SHARED MAP] Save to Supabase
+            try {
+              await savePreviewCardRemote(deck.id, deck.name || deck.title, preview)
+              console.log(`[SHARED MAP] Saved preview card for "${deck.name || deck.title}" to Supabase`)
+            } catch (err) {
+              console.warn(`[SHARED MAP] Failed to save preview to Supabase:`, err)
+            }
+
+            // Get the saved card to get the cardId
+            const savedPreview = getPreviewCard(deck.id)
+
+            // Update state
+            setShowPreviewCard(prev => prev?.deckId === deck.id ? {
+              ...prev,
+              preview,
+              cardId: savedPreview?.cardId || null,
+              isLoading: false
+            } : prev)
+
+            // [BACKGROUND OUTLINE] Start outline generation while user reads preview
+            // Pass the preview content so outline knows what not to repeat
+            startOutlineGeneration(deck.id, deck.name || deck.title, parentPath, preview)
+          }
         } catch (error) {
           console.error('Failed to generate preview:', error)
           // On error, just navigate directly
@@ -5231,8 +5505,11 @@ export default function Canvas() {
             claimed: existingPreview.claimed,
             navigatePath: generated.path  // Store path for later navigation
           })
+
+          // [BACKGROUND OUTLINE] Start outline generation while user reads preview
+          startOutlineGeneration(generated.id, generated.name, generated.parentPath, existingPreview.content)
         } else {
-          // Show loading state and generate preview
+          // Show loading state
           setShowPreviewCard({
             deckId: generated.id,
             title: generated.name,
@@ -5244,15 +5521,47 @@ export default function Canvas() {
           })
 
           try {
-            const { preview } = await generateTopicPreview(generated.name, generated.parentPath)
-            savePreviewCard(generated.id, generated.name, preview)
-            const savedPreview = getPreviewCard(generated.id)
-            setShowPreviewCard(prev => prev?.deckId === generated.id ? {
-              ...prev,
-              preview,
-              cardId: savedPreview?.cardId || null,
-              isLoading: false
-            } : prev)
+            // [SHARED MAP] Check Supabase first for existing preview
+            const { data: remotePreview, error: fetchError } = await getPreviewCardRemote(generated.id)
+
+            if (!fetchError && remotePreview && remotePreview.content) {
+              console.log(`[SHARED MAP] Found preview card for "${generated.name}" in Supabase (wander)`)
+              savePreviewCard(generated.id, generated.name, remotePreview.content)
+              const savedPreview = getPreviewCard(generated.id)
+              setShowPreviewCard(prev => prev?.deckId === generated.id ? {
+                ...prev,
+                preview: remotePreview.content,
+                cardId: savedPreview?.cardId || null,
+                isLoading: false
+              } : prev)
+
+              // [BACKGROUND OUTLINE] Start outline generation while user reads preview
+              startOutlineGeneration(generated.id, generated.name, generated.parentPath, remotePreview.content)
+            } else {
+              // No preview in Supabase, generate one
+              console.log(`[SHARED MAP] No preview found for "${generated.name}", generating... (wander)`)
+              const { preview } = await generateTopicPreview(generated.name, generated.parentPath)
+              savePreviewCard(generated.id, generated.name, preview)
+
+              // [SHARED MAP] Save to Supabase
+              try {
+                await savePreviewCardRemote(generated.id, generated.name, preview)
+                console.log(`[SHARED MAP] Saved preview card for "${generated.name}" to Supabase (wander)`)
+              } catch (err) {
+                console.warn(`[SHARED MAP] Failed to save preview to Supabase (wander):`, err)
+              }
+
+              const savedPreview = getPreviewCard(generated.id)
+              setShowPreviewCard(prev => prev?.deckId === generated.id ? {
+                ...prev,
+                preview,
+                cardId: savedPreview?.cardId || null,
+                isLoading: false
+              } : prev)
+
+              // [BACKGROUND OUTLINE] Start outline generation while user reads preview
+              startOutlineGeneration(generated.id, generated.name, generated.parentPath, preview)
+            }
           } catch (error) {
             console.error('Failed to generate preview after wander:', error)
             // On error, navigate directly

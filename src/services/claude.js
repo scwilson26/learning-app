@@ -20,45 +20,41 @@ export async function generateTopicPreview(topic, parentPath = null) {
     const prompt = `Write a preview for "${topic}" that helps someone decide if they want to learn about it.${contextNote}
 
 FORMAT:
-- First: 1-2 sentences explaining what it is
-- Then: One surprising detail (a specific fact that just lands)
-- Separate them with a blank line
+- First paragraph: 2-3 sentences explaining what it is and why it matters
+- Second paragraph: 1-2 surprising details or facts that make you want to learn more
+- Keep it under 80 words total
 - No call to action (the UI has an Explore button)
 
-TONE: Modern, clear, confident. Trust the material—no "Did you know?" or "Fascinating!" energy. The surprising detail should just land without being flagged or called out.
+TONE: Modern, clear, confident. Trust the material—no "Did you know?" or "Fascinating!" energy. The surprising details should just land without being flagged or called out.
 
 RULES:
 - Specific facts, numbers, names—not vague statements
 - Simple everyday words
 - Let the content earn interest by being precise
+- This is a TEASER, not a summary—leave them wanting more
 
 EXAMPLES:
 
 Topic: "Bayeux Tapestry"
-A 230-foot embroidered cloth telling the story of the Norman conquest of England in 1066, scene by scene.
+A 230-foot embroidered cloth telling the story of the Norman conquest of England in 1066, scene by scene. It's not actually a tapestry—it's embroidery, stitched by hand nearly a thousand years ago.
 
-It nearly got cut up for wagon covers during the French Revolution.
+It nearly got cut up for wagon covers during the French Revolution. Today it lives in a museum built specifically for it in Normandy.
 
 Topic: "Tupac Shakur"
-One of hip hop's most influential artists—died at 25, still shaping the genre decades later.
+One of hip hop's most influential artists—died at 25 but still shaping the genre decades later. His lyrics tackled police brutality, poverty, and Black identity with raw honesty that connected across generations.
 
-He recorded over 150 songs in his final year alone.
+He recorded over 150 songs in his final year alone. Albums kept releasing for years after his death.
 
 Topic: "The Troubles"
-A decades-long violent conflict in Northern Ireland between unionists and nationalists. Over 3,500 people died.
+A decades-long violent conflict in Northern Ireland between unionists who wanted to stay British and nationalists who wanted to join Ireland. Over 3,500 people died between 1968 and 1998.
 
-The peace walls separating communities are still standing today.
-
-Topic: "Atacama Large Millimeter Array"
-66 radio antennas in Chile's desert working together as one telescope, built where it almost never rains.
-
-It can see dust clouds where stars are forming 10 billion light-years away.
+The peace walls separating Catholic and Protestant neighborhoods are still standing today. Some are over 25 feet tall.
 
 Write ONLY the preview - no intro, no "learn more" line.`;
 
     const message = await anthropic.messages.create({
       model: 'claude-3-5-haiku-20241022',
-      max_tokens: 150,
+      max_tokens: 250,
       messages: [{ role: 'user', content: prompt }]
     });
 
@@ -66,6 +62,94 @@ Write ONLY the preview - no intro, no "learn more" line.`;
   } catch (error) {
     console.error('Error generating topic preview:', error);
     throw new Error('Failed to generate preview');
+  }
+}
+
+/**
+ * Generate an outline for a topic - 15 card concepts across 3 tiers
+ * Used for background pre-generation while user reads preview card
+ * @param {string} topic - The topic name
+ * @param {string} parentContext - Optional parent path context
+ * @param {string} previewText - Optional preview card text to avoid repeating
+ * @returns {Promise<{outline: Object}>} outline with core, deep_dive_1, deep_dive_2 arrays
+ */
+export async function generateTopicOutline(topic, parentContext = null, previewText = null) {
+  console.log(`[OUTLINE] Generating outline for: ${topic}${previewText ? ' (with preview context)' : ''}`);
+
+  const contextNote = parentContext ? `\nContext: "${topic}" is under "${parentContext}"` : '';
+
+  const previewNote = previewText ? `
+
+IMPORTANT - THE USER ALREADY SAW THIS PREVIEW:
+"""
+${previewText}
+"""
+Do NOT repeat any facts, numbers, or details from the preview. The 15 cards should teach NEW information that builds on (but doesn't duplicate) what the preview already covered.` : '';
+
+  const prompt = `Create a learning outline for "${topic}".${contextNote}${previewNote}
+
+You're planning 15 flashcards across 3 tiers. For each card, write a 1-2 sentence concept description (what this card should teach).
+
+TIER STRUCTURE:
+- CORE (5 cards): The essentials. After these 5, someone should "get it." What it is, why it matters, key concepts, how it works, important context.
+- DEEP_DIVE_1 (5 cards): The interesting details. Behind-the-scenes, surprising connections, notable examples, how experts think about it.
+- DEEP_DIVE_2 (5 cards): Expert territory. Nuance, lesser-known aspects, counterintuitive facts, advanced implications, connections to other fields.
+
+RULES:
+- Each concept should be specific enough to become one card
+- No overlap between concepts
+- Build progressively - later tiers assume earlier knowledge
+- Include specific facts, names, numbers where relevant
+- Concepts should be teaching points, not just topic labels
+- DO NOT repeat anything from the preview card
+
+OUTPUT FORMAT (JSON only, no explanation):
+{
+  "core": [
+    {"title": "Card title (4-8 words)", "concept": "What this card teaches (1-2 sentences)"},
+    ...4 more
+  ],
+  "deep_dive_1": [
+    {"title": "Card title", "concept": "What this card teaches"},
+    ...4 more
+  ],
+  "deep_dive_2": [
+    {"title": "Card title", "concept": "What this card teaches"},
+    ...4 more
+  ]
+}`;
+
+  try {
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2000,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    const responseText = message.content[0].text.trim();
+
+    // Extract JSON from response (handle markdown code blocks)
+    let jsonStr = responseText;
+    if (responseText.includes('```')) {
+      const match = responseText.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (match) jsonStr = match[1].trim();
+    }
+
+    const outline = JSON.parse(jsonStr);
+
+    // Validate structure
+    if (!outline.core || !outline.deep_dive_1 || !outline.deep_dive_2) {
+      throw new Error('Invalid outline structure');
+    }
+    if (outline.core.length !== 5 || outline.deep_dive_1.length !== 5 || outline.deep_dive_2.length !== 5) {
+      console.warn('[OUTLINE] Unexpected card count, but proceeding');
+    }
+
+    console.log(`[OUTLINE] ✅ Generated outline for: ${topic} (${outline.core.length + outline.deep_dive_1.length + outline.deep_dive_2.length} concepts)`);
+    return { outline };
+  } catch (error) {
+    console.error('[OUTLINE] Error generating outline:', error);
+    throw new Error('Failed to generate outline');
   }
 }
 
@@ -2211,13 +2295,14 @@ const TIER_CONFIG = {
  * @param {Array} previousCards - Cards from previous tiers (to avoid repetition)
  * @param {string} parentContext - Optional parent context
  * @param {Function} onCard - Callback fired when each card is ready (for progressive display)
+ * @param {Object} outline - Optional pre-generated outline with card concepts
  * @returns {Promise<Array>} Array of 5 card objects
  */
-export async function generateTierCards(topicName, tier, previousCards = [], parentContext = null, onCard = null) {
+export async function generateTierCards(topicName, tier, previousCards = [], parentContext = null, onCard = null, outline = null) {
   const config = TIER_CONFIG[tier];
   if (!config) throw new Error(`Unknown tier: ${tier}`);
 
-  console.log(`[TIER] Generating ${config.name} (5 cards) for: ${topicName}${onCard ? ' [STREAMING]' : ''}`);
+  console.log(`[TIER] Generating ${config.name} (5 cards) for: ${topicName}${onCard ? ' [STREAMING]' : ''}${outline ? ' [WITH OUTLINE]' : ''}`);
 
   // Build context from previous cards
   let previousContext = '';
@@ -2232,9 +2317,37 @@ Build on this foundation - go deeper, not sideways.\n`;
     ? `Context: "${topicName}" within "${parentContext}".\n`
     : '';
 
+  // Build outline context if available
+  let outlineContext = '';
+  if (outline) {
+    const tierOutline = outline[tier];
+    if (tierOutline && tierOutline.length > 0) {
+      outlineContext = `\nPLANNED CARDS FOR THIS TIER (follow this outline):
+${tierOutline.map((c, i) => `${i + 1}. "${c.title}": ${c.concept}`).join('\n')}
+
+Write the full content for each of these planned cards. Use the titles and concepts as your guide.\n`;
+
+      // Also show what's coming in other tiers for context
+      const otherTiers = [];
+      if (tier === 'core' && outline.deep_dive_1) {
+        otherTiers.push(`DEEP DIVE 1 (coming later): ${outline.deep_dive_1.map(c => c.title).join(', ')}`);
+      }
+      if (tier === 'core' && outline.deep_dive_2) {
+        otherTiers.push(`DEEP DIVE 2 (coming later): ${outline.deep_dive_2.map(c => c.title).join(', ')}`);
+      }
+      if (tier === 'deep_dive_1' && outline.deep_dive_2) {
+        otherTiers.push(`DEEP DIVE 2 (coming later): ${outline.deep_dive_2.map(c => c.title).join(', ')}`);
+      }
+      if (otherTiers.length > 0) {
+        outlineContext += `\nFUTURE TIERS (don't cover these yet, but know they're coming):
+${otherTiers.join('\n')}\n`;
+      }
+    }
+  }
+
   // Use delimiters for streaming so we can parse cards as they arrive
   const prompt = `Generate 5 educational flashcards about "${topicName}" for ${config.name}.
-${contextHint}${previousContext}
+${contextHint}${previousContext}${outlineContext}
 FOCUS FOR THIS TIER:
 ${config.guidance}
 
