@@ -583,14 +583,14 @@ function renderExpandedCardDecorations(categoryId, theme, isBack = false) {
 const HOME_DECKS = [
   {
     id: 'my-decks',
-    name: 'My Decks',
+    name: 'Decks',
     gradient: 'from-indigo-500 to-purple-600',
     bgColor: 'bg-indigo-50',
     borderColor: 'border-indigo-300',
   },
   {
     id: 'collections',
-    name: 'Collections',
+    name: 'Collection',
     gradient: 'from-amber-500 to-orange-600',
     bgColor: 'bg-amber-50',
     borderColor: 'border-amber-300',
@@ -2916,18 +2916,6 @@ function PreviewCardModal({
                 {/* Secondary options */}
                 <div className="flex gap-2">
                   <button
-                    onClick={onWander}
-                    className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 hover:scale-[1.02] active:scale-[0.98]"
-                    style={{
-                      background: 'linear-gradient(to right, #a855f7, #4f46e5)',
-                      color: '#ffffff',
-                      boxShadow: '0 4px 12px rgba(168, 85, 247, 0.3)'
-                    }}
-                  >
-                    <span>🎲</span>
-                    <span>Wander</span>
-                  </button>
-                  <button
                     onClick={onBack}
                     className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-1.5"
                     style={{
@@ -2938,6 +2926,18 @@ function PreviewCardModal({
                   >
                     <span>←</span>
                     <span>Back</span>
+                  </button>
+                  <button
+                    onClick={onWander}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 hover:scale-[1.02] active:scale-[0.98]"
+                    style={{
+                      background: 'linear-gradient(to right, #a855f7, #4f46e5)',
+                      color: '#ffffff',
+                      boxShadow: '0 4px 12px rgba(168, 85, 247, 0.3)'
+                    }}
+                  >
+                    <span>🎲</span>
+                    <span>Wander</span>
                   </button>
                 </div>
               </div>
@@ -5694,7 +5694,7 @@ export default function Canvas() {
               <span className="text-lg">‹</span>
               <span className="text-sm font-medium">Home</span>
             </button>
-            <span className="font-semibold text-gray-800">My Decks</span>
+            <span className="font-semibold text-gray-800">Decks</span>
             <div className="bg-gray-100 rounded-full px-3 py-1">
               <span className="text-gray-500 text-xs">Cards: </span>
               <span className="text-gray-800 font-bold text-sm">{claimedCards.size}</span>
@@ -5785,7 +5785,7 @@ export default function Canvas() {
               <span className="text-lg">‹</span>
               <span className="text-sm font-medium">Home</span>
             </button>
-            <span className="font-semibold text-gray-800">Collections</span>
+            <span className="font-semibold text-gray-800">Collection</span>
             <div className="bg-gray-100 rounded-full px-3 py-1">
               <span className="text-gray-500 text-xs">Cards: </span>
               <span className="text-gray-800 font-bold text-sm">{claimedCards.size}</span>
@@ -5800,17 +5800,20 @@ export default function Canvas() {
               <p className="text-sm">Explore topics and claim cards to see them here</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {categoriesWithCards.map((category) => (
+            <div className="flex gap-2 flex-wrap justify-center max-w-4xl mx-auto">
+              {categoriesWithCards.map((category, index) => (
                 <motion.div
                   key={category.id}
-                  className={`relative w-32 h-40 rounded-xl cursor-pointer ${category.bgColor} ${category.borderColor} border-2 flex flex-col items-center justify-center p-3 overflow-hidden shadow-md`}
-                  onClick={() => setStack(['collections', category.id])}
-                  whileHover={{ y: -6, scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.03 }}
                 >
-                  <span className="text-base font-bold text-center text-gray-800 mb-2">{category.name}</span>
-                  <span className="text-xs text-gray-600">{cardsByCategory[category.id]?.length || 0} cards</span>
+                  <Deck
+                    deck={{ id: category.id, name: `${category.name}\n${cardsByCategory[category.id]?.length || 0} cards` }}
+                    onOpen={() => setStack(['collections', category.id])}
+                    claimed={false}
+                    rootCategoryId={category.id}
+                  />
                 </motion.div>
               ))}
             </div>
@@ -5843,7 +5846,7 @@ export default function Canvas() {
               className="flex items-center gap-2 text-amber-600 hover:text-amber-800 transition-colors"
             >
               <span className="text-lg">‹</span>
-              <span className="text-sm font-medium">Collections</span>
+              <span className="text-sm font-medium">Collection</span>
             </button>
             <span className="font-semibold text-gray-800">{category?.name || 'Category'}</span>
             <div className="bg-gray-100 rounded-full px-3 py-1">
