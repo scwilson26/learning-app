@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { generateSubDecks, generateSingleCardContent, generateTierCards, generateTopicPreview } from '../services/claude'
+import { supabase, onAuthStateChange, signOut, syncCards } from '../services/supabase'
+import Auth from './Auth'
 import {
   getDeckCards,
   saveDeckCards,
@@ -4373,6 +4375,50 @@ function SearchBar({ onNavigate }) {
 }
 
 export default function Canvas() {
+  // Auth state
+  const [user, setUser] = useState(null)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [showAuth, setShowAuth] = useState(false)
+
+  // Sync state
+  const [isSyncing, setIsSyncing] = useState(false)
+  const [syncStatus, setSyncStatus] = useState(null) // { uploaded, downloaded } or null
+
+  // Listen for auth state changes
+  useEffect(() => {
+    // Check initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user || null)
+      setAuthLoading(false)
+    })
+
+    // Subscribe to auth changes
+    const unsubscribe = onAuthStateChange(async (event, session) => {
+      setUser(session?.user || null)
+      if (event === 'SIGNED_IN') {
+        setShowAuth(false)
+        // Sync cards when user signs in
+        setIsSyncing(true)
+        setSyncStatus(null)
+        try {
+          const localData = getData()
+          const result = await syncCards(localData)
+          if (!result.error) {
+            setSyncStatus({ uploaded: result.uploaded, downloaded: result.downloaded })
+            // Clear sync status after 3 seconds
+            setTimeout(() => setSyncStatus(null), 3000)
+          }
+        } catch (err) {
+          console.error('[Canvas] Sync error:', err)
+        } finally {
+          setIsSyncing(false)
+        }
+      }
+    })
+
+    return unsubscribe
+  }, [])
+
   // Load claimed cards from localStorage on mount
   const [claimedCards, setClaimedCards] = useState(() => getClaimedCardIds())
   const [stack, setStack] = useState([]) // Array of deck IDs representing the stack
@@ -5606,6 +5652,11 @@ export default function Canvas() {
   // Check if we have sub-decks to explore
   const hasSubDecks = childDecks.length > 0 || (currentSections?.sections?.length > 0)
 
+  // Show auth screen if requested
+  if (showAuth) {
+    return <Auth onSkip={() => setShowAuth(false)} />
+  }
+
   // Home screen - show Home decks (just "My Decks" for now)
   if (stack.length === 0) {
     return (
@@ -5626,11 +5677,60 @@ export default function Canvas() {
           </div>
         </div>
 
-        {/* Collection counter */}
-        <div className="fixed top-4 right-4 bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-200 shadow-sm">
-          <span className="text-gray-500 text-sm">Cards: </span>
-          <span className="text-gray-800 font-bold">{claimedCards.size}</span>
+        {/* Top bar with user and card count */}
+        <div className="fixed top-4 left-4 right-4 flex justify-between items-center">
+          {/* User button */}
+          {user ? (
+            <button
+              onClick={() => signOut()}
+              className="bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-200 shadow-sm text-sm flex items-center gap-2 hover:bg-white transition-colors"
+            >
+              <span className="w-6 h-6 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
+                {user.email?.charAt(0).toUpperCase()}
+              </span>
+              <span className="text-gray-600 hidden sm:inline">Sign Out</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowAuth(true)}
+              className="bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-200 shadow-sm text-sm text-gray-600 hover:bg-white transition-colors"
+            >
+              Sign In
+            </button>
+          )}
+
+          {/* Collection counter */}
+          <div className="bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-200 shadow-sm">
+            <span className="text-gray-500 text-sm">Cards: </span>
+            <span className="text-gray-800 font-bold">{claimedCards.size}</span>
+          </div>
         </div>
+
+        {/* Sync status indicator */}
+        <AnimatePresence>
+          {(isSyncing || syncStatus) && (
+            <motion.div
+              className="fixed top-16 left-1/2 transform -translate-x-1/2 bg-white rounded-full px-4 py-2 shadow-lg border border-gray-200 text-sm flex items-center gap-2"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+            >
+              {isSyncing ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-gray-600">Syncing...</span>
+                </>
+              ) : syncStatus && (
+                <>
+                  <span className="text-green-500">✓</span>
+                  <span className="text-gray-600">
+                    Synced {syncStatus.uploaded > 0 ? `${syncStatus.uploaded} cards` : 'up to date'}
+                  </span>
+                </>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Wander button */}
         <WanderButton />
