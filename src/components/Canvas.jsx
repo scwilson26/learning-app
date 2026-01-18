@@ -583,7 +583,7 @@ function renderExpandedCardDecorations(categoryId, theme, isBack = false) {
 const HOME_DECKS = [
   {
     id: 'my-decks',
-    name: 'Decks',
+    name: 'Learn',
     gradient: 'from-indigo-500 to-purple-600',
     bgColor: 'bg-indigo-50',
     borderColor: 'border-indigo-300',
@@ -5694,7 +5694,7 @@ export default function Canvas() {
               <span className="text-lg">‹</span>
               <span className="text-sm font-medium">Home</span>
             </button>
-            <span className="font-semibold text-gray-800">Decks</span>
+            <span className="font-semibold text-gray-800">Learn</span>
             <div className="bg-gray-100 rounded-full px-3 py-1">
               <span className="text-gray-500 text-xs">Cards: </span>
               <span className="text-gray-800 font-bold text-sm">{claimedCards.size}</span>
