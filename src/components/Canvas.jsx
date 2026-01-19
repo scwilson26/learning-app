@@ -5962,10 +5962,10 @@ export default function Canvas() {
   // Bottom navigation bar
   const BottomNav = () => (
     <div
-      className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200"
+      className="fixed bottom-0 left-0 right-0 z-40"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
-      <div className="flex items-end justify-around px-2 h-16">
+      <div className="bg-white border-t border-gray-200 flex items-end justify-around px-2 h-16 relative">
         {/* Learn */}
         <button
           onClick={() => {
@@ -6001,25 +6001,8 @@ export default function Canvas() {
           <span className="text-xs mt-1 font-medium">Cards</span>
         </button>
 
-        {/* Wander - raised center button */}
-        <div className="flex flex-col items-center justify-center flex-1 relative">
-          <motion.button
-            onClick={handleWander}
-            disabled={isWandering}
-            className={`
-              absolute -top-6 w-16 h-16 rounded-full
-              bg-gradient-to-r from-purple-500 to-indigo-600
-              text-white shadow-lg
-              flex items-center justify-center
-              ${isWandering ? 'opacity-70' : ''}
-            `}
-            whileHover={isWandering ? {} : { scale: 1.05 }}
-            whileTap={isWandering ? {} : { scale: 0.95 }}
-          >
-            <span className="text-2xl">{isWandering ? '✨' : '🎲'}</span>
-          </motion.button>
-          <span className="text-xs mt-8 font-medium text-gray-400">Wander</span>
-        </div>
+        {/* Wander - spacer for center button */}
+        <div className="flex-1" />
 
         {/* Study - disabled */}
         <button
@@ -6050,6 +6033,28 @@ export default function Canvas() {
           <span className="text-xs mt-1 font-medium">Settings</span>
         </button>
       </div>
+
+      {/* Wander button - floating above nav bar */}
+      <motion.button
+        onClick={handleWander}
+        disabled={isWandering}
+        className={`
+          absolute left-1/2 -translate-x-1/2 -top-8 w-16 h-16 rounded-full
+          bg-gradient-to-br from-purple-400 via-purple-500 to-indigo-600
+          text-white z-50
+          flex items-center justify-center
+          ${isWandering ? 'opacity-70' : ''}
+        `}
+        style={{
+          boxShadow: isWandering
+            ? '0 4px 15px rgba(139, 92, 246, 0.3)'
+            : '0 8px 25px rgba(139, 92, 246, 0.5), 0 0 20px rgba(139, 92, 246, 0.3), inset 0 1px 1px rgba(255,255,255,0.3)'
+        }}
+        whileHover={isWandering ? {} : { scale: 1.08, boxShadow: '0 10px 30px rgba(139, 92, 246, 0.6), 0 0 25px rgba(139, 92, 246, 0.4), inset 0 1px 1px rgba(255,255,255,0.3)' }}
+        whileTap={isWandering ? {} : { scale: 0.95 }}
+      >
+        <span className="text-2xl">{isWandering ? '✨' : '🎲'}</span>
+      </motion.button>
     </div>
   )
 
