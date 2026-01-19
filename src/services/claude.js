@@ -17,44 +17,41 @@ export async function generateTopicPreview(topic, parentPath = null) {
   try {
     const contextNote = parentPath ? `\nContext: This is under "${parentPath}"` : '';
 
-    const prompt = `Write a preview for "${topic}" that helps someone decide if they want to learn about it.${contextNote}
+    const prompt = `Write a preview hook for "${topic}" — the back-of-the-book blurb that makes someone want to open this deck.${contextNote}
 
 FORMAT:
-- First paragraph: 2-3 sentences explaining what it is and why it matters
-- Second paragraph: 1-2 surprising details or facts that make you want to learn more
-- Keep it under 80 words total
-- No call to action (the UI has an Explore button)
+- 2-3 sentences MAX
+- One surprising fact, provocative question, or unexpected connection
+- Creates curiosity, doesn't satisfy it
+- Bold **key terms** (names, dates, numbers, places)
 
-TONE: Modern, clear, confident. Trust the material—no "Did you know?" or "Fascinating!" energy. The surprising details should just land without being flagged or called out.
+TONE: Like a smart friend who finds this fascinating. Confident, direct. Occasional wit, never forced.
 
 RULES:
-- Specific facts, numbers, names—not vague statements
-- Simple everyday words
-- Let the content earn interest by being precise
-- This is a TEASER, not a summary—leave them wanting more
+- Hook first, context after
+- Specific facts, not vague claims
+- This is a TEASER — leave them wanting more
+- Do NOT summarize the topic
 
 EXAMPLES:
 
-Topic: "Bayeux Tapestry"
-A 230-foot embroidered cloth telling the story of the Norman conquest of England in 1066, scene by scene. It's not actually a tapestry—it's embroidery, stitched by hand nearly a thousand years ago.
+Topic: "Cart"
+The wheel spacing on **Roman carts** became the standard **railroad gauge** 1,500 years later. A **5,000-year-old** invention that's still underneath your rolling suitcase.
 
-It nearly got cut up for wagon covers during the French Revolution. Today it lives in a museum built specifically for it in Normandy.
+Topic: "Appendicitis"
+One small tube, **48 hours** to disaster. The surgery to remove it was once considered medical heresy — now it's one of the most common operations on Earth.
 
-Topic: "Tupac Shakur"
-One of hip hop's most influential artists—died at 25 but still shaping the genre decades later. His lyrics tackled police brutality, poverty, and Black identity with raw honesty that connected across generations.
+Topic: "Romantic Music"
+It wasn't about love songs. It was a rebellion that invented the tortured genius, the fainting fan, and every film score you've ever heard.
 
-He recorded over 150 songs in his final year alone. Albums kept releasing for years after his death.
+Topic: "Eli Whitney"
+He invented the **cotton gin** in **1794** — and accidentally made slavery more profitable. His other invention changed warfare forever.
 
-Topic: "The Troubles"
-A decades-long violent conflict in Northern Ireland between unionists who wanted to stay British and nationalists who wanted to join Ireland. Over 3,500 people died between 1968 and 1998.
-
-The peace walls separating Catholic and Protestant neighborhoods are still standing today. Some are over 25 feet tall.
-
-Write ONLY the preview - no intro, no "learn more" line.`;
+Write ONLY the preview hook - no intro, no labels.`;
 
     const message = await anthropic.messages.create({
       model: 'claude-3-5-haiku-20241022',
-      max_tokens: 250,
+      max_tokens: 150,
       messages: [{ role: 'user', content: prompt }]
     });
 
@@ -88,19 +85,18 @@ Do NOT repeat any facts, numbers, or details from the preview. The 15 cards shou
 
   const prompt = `Create a learning outline for "${topic}".${contextNote}${previewNote}
 
-You're planning 15 flashcards across 3 tiers. For each card, write a 1-2 sentence concept description (what this card should teach).
+You're planning 15 learning cards across 3 tiers. For each card, write a 1-2 sentence concept (what this card teaches).
 
 TIER STRUCTURE:
-- CORE (5 cards): The essentials. After these 5, someone should "get it." What it is, why it matters, key concepts, how it works, important context.
-- DEEP_DIVE_1 (5 cards): The interesting details. Behind-the-scenes, surprising connections, notable examples, how experts think about it.
-- DEEP_DIVE_2 (5 cards): Expert territory. Nuance, lesser-known aspects, counterintuitive facts, advanced implications, connections to other fields.
+- CORE (cards 1-5): Foundation. What it is, why it matters, key components/ingredients, how it works, where it came from. After these 5, someone should "get it."
+- DEEP_DIVE_1 (cards 6-10): Deeper angles. Specific examples, notable cases, historical stories, related innovations, how experts think about it.
+- DEEP_DIVE_2 (cards 11-15): Expert territory. Complications, edge cases, modern relevance, connections to other fields, counterintuitive facts.
 
 RULES:
-- Each concept should be specific enough to become one card
-- No overlap between concepts
-- Build progressively - later tiers assume earlier knowledge
-- Include specific facts, names, numbers where relevant
-- Concepts should be teaching points, not just topic labels
+- Each concept = one specific teaching point (not a topic label)
+- No overlap between cards
+- Build progressively — later cards assume earlier knowledge
+- Include specific facts, names, numbers in concept descriptions
 - DO NOT repeat anything from the preview card
 
 OUTPUT FORMAT (JSON only, no explanation):
@@ -2274,17 +2270,17 @@ const TIER_CONFIG = {
   core: {
     name: 'Core Essentials',
     startNumber: 1,
-    guidance: `Build the mental model. After these 5 cards, someone could explain this topic to a friend in 60 seconds. They GET it—what it is, why it matters, how it fits into the world.`,
+    guidance: `Foundation. What it is, why it matters, key components, how it works, where it came from. After these 5 cards, someone should GET it—could explain it to a friend.`,
   },
   deep_dive_1: {
     name: 'Deep Dive 1',
     startNumber: 6,
-    guidance: `Complete the picture. Stories, context, how it actually works in practice. The details that turn "I've heard of this" into real understanding.`,
+    guidance: `Deeper angles. Specific examples, notable cases, historical stories, related innovations, how experts think about it. Builds on Core knowledge.`,
   },
   deep_dive_2: {
     name: 'Deep Dive 2',
     startNumber: 11,
-    guidance: `Expert territory. Nuance, implications, lesser-known aspects, connections to other fields. The stuff that makes someone say "I had no idea."`,
+    guidance: `Expert territory. Complications, edge cases, modern relevance, connections to other fields, counterintuitive facts. The stuff that makes someone say "I had no idea."`,
   }
 };
 
@@ -2346,33 +2342,34 @@ ${otherTiers.join('\n')}\n`;
   }
 
   // Use delimiters for streaming so we can parse cards as they arrive
-  const prompt = `Generate 5 educational flashcards about "${topicName}" for ${config.name}.
+  const prompt = `Generate 5 learning cards about "${topicName}" for ${config.name}.
 ${contextHint}${previousContext}${outlineContext}
 FOCUS FOR THIS TIER:
 ${config.guidance}
 
 Each card needs:
 - "title": Clear, specific topic (4-8 words)
-- "content": 60-80 words in 2-3 SHORT paragraphs
+- "content": 60-100 words in 2-4 SHORT paragraphs
 
-FORMATTING (critical):
+WRITING STYLE:
+- Hook first, context after
+- Short paragraphs (2-4 sentences max, then whitespace)
+- One main idea per card, maybe one supporting idea
+- Bold **key terms** that are testable facts (names, dates, numbers, definitions, places)
+- Last line should land with punch
 - Use \\n\\n between paragraphs (line breaks in JSON)
-- One **bold anchor** per card—the key term or most important fact. Just one.
-- No bullet points
-- No "Did you know?" or "Fascinating!" energy. Trust the material.
-- End with a clean landing—something that sticks, not a cliffhanger
+
+TONE: Like a smart friend explaining something they find fascinating. Conversational but not dumbed down. Confident, direct. Occasional wit, never forced.
 
 EXAMPLE content value:
-"The **Rosetta Stone** wasn't just one translation—it was three. The same decree written in hieroglyphics, Demotic script, and Greek.\\n\\nBefore this, hieroglyphics were a complete mystery. Scholars had guessed for centuries. The Greek portion gave them the key.\\n\\nJean-François Champollion cracked it in 1822, unlocking 3,000 years of Egyptian history in one breakthrough."
+"The **Rosetta Stone** wasn't one translation—it was three. The same decree in **hieroglyphics**, **Demotic script**, and **Greek**, carved in **196 BC**.\\n\\nHieroglyphics had been a mystery for centuries. The Greek portion finally gave scholars a key.\\n\\n**Jean-François Champollion** cracked it in **1822**—unlocking 3,000 years of Egyptian history in one breakthrough."
 
-TONE: Modern, clear, confident. Educational first. The content earns interest by being precise and making you feel smarter—not by trying to be fun.
-
-Where it fits naturally, include a detail that surprises—a counterintuitive fact, an unexpected connection, a number that doesn't seem right. Don't flag it. Don't call it out. Just let it land.
-
-Rules:
+RULES:
 - Specific facts, numbers, names (not vague statements)
 - Each card = one concept, not a summary
 - No overlap with previous cards
+- No "Did you know?" or "Fascinating!" energy
+- Every bolded term should be potentially quizzable
 
 Output each card with delimiters:
 ###CARD###
