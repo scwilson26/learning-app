@@ -4380,6 +4380,12 @@ export default function Canvas() {
   const [authLoading, setAuthLoading] = useState(true)
   const [showAuth, setShowAuth] = useState(false)
 
+  // Bottom nav state - 'learn' | 'cards' | 'study' | 'settings'
+  const [activeTab, setActiveTab] = useState('learn')
+
+  // Toast message for "Coming Soon" etc
+  const [toastMessage, setToastMessage] = useState(null)
+
   // Sync state
   const [isSyncing, setIsSyncing] = useState(false)
   const [syncStatus, setSyncStatus] = useState(null) // { uploaded, downloaded } or null
@@ -5921,27 +5927,20 @@ export default function Canvas() {
     ? allCurrentCards.findIndex(c => c.id === (typeof expandedCard === 'object' ? expandedCard.id : expandedCard))
     : -1
 
-  // Wander button component (floating) - always visible and functional
-  const WanderButton = () => (
-    <motion.button
-      onClick={handleWander}
-      disabled={isWandering}
-      className={`
-        fixed bottom-6 right-6 z-50
-        px-5 py-3 rounded-full
-        bg-gradient-to-r from-purple-500 to-indigo-600
-        text-white font-semibold text-sm
-        shadow-lg hover:shadow-xl
-        flex items-center gap-2
-        transition-all
-        ${isWandering ? 'opacity-70 cursor-wait' : 'hover:scale-105 active:scale-95'}
-      `}
-      whileHover={isWandering ? {} : { y: -2 }}
-      whileTap={isWandering ? {} : { scale: 0.95 }}
-    >
-      <span className="text-lg">{isWandering ? '✨' : '🎲'}</span>
-      <span>{isWandering ? 'Wandering...' : 'Wander'}</span>
-    </motion.button>
+  // Toast message component (for "Coming Soon" etc)
+  const ToastMessage = () => (
+    <AnimatePresence>
+      {toastMessage && (
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 50 }}
+          className="fixed bottom-28 left-1/2 -translate-x-1/2 z-50 px-6 py-3 bg-gray-900 text-white rounded-full shadow-lg text-sm"
+        >
+          {toastMessage}
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 
   // Wander message toast
@@ -5952,12 +5951,106 @@ export default function Canvas() {
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 50 }}
-          className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-6 py-3 bg-gray-900 text-white rounded-full shadow-lg text-sm"
+          className="fixed bottom-28 left-1/2 -translate-x-1/2 z-50 px-6 py-3 bg-gray-900 text-white rounded-full shadow-lg text-sm"
         >
           {wanderMessage}
         </motion.div>
       )}
     </AnimatePresence>
+  )
+
+  // Bottom navigation bar
+  const BottomNav = () => (
+    <div
+      className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+    >
+      <div className="flex items-end justify-around px-2 h-16">
+        {/* Learn */}
+        <button
+          onClick={() => {
+            setActiveTab('learn')
+            // Go to categories view
+            if (stack[0] === 'collections') {
+              setStack(['my-decks'])
+            }
+          }}
+          className={`flex flex-col items-center justify-center flex-1 py-2 transition-colors ${
+            activeTab === 'learn' ? 'text-indigo-600' : 'text-gray-400'
+          }`}
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+          <span className="text-xs mt-1 font-medium">Learn</span>
+        </button>
+
+        {/* Cards */}
+        <button
+          onClick={() => {
+            setActiveTab('cards')
+            setStack(['collections'])
+          }}
+          className={`flex flex-col items-center justify-center flex-1 py-2 transition-colors ${
+            activeTab === 'cards' ? 'text-indigo-600' : 'text-gray-400'
+          }`}
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+          </svg>
+          <span className="text-xs mt-1 font-medium">Cards</span>
+        </button>
+
+        {/* Wander - raised center button */}
+        <div className="flex flex-col items-center justify-center flex-1 relative">
+          <motion.button
+            onClick={handleWander}
+            disabled={isWandering}
+            className={`
+              absolute -top-6 w-16 h-16 rounded-full
+              bg-gradient-to-r from-purple-500 to-indigo-600
+              text-white shadow-lg
+              flex items-center justify-center
+              ${isWandering ? 'opacity-70' : ''}
+            `}
+            whileHover={isWandering ? {} : { scale: 1.05 }}
+            whileTap={isWandering ? {} : { scale: 0.95 }}
+          >
+            <span className="text-2xl">{isWandering ? '✨' : '🎲'}</span>
+          </motion.button>
+          <span className="text-xs mt-8 font-medium text-gray-400">Wander</span>
+        </div>
+
+        {/* Study - disabled */}
+        <button
+          onClick={() => {
+            setToastMessage('Coming Soon!')
+            setTimeout(() => setToastMessage(null), 2000)
+          }}
+          className="flex flex-col items-center justify-center flex-1 py-2 text-gray-300"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+          </svg>
+          <span className="text-xs mt-1 font-medium">Study</span>
+        </button>
+
+        {/* Settings - placeholder */}
+        <button
+          onClick={() => {
+            setToastMessage('Coming Soon!')
+            setTimeout(() => setToastMessage(null), 2000)
+          }}
+          className="flex flex-col items-center justify-center flex-1 py-2 text-gray-300"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span className="text-xs mt-1 font-medium">Settings</span>
+        </button>
+      </div>
+    </div>
   )
 
   // Check if we have sub-decks to explore
@@ -6043,8 +6136,9 @@ export default function Canvas() {
           )}
         </AnimatePresence>
 
-        {/* Wander button */}
-        <WanderButton />
+        {/* Bottom navigation */}
+        <BottomNav />
+        <ToastMessage />
         <WanderMessage />
 
         {/* Wander card overlay - shows path animation then preview */}
@@ -6131,8 +6225,9 @@ export default function Canvas() {
           </div>
         </div>
 
-        {/* Wander button */}
-        <WanderButton />
+        {/* Bottom navigation */}
+        <BottomNav />
+        <ToastMessage />
         <WanderMessage />
 
         {/* Wander card overlay - shows path animation then preview */}
@@ -6231,8 +6326,9 @@ export default function Canvas() {
           )}
         </div>
 
-        {/* Wander button */}
-        <WanderButton />
+        {/* Bottom navigation */}
+        <BottomNav />
+        <ToastMessage />
         <WanderMessage />
       </div>
     )
@@ -6669,8 +6765,9 @@ export default function Canvas() {
         )}
       </AnimatePresence>
 
-      {/* Floating buttons - hide when preview card is open */}
-      {!showPreviewCard && <WanderButton />}
+      {/* Bottom navigation - hide when preview card is open */}
+      {!showPreviewCard && <BottomNav />}
+      <ToastMessage />
       <WanderMessage />
 
       {/* Wander card overlay - shows path animation then preview (for WANDER only) */}
@@ -6713,14 +6810,6 @@ export default function Canvas() {
           />
         )}
       </AnimatePresence>
-
-      {/* Reset button - bottom left */}
-      <button
-        onClick={() => setShowResetConfirm(true)}
-        className="fixed bottom-4 left-4 text-sm text-gray-400 hover:text-gray-600 transition-colors"
-      >
-        Reset
-      </button>
 
       {/* Reset confirmation dialog */}
       <AnimatePresence>
