@@ -4422,15 +4422,26 @@ export default function Canvas() {
         // Sync cards and flashcards when user signs in
         setIsSyncing(true)
         setSyncStatus(null)
+        console.log('[Canvas] Starting sync...')
         try {
           const localData = getData()
 
-          // Sync cards
-          const cardsResult = await syncCards(localData, session.user)
+          // Sync cards with timeout
+          console.log('[Canvas] Syncing cards...')
+          const cardsResult = await Promise.race([
+            syncCards(localData, session.user),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Cards sync timeout')), 15000))
+          ]).catch(err => ({ uploaded: 0, downloaded: 0, error: err }))
+          console.log('[Canvas] Cards sync result:', cardsResult)
 
-          // Sync flashcards
+          // Sync flashcards with timeout
+          console.log('[Canvas] Syncing flashcards...')
           const localFlashcards = getAllFlashcards()
-          const flashcardsResult = await syncFlashcards(localFlashcards, session.user)
+          const flashcardsResult = await Promise.race([
+            syncFlashcards(localFlashcards, session.user),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Flashcards sync timeout')), 15000))
+          ]).catch(err => ({ uploaded: 0, downloaded: 0, merged: 0, error: err }))
+          console.log('[Canvas] Flashcards sync result:', flashcardsResult)
 
           // Import any flashcards from remote
           if (flashcardsResult.flashcardsToImport?.length > 0) {
@@ -4445,6 +4456,7 @@ export default function Canvas() {
             // Clear sync status after 3 seconds
             setTimeout(() => setSyncStatus(null), 3000)
           }
+          console.log('[Canvas] Sync complete')
         } catch (err) {
           console.error('[Canvas] Sync error:', err)
         } finally {
