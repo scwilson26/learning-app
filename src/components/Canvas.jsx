@@ -113,12 +113,12 @@ const CATEGORY_THEMES = {
   },
   everyday: {
     // Cozy café, cookbook, weekend morning
-    cardBg: '#fdf6e9',           // Warm peachy-cream
-    cardBgAlt: '#f5ead8',        // Soft warm
-    textPrimary: '#4a3728',      // Rich coffee brown
-    textSecondary: '#7a6352',    // Warm muted brown
-    accent: '#c2703e',           // Warm terracotta
-    accentGlow: 'rgba(194, 112, 62, 0.35)',
+    cardBg: '#fffdf9',           // Near-white cream
+    cardBgAlt: '#faf5ed',        // Soft warm
+    textPrimary: '#2d1f15',      // Dark espresso brown
+    textSecondary: '#5c4a3d',    // Warm muted brown
+    accent: '#b85c2c',           // Warm terracotta (slightly darker)
+    accentGlow: 'rgba(184, 92, 44, 0.35)',
     pattern: 'cozy',
     borderStyle: 'shadow',       // No border, warm shadow
   },
