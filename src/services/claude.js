@@ -2661,7 +2661,9 @@ BAD FLASHCARDS (avoid):
 - Too long: Multi-paragraph answers
 - Not testable: "What do you think about X?"
 
-OUTPUT FORMAT (JSON array, no markdown):
+CRITICAL: Output ONLY a valid JSON array. No explanations, no markdown, no text before or after.
+Start your response with [ and end with ]
+
 [
   {"question": "...", "answer": "..."},
   {"question": "...", "answer": "..."}
@@ -2676,11 +2678,19 @@ OUTPUT FORMAT (JSON array, no markdown):
 
     const responseText = message.content[0].text.trim()
 
-    // Parse JSON (handle potential markdown wrapping)
+    // Parse JSON - try multiple extraction strategies
     let jsonStr = responseText
+
+    // Strategy 1: Extract from markdown code blocks
     if (responseText.includes('```')) {
       const match = responseText.match(/```(?:json)?\s*([\s\S]*?)```/)
       if (match) jsonStr = match[1].trim()
+    }
+
+    // Strategy 2: Find JSON array in the response
+    if (!jsonStr.startsWith('[')) {
+      const arrayMatch = responseText.match(/\[[\s\S]*\]/)
+      if (arrayMatch) jsonStr = arrayMatch[0]
     }
 
     const flashcards = JSON.parse(jsonStr)

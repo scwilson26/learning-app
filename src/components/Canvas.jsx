@@ -6079,85 +6079,126 @@ export default function Canvas() {
     </div>
   )
 
-  // Study Screen Component
+  // Confirmation Dialog Component
+  const ConfirmDialog = ({ isOpen, title, message, onConfirm, onCancel }) => {
+    if (!isOpen) return null
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl"
+        >
+          <h3 className="text-lg font-bold text-gray-800 mb-2">{title}</h3>
+          <p className="text-gray-600 mb-6">{message}</p>
+          <div className="flex gap-3">
+            <button
+              onClick={onCancel}
+              className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onConfirm}
+              className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium transition-colors"
+            >
+              Remove
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    )
+  }
+
+  // Study Screen Component - Redesigned with home view and review flow
   const StudyScreen = ({ onGoToLearn }) => {
-    const [studyState, setStudyState] = useState('loading') // 'loading' | 'empty' | 'caught_up' | 'generating' | 'review'
+    const [studyState, setStudyState] = useState('home') // 'home' | 'review' | 'generating' | 'complete'
     const [dueCards, setDueCards] = useState([])
     const [currentIndex, setCurrentIndex] = useState(0)
     const [isFlipped, setIsFlipped] = useState(false)
-    const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 })
     const [nextReview, setNextReview] = useState(null)
+    const [totalFlashcards, setTotalFlashcards] = useState(0)
+    const [cardsNeedingFlashcards, setCardsNeedingFlashcards] = useState([])
+    const [generatingCardId, setGeneratingCardId] = useState(null)
+    const [showSkipConfirm, setShowSkipConfirm] = useState(false)
+    const [expandedTopics, setExpandedTopics] = useState({}) // deckId -> boolean
 
-    // Initialize study session
+    // Toggle topic expansion
+    const toggleTopic = (deckId) => {
+      setExpandedTopics(prev => ({ ...prev, [deckId]: !prev[deckId] }))
+    }
+
+    // Load data on mount
     useEffect(() => {
-      async function initializeStudy() {
-        setStudyState('loading')
-
-        // Step 1: Check for cards needing flashcard generation
-        const cardsNeedingGeneration = getCardsNeedingFlashcards()
-
-        if (cardsNeedingGeneration.length > 0) {
-          setStudyState('generating')
-          setGenerationProgress({ current: 0, total: cardsNeedingGeneration.length })
-
-          // Generate flashcards for each card
-          for (let i = 0; i < cardsNeedingGeneration.length; i++) {
-            const card = cardsNeedingGeneration[i]
-            setGenerationProgress({ current: i + 1, total: cardsNeedingGeneration.length })
-
-            try {
-              const rawFlashcards = await generateFlashcardsFromCard(card.title, card.content)
-
-              // Transform to full flashcard objects with SM-2 defaults
-              const flashcards = rawFlashcards.map((fc, index) => ({
-                id: `fc_${card.id}_${index}`,
-                question: fc.question,
-                answer: fc.answer,
-                sourceCardId: card.id,
-                sourceCardTitle: card.title,
-                nextReview: new Date().toISOString(), // Due immediately
-                interval: 0,
-                easeFactor: 2.5,
-                repetitions: 0,
-                status: 'active',
-                createdAt: new Date().toISOString(),
-                lastReviewedAt: null
-              }))
-
-              saveFlashcards(flashcards)
-              markCardAsFlashcardGenerated(card.id)
-
-              // Sync to Supabase if user is logged in
-              if (user) {
-                upsertFlashcardsRemote(flashcards, user.id).catch(err => {
-                  console.error('[StudyScreen] Failed to sync flashcards to remote:', err)
-                })
-              }
-            } catch (error) {
-              console.error(`Failed to generate flashcards for ${card.title}:`, error)
-            }
-          }
-        }
-
-        // Step 2: Load due flashcards
-        const due = getDueFlashcards()
-        const total = getFlashcardCount()
-
-        if (total === 0) {
-          setStudyState('empty')
-        } else if (due.length === 0) {
-          setNextReview(getNextReviewTime())
-          setStudyState('caught_up')
-        } else {
-          setDueCards(due)
-          setCurrentIndex(0)
-          setIsFlipped(false)
-          setStudyState('review')
-        }
-      }
-
-      initializeStudy()
+      refreshData()
     }, [])
+
+    // Refresh all data
+    const refreshData = () => {
+      const due = getDueFlashcards()
+      const total = getFlashcardCount()
+      const needsFlashcards = getCardsNeedingFlashcards()
+      const nextTime = getNextReviewTime()
+
+      setDueCards(due)
+      setTotalFlashcards(total)
+      setCardsNeedingFlashcards(needsFlashcards)
+      setNextReview(nextTime)
+    }
+
+    // Start review session
+    const startReview = () => {
+      const due = getDueFlashcards()
+      if (due.length > 0) {
+        setDueCards(due)
+        setCurrentIndex(0)
+        setIsFlipped(false)
+        setStudyState('review')
+      }
+    }
+
+    // Generate flashcards for a single card
+    const generateForCard = async (card) => {
+      setGeneratingCardId(card.id)
+
+      try {
+        const rawFlashcards = await generateFlashcardsFromCard(card.title, card.content)
+
+        // Transform to full flashcard objects with SM-2 defaults
+        const flashcards = rawFlashcards.map((fc, index) => ({
+          id: `fc_${card.id}_${index}`,
+          question: fc.question,
+          answer: fc.answer,
+          sourceCardId: card.id,
+          sourceCardTitle: card.title,
+          nextReview: new Date().toISOString(), // Due immediately
+          interval: 0,
+          easeFactor: 2.5,
+          repetitions: 0,
+          status: 'active',
+          createdAt: new Date().toISOString(),
+          lastReviewedAt: null
+        }))
+
+        saveFlashcards(flashcards)
+        markCardAsFlashcardGenerated(card.id)
+
+        // Sync to Supabase if user is logged in
+        if (user) {
+          upsertFlashcardsRemote(flashcards, user.id).catch(err => {
+            console.error('[StudyScreen] Failed to sync flashcards to remote:', err)
+          })
+        }
+
+        // Refresh data to update UI
+        refreshData()
+      } catch (error) {
+        console.error(`Failed to generate flashcards for ${card.title}:`, error)
+      } finally {
+        setGeneratingCardId(null)
+      }
+    }
 
     // Handle rating a flashcard
     const handleRate = (quality) => {
@@ -6188,13 +6229,18 @@ export default function Canvas() {
         setIsFlipped(false)
       } else {
         // Review complete
-        setNextReview(getNextReviewTime())
-        setStudyState('caught_up')
+        setStudyState('complete')
+        refreshData()
       }
     }
 
-    // Handle skipping/removing a flashcard
-    const handleSkip = () => {
+    // Handle skip button click (show confirmation)
+    const handleSkipClick = () => {
+      setShowSkipConfirm(true)
+    }
+
+    // Handle confirmed skip
+    const handleSkipConfirm = () => {
       const currentCard = dueCards[currentIndex]
 
       // Mark as skipped in local storage
@@ -6210,10 +6256,11 @@ export default function Canvas() {
 
       // Remove from current session
       const newDueCards = dueCards.filter((_, i) => i !== currentIndex)
+      setShowSkipConfirm(false)
 
       if (newDueCards.length === 0) {
-        setNextReview(getNextReviewTime())
-        setStudyState('caught_up')
+        setStudyState('complete')
+        refreshData()
       } else {
         setDueCards(newDueCards)
         // Adjust index if needed
@@ -6224,105 +6271,243 @@ export default function Canvas() {
       }
     }
 
-    // Loading state
-    if (studyState === 'loading') {
-      return (
-        <div className="flex flex-col items-center justify-center h-full p-6">
-          <div className="text-4xl mb-4 animate-pulse">📚</div>
-          <p className="text-gray-600">Loading study cards...</p>
-        </div>
-      )
-    }
-
-    // Generating flashcards state
-    if (studyState === 'generating') {
+    // Review completion screen
+    if (studyState === 'complete') {
       return (
         <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-          <div className="text-4xl mb-4 animate-bounce">🧠</div>
-          <h2 className="text-lg font-bold text-gray-800 mb-2">Creating Study Cards</h2>
-          <p className="text-gray-600 mb-4">
-            Processing {generationProgress.current} of {generationProgress.total} cards...
-          </p>
-          <div className="w-48 h-2 bg-gray-200 rounded-full overflow-hidden">
-            <motion.div
-              className="h-full bg-indigo-600"
-              initial={{ width: 0 }}
-              animate={{ width: `${(generationProgress.current / generationProgress.total) * 100}%` }}
-              transition={{ duration: 0.3 }}
-            />
-          </div>
-        </div>
-      )
-    }
-
-    // Empty state - no flashcards yet
-    if (studyState === 'empty') {
-      return (
-        <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-          <div className="text-6xl mb-4">📚</div>
-          <h2 className="text-xl font-bold text-gray-800 mb-2">No Study Cards Yet</h2>
-          <p className="text-gray-600 mb-6">Claim cards in Learn to build your study deck</p>
+          <div className="text-6xl mb-4">🎉</div>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">Review Complete!</h2>
+          <p className="text-gray-600 mb-6">Great work on your study session</p>
           <button
-            onClick={onGoToLearn}
+            onClick={() => {
+              refreshData()
+              setStudyState('home')
+            }}
             className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors"
           >
-            Go to Learn
+            Back to Study
           </button>
         </div>
       )
     }
 
-    // Caught up state - nothing due
-    if (studyState === 'caught_up') {
+    // Review mode (full screen)
+    if (studyState === 'review') {
       return (
-        <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-          <div className="text-6xl mb-4">🎉</div>
-          <h2 className="text-xl font-bold text-gray-800 mb-2">All Caught Up!</h2>
-          <p className="text-gray-600 mb-2">Great work on your reviews</p>
-          {nextReview && (
-            <p className="text-gray-500 text-sm">
-              Next review in {formatTimeUntilReview(nextReview)}
-            </p>
-          )}
-          <p className="text-gray-400 text-xs mt-4">
-            {getFlashcardCount()} total study cards
-          </p>
+        <div className="flex flex-col h-full">
+          {/* Header with progress and back button */}
+          <div className="flex justify-between items-center p-4">
+            <button
+              onClick={() => setStudyState('home')}
+              className="text-gray-500 hover:text-gray-700 text-sm font-medium"
+            >
+              ← Back
+            </button>
+            <span className="text-sm font-medium text-gray-500">
+              {currentIndex + 1} of {dueCards.length}
+            </span>
+          </div>
+
+          {/* Progress bar */}
+          <div className="px-4 mb-4">
+            <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+              <motion.div
+                className="h-full bg-indigo-600"
+                initial={{ width: 0 }}
+                animate={{ width: `${((currentIndex + 1) / dueCards.length) * 100}%` }}
+                transition={{ duration: 0.3 }}
+              />
+            </div>
+          </div>
+
+          {/* Flashcard */}
+          <div className="flex-1 flex items-center justify-center p-4">
+            <FlashcardReview
+              flashcard={dueCards[currentIndex]}
+              isFlipped={isFlipped}
+              onFlip={() => setIsFlipped(true)}
+              onRate={handleRate}
+              onSkip={handleSkipClick}
+            />
+          </div>
+
+          {/* Skip confirmation dialog */}
+          <ConfirmDialog
+            isOpen={showSkipConfirm}
+            title="Remove flashcard?"
+            message="This will skip this flashcard from future reviews."
+            onConfirm={handleSkipConfirm}
+            onCancel={() => setShowSkipConfirm(false)}
+          />
         </div>
       )
     }
 
-    // Review state
+    // Home view (default)
     return (
-      <div className="flex flex-col h-full">
-        {/* Header with progress */}
-        <div className="flex justify-between items-center p-4">
-          <h2 className="text-lg font-bold text-gray-800">Study</h2>
-          <span className="text-sm font-medium text-gray-500">
-            {currentIndex + 1} of {dueCards.length}
-          </span>
-        </div>
-
-        {/* Progress bar */}
-        <div className="px-4 mb-4">
-          <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
-            <motion.div
-              className="h-full bg-indigo-600"
-              initial={{ width: 0 }}
-              animate={{ width: `${((currentIndex + 1) / dueCards.length) * 100}%` }}
-              transition={{ duration: 0.3 }}
-            />
+      <div className="flex flex-col h-full overflow-auto">
+        {/* Review Section */}
+        <div className="p-4">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            {dueCards.length > 0 ? (
+              // Cards due
+              <>
+                <div className="text-center mb-4">
+                  <span className="text-4xl font-bold text-indigo-600">{dueCards.length}</span>
+                  <span className="text-lg text-gray-600 ml-2">cards due</span>
+                </div>
+                <button
+                  onClick={startReview}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-xl font-semibold text-lg transition-colors shadow-md"
+                >
+                  Start Review
+                </button>
+                <p className="text-xs text-gray-400 text-center mt-3">
+                  Each review builds on your progress
+                </p>
+              </>
+            ) : totalFlashcards > 0 ? (
+              // Caught up
+              <>
+                <div className="text-center">
+                  <div className="text-4xl mb-2">🎉</div>
+                  <h3 className="text-lg font-bold text-gray-800 mb-1">All caught up!</h3>
+                  {nextReview && (
+                    <p className="text-gray-500 text-sm">
+                      Next review in {formatTimeUntilReview(nextReview)}
+                    </p>
+                  )}
+                  <p className="text-gray-400 text-xs mt-2">
+                    {totalFlashcards} flashcards total
+                  </p>
+                </div>
+              </>
+            ) : (
+              // No flashcards yet
+              <>
+                <div className="text-center">
+                  <div className="text-4xl mb-2">📚</div>
+                  <h3 className="text-lg font-bold text-gray-800 mb-1">No flashcards yet</h3>
+                  <p className="text-gray-500 text-sm">
+                    Generate flashcards from your claimed cards below
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
-        {/* Flashcard */}
-        <div className="flex-1 flex items-center justify-center p-4">
-          <FlashcardReview
-            flashcard={dueCards[currentIndex]}
-            isFlipped={isFlipped}
-            onFlip={() => setIsFlipped(true)}
-            onRate={handleRate}
-            onSkip={handleSkip}
-          />
+        {/* Flashcard Queue Section */}
+        <div className="flex-1 p-4 pt-0">
+          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+            Create Flashcards
+          </h3>
+
+          {cardsNeedingFlashcards.length > 0 ? (
+            <div className="space-y-4">
+              {/* Group cards by parent topic */}
+              {(() => {
+                // Group cards by deckId
+                const grouped = {}
+                cardsNeedingFlashcards.forEach(card => {
+                  const deckId = card.deckId || 'uncategorized'
+                  if (!grouped[deckId]) {
+                    // Get deck name from tree or dynamic deck
+                    const treeNode = getTreeNode(deckId)
+                    const dynamicDeck = getDynamicDeck(deckId)
+                    const deckName = treeNode?.title || dynamicDeck?.name || deckId.split('-').pop()
+                    grouped[deckId] = { name: deckName, cards: [] }
+                  }
+                  grouped[deckId].cards.push(card)
+                })
+
+                return Object.entries(grouped).map(([deckId, group]) => {
+                  const isExpanded = expandedTopics[deckId] !== false // Default to expanded
+                  return (
+                    <div key={deckId} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+                      {/* Topic header - clickable accordion */}
+                      <button
+                        onClick={() => toggleTopic(deckId)}
+                        className="w-full px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between hover:bg-gray-100 transition-colors"
+                      >
+                        <h4 className="font-semibold text-gray-800">{group.name}</h4>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-500">{group.cards.length} cards</span>
+                          <motion.span
+                            animate={{ rotate: isExpanded ? 180 : 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="text-gray-400"
+                          >
+                            ▼
+                          </motion.span>
+                        </div>
+                      </button>
+                      {/* Cards in this topic - collapsible */}
+                      <AnimatePresence initial={false}>
+                        {isExpanded && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="divide-y divide-gray-50">
+                              {group.cards.map(card => (
+                                <div
+                                  key={card.id}
+                                  className="px-4 py-3 flex items-center justify-between"
+                                >
+                                  <p className="text-gray-600 text-sm truncate flex-1 mr-3">{card.title}</p>
+                                  <button
+                                    onClick={() => generateForCard(card)}
+                                    disabled={generatingCardId === card.id}
+                                    className={`px-3 py-1.5 rounded-lg font-medium text-sm transition-colors flex-shrink-0 ${
+                                      generatingCardId === card.id
+                                        ? 'bg-gray-100 text-gray-400'
+                                        : 'bg-indigo-100 text-indigo-600 hover:bg-indigo-200'
+                                    }`}
+                                  >
+                                    {generatingCardId === card.id ? (
+                                      <span className="flex items-center gap-1.5">
+                                        <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24">
+                                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                        </svg>
+                                        Creating...
+                                      </span>
+                                    ) : (
+                                      'Generate'
+                                    )}
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  )
+                })
+              })()}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-gray-400 text-sm">
+                {totalFlashcards > 0
+                  ? 'All your claimed cards have flashcards!'
+                  : 'Claim cards while learning to create flashcards here'}
+              </p>
+              {totalFlashcards === 0 && (
+                <button
+                  onClick={onGoToLearn}
+                  className="mt-4 text-indigo-600 hover:text-indigo-700 font-medium text-sm"
+                >
+                  Go to Learn →
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     )
