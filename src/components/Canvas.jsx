@@ -2850,7 +2850,7 @@ function PreviewCardModal({
             {/* Content area */}
             <div className="flex-1 overflow-auto relative z-10">
               <div className="text-sm leading-relaxed whitespace-pre-line" style={{ color: isThemed ? theme.textPrimary : '#374151' }}>
-                {preview}
+                {renderMarkdown(preview)}
               </div>
             </div>
 
