@@ -3201,8 +3201,8 @@ function WanderCard({
               </div>
 
               {/* Content */}
-              <div className="flex-1 overflow-auto text-sm leading-relaxed whitespace-pre-line relative z-10" style={{ color: isThemed ? theme.textPrimary : '#374151' }}>
-                {previewData.preview}
+              <div className="flex-1 overflow-auto text-sm leading-relaxed relative z-10" style={{ color: isThemed ? theme.textPrimary : '#374151' }}>
+                {renderMarkdown(previewData.preview)}
               </div>
 
               {/* Card ID - bottom left corner */}
@@ -3336,8 +3336,8 @@ function SkeletonCard({ index, rootCategoryId = null }) {
 function renderMarkdown(text) {
   if (!text) return null
 
-  // Split by **bold** markers and render
-  const parts = text.split(/(\*\*[^*]+\*\*)/g)
+  // Use non-greedy match to handle **bold** text properly
+  const parts = text.split(/(\*\*.*?\*\*)/g)
   return parts.map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**')) {
       return <strong key={i} className="font-semibold">{part.slice(2, -2)}</strong>
