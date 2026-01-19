@@ -3332,17 +3332,28 @@ function SkeletonCard({ index, rootCategoryId = null }) {
   )
 }
 
-// Simple markdown renderer for **bold** text
+// Simple markdown renderer for **bold** text and paragraph breaks
 function renderMarkdown(text) {
   if (!text) return null
 
-  // Use non-greedy match to handle **bold** text properly
-  const parts = text.split(/(\*\*.*?\*\*)/g)
-  return parts.map((part, i) => {
-    if (part.startsWith('**') && part.endsWith('**')) {
-      return <strong key={i} className="font-semibold">{part.slice(2, -2)}</strong>
-    }
-    return part
+  // Split by double newlines to create paragraphs
+  const paragraphs = text.split(/\n\n+/)
+
+  return paragraphs.map((paragraph, pIndex) => {
+    // Handle bold text within each paragraph
+    const parts = paragraph.split(/(\*\*.*?\*\*)/g)
+    const content = parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={i} className="font-semibold">{part.slice(2, -2)}</strong>
+      }
+      return part
+    })
+
+    return (
+      <p key={pIndex} className={pIndex > 0 ? 'mt-3' : ''}>
+        {content}
+      </p>
+    )
   })
 }
 

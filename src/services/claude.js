@@ -17,41 +17,46 @@ export async function generateTopicPreview(topic, parentPath = null) {
   try {
     const contextNote = parentPath ? `\nContext: This is under "${parentPath}"` : '';
 
-    const prompt = `Write a preview hook for "${topic}" — the back-of-the-book blurb that makes someone want to open this deck.${contextNote}
+    const prompt = `Write a preview for "${topic}" — a quick intro that tells me what this is and why it's interesting.${contextNote}
 
 FORMAT:
-- 2-3 sentences MAX
-- One surprising fact, provocative question, or unexpected connection
-- Creates curiosity, doesn't satisfy it
-- Bold **key terms** (names, dates, numbers, places)
+- 2-3 sentences, each on its OWN LINE (separated by blank lines)
+- Lead with the most interesting fact or context
+- Include specific details: dates, numbers, names, places
+- Bold **key terms** with markdown
 
-TONE: Like a smart friend who finds this fascinating. Confident, direct. Occasional wit, never forced.
+TONE: Informative and engaging. Like a knowledgeable friend giving you the quick rundown.
 
 RULES:
-- Hook first, context after
-- Specific facts, not vague claims
-- This is a TEASER — leave them wanting more
-- Do NOT summarize the topic
+- Be specific, not vague ("won 2 Olympic golds" not "pushed limits")
+- Don't repeat the topic name in the first sentence
+- Don't use rhetorical questions ("What happens when...")
+- Each sentence should add new information
 
 EXAMPLES:
 
-Topic: "Cart"
-The wheel spacing on **Roman carts** became the standard **railroad gauge** 1,500 years later. A **5,000-year-old** invention that's still underneath your rolling suitcase.
+Topic: "Yuzuru Hanyu"
+A two-time Olympic gold medalist (**2014**, **2018**) and the first figure skater to land a **quadruple loop** in competition.
 
-Topic: "Appendicitis"
-One small tube, **48 hours** to disaster. The surgery to remove it was once considered medical heresy — now it's one of the most common operations on Earth.
+He broke the 100-point barrier in the short program and holds numerous world records for technical and total scores.
 
-Topic: "Romantic Music"
-It wasn't about love songs. It was a rebellion that invented the tortured genius, the fainting fan, and every film score you've ever heard.
+His blend of athletic precision and artistic expression has earned him one of the largest fanbases in figure skating history.
 
 Topic: "Eli Whitney"
-He invented the **cotton gin** in **1794** — and accidentally made slavery more profitable. His other invention changed warfare forever.
+Invented the **cotton gin** in **1794**, which could clean 50 pounds of cotton per day — and accidentally made slavery vastly more profitable.
 
-Write ONLY the preview hook - no intro, no labels.`;
+His lesser-known innovation was **interchangeable parts** for musket manufacturing, which laid the foundation for modern mass production.
+
+Topic: "Appendicitis"
+Inflammation of the appendix that becomes life-threatening within **48-72 hours** if untreated.
+
+The appendectomy was once considered medical heresy — now it's one of the most common emergency surgeries, with over **300,000** performed annually in the US alone.
+
+Write ONLY the preview text - no intro, no labels.`;
 
     const message = await anthropic.messages.create({
-      model: 'claude-3-5-haiku-20241022',
-      max_tokens: 150,
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 250,
       messages: [{ role: 'user', content: prompt }]
     });
 
@@ -2671,7 +2676,7 @@ Start your response with [ and end with ]
 
   try {
     const message = await anthropic.messages.create({
-      model: 'claude-3-5-haiku-20241022',  // Fast and cheap for extraction
+      model: 'claude-sonnet-4-20250514',  // Better quality flashcards
       max_tokens: 1500,
       messages: [{ role: 'user', content: prompt }]
     })
