@@ -339,3 +339,275 @@ export async function syncCards(localData, sessionUser = null) {
     return { uploaded, downloaded, error }
   }
 }
+
+// ============================================================================
+// FLASHCARD SYNC (Spaced Repetition)
+// ============================================================================
+
+/**
+ * Get all flashcards for a user from Supabase
+ * @param {string} userId - Optional user ID (falls back to session)
+ * @returns {Promise<{data: Array, error: Error}>}
+ */
+export async function getFlashcardsRemote(userId = null) {
+  try {
+    let uid = userId
+    if (!uid) {
+      const { data: { user } } = await supabase.auth.getUser()
+      uid = user?.id
+    }
+    if (!uid) {
+      return { data: [], error: null } // Not authenticated, return empty
+    }
+
+    const { data, error } = await supabase
+      .from('user_flashcards')
+      .select('*')
+      .eq('user_id', uid)
+
+    if (error) {
+      console.error('[getFlashcardsRemote] Error:', error)
+      return { data: [], error }
+    }
+
+    return { data: data || [], error: null }
+  } catch (error) {
+    console.error('[getFlashcardsRemote] Error:', error)
+    return { data: [], error }
+  }
+}
+
+/**
+ * Upsert a single flashcard to Supabase
+ * @param {Object} flashcard - Flashcard object from local storage
+ * @param {string} userId - Optional user ID (falls back to session)
+ * @returns {Promise<{data: Object, error: Error}>}
+ */
+export async function upsertFlashcardRemote(flashcard, userId = null) {
+  try {
+    let uid = userId
+    if (!uid) {
+      const { data: { user } } = await supabase.auth.getUser()
+      uid = user?.id
+    }
+    if (!uid) {
+      return { data: null, error: new Error('Not authenticated') }
+    }
+
+    const { data, error } = await supabase
+      .from('user_flashcards')
+      .upsert({
+        user_id: uid,
+        flashcard_id: flashcard.id,
+        question: flashcard.question,
+        answer: flashcard.answer,
+        source_card_id: flashcard.sourceCardId,
+        source_card_title: flashcard.sourceCardTitle,
+        next_review: flashcard.nextReview,
+        interval: flashcard.interval,
+        ease_factor: flashcard.easeFactor,
+        repetitions: flashcard.repetitions,
+        status: flashcard.status,
+        created_at: flashcard.createdAt,
+        last_reviewed_at: flashcard.lastReviewedAt
+      }, {
+        onConflict: 'user_id,flashcard_id'
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('[upsertFlashcardRemote] Error:', error)
+    }
+
+    return { data, error }
+  } catch (error) {
+    console.error('[upsertFlashcardRemote] Error:', error)
+    return { data: null, error }
+  }
+}
+
+/**
+ * Upsert multiple flashcards to Supabase (batch)
+ * @param {Array} flashcards - Array of flashcard objects
+ * @param {string} userId - Optional user ID (falls back to session)
+ * @returns {Promise<{data: Array, error: Error, count: number}>}
+ */
+export async function upsertFlashcardsRemote(flashcards, userId = null) {
+  try {
+    let uid = userId
+    if (!uid) {
+      const { data: { user } } = await supabase.auth.getUser()
+      uid = user?.id
+    }
+    if (!uid) {
+      return { data: null, error: new Error('Not authenticated'), count: 0 }
+    }
+
+    if (!flashcards || flashcards.length === 0) {
+      return { data: [], error: null, count: 0 }
+    }
+
+    // Transform to database format
+    const dbFlashcards = flashcards.map(fc => ({
+      user_id: uid,
+      flashcard_id: fc.id,
+      question: fc.question,
+      answer: fc.answer,
+      source_card_id: fc.sourceCardId,
+      source_card_title: fc.sourceCardTitle,
+      next_review: fc.nextReview,
+      interval: fc.interval,
+      ease_factor: fc.easeFactor,
+      repetitions: fc.repetitions,
+      status: fc.status,
+      created_at: fc.createdAt,
+      last_reviewed_at: fc.lastReviewedAt
+    }))
+
+    const { data, error } = await supabase
+      .from('user_flashcards')
+      .upsert(dbFlashcards, {
+        onConflict: 'user_id,flashcard_id'
+      })
+      .select()
+
+    if (error) {
+      console.error('[upsertFlashcardsRemote] Error:', error)
+      return { data: null, error, count: 0 }
+    }
+
+    console.log(`[upsertFlashcardsRemote] Upserted ${data?.length || 0} flashcards`)
+    return { data, error: null, count: data?.length || 0 }
+  } catch (error) {
+    console.error('[upsertFlashcardsRemote] Error:', error)
+    return { data: null, error, count: 0 }
+  }
+}
+
+/**
+ * Sync flashcards between local storage and Supabase
+ * - Pushes local flashcards to remote
+ * - Pulls remote flashcards to local
+ * - Merges conflicts by keeping the one with newer lastReviewedAt
+ * @param {Object} localFlashcards - Object of flashcardId -> flashcard from localStorage
+ * @param {Object} sessionUser - Optional user object from session
+ * @returns {Promise<{uploaded: number, downloaded: number, merged: number, error: Error}>}
+ */
+export async function syncFlashcards(localFlashcards, sessionUser = null) {
+  let uploaded = 0
+  let downloaded = 0
+  let merged = 0
+
+  try {
+    // Get user
+    let user = sessionUser
+    if (!user) {
+      const { data: { session } } = await supabase.auth.getSession()
+      user = session?.user
+    }
+    if (!user) {
+      return { uploaded, downloaded, merged, error: new Error('Not authenticated') }
+    }
+
+    // 1. Fetch all remote flashcards
+    const { data: remoteFlashcards, error: fetchError } = await getFlashcardsRemote(user.id)
+    if (fetchError) {
+      return { uploaded, downloaded, merged, error: fetchError }
+    }
+
+    // Create a map of remote flashcards by flashcard_id
+    const remoteMap = new Map()
+    for (const rf of remoteFlashcards) {
+      remoteMap.set(rf.flashcard_id, rf)
+    }
+
+    // 2. Process local flashcards
+    const localArray = Object.values(localFlashcards || {})
+    const toUpload = []
+    const toMergeLocal = [] // Remote is newer, update local
+
+    for (const local of localArray) {
+      const remote = remoteMap.get(local.id)
+
+      if (!remote) {
+        // Local only - upload to remote
+        toUpload.push(local)
+      } else {
+        // Exists in both - compare lastReviewedAt
+        const localReview = local.lastReviewedAt ? new Date(local.lastReviewedAt) : new Date(0)
+        const remoteReview = remote.last_reviewed_at ? new Date(remote.last_reviewed_at) : new Date(0)
+
+        if (localReview > remoteReview) {
+          // Local is newer - upload to remote
+          toUpload.push(local)
+        } else if (remoteReview > localReview) {
+          // Remote is newer - will update local
+          toMergeLocal.push(remote)
+        }
+        // If equal, no action needed
+      }
+    }
+
+    // 3. Find remote-only flashcards (to download)
+    const localIds = new Set(localArray.map(l => l.id))
+    const toDownload = remoteFlashcards.filter(rf => !localIds.has(rf.flashcard_id))
+
+    // 4. Upload local flashcards to remote
+    if (toUpload.length > 0) {
+      const { count, error: uploadError } = await upsertFlashcardsRemote(toUpload, user.id)
+      if (!uploadError) {
+        uploaded = count
+      }
+    }
+
+    // 5. Return data for local storage update
+    // The caller (Canvas.jsx) will handle updating local storage
+    const flashcardsToImport = [
+      ...toDownload.map(rf => ({
+        id: rf.flashcard_id,
+        question: rf.question,
+        answer: rf.answer,
+        sourceCardId: rf.source_card_id,
+        sourceCardTitle: rf.source_card_title,
+        nextReview: rf.next_review,
+        interval: rf.interval,
+        easeFactor: parseFloat(rf.ease_factor),
+        repetitions: rf.repetitions,
+        status: rf.status,
+        createdAt: rf.created_at,
+        lastReviewedAt: rf.last_reviewed_at
+      })),
+      ...toMergeLocal.map(rf => ({
+        id: rf.flashcard_id,
+        question: rf.question,
+        answer: rf.answer,
+        sourceCardId: rf.source_card_id,
+        sourceCardTitle: rf.source_card_title,
+        nextReview: rf.next_review,
+        interval: rf.interval,
+        easeFactor: parseFloat(rf.ease_factor),
+        repetitions: rf.repetitions,
+        status: rf.status,
+        createdAt: rf.created_at,
+        lastReviewedAt: rf.last_reviewed_at
+      }))
+    ]
+
+    downloaded = toDownload.length
+    merged = toMergeLocal.length
+
+    console.log(`[syncFlashcards] Uploaded: ${uploaded}, Downloaded: ${downloaded}, Merged: ${merged}`)
+
+    return {
+      uploaded,
+      downloaded,
+      merged,
+      flashcardsToImport,
+      error: null
+    }
+  } catch (error) {
+    console.error('[syncFlashcards] Error:', error)
+    return { uploaded, downloaded, merged, error }
+  }
+}

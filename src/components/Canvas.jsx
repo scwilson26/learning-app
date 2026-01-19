@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { generateSubDecks, generateSingleCardContent, generateTierCards, generateTopicPreview, generateTopicOutline } from '../services/claude'
-import { supabase, onAuthStateChange, signOut, syncCards, getCanonicalCardsForTopic, upsertCanonicalCard, getPreviewCardRemote, savePreviewCardRemote, getOutline, saveOutline } from '../services/supabase'
+import { generateSubDecks, generateSingleCardContent, generateTierCards, generateTopicPreview, generateTopicOutline, generateFlashcardsFromCard } from '../services/claude'
+import { supabase, onAuthStateChange, signOut, syncCards, getCanonicalCardsForTopic, upsertCanonicalCard, getPreviewCardRemote, savePreviewCardRemote, getOutline, saveOutline, syncFlashcards, upsertFlashcardRemote, upsertFlashcardsRemote } from '../services/supabase'
 import Auth from './Auth'
 import {
   getDeckCards,
@@ -35,7 +35,21 @@ import {
   claimPreviewCard,
   hasPreviewCard,
   getClaimedCardsByCategory,
-  getClaimedCardsByCategoryAndDeck
+  getClaimedCardsByCategoryAndDeck,
+  getAllFlashcards,
+  getDueFlashcards,
+  getFlashcardCount,
+  getDueFlashcardCount,
+  getNextReviewTime,
+  saveFlashcards,
+  updateFlashcard,
+  skipFlashcard,
+  getCardsNeedingFlashcards,
+  markCardAsFlashcardGenerated,
+  calculateSM2,
+  formatTimeUntilReview,
+  getAllFlashcardsArray,
+  importFlashcardsFromRemote
 } from '../services/storage'
 
 // Configuration - card counts can be adjusted here or per-deck
@@ -4405,14 +4419,29 @@ export default function Canvas() {
       if (event === 'SIGNED_IN' && session?.user && !hasSynced) {
         hasSynced = true
         setShowAuth(false)
-        // Sync cards when user signs in
+        // Sync cards and flashcards when user signs in
         setIsSyncing(true)
         setSyncStatus(null)
         try {
           const localData = getData()
-          const result = await syncCards(localData, session.user)
-          if (!result.error) {
-            setSyncStatus({ uploaded: result.uploaded, downloaded: result.downloaded })
+
+          // Sync cards
+          const cardsResult = await syncCards(localData, session.user)
+
+          // Sync flashcards
+          const localFlashcards = getAllFlashcards()
+          const flashcardsResult = await syncFlashcards(localFlashcards, session.user)
+
+          // Import any flashcards from remote
+          if (flashcardsResult.flashcardsToImport?.length > 0) {
+            importFlashcardsFromRemote(flashcardsResult.flashcardsToImport)
+          }
+
+          // Show combined sync status
+          if (!cardsResult.error && !flashcardsResult.error) {
+            const totalUploaded = (cardsResult.uploaded || 0) + (flashcardsResult.uploaded || 0)
+            const totalDownloaded = (cardsResult.downloaded || 0) + (flashcardsResult.downloaded || 0)
+            setSyncStatus({ uploaded: totalUploaded, downloaded: totalDownloaded })
             // Clear sync status after 3 seconds
             setTimeout(() => setSyncStatus(null), 3000)
           }
@@ -5959,6 +5988,334 @@ export default function Canvas() {
     </AnimatePresence>
   )
 
+  // ============================================================================
+  // STUDY SCREEN - Spaced Repetition Flashcard Review
+  // ============================================================================
+
+  // Flashcard Review Component with flip animation
+  const FlashcardReview = ({ flashcard, isFlipped, onFlip, onRate, onSkip }) => (
+    <div className="w-full max-w-sm mx-auto" style={{ perspective: '1000px' }}>
+      <motion.div
+        className="relative w-full h-80"
+        style={{ transformStyle: 'preserve-3d' }}
+        animate={{ rotateY: isFlipped ? -180 : 0 }}
+        transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+      >
+        {/* Question side (front) */}
+        <div
+          className="absolute inset-0 bg-white rounded-2xl shadow-lg p-6 flex flex-col"
+          style={{ backfaceVisibility: 'hidden' }}
+          onClick={!isFlipped ? onFlip : undefined}
+        >
+          <div className="flex-1 flex items-center justify-center">
+            <p className="text-lg text-gray-800 text-center leading-relaxed">{flashcard.question}</p>
+          </div>
+          <p className="text-xs text-gray-400 text-center mt-4">Tap to reveal answer</p>
+        </div>
+
+        {/* Answer side (back) */}
+        <div
+          className="absolute inset-0 bg-white rounded-2xl shadow-lg p-6 flex flex-col"
+          style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+        >
+          {/* Skip button */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onSkip(); }}
+            className="absolute top-3 right-3 text-gray-400 hover:text-red-500 text-sm"
+          >
+            ✕
+          </button>
+
+          <div className="flex-1 flex items-center justify-center">
+            <p className="text-lg text-gray-800 text-center leading-relaxed">{flashcard.answer}</p>
+          </div>
+
+          {/* Source topic */}
+          <p className="text-xs text-gray-400 text-center mb-4">
+            From: {flashcard.sourceCardTitle}
+          </p>
+
+          {/* Rating buttons */}
+          <div className="grid grid-cols-4 gap-2">
+            <button
+              onClick={() => onRate(0)}
+              className="py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl text-sm font-medium transition-colors"
+            >
+              Again
+            </button>
+            <button
+              onClick={() => onRate(1)}
+              className="py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-sm font-medium transition-colors"
+            >
+              Hard
+            </button>
+            <button
+              onClick={() => onRate(2)}
+              className="py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl text-sm font-medium transition-colors"
+            >
+              Good
+            </button>
+            <button
+              onClick={() => onRate(3)}
+              className="py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-sm font-medium transition-colors"
+            >
+              Easy
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  )
+
+  // Study Screen Component
+  const StudyScreen = ({ onGoToLearn }) => {
+    const [studyState, setStudyState] = useState('loading') // 'loading' | 'empty' | 'caught_up' | 'generating' | 'review'
+    const [dueCards, setDueCards] = useState([])
+    const [currentIndex, setCurrentIndex] = useState(0)
+    const [isFlipped, setIsFlipped] = useState(false)
+    const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 })
+    const [nextReview, setNextReview] = useState(null)
+
+    // Initialize study session
+    useEffect(() => {
+      async function initializeStudy() {
+        setStudyState('loading')
+
+        // Step 1: Check for cards needing flashcard generation
+        const cardsNeedingGeneration = getCardsNeedingFlashcards()
+
+        if (cardsNeedingGeneration.length > 0) {
+          setStudyState('generating')
+          setGenerationProgress({ current: 0, total: cardsNeedingGeneration.length })
+
+          // Generate flashcards for each card
+          for (let i = 0; i < cardsNeedingGeneration.length; i++) {
+            const card = cardsNeedingGeneration[i]
+            setGenerationProgress({ current: i + 1, total: cardsNeedingGeneration.length })
+
+            try {
+              const rawFlashcards = await generateFlashcardsFromCard(card.title, card.content)
+
+              // Transform to full flashcard objects with SM-2 defaults
+              const flashcards = rawFlashcards.map((fc, index) => ({
+                id: `fc_${card.id}_${index}`,
+                question: fc.question,
+                answer: fc.answer,
+                sourceCardId: card.id,
+                sourceCardTitle: card.title,
+                nextReview: new Date().toISOString(), // Due immediately
+                interval: 0,
+                easeFactor: 2.5,
+                repetitions: 0,
+                status: 'active',
+                createdAt: new Date().toISOString(),
+                lastReviewedAt: null
+              }))
+
+              saveFlashcards(flashcards)
+              markCardAsFlashcardGenerated(card.id)
+
+              // Sync to Supabase if user is logged in
+              if (user) {
+                upsertFlashcardsRemote(flashcards, user.id).catch(err => {
+                  console.error('[StudyScreen] Failed to sync flashcards to remote:', err)
+                })
+              }
+            } catch (error) {
+              console.error(`Failed to generate flashcards for ${card.title}:`, error)
+            }
+          }
+        }
+
+        // Step 2: Load due flashcards
+        const due = getDueFlashcards()
+        const total = getFlashcardCount()
+
+        if (total === 0) {
+          setStudyState('empty')
+        } else if (due.length === 0) {
+          setNextReview(getNextReviewTime())
+          setStudyState('caught_up')
+        } else {
+          setDueCards(due)
+          setCurrentIndex(0)
+          setIsFlipped(false)
+          setStudyState('review')
+        }
+      }
+
+      initializeStudy()
+    }, [])
+
+    // Handle rating a flashcard
+    const handleRate = (quality) => {
+      const currentCard = dueCards[currentIndex]
+
+      // Calculate new SM-2 values
+      const newValues = calculateSM2(
+        quality,
+        currentCard.repetitions,
+        currentCard.easeFactor,
+        currentCard.interval
+      )
+
+      // Update in local storage
+      updateFlashcard(currentCard.id, newValues)
+
+      // Sync to Supabase if user is logged in
+      if (user) {
+        const updatedCard = { ...currentCard, ...newValues }
+        upsertFlashcardRemote(updatedCard, user.id).catch(err => {
+          console.error('[StudyScreen] Failed to sync flashcard review to remote:', err)
+        })
+      }
+
+      // Move to next card
+      if (currentIndex < dueCards.length - 1) {
+        setCurrentIndex(currentIndex + 1)
+        setIsFlipped(false)
+      } else {
+        // Review complete
+        setNextReview(getNextReviewTime())
+        setStudyState('caught_up')
+      }
+    }
+
+    // Handle skipping/removing a flashcard
+    const handleSkip = () => {
+      const currentCard = dueCards[currentIndex]
+
+      // Mark as skipped in local storage
+      skipFlashcard(currentCard.id)
+
+      // Sync to Supabase if user is logged in
+      if (user) {
+        const skippedCard = { ...currentCard, status: 'skipped' }
+        upsertFlashcardRemote(skippedCard, user.id).catch(err => {
+          console.error('[StudyScreen] Failed to sync skipped flashcard to remote:', err)
+        })
+      }
+
+      // Remove from current session
+      const newDueCards = dueCards.filter((_, i) => i !== currentIndex)
+
+      if (newDueCards.length === 0) {
+        setNextReview(getNextReviewTime())
+        setStudyState('caught_up')
+      } else {
+        setDueCards(newDueCards)
+        // Adjust index if needed
+        if (currentIndex >= newDueCards.length) {
+          setCurrentIndex(newDueCards.length - 1)
+        }
+        setIsFlipped(false)
+      }
+    }
+
+    // Loading state
+    if (studyState === 'loading') {
+      return (
+        <div className="flex flex-col items-center justify-center h-full p-6">
+          <div className="text-4xl mb-4 animate-pulse">📚</div>
+          <p className="text-gray-600">Loading study cards...</p>
+        </div>
+      )
+    }
+
+    // Generating flashcards state
+    if (studyState === 'generating') {
+      return (
+        <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+          <div className="text-4xl mb-4 animate-bounce">🧠</div>
+          <h2 className="text-lg font-bold text-gray-800 mb-2">Creating Study Cards</h2>
+          <p className="text-gray-600 mb-4">
+            Processing {generationProgress.current} of {generationProgress.total} cards...
+          </p>
+          <div className="w-48 h-2 bg-gray-200 rounded-full overflow-hidden">
+            <motion.div
+              className="h-full bg-indigo-600"
+              initial={{ width: 0 }}
+              animate={{ width: `${(generationProgress.current / generationProgress.total) * 100}%` }}
+              transition={{ duration: 0.3 }}
+            />
+          </div>
+        </div>
+      )
+    }
+
+    // Empty state - no flashcards yet
+    if (studyState === 'empty') {
+      return (
+        <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+          <div className="text-6xl mb-4">📚</div>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">No Study Cards Yet</h2>
+          <p className="text-gray-600 mb-6">Claim cards in Learn to build your study deck</p>
+          <button
+            onClick={onGoToLearn}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors"
+          >
+            Go to Learn
+          </button>
+        </div>
+      )
+    }
+
+    // Caught up state - nothing due
+    if (studyState === 'caught_up') {
+      return (
+        <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+          <div className="text-6xl mb-4">🎉</div>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">All Caught Up!</h2>
+          <p className="text-gray-600 mb-2">Great work on your reviews</p>
+          {nextReview && (
+            <p className="text-gray-500 text-sm">
+              Next review in {formatTimeUntilReview(nextReview)}
+            </p>
+          )}
+          <p className="text-gray-400 text-xs mt-4">
+            {getFlashcardCount()} total study cards
+          </p>
+        </div>
+      )
+    }
+
+    // Review state
+    return (
+      <div className="flex flex-col h-full">
+        {/* Header with progress */}
+        <div className="flex justify-between items-center p-4">
+          <h2 className="text-lg font-bold text-gray-800">Study</h2>
+          <span className="text-sm font-medium text-gray-500">
+            {currentIndex + 1} of {dueCards.length}
+          </span>
+        </div>
+
+        {/* Progress bar */}
+        <div className="px-4 mb-4">
+          <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+            <motion.div
+              className="h-full bg-indigo-600"
+              initial={{ width: 0 }}
+              animate={{ width: `${((currentIndex + 1) / dueCards.length) * 100}%` }}
+              transition={{ duration: 0.3 }}
+            />
+          </div>
+        </div>
+
+        {/* Flashcard */}
+        <div className="flex-1 flex items-center justify-center p-4">
+          <FlashcardReview
+            flashcard={dueCards[currentIndex]}
+            isFlipped={isFlipped}
+            onFlip={() => setIsFlipped(true)}
+            onRate={handleRate}
+            onSkip={handleSkip}
+          />
+        </div>
+      </div>
+    )
+  }
+
   // Bottom navigation bar
   const BottomNav = () => (
     <div
@@ -6004,13 +6361,12 @@ export default function Canvas() {
         {/* Wander - spacer for center button */}
         <div className="flex-1" />
 
-        {/* Study - disabled */}
+        {/* Study */}
         <button
-          onClick={() => {
-            setToastMessage('Coming Soon!')
-            setTimeout(() => setToastMessage(null), 2000)
-          }}
-          className="flex flex-col items-center justify-center flex-1 py-2 text-gray-300"
+          onClick={() => setActiveTab('study')}
+          className={`flex flex-col items-center justify-center flex-1 py-2 transition-colors ${
+            activeTab === 'study' ? 'text-indigo-600' : 'text-gray-400'
+          }`}
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
@@ -6064,6 +6420,16 @@ export default function Canvas() {
   // Show auth screen if requested
   if (showAuth) {
     return <Auth onSkip={() => setShowAuth(false)} />
+  }
+
+  // Study screen - spaced repetition flashcard review
+  if (activeTab === 'study') {
+    return (
+      <div className="w-screen min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 overflow-auto pb-24">
+        <StudyScreen onGoToLearn={() => setActiveTab('learn')} />
+        <BottomNav />
+      </div>
+    )
   }
 
   // Home screen - show Home decks (just "My Decks" for now)

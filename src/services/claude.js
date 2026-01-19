@@ -2621,60 +2621,81 @@ Write the content for "${cardTitle}" - just the content, no title or labels:`;
 }
 
 /**
- * Generate multiple flashcards from content
- * @param {string} content - The content to create flashcards from
+ * Generate flashcards from a claimed card's content
+ * Extracts multiple facts as Q&A pairs - one fact = one flashcard
+ * @param {string} cardTitle - The card title (e.g., "French Revolution")
+ * @param {string} cardContent - The full content of the claimed card
+ * @param {Object} options - Optional: { maxCards: 10 }
  * @returns {Promise<Array<{question: string, answer: string}>>} Array of flashcard Q&As
  */
-export async function generateFlashcard(content) {
+export async function generateFlashcardsFromCard(cardTitle, cardContent, options = {}) {
+  const maxCards = options.maxCards || 10
+
+  const prompt = `Extract flashcards from this learning content about "${cardTitle}".
+
+CONTENT:
+"""
+${cardContent}
+"""
+
+RULES:
+1. ONE fact = ONE flashcard. Extract AS MANY as the content supports (up to ${maxCards})
+2. Questions should be SPECIFIC and testable
+3. Answers should be CONCISE (1-2 sentences max)
+4. Include numbers, dates, names where relevant
+5. Vary question types: What, When, Who, Why, How, Which
+6. Don't repeat information across flashcards
+
+GOOD FLASHCARD EXAMPLES:
+Q: "What year did the Storming of the Bastille occur?"
+A: "1789"
+
+Q: "What was the significance of the Tennis Court Oath?"
+A: "The Third Estate swore not to disband until France had a constitution"
+
+Q: "Who was the finance minister whose dismissal sparked riots?"
+A: "Jacques Necker"
+
+BAD FLASHCARDS (avoid):
+- Too vague: "What happened in the French Revolution?"
+- Too long: Multi-paragraph answers
+- Not testable: "What do you think about X?"
+
+OUTPUT FORMAT (JSON array, no markdown):
+[
+  {"question": "...", "answer": "..."},
+  {"question": "...", "answer": "..."}
+]`
+
   try {
-    const prompt = `Based on this learning content, create as many flashcard questions and answers as possible. Extract every concept, fact, relationship, or detail that could be tested. Aim for 5-6 flashcards, but create more if the content supports it.
-
-${content}
-
-Format your response EXACTLY as:
-Q: [question 1]
-A: [answer 1]
-
-Q: [question 2]
-A: [answer 2]
-
-(and so on...)
-
-Make the questions test understanding, not just memorization. Cover different aspects of the content.`;
-
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-3-5-haiku-20241022',  // Fast and cheap for extraction
       max_tokens: 1500,
-      messages: [
-        { role: 'user', content: prompt }
-      ]
-    });
+      messages: [{ role: 'user', content: prompt }]
+    })
 
-    const response = message.content[0].text;
+    const responseText = message.content[0].text.trim()
 
-    // Parse multiple Q&A pairs
-    const flashcards = [];
-    const pairs = response.split(/\n\s*\n/); // Split by double newlines
-
-    for (const pair of pairs) {
-      const qMatch = pair.match(/Q:\s*(.+?)(?=\nA:)/s);
-      const aMatch = pair.match(/A:\s*(.+)/s);
-
-      if (qMatch && aMatch) {
-        flashcards.push({
-          question: qMatch[1].trim(),
-          answer: aMatch[1].trim()
-        });
-      }
+    // Parse JSON (handle potential markdown wrapping)
+    let jsonStr = responseText
+    if (responseText.includes('```')) {
+      const match = responseText.match(/```(?:json)?\s*([\s\S]*?)```/)
+      if (match) jsonStr = match[1].trim()
     }
 
-    if (flashcards.length === 0) {
-      throw new Error('Failed to parse any flashcards from response');
+    const flashcards = JSON.parse(jsonStr)
+
+    // Validate structure
+    if (!Array.isArray(flashcards)) {
+      throw new Error('Expected array of flashcards')
     }
 
-    return flashcards;
+    const validFlashcards = flashcards.filter(fc => fc.question && fc.answer)
+    console.log(`[generateFlashcardsFromCard] Generated ${validFlashcards.length} flashcards for "${cardTitle}"`)
+
+    return validFlashcards
   } catch (error) {
-    console.error('Error generating flashcard:', error);
-    throw new Error('Failed to generate flashcard');
+    console.error('[generateFlashcardsFromCard] Error:', error)
+    throw new Error('Failed to generate flashcards')
   }
 }

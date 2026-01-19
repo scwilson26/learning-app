@@ -690,6 +690,11 @@ const DEFAULT_DATA = {
   cards: {},  // cardId -> card data (title, content, claimed status, etc.)
   decks: {},  // deckId -> deck metadata (generated card IDs, timestamps)
   dynamicDecks: {},  // deckId -> dynamically generated deck data (for level 3+ decks)
+  flashcards: {},  // flashcardId -> flashcard data for spaced repetition
+  flashcardMeta: {  // metadata for flashcard generation tracking
+    lastGeneratedAt: null,
+    generatedFromCards: [],  // sourceCardIds that have already been processed
+  },
   meta: {
     version: 1,
     lastUpdated: null,
@@ -1622,4 +1627,274 @@ export function importFromSync(cloudData, strategy = 'replace') {
 
     saveData(localData)
   }
+}
+
+// ============================================================================
+// FLASHCARD STORAGE (Spaced Repetition)
+// ============================================================================
+
+/**
+ * Get all flashcards
+ * @returns {Object} flashcardId -> flashcard data
+ */
+export function getAllFlashcards() {
+  const data = getData()
+  return data.flashcards || {}
+}
+
+/**
+ * Get flashcards that are due for review
+ * @returns {Array} Array of flashcard objects due now or earlier, sorted by date
+ */
+export function getDueFlashcards() {
+  const data = getData()
+  const now = new Date()
+
+  return Object.values(data.flashcards || {})
+    .filter(fc => fc.status === 'active' && new Date(fc.nextReview) <= now)
+    .sort((a, b) => new Date(a.nextReview) - new Date(b.nextReview))
+}
+
+/**
+ * Get count of active flashcards
+ * @returns {number}
+ */
+export function getFlashcardCount() {
+  const data = getData()
+  return Object.values(data.flashcards || {}).filter(fc => fc.status === 'active').length
+}
+
+/**
+ * Get count of due flashcards
+ * @returns {number}
+ */
+export function getDueFlashcardCount() {
+  return getDueFlashcards().length
+}
+
+/**
+ * Get next review time (for "All caught up" state)
+ * @returns {Date|null} Next review timestamp or null if no flashcards
+ */
+export function getNextReviewTime() {
+  const data = getData()
+  const activeCards = Object.values(data.flashcards || {})
+    .filter(fc => fc.status === 'active')
+    .sort((a, b) => new Date(a.nextReview) - new Date(b.nextReview))
+
+  return activeCards.length > 0 ? new Date(activeCards[0].nextReview) : null
+}
+
+/**
+ * Save multiple flashcards (used during generation)
+ * @param {Array} flashcards - Array of flashcard objects
+ */
+export function saveFlashcards(flashcards) {
+  const data = getData()
+  if (!data.flashcards) data.flashcards = {}
+
+  flashcards.forEach(fc => {
+    data.flashcards[fc.id] = fc
+  })
+
+  saveData(data)
+  console.log(`[saveFlashcards] Saved ${flashcards.length} flashcards`)
+}
+
+/**
+ * Update a flashcard after review (SM-2 algorithm)
+ * @param {string} flashcardId - The flashcard ID
+ * @param {Object} updates - Fields to update (interval, easeFactor, repetitions, nextReview)
+ */
+export function updateFlashcard(flashcardId, updates) {
+  const data = getData()
+
+  if (data.flashcards && data.flashcards[flashcardId]) {
+    data.flashcards[flashcardId] = {
+      ...data.flashcards[flashcardId],
+      ...updates,
+      lastReviewedAt: new Date().toISOString()
+    }
+    saveData(data)
+  }
+}
+
+/**
+ * Mark a flashcard as skipped (removes from review rotation)
+ * @param {string} flashcardId - The flashcard ID
+ */
+export function skipFlashcard(flashcardId) {
+  updateFlashcard(flashcardId, { status: 'skipped' })
+  console.log(`[skipFlashcard] Marked ${flashcardId} as skipped`)
+}
+
+/**
+ * Check if flashcards have been generated for a source card
+ * @param {string} sourceCardId - The source card ID
+ * @returns {boolean}
+ */
+export function hasFlashcardsForCard(sourceCardId) {
+  const data = getData()
+  if (!data.flashcardMeta?.generatedFromCards) return false
+  return data.flashcardMeta.generatedFromCards.includes(sourceCardId)
+}
+
+/**
+ * Mark a source card as having flashcards generated
+ * @param {string} sourceCardId - The source card ID
+ */
+export function markCardAsFlashcardGenerated(sourceCardId) {
+  const data = getData()
+  if (!data.flashcardMeta) {
+    data.flashcardMeta = { lastGeneratedAt: null, generatedFromCards: [] }
+  }
+  if (!data.flashcardMeta.generatedFromCards.includes(sourceCardId)) {
+    data.flashcardMeta.generatedFromCards.push(sourceCardId)
+    data.flashcardMeta.lastGeneratedAt = new Date().toISOString()
+  }
+  saveData(data)
+}
+
+/**
+ * Get all claimed cards that have content and need flashcard generation
+ * @returns {Array} Array of card objects ready for flashcard generation
+ */
+export function getCardsNeedingFlashcards() {
+  const data = getData()
+  const generatedFrom = data.flashcardMeta?.generatedFromCards || []
+
+  return Object.values(data.cards)
+    .filter(card =>
+      card.claimed &&
+      card.content &&
+      !generatedFrom.includes(card.id)
+    )
+}
+
+/**
+ * Get all flashcards as array (for sync)
+ * @returns {Array} Array of flashcard objects
+ */
+export function getAllFlashcardsArray() {
+  const data = getData()
+  return Object.values(data.flashcards || {})
+}
+
+/**
+ * Import flashcards from remote (merge with local)
+ * Used during sync to update local storage with remote data
+ * @param {Array} remoteFlashcards - Array of flashcard objects from Supabase
+ */
+export function importFlashcardsFromRemote(remoteFlashcards) {
+  if (!remoteFlashcards || remoteFlashcards.length === 0) return
+
+  const data = getData()
+  if (!data.flashcards) data.flashcards = {}
+
+  for (const fc of remoteFlashcards) {
+    // Overwrite or add the flashcard
+    data.flashcards[fc.id] = fc
+
+    // Also mark the source card as having flashcards generated
+    if (fc.sourceCardId && !data.flashcardMeta?.generatedFromCards?.includes(fc.sourceCardId)) {
+      if (!data.flashcardMeta) {
+        data.flashcardMeta = { lastGeneratedAt: null, generatedFromCards: [] }
+      }
+      data.flashcardMeta.generatedFromCards.push(fc.sourceCardId)
+    }
+  }
+
+  saveData(data)
+  console.log(`[importFlashcardsFromRemote] Imported ${remoteFlashcards.length} flashcards`)
+}
+
+// ============================================================================
+// SM-2 SPACED REPETITION ALGORITHM
+// ============================================================================
+
+/**
+ * Calculate next review parameters using SM-2 algorithm
+ * @param {number} quality - Rating 0-3 (0=Again, 1=Hard, 2=Good, 3=Easy)
+ * @param {number} repetitions - Current repetition count
+ * @param {number} easeFactor - Current ease factor (default 2.5)
+ * @param {number} interval - Current interval in days
+ * @returns {Object} { nextReview: ISO string, interval: number, easeFactor: number, repetitions: number }
+ */
+export function calculateSM2(quality, repetitions, easeFactor, interval) {
+  let newEF = easeFactor
+  let newInterval = interval
+  let newReps = repetitions
+
+  if (quality === 0) {
+    // Again - reset to beginning
+    newReps = 0
+    newInterval = 1
+    // Reduce ease factor (minimum 1.3)
+    newEF = Math.max(1.3, easeFactor - 0.2)
+  } else if (quality === 1) {
+    // Hard - don't increase repetitions, small interval increase
+    newInterval = Math.max(1, Math.round(interval * 1.2))
+    newEF = Math.max(1.3, easeFactor - 0.15)
+  } else if (quality === 2) {
+    // Good - standard progression
+    newReps = repetitions + 1
+    if (newReps === 1) {
+      newInterval = 1
+    } else if (newReps === 2) {
+      newInterval = 6
+    } else {
+      newInterval = Math.round(interval * easeFactor)
+    }
+    // Slight EF adjustment
+    newEF = easeFactor + (0.1 - (3 - quality) * 0.08)
+    newEF = Math.max(1.3, newEF)
+  } else if (quality === 3) {
+    // Easy - accelerated progression
+    newReps = repetitions + 1
+    if (newReps === 1) {
+      newInterval = 4
+    } else if (newReps === 2) {
+      newInterval = 10
+    } else {
+      newInterval = Math.round(interval * easeFactor * 1.3)
+    }
+    // Increase ease factor
+    newEF = easeFactor + 0.15
+  }
+
+  // Calculate next review date
+  const nextReview = new Date()
+  nextReview.setDate(nextReview.getDate() + newInterval)
+
+  return {
+    nextReview: nextReview.toISOString(),
+    interval: newInterval,
+    easeFactor: newEF,
+    repetitions: newReps
+  }
+}
+
+/**
+ * Format time until next review for display
+ * @param {Date|string} nextReview - Next review timestamp
+ * @returns {string} Human-readable time (e.g., "3 hours", "2 days")
+ */
+export function formatTimeUntilReview(nextReview) {
+  const reviewDate = nextReview instanceof Date ? nextReview : new Date(nextReview)
+  const now = new Date()
+  const diff = reviewDate - now
+
+  if (diff <= 0) return 'now'
+
+  const hours = Math.floor(diff / (1000 * 60 * 60))
+  const days = Math.floor(hours / 24)
+
+  if (days > 0) {
+    return days === 1 ? '1 day' : `${days} days`
+  }
+  if (hours > 0) {
+    return hours === 1 ? '1 hour' : `${hours} hours`
+  }
+  const minutes = Math.floor(diff / (1000 * 60))
+  return minutes <= 1 ? '1 minute' : `${minutes} minutes`
 }
