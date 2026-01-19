@@ -6,9 +6,28 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    detectSessionInUrl: true,
+    flowType: 'pkce'
+  }
+})
 
 console.log('[supabase] Client initialized for:', supabaseUrl)
+
+// Handle auth callback from magic link (URL hash contains access_token)
+if (window.location.hash.includes('access_token')) {
+  console.log('[supabase] Detected auth callback in URL, processing...')
+  supabase.auth.getSession().then(({ data, error }) => {
+    if (error) {
+      console.error('[supabase] Error processing auth callback:', error)
+    } else if (data.session) {
+      console.log('[supabase] Auth callback processed, user signed in')
+      // Clear the hash from URL for cleaner UX
+      window.history.replaceState(null, '', window.location.pathname)
+    }
+  })
+}
 
 // ============================================================================
 // AUTHENTICATION
