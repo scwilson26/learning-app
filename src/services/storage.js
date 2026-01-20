@@ -970,7 +970,15 @@ export function getClaimedCardsByCategory() {
         if (!byCategory[rootCategory]) {
           byCategory[rootCategory] = []
         }
-        byCategory[rootCategory].push(card)
+        // Get the deck name from tree or storage
+        const treeNode = nodeIndex.get(card.deckId)
+        const deckData = data.decks[card.deckId]
+        const deckName = treeNode?.title || deckData?.name || card.deckId
+
+        byCategory[rootCategory].push({
+          ...card,
+          deckName
+        })
       }
     }
   })
@@ -1017,7 +1025,7 @@ export function getClaimedCardsByCategoryAndDeck() {
  * @param {string} deckId - The deck ID
  * @returns {string|null} The root category ID or null
  */
-function findRootCategory(deckId) {
+export function findRootCategory(deckId) {
   // Check if it's a direct category
   const categories = ['arts', 'biology', 'health', 'everyday', 'geography', 'history', 'mathematics', 'people', 'philosophy', 'physics', 'society', 'technology']
 

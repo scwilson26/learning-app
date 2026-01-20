@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { generateSubDecks, generateSingleCardContent, generateTierCards, generateTopicPreview, generateTopicOutline, generateFlashcardsFromCard } from '../services/claude'
+import { generateSubDecks, generateSingleCardContent, generateTierCards, generateTopicPreview, generateTopicOutline, generateFlashcardsFromCard, classifyTopic } from '../services/claude'
 import { supabase, onAuthStateChange, signOut, syncCards, getCanonicalCardsForTopic, upsertCanonicalCard, getPreviewCardRemote, savePreviewCardRemote, getOutline, saveOutline, syncFlashcards, upsertFlashcardRemote, upsertFlashcardsRemote } from '../services/supabase'
 import Auth from './Auth'
 import {
@@ -49,7 +49,8 @@ import {
   calculateSM2,
   formatTimeUntilReview,
   getAllFlashcardsArray,
-  importFlashcardsFromRemote
+  importFlashcardsFromRemote,
+  findRootCategory
 } from '../services/storage'
 
 // Configuration - card counts can be adjusted here or per-deck
@@ -2009,6 +2010,139 @@ function OverviewCard({ card, index, total, onClaim, claimed, onRead, tint = '#f
         </div>
       </motion.div>
     </div>
+  )
+}
+
+// Mini card for collection display - shows a small version of the actual card
+// size: 'small' (drawer preview), 'medium' (expanded grid), 'large' (future use)
+function MiniCollectionCard({ card, rootCategoryId, style = {}, size = 'small', onClick }) {
+  const theme = getCategoryTheme(rootCategoryId)
+  const isThemed = hasCustomTheme(rootCategoryId)
+
+  // Size configurations
+  const sizeConfig = {
+    small: { width: 'w-12', height: 'h-16', text: 'text-[6px]', check: 'w-2 h-2 text-[5px]', padding: 'p-1' },
+    medium: { width: 'w-20', height: 'h-28', text: 'text-[9px]', check: 'w-3 h-3 text-[7px]', padding: 'p-2' },
+    large: { width: 'w-28', height: 'h-36', text: 'text-xs', check: 'w-4 h-4 text-[10px]', padding: 'p-3' },
+  }
+  const config = sizeConfig[size] || sizeConfig.small
+
+  // Simplified card styles for mini version
+  const getMiniCardStyles = () => {
+    const baseStyles = {
+      technology: {
+        background: theme.cardBg,
+        borderColor: theme.accent,
+      },
+      history: {
+        background: theme.cardBg,
+        borderColor: theme.accent,
+      },
+      arts: {
+        background: `linear-gradient(180deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+        borderColor: theme.accent,
+      },
+      biology: {
+        background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+        borderColor: theme.accent,
+      },
+      health: {
+        background: theme.cardBg,
+        borderColor: theme.accent,
+      },
+      everyday: {
+        background: `linear-gradient(145deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+        borderColor: theme.accent,
+      },
+      geography: {
+        background: `linear-gradient(180deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+        borderColor: theme.accent,
+      },
+      mathematics: {
+        background: theme.cardBg,
+        borderColor: theme.accent,
+      },
+      people: {
+        background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+        borderColor: theme.accent,
+      },
+      philosophy: {
+        background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
+        borderColor: theme.accent,
+      },
+      physics: {
+        background: theme.cardBg,
+        borderColor: theme.accent,
+      },
+      society: {
+        background: theme.cardBg,
+        borderColor: theme.accent,
+      }
+    }
+
+    return baseStyles[rootCategoryId] || {
+      background: '#ffffff',
+      borderColor: '#e5e7eb',
+    }
+  }
+
+  const cardStyles = getMiniCardStyles()
+  const textColor = isThemed ? theme.textPrimary : '#1f2937'
+
+  const Wrapper = onClick ? 'button' : 'div'
+
+  return (
+    <Wrapper
+      className={`${config.width} ${config.height} rounded-lg border-2 flex flex-col items-center justify-center ${config.padding} overflow-hidden relative ${onClick ? 'cursor-pointer hover:scale-105 transition-transform' : ''}`}
+      style={{
+        background: cardStyles.background,
+        borderColor: cardStyles.borderColor,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
+        ...style
+      }}
+      onClick={onClick}
+    >
+      {/* Mini decorations based on category */}
+      {rootCategoryId === 'technology' && (
+        <div className="absolute inset-0 overflow-hidden opacity-20">
+          <div className="absolute top-0 right-0 w-4 h-4 border-l border-b" style={{ borderColor: theme.accent }} />
+          <div className="absolute bottom-0 left-0 w-4 h-4 border-t border-r" style={{ borderColor: theme.accent }} />
+        </div>
+      )}
+      {rootCategoryId === 'history' && (
+        <div className="absolute inset-0 overflow-hidden opacity-30">
+          <div className="absolute top-1 left-1 w-1 h-1 rounded-full" style={{ background: theme.accent }} />
+          <div className="absolute bottom-1 right-1 w-1 h-1 rounded-full" style={{ background: theme.accent }} />
+        </div>
+      )}
+      {rootCategoryId === 'arts' && (
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-0.5" style={{ background: `linear-gradient(90deg, ${theme.accent}40, transparent)` }} />
+          <div className="absolute bottom-0 right-0 w-full h-0.5" style={{ background: `linear-gradient(90deg, transparent, ${theme.accent}40)` }} />
+        </div>
+      )}
+      {rootCategoryId === 'philosophy' && (
+        <div className="absolute inset-0 overflow-hidden opacity-20">
+          <div className="absolute inset-1 rounded border border-dashed" style={{ borderColor: theme.accent }} />
+        </div>
+      )}
+
+      {/* Card title - truncated */}
+      <span
+        className={`${config.text} font-semibold text-center leading-tight px-0.5 relative z-10 line-clamp-3`}
+        style={{ color: textColor }}
+      >
+        {card.title}
+      </span>
+
+      {/* Claimed checkmark */}
+      <div
+        className={`absolute top-0.5 left-0.5 ${config.check} rounded-full flex items-center justify-center`}
+        style={{ background: theme.accent }}
+      >
+        <span className="text-white font-bold">✓</span>
+      </div>
+    </Wrapper>
   )
 }
 
@@ -3977,8 +4111,12 @@ function DeckSpread({
   rootCategoryId,
   // Preview/cover card
   previewCard,
-  onReadPreviewCard
+  onReadPreviewCard,
+  // Outline for toggle display
+  outline
 }) {
+  // State for outline toggle
+  const [showOutline, setShowOutline] = useState(false)
   // Tier metadata
   const tiers = [
     { key: 'core', name: 'Core Essentials' },
@@ -4010,6 +4148,98 @@ function DeckSpread({
           onRead={onReadPreviewCard}
           rootCategoryId={rootCategoryId}
         />
+      )}
+
+      {/* Outline toggle - only show when we have an outline and cards */}
+      {isArticle && outline && hasTierData && (
+        <div className="w-full max-w-md">
+          <button
+            onClick={() => setShowOutline(!showOutline)}
+            className="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-700 transition-colors mx-auto"
+          >
+            <svg
+              className={`w-4 h-4 transition-transform ${showOutline ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+            {showOutline ? 'Hide outline' : 'Show outline'}
+          </button>
+
+          {/* Collapsible outline display */}
+          <AnimatePresence>
+            {showOutline && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 text-left">
+                  {outline.topic_type && (
+                    <div className="mb-3 text-xs text-gray-400 uppercase tracking-wide">
+                      {outline.topic_type}
+                    </div>
+                  )}
+
+                  {/* Core */}
+                  {outline.core && outline.core.length > 0 && (
+                    <div className="mb-4">
+                      <div className="text-xs font-semibold text-gray-600 mb-2">Core Essentials</div>
+                      <ul className="space-y-1">
+                        {outline.core.map((card, i) => (
+                          <li key={i} className="text-xs text-gray-600">
+                            <span className="font-medium">{card.title}</span>
+                            {card.concept && (
+                              <span className="text-gray-400 ml-1">— {card.concept}</span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Deep Dive 1 */}
+                  {outline.deep_dive_1 && outline.deep_dive_1.length > 0 && (
+                    <div className="mb-4">
+                      <div className="text-xs font-semibold text-gray-600 mb-2">Deep Dive 1</div>
+                      <ul className="space-y-1">
+                        {outline.deep_dive_1.map((card, i) => (
+                          <li key={i} className="text-xs text-gray-600">
+                            <span className="font-medium">{card.title}</span>
+                            {card.concept && (
+                              <span className="text-gray-400 ml-1">— {card.concept}</span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Deep Dive 2 */}
+                  {outline.deep_dive_2 && outline.deep_dive_2.length > 0 && (
+                    <div>
+                      <div className="text-xs font-semibold text-gray-600 mb-2">Deep Dive 2</div>
+                      <ul className="space-y-1">
+                        {outline.deep_dive_2.map((card, i) => (
+                          <li key={i} className="text-xs text-gray-600">
+                            <span className="font-medium">{card.title}</span>
+                            {card.concept && (
+                              <span className="text-gray-400 ml-1">— {card.concept}</span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       )}
 
       {/* Category card - for non-article nodes (categories with children) */}
@@ -4497,6 +4727,8 @@ export default function Canvas() {
   const [wanderPathSteps, setWanderPathSteps] = useState([]) // Path steps for wandering animation
   const [wanderCurrentStep, setWanderCurrentStep] = useState(0) // Current step being generated
   const [wanderComplete, setWanderComplete] = useState(false) // True when path generation is complete
+  const [expandedCollectionCategory, setExpandedCollectionCategory] = useState(null) // For trophy case drawer
+  const [selectedCollectionCard, setSelectedCollectionCard] = useState(null) // For trophy case card detail
 
   // Tier-related state
   const [tierCards, setTierCards] = useState({}) // deckId -> { core: [], deep_dive_1: [], deep_dive_2: [] }
@@ -4508,6 +4740,7 @@ export default function Canvas() {
   // Preview card state (shown before committing to a topic)
   const [showPreviewCard, setShowPreviewCard] = useState(null) // { deckId, title, preview, isLoading } or null
   const [previewCards, setPreviewCards] = useState({}) // deckId -> { preview, claimed }
+  const [loadedOutlines, setLoadedOutlines] = useState({}) // deckId -> outline object
 
   // Track in-flight outline generation promises (to avoid duplicate requests)
   const outlinePromisesRef = useRef({}) // deckId -> Promise<outline>
@@ -4715,6 +4948,10 @@ export default function Canvas() {
 
     console.log(`[loadOrGenerateCardsForDeck] 📄 ARTICLE NODE: "${deck.name}" - will generate 15 learning cards`)
 
+    // Classify the topic type (PERSON, PLACE, EVENT, etc.) for better content generation
+    // This runs in parallel with other checks - we'll use it when generating new content
+    const topicTypePromise = classifyTopic(deck.name, parentPath)
+
     // Check if tier cards already in memory - content generated on-demand when flipped
     if (tierCards[deck.id]?.core?.length > 0) {
       return
@@ -4878,12 +5115,18 @@ export default function Canvas() {
     // Track cards as they stream in
     const streamedCards = []
 
+    // Get the topic type (should be ready by now since we started it early)
+    const topicType = await topicTypePromise
+    console.log(`[TOPIC TYPE] "${deck.name}" classified as: ${topicType}`)
+
     // Try to get outline for better card generation quality
     let outline = null
     try {
       outline = await getOutlineForTopic(deck.id)
       if (outline) {
         console.log(`[OUTLINE] Using pre-generated outline for: ${deck.name}`)
+        // Store outline for UI display
+        setLoadedOutlines(prev => ({ ...prev, [deck.id]: outline }))
       } else {
         console.log(`[OUTLINE] No outline available for: ${deck.name} - generating cards without outline`)
       }
@@ -4990,6 +5233,8 @@ export default function Canvas() {
       outline = await getOutlineForTopic(deck.id)
       if (outline) {
         console.log(`[BACKGROUND] Using outline for ${tier} generation`)
+        // Store outline for UI display
+        setLoadedOutlines(prev => ({ ...prev, [deck.id]: outline }))
       }
     } catch (err) {
       console.warn(`[BACKGROUND] Error fetching outline:`, err)
@@ -5118,6 +5363,8 @@ export default function Canvas() {
         outline = await getOutlineForTopic(deck.id)
         if (outline) {
           console.log(`[UNLOCK] Using outline for ${tier} generation`)
+          // Store outline for UI display
+          setLoadedOutlines(prev => ({ ...prev, [deck.id]: outline }))
         }
       } catch (err) {
         console.warn(`[UNLOCK] Error fetching outline:`, err)
@@ -5233,7 +5480,7 @@ export default function Canvas() {
 
   // Start background outline generation for a topic
   // Returns existing promise if already in flight, or starts new one
-  const startOutlineGeneration = async (deckId, topicName, parentContext, previewText = null) => {
+  const startOutlineGeneration = async (deckId, topicName, parentContext, previewText = null, topicType = null) => {
     // Check if we already have an in-flight promise
     if (outlinePromisesRef.current[deckId]) {
       console.log(`[OUTLINE] Already generating outline for: ${topicName}`)
@@ -5252,15 +5499,21 @@ export default function Canvas() {
     }
 
     // Start new generation
-    console.log(`[OUTLINE] Starting background outline generation for: ${topicName}${previewText ? ' (with preview context)' : ''}`)
+    console.log(`[OUTLINE] Starting background outline generation for: ${topicName}${previewText ? ' (with preview context)' : ''}${topicType ? ` [${topicType}]` : ''}`)
     const promise = (async () => {
       try {
-        const { outline } = await generateTopicOutline(topicName, parentContext, previewText)
+        const { outline } = await generateTopicOutline(topicName, parentContext, previewText, topicType)
+
+        // Add topicType to outline for future reference
+        const outlineWithMeta = {
+          ...outline,
+          topic_type: topicType || null
+        }
 
         // Save to Supabase
         try {
-          await saveOutline(deckId, outline)
-          console.log(`[OUTLINE] Saved outline to Supabase for: ${topicName}`)
+          await saveOutline(deckId, outlineWithMeta)
+          console.log(`[OUTLINE] Saved outline to Supabase for: ${topicName}${topicType ? ` [${topicType}]` : ''}`)
         } catch (err) {
           console.warn(`[OUTLINE] Failed to save outline to Supabase:`, err)
         }
@@ -5372,7 +5625,11 @@ export default function Canvas() {
             // No preview in Supabase, generate one
             console.log(`[SHARED MAP] No preview found for "${deck.name || deck.title}", generating...`)
 
-            const { preview } = await generateTopicPreview(deck.name || deck.title, parentPath)
+            // Classify topic type for better preview generation
+            const topicType = await classifyTopic(deck.name || deck.title, parentPath)
+            console.log(`[PREVIEW] Topic "${deck.name || deck.title}" classified as: ${topicType}`)
+
+            const { preview } = await generateTopicPreview(deck.name || deck.title, parentPath, topicType)
 
             // Save to local storage
             savePreviewCard(deck.id, deck.name || deck.title, preview)
@@ -5397,8 +5654,8 @@ export default function Canvas() {
             } : prev)
 
             // [BACKGROUND OUTLINE] Start outline generation while user reads preview
-            // Pass the preview content so outline knows what not to repeat
-            startOutlineGeneration(deck.id, deck.name || deck.title, parentPath, preview)
+            // Pass the preview content and topic type so outline uses proper structure
+            startOutlineGeneration(deck.id, deck.name || deck.title, parentPath, preview, topicType)
           }
         } catch (error) {
           console.error('Failed to generate preview:', error)
@@ -5598,7 +5855,12 @@ export default function Canvas() {
             } else {
               // No preview in Supabase, generate one
               console.log(`[SHARED MAP] No preview found for "${generated.name}", generating... (wander)`)
-              const { preview } = await generateTopicPreview(generated.name, generated.parentPath)
+
+              // Classify topic type for better preview generation
+              const topicType = await classifyTopic(generated.name, generated.parentPath)
+              console.log(`[PREVIEW] Topic "${generated.name}" classified as: ${topicType} (wander)`)
+
+              const { preview } = await generateTopicPreview(generated.name, generated.parentPath, topicType)
               savePreviewCard(generated.id, generated.name, preview)
 
               // [SHARED MAP] Save to Supabase
@@ -5618,7 +5880,8 @@ export default function Canvas() {
               } : prev)
 
               // [BACKGROUND OUTLINE] Start outline generation while user reads preview
-              startOutlineGeneration(generated.id, generated.name, generated.parentPath, preview)
+              // Pass topic type for proper outline structure
+              startOutlineGeneration(generated.id, generated.name, generated.parentPath, preview, topicType)
             }
           } catch (error) {
             console.error('Failed to generate preview after wander:', error)
@@ -6016,7 +6279,7 @@ export default function Canvas() {
   // ============================================================================
 
   // Flashcard Review Component with flip animation
-  const FlashcardReview = ({ flashcard, isFlipped, onFlip, onRate, onSkip }) => (
+  const FlashcardReview = ({ flashcard, isFlipped, onFlip, onRate, onSkip, onNext, onPrev, hasNext, hasPrev }) => (
     <div className="w-full max-w-sm mx-auto" style={{ perspective: '1000px' }}>
       <motion.div
         className="relative w-full h-80"
@@ -6028,18 +6291,19 @@ export default function Canvas() {
         <div
           className="absolute inset-0 bg-white rounded-2xl shadow-lg p-6 flex flex-col"
           style={{ backfaceVisibility: 'hidden' }}
-          onClick={!isFlipped ? onFlip : undefined}
+          onClick={onFlip}
         >
           <div className="flex-1 flex items-center justify-center">
             <p className="text-lg text-gray-800 text-center leading-relaxed">{flashcard.question}</p>
           </div>
-          <p className="text-xs text-gray-400 text-center mt-4">Tap to reveal answer</p>
+          <p className="text-xs text-gray-400 text-center mt-4">Tap to flip</p>
         </div>
 
         {/* Answer side (back) */}
         <div
           className="absolute inset-0 bg-white rounded-2xl shadow-lg p-6 flex flex-col"
           style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+          onClick={onFlip}
         >
           {/* Skip button */}
           <button
@@ -6061,25 +6325,25 @@ export default function Canvas() {
           {/* Rating buttons */}
           <div className="grid grid-cols-4 gap-2">
             <button
-              onClick={() => onRate(0)}
+              onClick={(e) => { e.stopPropagation(); onRate(0); }}
               className="py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl text-sm font-medium transition-colors"
             >
               Again
             </button>
             <button
-              onClick={() => onRate(1)}
+              onClick={(e) => { e.stopPropagation(); onRate(1); }}
               className="py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-sm font-medium transition-colors"
             >
               Hard
             </button>
             <button
-              onClick={() => onRate(2)}
+              onClick={(e) => { e.stopPropagation(); onRate(2); }}
               className="py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl text-sm font-medium transition-colors"
             >
               Good
             </button>
             <button
-              onClick={() => onRate(3)}
+              onClick={(e) => { e.stopPropagation(); onRate(3); }}
               className="py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-sm font-medium transition-colors"
             >
               Easy
@@ -6087,6 +6351,38 @@ export default function Canvas() {
           </div>
         </div>
       </motion.div>
+
+      {/* Navigation buttons */}
+      <div className="flex justify-between items-center mt-4 px-2">
+        <button
+          onClick={onPrev}
+          disabled={!hasPrev}
+          className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+            hasPrev
+              ? 'text-gray-600 hover:bg-gray-100'
+              : 'text-gray-300 cursor-not-allowed'
+          }`}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Back
+        </button>
+        <button
+          onClick={onNext}
+          disabled={!hasNext}
+          className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+            hasNext
+              ? 'text-gray-600 hover:bg-gray-100'
+              : 'text-gray-300 cursor-not-allowed'
+          }`}
+        >
+          Next
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
     </div>
   )
 
@@ -6122,8 +6418,72 @@ export default function Canvas() {
     )
   }
 
-  // Study Screen Component - Redesigned with home view and review flow
+  // Study Screen Hub - Entry point for different study modes
   const StudyScreen = ({ onGoToLearn }) => {
+    const [activeMode, setActiveMode] = useState(null) // null = hub, 'flashcards' = flashcards screen
+
+    // If a mode is active, show that screen
+    if (activeMode === 'flashcards') {
+      return (
+        <FlashcardsScreen
+          onBack={() => setActiveMode(null)}
+          onGoToLearn={onGoToLearn}
+        />
+      )
+    }
+
+    // Hub view - show available study modes
+    return (
+      <div className="flex flex-col h-full overflow-auto">
+        {/* Header */}
+        <div className="p-4 border-b border-gray-100">
+          <h1 className="text-lg font-semibold text-gray-800 text-center">Study</h1>
+        </div>
+
+        {/* Study modes */}
+        <div className="p-4">
+          <div className="space-y-3">
+            {/* Flashcards option */}
+            <button
+              onClick={() => setActiveMode('flashcards')}
+              className="w-full bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex items-center gap-4 hover:border-indigo-200 hover:shadow-md transition-all text-left"
+            >
+              <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-800">Flashcards</h3>
+                <p className="text-sm text-gray-500">Review with spaced repetition</p>
+              </div>
+              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+
+            {/* Placeholder for future study modes */}
+            {/*
+            <button className="w-full bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex items-center gap-4 opacity-50 cursor-not-allowed">
+              <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-400">Timed Quiz</h3>
+                <p className="text-sm text-gray-400">Coming soon</p>
+              </div>
+            </button>
+            */}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Flashcards Screen Component - Spaced repetition flashcard review
+  const FlashcardsScreen = ({ onBack, onGoToLearn }) => {
     const [studyState, setStudyState] = useState('home') // 'home' | 'review' | 'generating' | 'complete'
     const [dueCards, setDueCards] = useState([])
     const [currentIndex, setCurrentIndex] = useState(0)
@@ -6160,12 +6520,20 @@ export default function Canvas() {
 
     // Start review session
     const startReview = () => {
-      const due = getDueFlashcards()
-      if (due.length > 0) {
-        setDueCards(due)
+      // Use already-loaded dueCards, or fetch fresh if empty
+      if (dueCards.length > 0) {
         setCurrentIndex(0)
         setIsFlipped(false)
         setStudyState('review')
+      } else {
+        // Fallback: try fetching fresh
+        const due = getDueFlashcards()
+        if (due.length > 0) {
+          setDueCards(due)
+          setCurrentIndex(0)
+          setIsFlipped(false)
+          setStudyState('review')
+        }
       }
     }
 
@@ -6234,14 +6602,58 @@ export default function Canvas() {
         })
       }
 
-      // Move to next card
+      // "Again" (quality 0) - move card to end of pile, stay in review
+      if (quality === 0) {
+        // Move current card to end of the array
+        setDueCards(prev => {
+          const newCards = [...prev]
+          const [card] = newCards.splice(currentIndex, 1)
+          newCards.push(card)
+          return newCards
+        })
+        // Stay at same index (which will now show the next card)
+        // If we were at the last card, wrap to beginning
+        if (currentIndex >= dueCards.length - 1) {
+          setCurrentIndex(0)
+        }
+        setIsFlipped(false)
+        return
+      }
+
+      // Other ratings - remove card from pile and move on
+      setDueCards(prev => prev.filter((_, i) => i !== currentIndex))
+
+      // Adjust index if needed
+      if (currentIndex >= dueCards.length - 1) {
+        // Was last card, check if more cards remain
+        if (dueCards.length <= 1) {
+          // No more cards
+          setStudyState('complete')
+          refreshData()
+        } else {
+          // Go to previous card (which is now the last)
+          setCurrentIndex(dueCards.length - 2)
+          setIsFlipped(false)
+        }
+      } else {
+        // Stay at same index (next card slides in)
+        setIsFlipped(false)
+      }
+    }
+
+    // Navigate to next card
+    const handleNext = () => {
       if (currentIndex < dueCards.length - 1) {
         setCurrentIndex(currentIndex + 1)
         setIsFlipped(false)
-      } else {
-        // Review complete
-        setStudyState('complete')
-        refreshData()
+      }
+    }
+
+    // Navigate to previous card
+    const handlePrev = () => {
+      if (currentIndex > 0) {
+        setCurrentIndex(currentIndex - 1)
+        setIsFlipped(false)
       }
     }
 
@@ -6334,11 +6746,16 @@ export default function Canvas() {
           {/* Flashcard */}
           <div className="flex-1 flex items-center justify-center p-4">
             <FlashcardReview
+              key={dueCards[currentIndex]?.id}
               flashcard={dueCards[currentIndex]}
               isFlipped={isFlipped}
-              onFlip={() => setIsFlipped(true)}
+              onFlip={() => setIsFlipped(!isFlipped)}
               onRate={handleRate}
               onSkip={handleSkipClick}
+              onNext={handleNext}
+              onPrev={handlePrev}
+              hasNext={currentIndex < dueCards.length - 1}
+              hasPrev={currentIndex > 0}
             />
           </div>
 
@@ -6357,6 +6774,21 @@ export default function Canvas() {
     // Home view (default)
     return (
       <div className="flex flex-col h-full overflow-auto">
+        {/* Header with back button */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-100">
+          <button
+            onClick={onBack}
+            className="flex items-center gap-1 text-gray-600 hover:text-gray-800 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            <span className="text-sm font-medium">Back</span>
+          </button>
+          <span className="text-sm font-semibold text-gray-700">Flashcards</span>
+          <div className="w-16" /> {/* Spacer for centering */}
+        </div>
+
         {/* Review Section */}
         <div className="p-4">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
@@ -6535,10 +6967,8 @@ export default function Canvas() {
         <button
           onClick={() => {
             setActiveTab('learn')
-            // Go to categories view
-            if (stack[0] === 'collections') {
-              setStack(['my-decks'])
-            }
+            // Always reset to root categories view
+            setStack(['my-decks'])
           }}
           className={`flex flex-col items-center justify-center flex-1 py-2 transition-colors ${
             activeTab === 'learn' ? 'text-indigo-600' : 'text-gray-400'
@@ -6853,57 +7283,217 @@ export default function Canvas() {
     )
   }
 
-  // Collections screen - show categories with claimed cards
+  // Collections screen - Trophy Case with Drawers
   if (stack.length === 1 && stack[0] === 'collections') {
     const cardsByCategory = getClaimedCardsByCategory()
     const categoriesWithCards = CATEGORIES.filter(cat => cardsByCategory[cat.id]?.length > 0)
+      .sort((a, b) => a.name.localeCompare(b.name)) // Alphabetical order
+
+    // Calculate rarity counts
+    const allCards = Object.values(cardsByCategory).flat()
+    const totalCards = allCards.length
+    const rarityCount = {
+      common: allCards.filter(c => !c.rarity || c.rarity === 'common').length,
+      rare: allCards.filter(c => c.rarity === 'rare').length,
+      epic: allCards.filter(c => c.rarity === 'epic').length,
+      legendary: allCards.filter(c => c.rarity === 'legendary').length
+    }
+
+    // Rarity border colors
+    const getRarityBorder = (rarity) => {
+      switch (rarity) {
+        case 'rare': return 'border-blue-400'
+        case 'epic': return 'border-purple-500'
+        case 'legendary': return 'border-yellow-400'
+        default: return 'border-gray-300'
+      }
+    }
+
+    const getRarityGlow = (rarity) => {
+      switch (rarity) {
+        case 'legendary': return 'shadow-[0_0_8px_rgba(250,204,21,0.5)]'
+        case 'epic': return 'shadow-[0_0_6px_rgba(168,85,247,0.4)]'
+        case 'rare': return 'shadow-[0_0_4px_rgba(96,165,250,0.4)]'
+        default: return 'shadow-sm'
+      }
+    }
 
     return (
-      <div className="w-screen min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 overflow-auto">
-        {/* Top navigation bar */}
-        <div className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200">
-          <div className="flex items-center justify-between px-3 py-2">
-            <button
-              onClick={() => setStack([])}
-              className="flex items-center gap-2 text-amber-600 hover:text-amber-800 transition-colors"
-            >
-              <span className="text-lg">‹</span>
-              <span className="text-sm font-medium">Home</span>
-            </button>
-            <span className="font-semibold text-gray-800">Collection</span>
-            <div className="bg-gray-100 rounded-full px-3 py-1">
-              <span className="text-gray-500 text-xs">Cards: </span>
-              <span className="text-gray-800 font-bold text-sm">{claimedCards.size}</span>
+      <div className="w-screen min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 overflow-auto pb-20">
+        {/* Header */}
+        <div className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-sm border-b border-slate-700">
+          <div className="px-4 py-4">
+            <h1 className="text-lg font-semibold text-white text-center mb-3">Collection</h1>
+
+            {/* Stats */}
+            <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+              {/* Total count */}
+              <div className="text-center mb-3">
+                <span className="text-4xl font-bold text-white">{totalCards}</span>
+                <span className="text-slate-400 ml-2">Cards</span>
+              </div>
+
+              {/* Rarity breakdown */}
+              <div className="flex justify-center gap-4 text-sm">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-full bg-gray-400 border border-gray-300" />
+                  <span className="text-slate-300">{rarityCount.common}</span>
+                </div>
+                {rarityCount.rare > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-full bg-blue-500 border border-blue-400" />
+                    <span className="text-slate-300">{rarityCount.rare}</span>
+                  </div>
+                )}
+                {rarityCount.epic > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-full bg-purple-500 border border-purple-400" />
+                    <span className="text-slate-300">{rarityCount.epic}</span>
+                  </div>
+                )}
+                {rarityCount.legendary > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-full bg-yellow-500 border border-yellow-400" />
+                    <span className="text-slate-300">{rarityCount.legendary}</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="min-h-screen flex items-center justify-center p-8 pt-20">
+        {/* Drawers */}
+        <div className="p-4">
           {categoriesWithCards.length === 0 ? (
-            <div className="text-center text-gray-500">
-              <p className="text-lg mb-2">No cards collected yet</p>
-              <p className="text-sm">Explore topics and claim cards to see them here</p>
+            <div className="text-center py-16">
+              <div className="text-5xl mb-4">🏆</div>
+              <p className="text-slate-300 text-lg mb-2">Your collection is empty</p>
+              <p className="text-slate-500 text-sm">Start exploring to collect cards!</p>
+              <button
+                onClick={() => {
+                  setActiveTab('learn')
+                  setStack(['my-decks'])
+                }}
+                className="mt-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors"
+              >
+                Start Exploring
+              </button>
             </div>
           ) : (
-            <div className="flex gap-2 flex-wrap justify-center max-w-4xl mx-auto">
-              {categoriesWithCards.map((category, index) => (
-                <motion.div
-                  key={category.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.03 }}
-                >
-                  <Deck
-                    deck={{ id: category.id, name: `${category.name}\n${cardsByCategory[category.id]?.length || 0} cards` }}
-                    onOpen={() => setStack(['collections', category.id])}
-                    claimed={false}
-                    rootCategoryId={category.id}
-                  />
-                </motion.div>
-              ))}
+            <div className="space-y-3">
+              {categoriesWithCards.map((category) => {
+                const categoryCards = cardsByCategory[category.id] || []
+                const isExpanded = expandedCollectionCategory === category.id
+                const previewCards = categoryCards.slice(0, 4)
+
+                return (
+                  <motion.div
+                    key={category.id}
+                    className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden"
+                    layout
+                  >
+                    {/* Drawer header */}
+                    <button
+                      onClick={() => setExpandedCollectionCategory(isExpanded ? null : category.id)}
+                      className="w-full p-4 flex items-center justify-between hover:bg-slate-700/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="font-medium text-white">{category.name}</span>
+                        <span className="text-slate-400 text-sm">({categoryCards.length})</span>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        {/* Mini card previews (when collapsed) - actual mini cards */}
+                        {!isExpanded && (
+                          <div className="flex -space-x-2">
+                            {previewCards.slice(0, 3).map((card, i) => (
+                              <MiniCollectionCard
+                                key={card.id}
+                                card={card}
+                                rootCategoryId={category.id}
+                                style={{ zIndex: 3 - i }}
+                              />
+                            ))}
+                            {categoryCards.length > 3 && (
+                              <div className="flex items-center justify-center ml-2">
+                                <span className="text-xs text-slate-400 font-medium">+{categoryCards.length - 3}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Chevron */}
+                        <svg
+                          className={`w-5 h-5 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </button>
+
+                    {/* Expanded content */}
+                    <AnimatePresence>
+                      {isExpanded && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="px-4 pb-4 pt-3 border-t border-slate-700">
+                            <div className="flex flex-wrap gap-3 justify-center">
+                              {categoryCards.map((card) => (
+                                <MiniCollectionCard
+                                  key={card.id}
+                                  card={card}
+                                  rootCategoryId={category.id}
+                                  size="medium"
+                                  onClick={() => setSelectedCollectionCard(card)}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                )
+              })}
             </div>
           )}
         </div>
+
+        {/* Card detail - use ExpandedCard component */}
+        <AnimatePresence>
+          {selectedCollectionCard && (
+            <ExpandedCard
+              card={{
+                ...selectedCollectionCard,
+                content: selectedCollectionCard.content || getCardContent(selectedCollectionCard.id),
+                contentLoaded: true
+              }}
+              index={selectedCollectionCard.number || 0}
+              total={1}
+              claimed={true}
+              onClaim={() => {}}
+              onClose={() => setSelectedCollectionCard(null)}
+              deckName={selectedCollectionCard.deckName || 'Collection'}
+              onContentGenerated={() => {}}
+              allCards={[selectedCollectionCard]}
+              hasNext={false}
+              hasPrev={false}
+              onNext={() => {}}
+              onPrev={() => {}}
+              startFlipped={true}
+              tint="#fafbfc"
+              rootCategoryId={findRootCategory(selectedCollectionCard.deckId)}
+            />
+          )}
+        </AnimatePresence>
 
         {/* Bottom navigation */}
         <BottomNav />
@@ -7140,6 +7730,7 @@ export default function Canvas() {
                   })
                 }
               }}
+              outline={currentDeck ? loadedOutlines[currentDeck.id] : null}
             />
           </AnimatePresence>
         </div>

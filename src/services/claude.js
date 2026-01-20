@@ -7,50 +7,148 @@ const anthropic = new Anthropic({
 });
 
 /**
+ * Topic types for content generation
+ * Each type gets different outline templates and card generation strategies
+ */
+export const TOPIC_TYPES = {
+  MEDICAL: 'MEDICAL',       // condition, disease, procedure, anatomy
+  PLACE: 'PLACE',           // landmark, city, building, geographic feature
+  EVENT: 'EVENT',           // historical event, war, revolution, discovery
+  PERSON: 'PERSON',         // historical figure, scientist, artist, leader
+  CONCEPT: 'CONCEPT',       // idea, theory, philosophy, system
+  SCIENCE: 'SCIENCE',       // scientific principle, phenomenon, field
+  OBJECT: 'OBJECT',         // invention, artifact, technology
+  ART: 'ART',               // artwork, music, literature, film
+  ORGANISM: 'ORGANISM',     // animal, plant, species
+  ORGANIZATION: 'ORGANIZATION' // company, institution, group
+};
+
+/**
+ * Classify a topic into one of the predefined types
+ * Used to determine which outline template and generation strategy to use
+ * @param {string} topic - The topic name to classify
+ * @param {string} parentPath - Optional parent context for disambiguation
+ * @returns {Promise<string>} One of the TOPIC_TYPES values
+ */
+export async function classifyTopic(topic, parentPath = null) {
+  try {
+    const contextHint = parentPath ? `\nContext: This topic is under "${parentPath}"` : '';
+
+    const prompt = `Classify this topic for a learning app.
+
+Topic: "${topic}"${contextHint}
+
+Classify into exactly ONE of these types:
+- MEDICAL — condition, disease, procedure, anatomy, symptoms, treatments
+- PLACE — landmark, city, building, museum, geographic feature, country
+- EVENT — historical event, war, battle, revolution, discovery, disaster
+- PERSON — historical figure, scientist, artist, leader, inventor, celebrity
+- CONCEPT — idea, theory, philosophy, system, methodology, framework
+- SCIENCE — scientific principle, phenomenon, field of study, natural law
+- OBJECT — invention, artifact, technology, tool, vehicle, weapon
+- ART — artwork, music piece, literature, film, album, artistic movement
+- ORGANISM — animal, plant, species, biological group
+- ORGANIZATION — company, institution, government body, group, team
+
+Output ONLY the type in caps, nothing else.`;
+
+    const message = await anthropic.messages.create({
+      model: 'claude-3-5-haiku-20241022', // Fast and cheap for classification
+      max_tokens: 20,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    const result = message.content[0].text.trim().toUpperCase();
+
+    // Validate it's a known type
+    if (TOPIC_TYPES[result]) {
+      console.log(`[classifyTopic] "${topic}" → ${result}`);
+      return result;
+    }
+
+    // Default to CONCEPT if we get an unexpected response
+    console.warn(`[classifyTopic] Unexpected result "${result}" for "${topic}", defaulting to CONCEPT`);
+    return TOPIC_TYPES.CONCEPT;
+  } catch (error) {
+    console.error('[classifyTopic] Error:', error);
+    return TOPIC_TYPES.CONCEPT; // Safe default
+  }
+}
+
+/**
+ * Get topic-type specific guidance for preview generation
+ * @param {string} topicType - The classified topic type
+ * @returns {string} Additional guidance for the prompt
+ */
+function getPreviewGuidance(topicType) {
+  const guidance = {
+    PERSON: `
+FOR A PERSON: Lead with their most surprising achievement or role. Include birth/death years if notable. What did they DO, not just who they were.`,
+    PLACE: `
+FOR A PLACE: Lead with what makes it unique or surprising. Include a key number (size, visitors, age). What would someone be surprised to learn?`,
+    EVENT: `
+FOR AN EVENT: Lead with the stakes or outcome. Include the year and scale (deaths, duration, countries involved). Why did it matter?`,
+    MEDICAL: `
+FOR A MEDICAL TOPIC: Lead with how common it is or who it affects. Include key timeframes or statistics. What would a patient want to know first?`,
+    CONCEPT: `
+FOR A CONCEPT: Lead with a concrete example or application. Avoid abstract definitions. How does this show up in real life?`,
+    SCIENCE: `
+FOR A SCIENCE TOPIC: Lead with a surprising implication or application. Include a key number or measurement. What makes this non-obvious?`,
+    OBJECT: `
+FOR AN OBJECT: Lead with what it changed or enabled. Include when it was invented/created. What problem did it solve?`,
+    ART: `
+FOR AN ART WORK: Lead with what makes it significant or controversial. Include when/where it was created. Why do people still care about it?`,
+    ORGANISM: `
+FOR AN ORGANISM: Lead with its most surprising trait or behavior. Include a key measurement (size, lifespan, population). What makes it unique?`,
+    ORGANIZATION: `
+FOR AN ORGANIZATION: Lead with its scale or impact. Include founding year and key numbers. What do they actually do?`
+  };
+
+  return guidance[topicType] || '';
+}
+
+/**
  * Generate a preview/pitch for a topic (what it is + one "wait, what?" detail)
  * Used for the "cover card" that appears before committing to learn a topic
  * @param {string} topic - The topic to preview
  * @param {string} parentPath - The path context (e.g., "History > Ancient World")
+ * @param {string} topicType - The classified topic type (PERSON, PLACE, EVENT, etc.)
  * @returns {Promise<{preview: string}>}
  */
-export async function generateTopicPreview(topic, parentPath = null) {
+export async function generateTopicPreview(topic, parentPath = null, topicType = null) {
   try {
     const contextNote = parentPath ? `\nContext: This is under "${parentPath}"` : '';
+    const typeNote = topicType ? `\nTopic type: ${topicType}` : '';
 
-    const prompt = `Write a preview for "${topic}" — a quick intro that tells me what this is and why it's interesting.${contextNote}
+    // Topic-type specific guidance
+    const typeGuidance = getPreviewGuidance(topicType);
+
+    const prompt = `Write a preview for "${topic}" — a quick intro that makes someone want to learn more.${contextNote}${typeNote}
 
 FORMAT:
-- 2-3 sentences, each on its OWN LINE (separated by blank lines)
-- Lead with the most interesting fact or context
-- Include specific details: dates, numbers, names, places
-- Bold **key terms** with markdown
+- 3 SHORT sentences, each on its own line (separated by blank lines)
+- One idea per sentence. No compound sentences.
+- Bold **one or two key terms** total, not more
+- Aim for 40-60 words total
 
-TONE: Informative and engaging. Like a knowledgeable friend giving you the quick rundown.
+TONE: Casual, clear, like a friend saying "oh this is cool because..."
 
 RULES:
-- Be specific, not vague ("won 2 Olympic golds" not "pushed limits")
-- Don't repeat the topic name in the first sentence
-- Don't use rhetorical questions ("What happens when...")
-- Each sentence should add new information
+- Lead with what makes it interesting, not a definition
+- Be specific (dates, numbers, names) but don't cram
+- No rhetorical questions
+- No "dramatically" / "fundamentally" / "particularly fascinating"
+- If a sentence has a comma, consider splitting it
+${typeGuidance}
 
-EXAMPLES:
+EXAMPLE:
+Topic: "Revolution"
 
-Topic: "Yuzuru Hanyu"
-A two-time Olympic gold medalist (**2014**, **2018**) and the first figure skater to land a **quadruple loop** in competition.
+Governments don't just lose power — they get overthrown.
 
-He broke the 100-point barrier in the short program and holds numerous world records for technical and total scores.
+From the **French Revolution** in 1789 to the Arab Spring in 2011, these uprisings tend to follow a pattern: chaos first, new order within 2-3 years.
 
-His blend of athletic precision and artistic expression has earned him one of the largest fanbases in figure skating history.
-
-Topic: "Eli Whitney"
-Invented the **cotton gin** in **1794**, which could clean 50 pounds of cotton per day — and accidentally made slavery vastly more profitable.
-
-His lesser-known innovation was **interchangeable parts** for musket manufacturing, which laid the foundation for modern mass production.
-
-Topic: "Appendicitis"
-Inflammation of the appendix that becomes life-threatening within **48-72 hours** if untreated.
-
-The appendectomy was once considered medical heresy — now it's one of the most common emergency surgeries, with over **300,000** performed annually in the US alone.
+They're also contagious. The 1848 revolts hit 50 countries in a single year.
 
 Write ONLY the preview text - no intro, no labels.`;
 
@@ -68,17 +166,91 @@ Write ONLY the preview text - no intro, no labels.`;
 }
 
 /**
- * Generate an outline for a topic - 15 card concepts across 3 tiers
+ * Get topic-type specific outline structure guidance
+ * Each topic type has a different approach to structuring the 15 cards
+ * @param {string} topicType - The classified topic type
+ * @returns {string} Outline structure guidance
+ */
+function getOutlineStructure(topicType) {
+  const structures = {
+    PERSON: `
+FOR A PERSON - Structure the outline as:
+CORE (1-5): Who they were, what they're known for, their key achievement, the context/era they lived in, what made them different
+DEEP_DIVE_1 (6-10): Their major works/actions, key relationships, pivotal moments, methods/approach, impact on their field
+DEEP_DIVE_2 (11-15): Lesser-known facts, controversies, legacy/influence today, what they got wrong, connections to other figures`,
+
+    PLACE: `
+FOR A PLACE - Structure the outline as:
+CORE (1-5): Where it is, why it matters, key features, who built/founded it, what happens there
+DEEP_DIVE_1 (6-10): History/timeline, notable events there, what visitors experience, unique characteristics, famous connections
+DEEP_DIVE_2 (11-15): Hidden secrets, controversies, how it's changed, future/threats, surprising facts`,
+
+    EVENT: `
+FOR AN EVENT - Structure the outline as:
+CORE (1-5): What happened, when and where, key players, immediate cause, the outcome
+DEEP_DIVE_1 (6-10): Build-up/context, turning points, individual stories, how it unfolded, immediate aftermath
+DEEP_DIVE_2 (11-15): Long-term effects, what we learned, myths vs reality, modern parallels, what almost happened differently`,
+
+    MEDICAL: `
+FOR A MEDICAL TOPIC - Structure the outline as:
+CORE (1-5): What it is, who it affects, main symptoms/features, causes, how it's diagnosed
+DEEP_DIVE_1 (6-10): Treatment options, prevention, history of discovery, how the body responds, risk factors
+DEEP_DIVE_2 (11-15): Latest research, complications, patient experiences, controversies, future directions`,
+
+    CONCEPT: `
+FOR A CONCEPT - Structure the outline as:
+CORE (1-5): What it means, why it matters, key components, where it came from, how it's used
+DEEP_DIVE_1 (6-10): Real examples, how experts apply it, common misconceptions, related concepts, how to recognize it
+DEEP_DIVE_2 (11-15): Edge cases, criticisms, modern applications, connections to other fields, how it's evolving`,
+
+    SCIENCE: `
+FOR A SCIENCE TOPIC - Structure the outline as:
+CORE (1-5): What it is, how it works, key principles, who discovered it, why it matters
+DEEP_DIVE_1 (6-10): The evidence, practical applications, famous experiments, how it connects to other science, common misconceptions
+DEEP_DIVE_2 (11-15): Current research, unsolved questions, real-world implications, how understanding has evolved, counterintuitive aspects`,
+
+    OBJECT: `
+FOR AN OBJECT - Structure the outline as:
+CORE (1-5): What it is, what it does, how it works, who invented it, what problem it solved
+DEEP_DIVE_1 (6-10): Evolution/versions, how it's made, famous examples, impact on society, related innovations
+DEEP_DIVE_2 (11-15): Unexpected uses, failures/disasters, future developments, cultural significance, what might replace it`,
+
+    ART: `
+FOR AN ART WORK - Structure the outline as:
+CORE (1-5): What it is, who created it, when/where, what it depicts/expresses, why it's significant
+DEEP_DIVE_1 (6-10): Creation story, techniques used, symbolism/meaning, initial reception, influence on other works
+DEEP_DIVE_2 (11-15): Hidden details, controversies, how interpretation has changed, where it is now, personal stories connected to it`,
+
+    ORGANISM: `
+FOR AN ORGANISM - Structure the outline as:
+CORE (1-5): What it is, where it lives, key characteristics, how it survives, why it's notable
+DEEP_DIVE_1 (6-10): Behavior, life cycle, diet/predators, evolution, relationship to humans
+DEEP_DIVE_2 (11-15): Surprising abilities, conservation status, research discoveries, myths vs facts, ecosystem role`,
+
+    ORGANIZATION: `
+FOR AN ORGANIZATION - Structure the outline as:
+CORE (1-5): What they do, who founded it, when/why, how big they are, why they matter
+DEEP_DIVE_1 (6-10): Key milestones, how they operate, notable leaders, major achievements, business model/funding
+DEEP_DIVE_2 (11-15): Controversies, competitors, internal culture, future challenges, impact on society`
+  };
+
+  return structures[topicType] || '';
+}
+
+/**
+ * Generate an outline for a topic - 12-18 card concepts across 3 tiers (4-6 per tier)
  * Used for background pre-generation while user reads preview card
  * @param {string} topic - The topic name
  * @param {string} parentContext - Optional parent path context
  * @param {string} previewText - Optional preview card text to avoid repeating
+ * @param {string} topicType - Optional classified topic type for structure guidance
  * @returns {Promise<{outline: Object}>} outline with core, deep_dive_1, deep_dive_2 arrays
  */
-export async function generateTopicOutline(topic, parentContext = null, previewText = null) {
-  console.log(`[OUTLINE] Generating outline for: ${topic}${previewText ? ' (with preview context)' : ''}`);
+export async function generateTopicOutline(topic, parentContext = null, previewText = null, topicType = null) {
+  console.log(`[OUTLINE] Generating outline for: ${topic}${previewText ? ' (with preview context)' : ''}${topicType ? ` [${topicType}]` : ''}`);
 
   const contextNote = parentContext ? `\nContext: "${topic}" is under "${parentContext}"` : '';
+  const typeNote = topicType ? `\nTopic type: ${topicType}` : '';
 
   const previewNote = previewText ? `
 
@@ -88,14 +260,22 @@ ${previewText}
 """
 Do NOT repeat any facts, numbers, or details from the preview. The 15 cards should teach NEW information that builds on (but doesn't duplicate) what the preview already covered.` : '';
 
-  const prompt = `Create a learning outline for "${topic}".${contextNote}${previewNote}
+  // Get topic-type specific structure guidance
+  const structureGuidance = getOutlineStructure(topicType);
 
-You're planning 15 learning cards across 3 tiers. For each card, write a 1-2 sentence concept (what this card teaches).
+  const prompt = `Create a learning outline for "${topic}".${contextNote}${typeNote}${previewNote}
 
+You're planning 12-18 learning cards across 3 tiers. Each tier should have 4-6 cards depending on how much depth the topic needs.
+- Simple/focused topics: 12 cards (4 per tier)
+- Average topics: 15 cards (5 per tier)
+- Complex/rich topics: 18 cards (6 per tier)
+
+For each card, write a 1-2 sentence concept (what this card teaches).
+${structureGuidance ? structureGuidance : `
 TIER STRUCTURE:
-- CORE (cards 1-5): Foundation. What it is, why it matters, key components/ingredients, how it works, where it came from. After these 5, someone should "get it."
-- DEEP_DIVE_1 (cards 6-10): Deeper angles. Specific examples, notable cases, historical stories, related innovations, how experts think about it.
-- DEEP_DIVE_2 (cards 11-15): Expert territory. Complications, edge cases, modern relevance, connections to other fields, counterintuitive facts.
+- CORE (4-6 cards): Foundation. What it is, why it matters, key components/ingredients, how it works, where it came from. After these cards, someone should "get it."
+- DEEP_DIVE_1 (4-6 cards): Deeper angles. Specific examples, notable cases, historical stories, related innovations, how experts think about it.
+- DEEP_DIVE_2 (4-6 cards): Expert territory. Complications, edge cases, modern relevance, connections to other fields, counterintuitive facts.`}
 
 RULES:
 - Each concept = one specific teaching point (not a topic label)
@@ -103,20 +283,21 @@ RULES:
 - Build progressively — later cards assume earlier knowledge
 - Include specific facts, names, numbers in concept descriptions
 - DO NOT repeat anything from the preview card
+- Use same number of cards in each tier (all 4, all 5, or all 6)
 
 OUTPUT FORMAT (JSON only, no explanation):
 {
   "core": [
     {"title": "Card title (4-8 words)", "concept": "What this card teaches (1-2 sentences)"},
-    ...4 more
+    ... (3-5 more, for 4-6 total)
   ],
   "deep_dive_1": [
     {"title": "Card title", "concept": "What this card teaches"},
-    ...4 more
+    ... (3-5 more, for 4-6 total)
   ],
   "deep_dive_2": [
     {"title": "Card title", "concept": "What this card teaches"},
-    ...4 more
+    ... (3-5 more, for 4-6 total)
   ]
 }`;
 
@@ -142,11 +323,18 @@ OUTPUT FORMAT (JSON only, no explanation):
     if (!outline.core || !outline.deep_dive_1 || !outline.deep_dive_2) {
       throw new Error('Invalid outline structure');
     }
-    if (outline.core.length !== 5 || outline.deep_dive_1.length !== 5 || outline.deep_dive_2.length !== 5) {
-      console.warn('[OUTLINE] Unexpected card count, but proceeding');
+
+    // Validate card counts (4-6 per tier, 12-18 total)
+    const coreCount = outline.core.length;
+    const dd1Count = outline.deep_dive_1.length;
+    const dd2Count = outline.deep_dive_2.length;
+    const totalCount = coreCount + dd1Count + dd2Count;
+
+    if (coreCount < 4 || coreCount > 6 || dd1Count < 4 || dd1Count > 6 || dd2Count < 4 || dd2Count > 6) {
+      console.warn(`[OUTLINE] Card counts outside 4-6 range: core=${coreCount}, dd1=${dd1Count}, dd2=${dd2Count}`);
     }
 
-    console.log(`[OUTLINE] ✅ Generated outline for: ${topic} (${outline.core.length + outline.deep_dive_1.length + outline.deep_dive_2.length} concepts)`);
+    console.log(`[OUTLINE] ✅ Generated outline for: ${topic} (${totalCount} concepts: ${coreCount}/${dd1Count}/${dd2Count})`);
     return { outline };
   } catch (error) {
     console.error('[OUTLINE] Error generating outline:', error);
@@ -2175,14 +2363,14 @@ TIER: ${tierContext}
 OTHER CARDS (do not overlap):
 ${otherTitles}
 
-Generate original educational content (65-70 words) that teaches this concept clearly.
+Generate original educational content (80-120 words) that teaches this concept clearly.
 
 CONTENT REQUIREMENTS:
-- Length: EXACTLY 65-70 words (count carefully!)
+- Length: 80-120 words (this is important - not too short, not too long)
 - Structure:
-  * First 1-2 sentences: State what this card teaches
-  * Middle sentences: Explain with specific examples, numbers, facts
-  * Final 1-2 sentences: Why it matters or how it connects
+  * First 1-2 sentences: Hook with something surprising or concrete
+  * Middle: Explain with specific examples, numbers, facts
+  * Final 1-2 sentences: Why it matters or a memorable takeaway
 
 WRITING STYLE:
 - Educational and clear, like a great teacher explaining it
@@ -2197,7 +2385,7 @@ WRITING STYLE:
 - Filler words or throat-clearing
 - Entertainment over education
 
-Return ONLY the text content (65-70 words):`;
+Return ONLY the text content (80-120 words):`;
 
   try {
     // Use streaming if callback provided
@@ -2290,20 +2478,25 @@ const TIER_CONFIG = {
 };
 
 /**
- * Generate 5 cards for a specific tier with streaming support
+ * Generate 4-6 cards for a specific tier with streaming support
+ * Card count is determined by the outline (defaults to 5 if no outline)
  * @param {string} topicName - The topic
  * @param {string} tier - 'core' | 'deep_dive_1' | 'deep_dive_2'
  * @param {Array} previousCards - Cards from previous tiers (to avoid repetition)
  * @param {string} parentContext - Optional parent context
  * @param {Function} onCard - Callback fired when each card is ready (for progressive display)
- * @param {Object} outline - Optional pre-generated outline with card concepts
- * @returns {Promise<Array>} Array of 5 card objects
+ * @param {Object} outline - Optional pre-generated outline with card concepts (determines card count)
+ * @returns {Promise<Array>} Array of 4-6 card objects
  */
 export async function generateTierCards(topicName, tier, previousCards = [], parentContext = null, onCard = null, outline = null) {
   const config = TIER_CONFIG[tier];
   if (!config) throw new Error(`Unknown tier: ${tier}`);
 
-  console.log(`[TIER] Generating ${config.name} (5 cards) for: ${topicName}${onCard ? ' [STREAMING]' : ''}${outline ? ' [WITH OUTLINE]' : ''}`);
+  // Determine card count from outline (default to 5 if no outline)
+  const tierOutline = outline?.[tier];
+  const cardCount = tierOutline?.length || 5;
+
+  console.log(`[TIER] Generating ${config.name} (${cardCount} cards) for: ${topicName}${onCard ? ' [STREAMING]' : ''}${outline ? ' [WITH OUTLINE]' : ''}`);
 
   // Build context from previous cards
   let previousContext = '';
@@ -2321,9 +2514,8 @@ Build on this foundation - go deeper, not sideways.\n`;
   // Build outline context if available
   let outlineContext = '';
   if (outline) {
-    const tierOutline = outline[tier];
     if (tierOutline && tierOutline.length > 0) {
-      outlineContext = `\nPLANNED CARDS FOR THIS TIER (follow this outline):
+      outlineContext = `\nPLANNED CARDS FOR THIS TIER (follow this outline exactly - generate ${tierOutline.length} cards):
 ${tierOutline.map((c, i) => `${i + 1}. "${c.title}": ${c.concept}`).join('\n')}
 
 Write the full content for each of these planned cards. Use the titles and concepts as your guide.\n`;
@@ -2347,27 +2539,29 @@ ${otherTiers.join('\n')}\n`;
   }
 
   // Use delimiters for streaming so we can parse cards as they arrive
-  const prompt = `Generate 5 learning cards about "${topicName}" for ${config.name}.
+  const prompt = `Generate ${cardCount} learning cards about "${topicName}" for ${config.name}.
 ${contextHint}${previousContext}${outlineContext}
 FOCUS FOR THIS TIER:
 ${config.guidance}
 
 Each card needs:
 - "title": Clear, specific topic (4-8 words)
-- "content": 60-100 words in 2-4 SHORT paragraphs
+- "content": 80-120 words in 2-4 SHORT paragraphs
 
 WRITING STYLE:
-- Hook first, context after
+- Hook first with something surprising or concrete
 - Short paragraphs (2-4 sentences max, then whitespace)
-- One main idea per card, maybe one supporting idea
+- One main idea per card, explained thoroughly
 - Bold **key terms** that are testable facts (names, dates, numbers, definitions, places)
-- Last line should land with punch
+- Last line should land with a memorable takeaway
 - Use \\n\\n between paragraphs (line breaks in JSON)
 
 TONE: Like a smart friend explaining something they find fascinating. Conversational but not dumbed down. Confident, direct. Occasional wit, never forced.
 
-EXAMPLE content value:
-"The **Rosetta Stone** wasn't one translation—it was three. The same decree in **hieroglyphics**, **Demotic script**, and **Greek**, carved in **196 BC**.\\n\\nHieroglyphics had been a mystery for centuries. The Greek portion finally gave scholars a key.\\n\\n**Jean-François Champollion** cracked it in **1822**—unlocking 3,000 years of Egyptian history in one breakthrough."
+WORD COUNT: Each card MUST be 80-120 words. Not shorter. Count carefully.
+
+EXAMPLE content value (note: ~100 words):
+"The **Rosetta Stone** wasn't one translation—it was three. The same decree appeared in **hieroglyphics**, **Demotic script**, and **Greek**, carved in **196 BC** by priests honoring King Ptolemy V.\\n\\nFor centuries, hieroglyphics were indecipherable—an entire civilization's written history, locked away. Scholars knew the Greek text was the key, but matching symbols to sounds took **23 years** of obsessive work.\\n\\n**Jean-François Champollion** finally cracked it in **1822**, realizing hieroglyphics mixed alphabetic and symbolic elements. His breakthrough unlocked 3,000 years of Egyptian history overnight—temple inscriptions, royal tombs, and medical texts suddenly readable for the first time since antiquity."
 
 RULES:
 - Specific facts, numbers, names (not vague statements)
@@ -2380,7 +2574,7 @@ Output each card with delimiters:
 ###CARD###
 {"number": ${config.startNumber}, "title": "...", "content": "..."}
 ###END###
-(continue for all 5 cards)`;
+(continue for all ${cardCount} cards)`;
 
   const timestamp = Date.now();
   const allCards = [];
@@ -2393,7 +2587,7 @@ Output each card with delimiters:
 
       const stream = await anthropic.messages.create({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 1500,
+        max_tokens: 2000, // Increased for up to 6 cards
         messages: [{ role: 'user', content: prompt }],
         stream: true
       });
@@ -2424,7 +2618,7 @@ Output each card with delimiters:
 
                 allCards.push(formattedCard);
                 cardsFound++;
-                console.log(`[TIER] 📦 Card ${cardsFound}/5 ready: ${card.title}`);
+                console.log(`[TIER] 📦 Card ${cardsFound}/${cardCount} ready: ${card.title}`);
 
                 // Fire callback immediately so UI can update
                 onCard(formattedCard, cardsFound);
@@ -2449,7 +2643,7 @@ Output each card with delimiters:
       // Non-streaming fallback (for background generation)
       const message = await anthropic.messages.create({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 1500,
+        max_tokens: 2000, // Increased for up to 6 cards
         messages: [{ role: 'user', content: prompt }]
       });
 
@@ -2499,8 +2693,8 @@ Output each card with delimiters:
         }
       }
 
-      if (allCards.length !== 5) {
-        console.warn(`[TIER] Expected 5 cards, got ${allCards.length}`);
+      if (allCards.length !== cardCount) {
+        console.warn(`[TIER] Expected ${cardCount} cards, got ${allCards.length}`);
       }
 
       console.log(`[TIER] ✅ Generated ${allCards.length} cards for: ${topicName}`);
