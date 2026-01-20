@@ -1184,6 +1184,29 @@ export function claimPreviewCard(deckId) {
 }
 
 /**
+ * Update a deck's lastInteracted timestamp
+ * @param {string} deckId - The deck/topic ID
+ */
+export function updateDeckLastInteracted(deckId) {
+  const data = getData()
+
+  // Ensure deck exists
+  if (!data.decks[deckId]) {
+    data.decks[deckId] = {
+      id: deckId,
+      name: deckId,
+      cardIds: [],
+      cardsByTier: { core: [], deep_dive_1: [], deep_dive_2: [] },
+      unlockedTiers: ['core'],
+      generatedAt: new Date().toISOString(),
+    }
+  }
+
+  data.decks[deckId].lastInteracted = new Date().toISOString()
+  saveData(data)
+}
+
+/**
  * Check if preview card exists for a topic
  * @param {string} deckId - The deck/topic ID
  * @returns {boolean}

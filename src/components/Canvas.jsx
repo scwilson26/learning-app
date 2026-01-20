@@ -51,7 +51,8 @@ import {
   getAllFlashcardsArray,
   importFlashcardsFromRemote,
   findRootCategory,
-  getInProgressDecks
+  getInProgressDecks,
+  updateDeckLastInteracted
 } from '../services/storage'
 
 // Configuration - card counts can be adjusted here or per-deck
@@ -7276,6 +7277,8 @@ export default function Canvas() {
               onExplore={() => {
                 if (showPreviewCard.navigatePath) {
                   setStack(showPreviewCard.navigatePath)
+                  // Update lastInteracted so it shows in Continue Exploring
+                  updateDeckLastInteracted(showPreviewCard.deckId)
                 }
                 setShowPreviewCard(null)
                 setWanderPathSteps([])
@@ -7977,6 +7980,8 @@ export default function Canvas() {
             onExplore={() => {
               if (showPreviewCard.navigatePath) {
                 setStack(showPreviewCard.navigatePath)
+                // Update lastInteracted so it shows in Continue Exploring
+                updateDeckLastInteracted(showPreviewCard.deckId)
               }
               setShowPreviewCard(null)
               setWanderPathSteps([])
