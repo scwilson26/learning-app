@@ -7152,60 +7152,50 @@ export default function Canvas() {
     )
   }
 
-  // Home screen - show Home decks (just "My Decks" for now)
-  if (stack.length === 0) {
+  // Learn screen (default) - show all category decks with Continue Exploring
+  if (stack.length === 0 || (stack.length === 1 && stack[0] === 'my-decks')) {
     return (
       <div className="w-screen min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 overflow-auto">
-        <div className="min-h-screen flex items-center justify-center p-8">
-          <div className="flex flex-col items-center gap-6">
-            <h1 className="text-2xl font-bold text-gray-800">Home</h1>
-            <div className="grid grid-cols-1 gap-4">
-              {HOME_DECKS.map((deck) => (
-                <Deck
-                  key={deck.id}
-                  deck={deck}
-                  claimed={false}
-                  onOpen={() => setStack([deck.id])}
-                />
-              ))}
+        {/* Top navigation bar */}
+        <div className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200">
+          <div className="flex items-center justify-between px-3 py-2">
+            {/* User button / Sign In */}
+            {user ? (
+              <button
+                onClick={() => signOut()}
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                <span className="w-7 h-7 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
+                  {user.email?.charAt(0).toUpperCase()}
+                </span>
+                <span className="text-sm hidden sm:inline">Sign Out</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowAuth(true)}
+                className="text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
+              >
+                Sign In
+              </button>
+            )}
+            <span className="font-semibold text-gray-800">Learn</span>
+            <div className="bg-gray-100 rounded-full px-3 py-1">
+              <span className="text-gray-500 text-xs">Cards: </span>
+              <span className="text-gray-800 font-bold text-sm">{claimedCards.size}</span>
             </div>
           </div>
         </div>
 
-        {/* Top bar with user and card count */}
-        <div className="fixed top-4 left-4 right-4 flex justify-between items-center">
-          {/* User button */}
-          {user ? (
-            <button
-              onClick={() => signOut()}
-              className="bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-200 shadow-sm text-sm flex items-center gap-2 hover:bg-white transition-colors"
-            >
-              <span className="w-6 h-6 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
-                {user.email?.charAt(0).toUpperCase()}
-              </span>
-              <span className="text-gray-600 hidden sm:inline">Sign Out</span>
-            </button>
-          ) : (
-            <button
-              onClick={() => setShowAuth(true)}
-              className="bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-200 shadow-sm text-sm text-gray-600 hover:bg-white transition-colors"
-            >
-              Sign In
-            </button>
-          )}
-
-          {/* Collection counter */}
-          <div className="bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-200 shadow-sm">
-            <span className="text-gray-500 text-sm">Cards: </span>
-            <span className="text-gray-800 font-bold">{claimedCards.size}</span>
-          </div>
+        {/* Search bar */}
+        <div className="fixed top-12 left-0 right-0 z-30 pt-2 pb-2 px-4 bg-gradient-to-b from-gray-100 via-gray-100 to-transparent">
+          <SearchBar onNavigate={handleSearchNavigate} />
         </div>
 
         {/* Sync status indicator */}
         <AnimatePresence>
           {(isSyncing || syncStatus) && (
             <motion.div
-              className="fixed top-16 left-1/2 transform -translate-x-1/2 bg-white rounded-full px-4 py-2 shadow-lg border border-gray-200 text-sm flex items-center gap-2"
+              className="fixed top-24 left-1/2 transform -translate-x-1/2 z-20 bg-white rounded-full px-4 py-2 shadow-lg border border-gray-200 text-sm flex items-center gap-2"
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
@@ -7226,82 +7216,6 @@ export default function Canvas() {
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Bottom navigation */}
-        <BottomNav />
-        <ToastMessage />
-        <WanderMessage />
-
-        {/* Wander card overlay - shows path animation then preview */}
-        <AnimatePresence>
-          {(isWandering || (showPreviewCard && showPreviewCard.navigatePath)) && wanderPathSteps.length > 0 && (
-            <WanderCard
-              pathSteps={wanderPathSteps}
-              currentStep={wanderCurrentStep}
-              isComplete={wanderComplete}
-              previewData={showPreviewCard ? {
-                title: showPreviewCard.title,
-                preview: showPreviewCard.preview,
-                isLoading: showPreviewCard.isLoading,
-                claimed: showPreviewCard.claimed,
-                cardId: showPreviewCard.cardId
-              } : null}
-              onClaim={() => {
-                claimPreviewCard(showPreviewCard.deckId)
-                setClaimedCards(getClaimedCardIds())
-                setShowPreviewCard(prev => ({ ...prev, claimed: true }))
-              }}
-              onExplore={() => {
-                if (showPreviewCard.navigatePath) {
-                  setStack(showPreviewCard.navigatePath)
-                }
-                setShowPreviewCard(null)
-                setWanderPathSteps([])
-              }}
-              onWander={() => {
-                setShowPreviewCard(null)
-                setWanderPathSteps([])
-                handleWander()
-              }}
-              onBack={() => {
-                setShowPreviewCard(null)
-                setWanderPathSteps([])
-                setIsWandering(false)
-              }}
-              rootCategoryId={showPreviewCard?.navigatePath?.[0] || wanderPathSteps[0]?.id}
-            />
-          )}
-        </AnimatePresence>
-      </div>
-    )
-  }
-
-  // My Decks screen - show all category decks
-  if (stack.length === 1 && stack[0] === 'my-decks') {
-    return (
-      <div className="w-screen min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 overflow-auto">
-        {/* Top navigation bar */}
-        <div className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200">
-          <div className="flex items-center justify-between px-3 py-2">
-            <button
-              onClick={() => setStack([])}
-              className="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 transition-colors"
-            >
-              <span className="text-lg">‹</span>
-              <span className="text-sm font-medium">Home</span>
-            </button>
-            <span className="font-semibold text-gray-800">Learn</span>
-            <div className="bg-gray-100 rounded-full px-3 py-1">
-              <span className="text-gray-500 text-xs">Cards: </span>
-              <span className="text-gray-800 font-bold text-sm">{claimedCards.size}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Search bar */}
-        <div className="fixed top-12 left-0 right-0 z-30 pt-2 pb-2 px-4 bg-gradient-to-b from-gray-100 via-gray-100 to-transparent">
-          <SearchBar onNavigate={handleSearchNavigate} />
-        </div>
 
         <div className="min-h-screen p-4 pt-32 pb-24">
           {(() => {
