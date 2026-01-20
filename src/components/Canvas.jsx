@@ -50,7 +50,8 @@ import {
   formatTimeUntilReview,
   getAllFlashcardsArray,
   importFlashcardsFromRemote,
-  findRootCategory
+  findRootCategory,
+  getInProgressDecks
 } from '../services/storage'
 
 // Configuration - card counts can be adjusted here or per-deck
@@ -2612,6 +2613,69 @@ function CategoryCard({ deck, tint = '#fafbfc', rootCategoryId = null }) {
   )
 }
 
+// Continue Exploring section - shows in-progress topics on Learn tab
+function ContinueExploringSection({ decks, onOpenDeck }) {
+  if (!decks || decks.length === 0) return null
+
+  return (
+    <div className="mb-6">
+      <h2 className="text-lg font-semibold text-slate-700 mb-3">Continue Exploring</h2>
+      <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+        {decks.map((deck) => {
+          const theme = getCategoryTheme(deck.rootCategoryId)
+          const isThemed = hasCustomTheme(deck.rootCategoryId)
+          const progressPercent = Math.round((deck.claimedCount / deck.totalCount) * 100)
+
+          return (
+            <motion.button
+              key={deck.id}
+              onClick={() => onOpenDeck({ id: deck.id, name: deck.name })}
+              className="flex-shrink-0 w-32 rounded-xl p-3 text-left transition-all"
+              style={{
+                background: isThemed ? theme.cardBg : '#ffffff',
+                border: `2px solid ${isThemed ? theme.accent : '#e5e7eb'}`,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+              }}
+              whileHover={{ y: -2, boxShadow: '0 4px 12px rgba(0,0,0,0.12)' }}
+              whileTap={{ scale: 0.98 }}
+            >
+              {/* Topic name */}
+              <p
+                className="text-sm font-semibold line-clamp-2 leading-tight mb-2"
+                style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}
+              >
+                {deck.name}
+              </p>
+
+              {/* Progress count */}
+              <p
+                className="text-xs font-medium mb-1.5"
+                style={{ color: isThemed ? theme.accent : '#6b7280' }}
+              >
+                {deck.claimedCount}/{deck.totalCount}
+              </p>
+
+              {/* Progress bar */}
+              <div
+                className="w-full h-1.5 rounded-full overflow-hidden"
+                style={{ background: isThemed ? `${theme.accent}20` : '#e5e7eb' }}
+              >
+                <div
+                  className="h-full rounded-full transition-all duration-300"
+                  style={{
+                    width: `${progressPercent}%`,
+                    background: isThemed ? theme.accent : '#6b7280',
+                  }}
+                />
+              </div>
+            </motion.button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // Tier section component - shows cards for one tier with header and progress
 function TierSection({ tier, tierName, cards, claimedCards, onReadCard, completion, isLocked, onUnlock, isUnlocking, totalCards = 15, tint, rootCategoryId }) {
   const { claimed, total } = completion
@@ -5065,9 +5129,12 @@ export default function Canvas() {
         const localDD1Cards = dd1Cards.map((c, i) => convertCard(c, i))
         const localDD2Cards = dd2Cards.map((c, i) => convertCard(c, i))
 
+        // Calculate expected total from all canonical cards
+        const expectedTotal = canonicalCards.length
+
         // Save to localStorage for offline access
         localCoreCards.forEach(card => {
-          saveStreamedCard(deck.id, deck.name, card, 'core')
+          saveStreamedCard(deck.id, deck.name, card, 'core', expectedTotal)
         })
 
         // Update UI state
@@ -5134,6 +5201,11 @@ export default function Canvas() {
       console.warn(`[OUTLINE] Error fetching outline:`, err)
     }
 
+    // Calculate expected total from outline if available
+    const expectedTotalFromOutline = outline
+      ? (outline.core?.length || 0) + (outline.deep_dive_1?.length || 0) + (outline.deep_dive_2?.length || 0)
+      : null
+
     try {
       // Generate Core tier with streaming callback (and optional outline)
       const coreCards = await generateTierCards(
@@ -5145,7 +5217,7 @@ export default function Canvas() {
         (card, cardNumber) => {
           // Save card immediately to localStorage (creates card entry + adds to cardsByTier)
           // Returns the generated cardId
-          const cardId = saveStreamedCard(deck.id, deck.name, card, 'core')
+          const cardId = saveStreamedCard(deck.id, deck.name, card, 'core', expectedTotalFromOutline)
 
           // Add cardId to the card object
           const cardWithId = { ...card, cardId }
@@ -5245,8 +5317,13 @@ export default function Canvas() {
         // Generate without streaming callback (just wait for all cards)
         const cards = await generateTierCards(deck.name, tier, previousCards, parentPath, null, outline)
 
+        // Calculate expected total from outline if available
+        const expectedTotal = outline
+          ? (outline.core?.length || 0) + (outline.deep_dive_1?.length || 0) + (outline.deep_dive_2?.length || 0)
+          : null
+
         // Save to localStorage
-        saveDeckCards(deck.id, deck.name, cards, tier)
+        saveDeckCards(deck.id, deck.name, cards, tier, expectedTotal)
         cards.forEach(card => {
           if (card.content) {
             saveCardContent(card.id, card.content)
@@ -5370,6 +5447,11 @@ export default function Canvas() {
         console.warn(`[UNLOCK] Error fetching outline:`, err)
       }
 
+      // Calculate expected total from outline if available
+      const expectedTotalForUnlock = outline
+        ? (outline.core?.length || 0) + (outline.deep_dive_1?.length || 0) + (outline.deep_dive_2?.length || 0)
+        : null
+
       // Use streaming to show cards one-by-one
       const cards = await generateTierCards(
         deck.name,
@@ -5379,7 +5461,7 @@ export default function Canvas() {
         // Streaming callback - called for each card as it completes
         (card, cardNumber) => {
           // Save card immediately to localStorage - returns the generated cardId
-          const cardId = saveStreamedCard(deck.id, deck.name, card, tier)
+          const cardId = saveStreamedCard(deck.id, deck.name, card, tier, expectedTotalForUnlock)
 
           // Add cardId to the card object
           const cardWithId = { ...card, cardId }
@@ -7221,7 +7303,26 @@ export default function Canvas() {
           <SearchBar onNavigate={handleSearchNavigate} />
         </div>
 
-        <div className="min-h-screen flex items-center justify-center p-8 pt-32">
+        <div className="min-h-screen p-4 pt-32 pb-24">
+          {(() => {
+            const inProgressDecks = getInProgressDecks()
+            return (
+              <>
+                {/* Continue Exploring section - shows in-progress topics */}
+                <ContinueExploringSection
+                  decks={inProgressDecks}
+                  onOpenDeck={openDeck}
+                />
+
+                {/* Categories header - only show if there are in-progress decks */}
+                {inProgressDecks.length > 0 && (
+                  <h2 className="text-lg font-semibold text-slate-700 mb-3">Categories</h2>
+                )}
+              </>
+            )
+          })()}
+
+          {/* Category grid */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {CATEGORIES.map((category) => (
               <Deck

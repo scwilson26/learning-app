@@ -773,7 +773,7 @@ export function getDeckCards(deckId) {
  * @param {Array} cards - Array of card objects with id, title, and optionally tier
  * @param {string} tier - Optional tier: 'core' | 'deep_dive_1' | 'deep_dive_2'
  */
-export function saveDeckCards(deckId, deckName, cards, tier = 'core') {
+export function saveDeckCards(deckId, deckName, cards, tier = 'core', expectedTotalCards = null) {
   const data = getData()
   const now = new Date().toISOString()
 
@@ -797,6 +797,8 @@ export function saveDeckCards(deckId, deckName, cards, tier = 'core') {
       [tier]: cards.map(c => c.id),
     },
     generatedAt: now,
+    // Store expected total if provided (from outline), or keep existing
+    ...(expectedTotalCards ? { expectedTotalCards } : {}),
   }
 
   // Save individual cards with tier info
@@ -830,8 +832,9 @@ export function saveDeckCards(deckId, deckName, cards, tier = 'core') {
  * @param {string} deckName - The deck name
  * @param {Object} card - The card object
  * @param {string} tier - The tier ('core', 'deep_dive_1', 'deep_dive_2')
+ * @param {number} expectedTotalCards - Optional expected total cards from outline
  */
-export function saveStreamedCard(deckId, deckName, card, tier) {
+export function saveStreamedCard(deckId, deckName, card, tier, expectedTotalCards = null) {
   const data = getData()
   const now = new Date().toISOString()
 
@@ -845,6 +848,11 @@ export function saveStreamedCard(deckId, deckName, card, tier) {
       unlockedTiers: ['core'],
       generatedAt: now,
     }
+  }
+
+  // Store expected total if provided (from outline)
+  if (expectedTotalCards && !data.decks[deckId].expectedTotalCards) {
+    data.decks[deckId].expectedTotalCards = expectedTotalCards
   }
 
   // Add card ID to deck if not already there
@@ -917,10 +925,18 @@ export function getCardContent(cardId) {
  */
 export function claimCard(cardId) {
   const data = getData()
+  const now = new Date().toISOString()
 
   if (data.cards[cardId]) {
     data.cards[cardId].claimed = true
-    data.cards[cardId].claimedAt = new Date().toISOString()
+    data.cards[cardId].claimedAt = now
+
+    // Update deck's lastInteracted timestamp
+    const deckId = data.cards[cardId].deckId
+    if (deckId && data.decks[deckId]) {
+      data.decks[deckId].lastInteracted = now
+    }
+
     saveData(data)
     console.log(`[claimCard] ✅ Claimed card ${cardId}`)
   } else {
@@ -930,7 +946,7 @@ export function claimCard(cardId) {
     data.cards[cardId] = {
       id: cardId,
       claimed: true,
-      claimedAt: new Date().toISOString(),
+      claimedAt: now,
     }
     saveData(data)
   }
@@ -1905,4 +1921,62 @@ export function formatTimeUntilReview(nextReview) {
   }
   const minutes = Math.floor(diff / (1000 * 60))
   return minutes <= 1 ? '1 minute' : `${minutes} minutes`
+}
+
+/**
+ * Get all in-progress decks (some cards claimed but not all)
+ * @returns {Array} Array of in-progress deck objects sorted by last interaction
+ */
+export function getInProgressDecks() {
+  const data = getData()
+  const inProgress = []
+
+  Object.entries(data.decks).forEach(([deckId, deck]) => {
+    // Skip decks without cards
+    if (!deck.cardIds?.length) return
+
+    // Count claimed cards
+    const claimedCount = deck.cardIds.filter(id => data.cards[id]?.claimed).length
+    // Use expectedTotalCards if available (from outline), otherwise fallback to 15
+    const expectedTotal = deck.expectedTotalCards || 15
+    // Current generated count (for progress calculation)
+    const generatedCount = deck.cardIds.length
+
+    // In-progress: some claimed but not all expected
+    if (claimedCount > 0 && claimedCount < expectedTotal) {
+      // Get the most recent claimedAt if no lastInteracted on deck
+      let lastInteracted = deck.lastInteracted
+      if (!lastInteracted) {
+        const claimedDates = deck.cardIds
+          .map(id => data.cards[id]?.claimedAt)
+          .filter(Boolean)
+        if (claimedDates.length > 0) {
+          lastInteracted = new Date(Math.max(...claimedDates.map(d => new Date(d).getTime()))).toISOString()
+        }
+      }
+
+      // Find the root category for theming
+      const rootCategory = findRootCategory(deckId)
+
+      inProgress.push({
+        id: deckId,
+        name: deck.name,
+        claimedCount,
+        totalCount: expectedTotal,
+        generatedCount,
+        progressPercent: Math.round((claimedCount / expectedTotal) * 100),
+        lastInteracted,
+        rootCategoryId: rootCategory,
+      })
+    }
+  })
+
+  // Sort by most recently interacted (newest first)
+  inProgress.sort((a, b) => {
+    if (!a.lastInteracted) return 1
+    if (!b.lastInteracted) return -1
+    return new Date(b.lastInteracted) - new Date(a.lastInteracted)
+  })
+
+  return inProgress
 }
