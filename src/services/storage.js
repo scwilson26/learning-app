@@ -1004,7 +1004,7 @@ export function getClaimedCardsByCategory() {
 
 /**
  * Get all claimed cards grouped by root category, then by deck
- * @returns {Object} { categoryId: { deckId: { name, cards: [...] }, ... }, ... }
+ * @returns {Object} { categoryId: { deckId: { name, cards: [...], expectedTotal, claimedCount }, ... }, ... }
  */
 export function getClaimedCardsByCategoryAndDeck() {
   const data = getData()
@@ -1018,19 +1018,29 @@ export function getClaimedCardsByCategoryAndDeck() {
           byCategory[rootCategory] = {}
         }
         if (!byCategory[rootCategory][card.deckId]) {
-          // Get the deck name from tree or storage
+          // Get the deck name and expected total from tree or storage
           const treeNode = nodeIndex.get(card.deckId)
           const deckData = data.decks[card.deckId]
           const deckName = treeNode?.title || deckData?.name || card.deckId
+          const expectedTotal = deckData?.expectedTotalCards || 15
           byCategory[rootCategory][card.deckId] = {
             id: card.deckId,
             name: deckName,
-            cards: []
+            cards: [],
+            expectedTotal,
+            lastInteracted: deckData?.lastInteracted || null
           }
         }
         byCategory[rootCategory][card.deckId].cards.push(card)
       }
     }
+  })
+
+  // Add claimedCount to each deck
+  Object.values(byCategory).forEach(decks => {
+    Object.values(decks).forEach(deck => {
+      deck.claimedCount = deck.cards.length
+    })
   })
 
   return byCategory
@@ -1827,6 +1837,161 @@ export function getAllFlashcardsArray() {
   return Object.values(data.flashcards || {})
 }
 
+// ============================================================================
+// TWO-MODE STUDY SYSTEM (Learn New + Review)
+// ============================================================================
+
+/**
+ * Get flashcards for Learn New mode (status = new or learning)
+ * These are cards that haven't been graduated yet
+ * @returns {Array} Array of flashcard objects ready for learning
+ */
+export function getLearningCards() {
+  const data = getData()
+  return Object.values(data.flashcards || {})
+    .filter(fc => fc.status === 'new' || fc.status === 'learning')
+}
+
+/**
+ * Get count of learning cards
+ * @returns {number}
+ */
+export function getLearningCardCount() {
+  return getLearningCards().length
+}
+
+/**
+ * Get flashcards due for Review mode (status = learned, nextReview <= now)
+ * @returns {Array} Array of flashcard objects due for review
+ */
+export function getReviewDueCards() {
+  const data = getData()
+  const now = new Date()
+  return Object.values(data.flashcards || {})
+    .filter(fc => fc.status === 'learned' && new Date(fc.nextReview) <= now)
+    .sort((a, b) => new Date(a.nextReview) - new Date(b.nextReview))
+}
+
+/**
+ * Get count of review due cards
+ * @returns {number}
+ */
+export function getReviewDueCount() {
+  return getReviewDueCards().length
+}
+
+/**
+ * Get next review time for learned cards
+ * @returns {Date|null} Next review timestamp or null if no learned cards
+ */
+export function getNextLearnedReviewTime() {
+  const data = getData()
+  const learnedCards = Object.values(data.flashcards || {})
+    .filter(fc => fc.status === 'learned')
+    .sort((a, b) => new Date(a.nextReview) - new Date(b.nextReview))
+
+  return learnedCards.length > 0 ? new Date(learnedCards[0].nextReview) : null
+}
+
+/**
+ * Graduate a flashcard from learning to learned
+ * Sets initial SM-2 values for spaced repetition
+ * @param {string} flashcardId - The flashcard ID
+ */
+export function graduateFlashcard(flashcardId) {
+  const data = getData()
+  if (data.flashcards && data.flashcards[flashcardId]) {
+    const now = new Date()
+    now.setDate(now.getDate() + 1) // First review tomorrow
+
+    data.flashcards[flashcardId] = {
+      ...data.flashcards[flashcardId],
+      status: 'learned',
+      easeFactor: 2.5,
+      interval: 1,
+      repetitions: 0,
+      nextReview: now.toISOString(),
+      graduatedAt: new Date().toISOString()
+    }
+    saveData(data)
+    console.log(`[graduateFlashcard] Graduated ${flashcardId}`)
+  }
+}
+
+/**
+ * Graduate multiple flashcards at once
+ * @param {Array} flashcardIds - Array of flashcard IDs to graduate
+ */
+export function graduateFlashcards(flashcardIds) {
+  flashcardIds.forEach(id => graduateFlashcard(id))
+}
+
+/**
+ * Update learning state for a card (batch position, again count)
+ * @param {string} flashcardId - The flashcard ID
+ * @param {Object} updates - { status?, batchPosition?, againCount? }
+ */
+export function updateLearningState(flashcardId, updates) {
+  const data = getData()
+  if (data.flashcards && data.flashcards[flashcardId]) {
+    data.flashcards[flashcardId] = {
+      ...data.flashcards[flashcardId],
+      ...updates
+    }
+    saveData(data)
+  }
+}
+
+/**
+ * Mark a card as currently being learned (in a session)
+ * @param {string} flashcardId - The flashcard ID
+ */
+export function startLearningCard(flashcardId) {
+  updateLearningState(flashcardId, {
+    status: 'learning',
+    againCount: 0
+  })
+}
+
+/**
+ * Get learning cards filtered by study deck
+ * @returns {Array} Learning cards from topics in the study deck
+ */
+export function getStudyDeckLearningCards() {
+  const data = getData()
+  const studyDeck = data.studyDeck || []
+  if (studyDeck.length === 0) return []
+
+  return getLearningCards().filter(fc => {
+    const sourceCardId = fc.sourceCardId || ''
+    const cardData = data.cards?.[sourceCardId]
+    if (cardData?.deckId && studyDeck.includes(cardData.deckId)) return true
+    // Fallback: check if sourceCardId starts with any topic
+    return studyDeck.some(topicId =>
+      sourceCardId === topicId || sourceCardId.startsWith(topicId + '-')
+    )
+  })
+}
+
+/**
+ * Get review due cards filtered by study deck
+ * @returns {Array} Review due cards from topics in the study deck
+ */
+export function getStudyDeckReviewDueCards() {
+  const data = getData()
+  const studyDeck = data.studyDeck || []
+  if (studyDeck.length === 0) return []
+
+  return getReviewDueCards().filter(fc => {
+    const sourceCardId = fc.sourceCardId || ''
+    const cardData = data.cards?.[sourceCardId]
+    if (cardData?.deckId && studyDeck.includes(cardData.deckId)) return true
+    return studyDeck.some(topicId =>
+      sourceCardId === topicId || sourceCardId.startsWith(topicId + '-')
+    )
+  })
+}
+
 /**
  * Import flashcards from remote (merge with local)
  * Used during sync to update local storage with remote data
@@ -2002,4 +2167,219 @@ export function getInProgressDecks() {
   })
 
   return inProgress
+}
+
+// ============================================================================
+// STUDY DECK MANAGEMENT
+// ============================================================================
+
+/**
+ * Get the list of topic IDs in the user's study deck
+ * @returns {Array<string>} Array of topic/deck IDs
+ */
+export function getStudyDeck() {
+  const data = getData()
+  const deck = data.studyDeck || []
+  console.log('[getStudyDeck] Current study deck:', deck)
+  return deck
+}
+
+/**
+ * Add a topic to the study deck
+ * @param {string} topicId - The topic/deck ID to add
+ */
+export function addToStudyDeck(topicId) {
+  console.log(`[addToStudyDeck] Called with topicId: ${topicId}`)
+  const data = getData()
+  if (!data.studyDeck) data.studyDeck = []
+
+  if (!data.studyDeck.includes(topicId)) {
+    data.studyDeck.push(topicId)
+    saveData(data)
+    console.log(`[addToStudyDeck] Added ${topicId} to study deck. New deck:`, data.studyDeck)
+  } else {
+    console.log(`[addToStudyDeck] ${topicId} already in study deck`)
+  }
+}
+
+/**
+ * Remove a topic from the study deck
+ * @param {string} topicId - The topic/deck ID to remove
+ */
+export function removeFromStudyDeck(topicId) {
+  const data = getData()
+  if (!data.studyDeck) return
+
+  data.studyDeck = data.studyDeck.filter(id => id !== topicId)
+  saveData(data)
+  console.log(`[removeFromStudyDeck] Removed ${topicId} from study deck`)
+}
+
+/**
+ * Check if a topic is in the study deck
+ * @param {string} topicId - The topic/deck ID to check
+ * @returns {boolean}
+ */
+export function isInStudyDeck(topicId) {
+  const data = getData()
+  return (data.studyDeck || []).includes(topicId)
+}
+
+/**
+ * Get all flashcards for topics in the study deck
+ * @returns {Array} Array of flashcard objects from all study deck topics
+ */
+export function getStudyDeckFlashcards() {
+  const data = getData()
+  const studyDeck = data.studyDeck || []
+
+  if (studyDeck.length === 0) return []
+
+  // Get all non-skipped flashcards that belong to topics in the study deck
+  return Object.values(data.flashcards || {})
+    .filter(fc => {
+      // Include new, learning, learned, and legacy 'active' - exclude skipped
+      if (fc.status === 'skipped') return false
+
+      const sourceCardId = fc.sourceCardId || ''
+
+      // Method 1: Look up the card's deckId in localStorage
+      const cardData = data.cards?.[sourceCardId]
+      if (cardData?.deckId && studyDeck.includes(cardData.deckId)) return true
+
+      // Method 2: Check if sourceCardId starts with any topic in study deck (for older format)
+      const matchesTopic = studyDeck.some(topicId =>
+        sourceCardId === topicId || sourceCardId.startsWith(topicId + '-')
+      )
+      if (matchesTopic) return true
+
+      return false
+    })
+}
+
+/**
+ * Get due flashcards from topics in the study deck only
+ * @returns {Array} Array of due flashcard objects from study deck topics
+ */
+export function getStudyDeckDueFlashcards() {
+  const now = new Date()
+  return getStudyDeckFlashcards()
+    .filter(fc => new Date(fc.nextReview) <= now)
+    .sort((a, b) => new Date(a.nextReview) - new Date(b.nextReview))
+}
+
+/**
+ * Get flashcard count for a specific topic
+ * @param {string} topicId - The topic/deck ID
+ * @returns {number} Number of active flashcards for this topic
+ */
+export function getFlashcardCountForTopic(topicId) {
+  const data = getData()
+  return Object.values(data.flashcards || {})
+    .filter(fc => {
+      // Count all non-skipped cards (new, learning, learned, or legacy 'active')
+      if (fc.status === 'skipped') return false
+
+      const sourceCardId = fc.sourceCardId || ''
+
+      // Method 1: Look up the card's deckId in localStorage
+      const cardData = data.cards?.[sourceCardId]
+      if (cardData?.deckId === topicId) return true
+
+      // Method 2: Check if sourceCardId starts with the topicId (for older format)
+      if (sourceCardId === topicId || sourceCardId.startsWith(topicId + '-')) return true
+
+      return false
+    }).length
+}
+
+/**
+ * Get all topics that have claimed cards (available for study deck)
+ * Groups by category, includes flashcard counts
+ * Uses same pattern as getClaimedCardsByCategoryAndDeck - iterates through cards, not decks
+ * @returns {Object} { categoryId: [{ id, name, claimedCount, flashcardCount }, ...], ... }
+ */
+export function getAvailableStudyTopics() {
+  const data = getData()
+  const byCategory = {}
+
+  // Iterate through cards (same pattern as getClaimedCardsByCategoryAndDeck)
+  Object.values(data.cards || {}).forEach(card => {
+    if (!card.claimed || !card.deckId) return
+
+    const deckId = card.deckId
+    const rootCategory = findRootCategory(deckId)
+    if (!rootCategory) return
+
+    if (!byCategory[rootCategory]) {
+      byCategory[rootCategory] = {}
+    }
+
+    if (!byCategory[rootCategory][deckId]) {
+      // Get deck info
+      const treeNode = nodeIndex.get(deckId)
+      const deckData = data.decks?.[deckId]
+      const deckName = treeNode?.title || deckData?.name || deckId
+
+      // Get flashcard count for this topic (use the proper function)
+      const flashcardCount = getFlashcardCountForTopic(deckId)
+
+      byCategory[rootCategory][deckId] = {
+        id: deckId,
+        name: deckName,
+        claimedCount: 0,
+        expectedTotal: deckData?.expectedTotalCards || 15,
+        flashcardCount,
+        lastInteracted: deckData?.lastInteracted || null,
+        inStudyDeck: (data.studyDeck || []).includes(deckId)
+      }
+    }
+
+    byCategory[rootCategory][deckId].claimedCount++
+  })
+
+  // Convert nested objects to arrays for easier rendering
+  const result = {}
+  Object.entries(byCategory).forEach(([categoryId, decks]) => {
+    result[categoryId] = Object.values(decks).sort((a, b) => {
+      if (!a.lastInteracted && !b.lastInteracted) return a.name.localeCompare(b.name)
+      if (!a.lastInteracted) return 1
+      if (!b.lastInteracted) return -1
+      return new Date(b.lastInteracted) - new Date(a.lastInteracted)
+    })
+  })
+
+  return result
+}
+
+/**
+ * Auto-migrate existing flashcards to study deck system
+ * Adds all topics that have flashcards to the study deck
+ */
+export function migrateToStudyDeck() {
+  const data = getData()
+
+  // Skip if already migrated
+  if (data.studyDeckMigrated) return
+
+  // Find all unique topic IDs that have flashcards
+  const topicsWithFlashcards = new Set()
+  Object.values(data.flashcards || {}).forEach(fc => {
+    if (fc.sourceCardId && fc.status === 'active') {
+      const topicId = fc.sourceCardId.replace(/-card-\d+$/, '')
+      topicsWithFlashcards.add(topicId)
+    }
+  })
+
+  // Add them all to study deck
+  if (!data.studyDeck) data.studyDeck = []
+  topicsWithFlashcards.forEach(topicId => {
+    if (!data.studyDeck.includes(topicId)) {
+      data.studyDeck.push(topicId)
+    }
+  })
+
+  data.studyDeckMigrated = true
+  saveData(data)
+  console.log(`[migrateToStudyDeck] Migrated ${topicsWithFlashcards.size} topics to study deck`)
 }

@@ -52,7 +52,26 @@ import {
   importFlashcardsFromRemote,
   findRootCategory,
   getInProgressDecks,
-  updateDeckLastInteracted
+  updateDeckLastInteracted,
+  getStudyDeck,
+  addToStudyDeck,
+  removeFromStudyDeck,
+  getStudyDeckFlashcards,
+  getFlashcardCountForTopic,
+  getAvailableStudyTopics,
+  migrateToStudyDeck,
+  isInStudyDeck,
+  getLearningCards,
+  getLearningCardCount,
+  getReviewDueCards,
+  getReviewDueCount,
+  getNextLearnedReviewTime,
+  graduateFlashcard,
+  graduateFlashcards,
+  updateLearningState,
+  startLearningCard,
+  getStudyDeckLearningCards,
+  getStudyDeckReviewDueCards
 } from '../services/storage'
 
 // Configuration - card counts can be adjusted here or per-deck
@@ -4794,6 +4813,7 @@ export default function Canvas() {
   const [wanderComplete, setWanderComplete] = useState(false) // True when path generation is complete
   const [expandedCollectionCategory, setExpandedCollectionCategory] = useState(null) // For trophy case drawer
   const [selectedCollectionCard, setSelectedCollectionCard] = useState(null) // For trophy case card detail
+  const [selectedCollectionTopic, setSelectedCollectionTopic] = useState(null) // For topic card view { id, name, cards, ... }
 
   // Tier-related state
   const [tierCards, setTierCards] = useState({}) // deckId -> { core: [], deep_dive_1: [], deep_dive_2: [] }
@@ -4838,6 +4858,62 @@ export default function Canvas() {
     claimCard(cardId)  // Persist to localStorage
     setClaimedCards(prev => new Set([...prev, cardId]))
     // Don't close the modal, let user see the claimed state
+
+    // Generate flashcards in background (Option C from spec)
+    const cardContent = generatedContent[cardId] || getCardContent(cardId)
+    console.log(`[handleClaim] Card ${cardId} claimed. Has content: ${!!cardContent}`)
+
+    if (cardContent) {
+      // Check if already generated
+      const data = getData()
+      const alreadyGenerated = data.flashcardMeta?.generatedFromCards?.includes(cardId)
+      if (alreadyGenerated) {
+        console.log(`[handleClaim] Flashcards already generated for ${cardId}, skipping`)
+        return
+      }
+
+      // Get card info from localStorage
+      const cardData = data.cards?.[cardId]
+      const cardTitle = cardData?.title || cardId
+
+      // Generate flashcards asynchronously (don't await - fire and forget)
+      console.log(`[handleClaim] Starting flashcard generation for ${cardId}`)
+      generateFlashcardsInBackground(cardId, cardTitle, cardContent)
+    } else {
+      console.log(`[handleClaim] No content yet for ${cardId}, will generate when content loads`)
+    }
+  }
+
+  // Background flashcard generation (non-blocking)
+  const generateFlashcardsInBackground = async (cardId, cardTitle, cardContent) => {
+    try {
+      console.log(`[generateFlashcardsInBackground] Starting for ${cardId}`)
+      const rawFlashcards = await generateFlashcardsFromCard(cardTitle, cardContent)
+
+      // Transform to full flashcard objects - start as 'new' for Learn New mode
+      const flashcards = rawFlashcards.map((fc, index) => ({
+        id: `fc_${cardId}_${index}`,
+        question: fc.question,
+        answer: fc.answer,
+        sourceCardId: cardId,
+        sourceCardTitle: cardTitle,
+        status: 'new',
+        createdAt: new Date().toISOString()
+      }))
+
+      saveFlashcards(flashcards)
+      markCardAsFlashcardGenerated(cardId)
+      console.log(`[generateFlashcardsInBackground] ✅ Generated ${flashcards.length} flashcards for ${cardId}`)
+
+      // Sync to Supabase if user is logged in
+      if (user) {
+        upsertFlashcardsRemote(flashcards, user.id).catch(err => {
+          console.error('[generateFlashcardsInBackground] Failed to sync to remote:', err)
+        })
+      }
+    } catch (error) {
+      console.error(`[generateFlashcardsInBackground] Failed for ${cardId}:`, error)
+    }
   }
 
   // Save generated content when a card is first flipped
@@ -4847,6 +4923,19 @@ export default function Canvas() {
       ...prev,
       [cardId]: content
     }))
+
+    // If card is already claimed, generate flashcards now
+    const data = getData()
+    const cardData = data.cards?.[cardId]
+    if (cardData?.claimed) {
+      // Check if flashcards already generated for this card
+      const alreadyGenerated = data.flashcardMeta?.generatedFromCards?.includes(cardId)
+      if (!alreadyGenerated) {
+        console.log(`[handleContentGenerated] Card ${cardId} is claimed, generating flashcards...`)
+        const cardTitle = cardData?.title || cardId
+        generateFlashcardsInBackground(cardId, cardTitle, content)
+      }
+    }
   }
 
   // Load or generate sub-decks for a deck (for level 2+ decks)
@@ -6501,284 +6590,423 @@ export default function Canvas() {
     )
   }
 
-  // Study Screen Hub - Entry point for different study modes
+  // Study Screen Hub - Shows study deck with hero card and topic list
   const StudyScreen = ({ onGoToLearn }) => {
-    const [activeMode, setActiveMode] = useState(null) // null = hub, 'flashcards' = flashcards screen
+    const [studyView, setStudyViewRaw] = useState('hub') // 'hub' | 'learnNew' | 'review' | 'complete' | 'addTopics'
 
-    // If a mode is active, show that screen
-    if (activeMode === 'flashcards') {
-      return (
-        <FlashcardsScreen
-          onBack={() => setActiveMode(null)}
-          onGoToLearn={onGoToLearn}
-        />
-      )
+    // Wrap setStudyView to log all view changes
+    const setStudyView = (newView) => {
+      console.log(`[StudyScreen] View changing: ${studyView} → ${newView}`, new Error().stack)
+      setStudyViewRaw(newView)
     }
+    const [studyDeck, setStudyDeck] = useState([])
 
-    // Hub view - show available study modes
-    return (
-      <div className="flex flex-col h-full overflow-auto">
-        {/* Header */}
-        <div className="p-4 border-b border-gray-100">
-          <h1 className="text-lg font-semibold text-gray-800 text-center">Study</h1>
-        </div>
+    // Review mode state (learned cards)
+    const [reviewCards, setReviewCards] = useState([])
+    const [reviewIndex, setReviewIndex] = useState(0)
+    const [nextReviewTime, setNextReviewTime] = useState(null)
 
-        {/* Study modes */}
-        <div className="p-4">
-          <div className="space-y-3">
-            {/* Flashcards option */}
-            <button
-              onClick={() => setActiveMode('flashcards')}
-              className="w-full bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex items-center gap-4 hover:border-indigo-200 hover:shadow-md transition-all text-left"
-            >
-              <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center">
-                <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-800">Flashcards</h3>
-                <p className="text-sm text-gray-500">Review with spaced repetition</p>
-              </div>
-              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
+    // Learn New mode state
+    const [learningCards, setLearningCards] = useState([])
+    const [currentBatch, setCurrentBatch] = useState([])
+    const [batchNumber, setBatchNumber] = useState(1)
+    const [batchIndex, setBatchIndex] = useState(0)
+    const [completedInBatch, setCompletedInBatch] = useState(new Set())
+    const [allCompletedCards, setAllCompletedCards] = useState([])
+    const [showBatchComplete, setShowBatchComplete] = useState(false)
+    const [showGraduateScreen, setShowGraduateScreen] = useState(false)
+    const BATCH_SIZE = 5
 
-            {/* Placeholder for future study modes */}
-            {/*
-            <button className="w-full bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex items-center gap-4 opacity-50 cursor-not-allowed">
-              <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
-                <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-400">Timed Quiz</h3>
-                <p className="text-sm text-gray-400">Coming soon</p>
-              </div>
-            </button>
-            */}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Flashcards Screen Component - Spaced repetition flashcard review
-  const FlashcardsScreen = ({ onBack, onGoToLearn }) => {
-    const [studyState, setStudyState] = useState('home') // 'home' | 'review' | 'generating' | 'complete'
-    const [dueCards, setDueCards] = useState([])
-    const [currentIndex, setCurrentIndex] = useState(0)
+    // Shared state
     const [isFlipped, setIsFlipped] = useState(false)
-    const [nextReview, setNextReview] = useState(null)
-    const [totalFlashcards, setTotalFlashcards] = useState(0)
-    const [cardsNeedingFlashcards, setCardsNeedingFlashcards] = useState([])
-    const [generatingCardId, setGeneratingCardId] = useState(null)
+    const [showRemoveConfirm, setShowRemoveConfirm] = useState(null)
     const [showSkipConfirm, setShowSkipConfirm] = useState(false)
-    const [expandedTopics, setExpandedTopics] = useState({}) // deckId -> boolean
+    const [availableTopics, setAvailableTopics] = useState({})
+    const [generatingTopicId, setGeneratingTopicId] = useState(null)
 
-    // Toggle topic expansion
-    const toggleTopic = (deckId) => {
-      setExpandedTopics(prev => ({ ...prev, [deckId]: !prev[deckId] }))
-    }
-
-    // Load data on mount
+    // Load data on mount and run migration
     useEffect(() => {
+      console.log('[StudyScreen] Component MOUNTED')
+      migrateToStudyDeck()
       refreshData()
+      return () => console.log('[StudyScreen] Component UNMOUNTED')
     }, [])
+
+    // Refresh data periodically to pick up background flashcard generation (only on hub)
+    useEffect(() => {
+      if (studyView === 'hub') {
+        console.log('[StudyScreen] Starting 3s refresh interval (hub view)')
+        const interval = setInterval(() => {
+          console.log('[StudyScreen] Refresh interval tick')
+          refreshData()
+        }, 3000)
+        return () => {
+          console.log('[StudyScreen] Clearing refresh interval')
+          clearInterval(interval)
+        }
+      }
+    }, [studyView])
 
     // Refresh all data
     const refreshData = () => {
-      const due = getDueFlashcards()
-      const total = getFlashcardCount()
-      const needsFlashcards = getCardsNeedingFlashcards()
-      const nextTime = getNextReviewTime()
+      const deck = getStudyDeck()
+      const learning = getStudyDeckLearningCards()
+      const review = getStudyDeckReviewDueCards()
+      const nextTime = getNextLearnedReviewTime()
+      const available = getAvailableStudyTopics()
 
-      setDueCards(due)
-      setTotalFlashcards(total)
-      setCardsNeedingFlashcards(needsFlashcards)
-      setNextReview(nextTime)
+      setStudyDeck(deck)
+      setLearningCards(learning)
+      setReviewCards(review)
+      setNextReviewTime(nextTime)
+      setAvailableTopics(available)
     }
 
-    // Start review session
-    const startReview = () => {
-      // Use already-loaded dueCards, or fetch fresh if empty
-      if (dueCards.length > 0) {
-        setCurrentIndex(0)
+    // ========== LEARN NEW MODE ==========
+
+    // Start Learn New session
+    const startLearning = () => {
+      const cards = getStudyDeckLearningCards()
+      if (cards.length > 0) {
+        setLearningCards(cards)
+        // Take first batch
+        const firstBatch = cards.slice(0, BATCH_SIZE)
+        setCurrentBatch(firstBatch)
+        setBatchNumber(1)
+        setBatchIndex(0)
+        setCompletedInBatch(new Set())
+        setAllCompletedCards([])
+        setShowBatchComplete(false)
+        setShowGraduateScreen(false)
         setIsFlipped(false)
-        setStudyState('review')
+        setStudyView('learnNew')
+      }
+    }
+
+    // Handle Learn New: Again button (card stays in batch)
+    const handleLearnAgain = () => {
+      const currentCard = currentBatch[batchIndex]
+      // Update again count
+      updateLearningState(currentCard.id, {
+        status: 'learning',
+        againCount: (currentCard.againCount || 0) + 1
+      })
+      // Move card to end of batch
+      setCurrentBatch(prev => {
+        const newBatch = [...prev]
+        const [card] = newBatch.splice(batchIndex, 1)
+        newBatch.push({ ...card, againCount: (card.againCount || 0) + 1 })
+        return newBatch
+      })
+      // If at end, wrap to start
+      if (batchIndex >= currentBatch.length - 1) {
+        setBatchIndex(0)
+      }
+      setIsFlipped(false)
+    }
+
+    // Handle Learn New: Good button (card done for this batch)
+    const handleLearnGood = () => {
+      const currentCard = currentBatch[batchIndex]
+      const newCompleted = new Set(completedInBatch).add(currentCard.id)
+      setCompletedInBatch(newCompleted)
+
+      // Check if all cards in batch are done
+      const remainingCards = currentBatch.filter(c => !newCompleted.has(c.id))
+      if (remainingCards.length === 0) {
+        // Batch complete!
+        setAllCompletedCards(prev => [...prev, ...currentBatch])
+
+        // Check if there are more cards to learn
+        const nextBatchStart = batchNumber * BATCH_SIZE
+        const remainingLearningCards = learningCards.slice(nextBatchStart)
+
+        if (remainingLearningCards.length === 0) {
+          // All cards done - show graduate screen
+          setShowGraduateScreen(true)
+        } else {
+          // Show batch complete, offer next batch
+          setShowBatchComplete(true)
+        }
       } else {
-        // Fallback: try fetching fresh
-        const due = getDueFlashcards()
-        if (due.length > 0) {
-          setDueCards(due)
-          setCurrentIndex(0)
-          setIsFlipped(false)
-          setStudyState('review')
+        // Move to next card that isn't completed
+        let nextIndex = (batchIndex + 1) % currentBatch.length
+        while (newCompleted.has(currentBatch[nextIndex].id)) {
+          nextIndex = (nextIndex + 1) % currentBatch.length
         }
+        setBatchIndex(nextIndex)
+        setIsFlipped(false)
       }
     }
 
-    // Generate flashcards for a single card
-    const generateForCard = async (card) => {
-      setGeneratingCardId(card.id)
-
-      try {
-        const rawFlashcards = await generateFlashcardsFromCard(card.title, card.content)
-
-        // Transform to full flashcard objects with SM-2 defaults
-        const flashcards = rawFlashcards.map((fc, index) => ({
-          id: `fc_${card.id}_${index}`,
-          question: fc.question,
-          answer: fc.answer,
-          sourceCardId: card.id,
-          sourceCardTitle: card.title,
-          nextReview: new Date().toISOString(), // Due immediately
-          interval: 0,
-          easeFactor: 2.5,
-          repetitions: 0,
-          status: 'active',
-          createdAt: new Date().toISOString(),
-          lastReviewedAt: null
-        }))
-
-        saveFlashcards(flashcards)
-        markCardAsFlashcardGenerated(card.id)
-
-        // Sync to Supabase if user is logged in
-        if (user) {
-          upsertFlashcardsRemote(flashcards, user.id).catch(err => {
-            console.error('[StudyScreen] Failed to sync flashcards to remote:', err)
-          })
-        }
-
-        // Refresh data to update UI
-        refreshData()
-      } catch (error) {
-        console.error(`Failed to generate flashcards for ${card.title}:`, error)
-      } finally {
-        setGeneratingCardId(null)
+    // Load next batch
+    const loadNextBatch = () => {
+      const nextBatchStart = batchNumber * BATCH_SIZE
+      const nextBatch = learningCards.slice(nextBatchStart, nextBatchStart + BATCH_SIZE)
+      if (nextBatch.length > 0) {
+        setCurrentBatch(nextBatch)
+        setBatchNumber(prev => prev + 1)
+        setBatchIndex(0)
+        setCompletedInBatch(new Set())
+        setShowBatchComplete(false)
+        setIsFlipped(false)
       }
     }
 
-    // Handle rating a flashcard
-    const handleRate = (quality) => {
-      const currentCard = dueCards[currentIndex]
-
-      // Calculate new SM-2 values
-      const newValues = calculateSM2(
-        quality,
-        currentCard.repetitions,
-        currentCard.easeFactor,
-        currentCard.interval
-      )
-
-      // Update in local storage
-      updateFlashcard(currentCard.id, newValues)
+    // Graduate all completed cards
+    const handleGraduate = () => {
+      const idsToGraduate = allCompletedCards.map(c => c.id)
+      graduateFlashcards(idsToGraduate)
 
       // Sync to Supabase if user is logged in
       if (user) {
-        const updatedCard = { ...currentCard, ...newValues }
-        upsertFlashcardRemote(updatedCard, user.id).catch(err => {
-          console.error('[StudyScreen] Failed to sync flashcard review to remote:', err)
+        const graduatedCards = allCompletedCards.map(c => ({
+          ...c,
+          status: 'learned',
+          easeFactor: 2.5,
+          interval: 1,
+          repetitions: 0,
+          nextReview: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          graduatedAt: new Date().toISOString()
+        }))
+        graduatedCards.forEach(card => {
+          upsertFlashcardRemote(card, user.id).catch(err => {
+            console.error('[StudyScreen] Failed to sync graduated card:', err)
+          })
         })
       }
 
-      // "Again" (quality 0) - move card to end of pile, stay in review
-      if (quality === 0) {
-        // Move current card to end of the array
-        setDueCards(prev => {
+      setStudyView('complete')
+      refreshData()
+    }
+
+    // ========== REVIEW MODE (Spaced Repetition) ==========
+
+    // Start Review session
+    const startReview = () => {
+      const due = getStudyDeckReviewDueCards()
+      if (due.length > 0) {
+        setReviewCards(due)
+        setReviewIndex(0)
+        setIsFlipped(false)
+        setStudyView('review')
+      }
+    }
+
+    // Calculate interval preview for review buttons
+    const getIntervalPreview = (rating, card) => {
+      const { interval } = calculateSM2(
+        rating,
+        card.repetitions || 0,
+        card.easeFactor || 2.5,
+        card.interval || 1
+      )
+      if (interval === 1) return '1 day'
+      if (interval < 7) return `${interval} days`
+      if (interval < 30) return `${Math.round(interval / 7)} weeks`
+      return `${Math.round(interval / 30)} months`
+    }
+
+    // Handle Review rating (Again/Good/Easy = 0/2/3)
+    const handleReviewRate = (rating) => {
+      const currentCard = reviewCards[reviewIndex]
+
+      // Calculate new SM-2 values
+      const { nextReview: newNextReview, interval, easeFactor, repetitions } = calculateSM2(
+        rating,
+        currentCard.repetitions || 0,
+        currentCard.easeFactor || 2.5,
+        currentCard.interval || 1
+      )
+
+      // Update flashcard in storage
+      const updatedCard = {
+        ...currentCard,
+        nextReview: newNextReview,
+        interval,
+        easeFactor,
+        repetitions,
+        lastReviewedAt: new Date().toISOString()
+      }
+      updateFlashcard(currentCard.id, {
+        nextReview: newNextReview,
+        interval,
+        easeFactor,
+        repetitions,
+        lastReviewedAt: new Date().toISOString()
+      })
+
+      // Sync to Supabase if user is logged in
+      if (user) {
+        upsertFlashcardRemote(updatedCard, user.id).catch(err => {
+          console.error('[StudyScreen] Failed to sync flashcard to remote:', err)
+        })
+      }
+
+      // If rating is 0 (Again), keep card in session at end
+      if (rating === 0) {
+        setReviewCards(prev => {
           const newCards = [...prev]
-          const [card] = newCards.splice(currentIndex, 1)
+          const [card] = newCards.splice(reviewIndex, 1)
           newCards.push(card)
           return newCards
         })
-        // Stay at same index (which will now show the next card)
-        // If we were at the last card, wrap to beginning
-        if (currentIndex >= dueCards.length - 1) {
-          setCurrentIndex(0)
+        if (reviewIndex >= reviewCards.length - 1) {
+          setReviewIndex(0)
         }
         setIsFlipped(false)
         return
       }
 
-      // Other ratings - remove card from pile and move on
-      setDueCards(prev => prev.filter((_, i) => i !== currentIndex))
+      // Good/Easy - remove card from pile
+      setReviewCards(prev => prev.filter((_, i) => i !== reviewIndex))
 
-      // Adjust index if needed
-      if (currentIndex >= dueCards.length - 1) {
-        // Was last card, check if more cards remain
-        if (dueCards.length <= 1) {
-          // No more cards
-          setStudyState('complete')
+      if (reviewIndex >= reviewCards.length - 1) {
+        if (reviewCards.length <= 1) {
+          setStudyView('complete')
           refreshData()
         } else {
-          // Go to previous card (which is now the last)
-          setCurrentIndex(dueCards.length - 2)
+          setReviewIndex(reviewCards.length - 2)
           setIsFlipped(false)
         }
       } else {
-        // Stay at same index (next card slides in)
         setIsFlipped(false)
       }
     }
 
-    // Navigate to next card
-    const handleNext = () => {
-      if (currentIndex < dueCards.length - 1) {
-        setCurrentIndex(currentIndex + 1)
-        setIsFlipped(false)
-      }
-    }
-
-    // Navigate to previous card
-    const handlePrev = () => {
-      if (currentIndex > 0) {
-        setCurrentIndex(currentIndex - 1)
-        setIsFlipped(false)
-      }
-    }
-
-    // Handle skip button click (show confirmation)
-    const handleSkipClick = () => {
-      setShowSkipConfirm(true)
-    }
-
-    // Handle confirmed skip
+    // Handle skip flashcard (review mode)
     const handleSkipConfirm = () => {
-      const currentCard = dueCards[currentIndex]
-
-      // Mark as skipped in local storage
+      const currentCard = reviewCards[reviewIndex]
       skipFlashcard(currentCard.id)
 
-      // Sync to Supabase if user is logged in
       if (user) {
         const skippedCard = { ...currentCard, status: 'skipped' }
         upsertFlashcardRemote(skippedCard, user.id).catch(err => {
-          console.error('[StudyScreen] Failed to sync skipped flashcard to remote:', err)
+          console.error('[StudyScreen] Failed to sync skipped flashcard:', err)
         })
       }
 
-      // Remove from current session
-      const newDueCards = dueCards.filter((_, i) => i !== currentIndex)
+      const newReviewCards = reviewCards.filter((_, i) => i !== reviewIndex)
       setShowSkipConfirm(false)
 
-      if (newDueCards.length === 0) {
-        setStudyState('complete')
+      if (newReviewCards.length === 0) {
+        setStudyView('complete')
         refreshData()
       } else {
-        setDueCards(newDueCards)
-        // Adjust index if needed
-        if (currentIndex >= newDueCards.length) {
-          setCurrentIndex(newDueCards.length - 1)
+        setReviewCards(newReviewCards)
+        if (reviewIndex >= newReviewCards.length) {
+          setReviewIndex(newReviewCards.length - 1)
         }
         setIsFlipped(false)
+      }
+    }
+
+    // Remove topic from study deck
+    const handleRemoveTopic = (topicId) => {
+      removeFromStudyDeck(topicId)
+      setShowRemoveConfirm(null)
+      refreshData()
+    }
+
+    // Add topic to study deck
+    const handleAddTopic = (topicId) => {
+      console.log('[StudyScreen] handleAddTopic called with:', topicId)
+      addToStudyDeck(topicId)
+      refreshData()
+    }
+
+    // Get topic info for display
+    const getTopicInfo = (topicId) => {
+      const treeNode = getTreeNode(topicId)
+      const dynamicDeck = getDynamicDeck(topicId)
+      const flashcardCount = getFlashcardCountForTopic(topicId)
+      console.log(`[getTopicInfo] ${topicId} -> flashcardCount: ${flashcardCount}`)
+      return {
+        name: treeNode?.title || dynamicDeck?.name || topicId.split('-').pop(),
+        flashcardCount
+      }
+    }
+
+    // Generate flashcards for all claimed cards in a topic
+    const handleGenerateForTopic = async (topicId) => {
+      console.log(`[handleGenerateForTopic] Starting for topic: ${topicId}`)
+      setGeneratingTopicId(topicId)
+
+      try {
+        // Get all claimed cards for this topic
+        const data = getData()
+
+        // Debug: log all cards for this topic
+        const allCardsForTopic = Object.values(data.cards || {}).filter(
+          card => card.deckId === topicId
+        )
+        console.log(`[handleGenerateForTopic] All cards for ${topicId}:`, allCardsForTopic.map(c => ({
+          id: c.id,
+          claimed: c.claimed,
+          hasContent: !!c.content,
+          title: c.title
+        })))
+
+        const claimedCards = Object.values(data.cards || {}).filter(
+          card => card.claimed && card.deckId === topicId && card.content
+        )
+
+        console.log(`[handleGenerateForTopic] Found ${claimedCards.length} claimed cards WITH CONTENT for ${topicId}`)
+
+        if (claimedCards.length === 0) {
+          console.log('[handleGenerateForTopic] No claimed cards with content found')
+          setGeneratingTopicId(null)
+          return
+        }
+
+        // Generate flashcards for each card
+        for (const card of claimedCards) {
+          // Skip if already has flashcards
+          if (data.flashcardMeta?.generatedFromCards?.includes(card.id)) {
+            console.log(`[handleGenerateForTopic] Skipping ${card.id} - already generated`)
+            continue
+          }
+
+          try {
+            console.log(`[handleGenerateForTopic] Generating for ${card.id}`)
+            const rawFlashcards = await generateFlashcardsFromCard(card.title, card.content)
+
+            const flashcards = rawFlashcards.map((fc, index) => ({
+              id: `fc_${card.id}_${index}`,
+              question: fc.question,
+              answer: fc.answer,
+              sourceCardId: card.id,
+              sourceCardTitle: card.title,
+              status: 'new',
+              createdAt: new Date().toISOString()
+            }))
+
+            saveFlashcards(flashcards)
+            markCardAsFlashcardGenerated(card.id)
+
+            // Sync to Supabase if user is logged in
+            if (user) {
+              upsertFlashcardsRemote(flashcards, user.id).catch(err => {
+                console.error('[handleGenerateForTopic] Failed to sync to remote:', err)
+              })
+            }
+
+            // Refresh to show progress
+            refreshData()
+          } catch (error) {
+            console.error(`[handleGenerateForTopic] Failed for ${card.id}:`, error)
+          }
+        }
+
+        console.log('[handleGenerateForTopic] Done!')
+      } finally {
+        setGeneratingTopicId(null)
+        refreshData()
       }
     }
 
     // Review completion screen
-    if (studyState === 'complete') {
+    if (studyView === 'complete') {
       return (
         <div className="flex flex-col items-center justify-center h-full p-6 text-center">
           <div className="text-6xl mb-4">🎉</div>
@@ -6787,7 +7015,7 @@ export default function Canvas() {
           <button
             onClick={() => {
               refreshData()
-              setStudyState('home')
+              setStudyView('hub')
             }}
             className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors"
           >
@@ -6797,20 +7025,199 @@ export default function Canvas() {
       )
     }
 
-    // Review mode (full screen)
-    if (studyState === 'review') {
+    // Learn New mode (full screen)
+    if (studyView === 'learnNew') {
+      // Graduate screen
+      if (showGraduateScreen) {
+        return (
+          <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+            <div className="text-6xl mb-4">🎓</div>
+            <h2 className="text-xl font-bold text-gray-800 mb-2">All Cards Practiced!</h2>
+            <p className="text-gray-600 mb-2">{allCompletedCards.length} cards ready to graduate</p>
+            <p className="text-sm text-gray-500 mb-6">
+              Graduate moves cards to spaced repetition review
+            </p>
+            <div className="space-y-3 w-full max-w-xs">
+              <button
+                onClick={handleGraduate}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-xl font-semibold transition-colors"
+              >
+                Graduate to Review
+              </button>
+              <button
+                onClick={() => {
+                  // Reset and practice again
+                  setCurrentBatch(allCompletedCards.slice(0, BATCH_SIZE))
+                  setBatchNumber(1)
+                  setBatchIndex(0)
+                  setCompletedInBatch(new Set())
+                  setAllCompletedCards([])
+                  setShowGraduateScreen(false)
+                  setIsFlipped(false)
+                }}
+                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-medium transition-colors"
+              >
+                Keep Practicing
+              </button>
+            </div>
+          </div>
+        )
+      }
+
+      // Batch complete screen
+      if (showBatchComplete) {
+        const nextBatchStart = batchNumber * BATCH_SIZE
+        const remainingCards = learningCards.slice(nextBatchStart)
+        return (
+          <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+            <div className="text-5xl mb-4">✓</div>
+            <h2 className="text-xl font-bold text-gray-800 mb-2">Batch {batchNumber} Complete!</h2>
+            <p className="text-gray-600 mb-6">{currentBatch.length} cards learned</p>
+            <div className="space-y-3 w-full max-w-xs">
+              <button
+                onClick={loadNextBatch}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-xl font-semibold transition-colors"
+              >
+                Next {Math.min(BATCH_SIZE, remainingCards.length)} Cards
+              </button>
+              <p className="text-xs text-gray-500">
+                {remainingCards.length} cards remaining
+              </p>
+            </div>
+          </div>
+        )
+      }
+
+      // Learning card view
+      const currentCard = currentBatch[batchIndex]
+      if (!currentCard) {
+        console.warn('[LearnNew] No current card found. batchIndex:', batchIndex, 'currentBatch.length:', currentBatch.length, 'showBatchComplete:', showBatchComplete, 'showGraduateScreen:', showGraduateScreen)
+        // Don't change view - just show loading state while state settles
+        return (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-gray-500">Loading...</p>
+          </div>
+        )
+      }
+
       return (
         <div className="flex flex-col h-full">
-          {/* Header with progress and back button */}
+          {/* Header */}
           <div className="flex justify-between items-center p-4">
             <button
-              onClick={() => setStudyState('home')}
+              onClick={() => {
+                setStudyView('hub')
+                refreshData()
+              }}
               className="text-gray-500 hover:text-gray-700 text-sm font-medium"
             >
               ← Back
             </button>
             <span className="text-sm font-medium text-gray-500">
-              {currentIndex + 1} of {dueCards.length}
+              Batch {batchNumber} • Card {batchIndex + 1}/{currentBatch.length}
+            </span>
+          </div>
+
+          {/* Progress dots */}
+          <div className="flex justify-center gap-2 px-4 mb-4">
+            {currentBatch.map((card, i) => (
+              <div
+                key={card.id}
+                className={`w-2.5 h-2.5 rounded-full transition-colors ${
+                  completedInBatch.has(card.id)
+                    ? 'bg-green-500'
+                    : i === batchIndex
+                    ? 'bg-indigo-600'
+                    : 'bg-gray-200'
+                }`}
+              />
+            ))}
+          </div>
+
+          {/* Flashcard */}
+          <div className="flex-1 flex items-center justify-center p-4">
+            <div className="w-full max-w-sm mx-auto" style={{ perspective: '1000px' }}>
+              <motion.div
+                className="relative w-full h-80"
+                style={{ transformStyle: 'preserve-3d' }}
+                animate={{ rotateY: isFlipped ? -180 : 0 }}
+                transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+              >
+                {/* Question side */}
+                <div
+                  className="absolute inset-0 bg-white rounded-2xl shadow-lg p-6 flex flex-col"
+                  style={{ backfaceVisibility: 'hidden' }}
+                  onClick={() => setIsFlipped(true)}
+                >
+                  <div className="flex-1 flex items-center justify-center">
+                    <p className="text-lg text-gray-800 text-center leading-relaxed">{currentCard.question}</p>
+                  </div>
+                  <p className="text-xs text-gray-400 text-center mt-4">Tap to flip</p>
+                </div>
+
+                {/* Answer side */}
+                <div
+                  className="absolute inset-0 bg-white rounded-2xl shadow-lg p-6 flex flex-col"
+                  style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+                >
+                  <div className="flex-1 flex items-center justify-center">
+                    <p className="text-lg text-gray-800 text-center leading-relaxed">{currentCard.answer}</p>
+                  </div>
+                  <p className="text-xs text-gray-400 text-center mb-4">
+                    From: {currentCard.sourceCardTitle}
+                  </p>
+
+                  {/* Learn buttons - Again / Good */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={handleLearnAgain}
+                      className="py-4 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold transition-colors"
+                    >
+                      Again
+                      <span className="block text-xs font-normal opacity-80">see soon</span>
+                    </button>
+                    <button
+                      onClick={handleLearnGood}
+                      className="py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold transition-colors"
+                    >
+                      Good
+                      <span className="block text-xs font-normal opacity-80">next card</span>
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    // Review mode (full screen) - Spaced Repetition
+    if (studyView === 'review') {
+      const currentCard = reviewCards[reviewIndex]
+      if (!currentCard) {
+        return (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-gray-500">No cards to review</p>
+          </div>
+        )
+      }
+
+      return (
+        <div className="flex flex-col h-full">
+          {/* Header with progress */}
+          <div className="flex justify-between items-center p-4">
+            <button
+              onClick={() => {
+                setStudyView('hub')
+                refreshData()
+              }}
+              className="text-gray-500 hover:text-gray-700 text-sm font-medium"
+            >
+              ← Back
+            </button>
+            <span className="text-sm font-medium text-gray-500">
+              {reviewIndex + 1} of {reviewCards.length}
             </span>
           </div>
 
@@ -6820,7 +7227,7 @@ export default function Canvas() {
               <motion.div
                 className="h-full bg-indigo-600"
                 initial={{ width: 0 }}
-                animate={{ width: `${((currentIndex + 1) / dueCards.length) * 100}%` }}
+                animate={{ width: `${((reviewIndex + 1) / reviewCards.length) * 100}%` }}
                 transition={{ duration: 0.3 }}
               />
             </div>
@@ -6828,21 +7235,75 @@ export default function Canvas() {
 
           {/* Flashcard */}
           <div className="flex-1 flex items-center justify-center p-4">
-            <FlashcardReview
-              key={dueCards[currentIndex]?.id}
-              flashcard={dueCards[currentIndex]}
-              isFlipped={isFlipped}
-              onFlip={() => setIsFlipped(!isFlipped)}
-              onRate={handleRate}
-              onSkip={handleSkipClick}
-              onNext={handleNext}
-              onPrev={handlePrev}
-              hasNext={currentIndex < dueCards.length - 1}
-              hasPrev={currentIndex > 0}
-            />
+            <div className="w-full max-w-sm mx-auto" style={{ perspective: '1000px' }}>
+              <motion.div
+                className="relative w-full h-80"
+                style={{ transformStyle: 'preserve-3d' }}
+                animate={{ rotateY: isFlipped ? -180 : 0 }}
+                transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+              >
+                {/* Question side */}
+                <div
+                  className="absolute inset-0 bg-white rounded-2xl shadow-lg p-6 flex flex-col"
+                  style={{ backfaceVisibility: 'hidden' }}
+                  onClick={() => setIsFlipped(true)}
+                >
+                  <div className="flex-1 flex items-center justify-center">
+                    <p className="text-lg text-gray-800 text-center leading-relaxed">{currentCard.question}</p>
+                  </div>
+                  <p className="text-xs text-gray-400 text-center mt-4">Tap to flip</p>
+                </div>
+
+                {/* Answer side */}
+                <div
+                  className="absolute inset-0 bg-white rounded-2xl shadow-lg p-6 flex flex-col"
+                  style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+                >
+                  {/* Skip button */}
+                  <button
+                    onClick={() => setShowSkipConfirm(true)}
+                    className="absolute top-3 right-3 text-gray-400 hover:text-red-500 text-sm"
+                  >
+                    ✕
+                  </button>
+
+                  <div className="flex-1 flex items-center justify-center">
+                    <p className="text-lg text-gray-800 text-center leading-relaxed">{currentCard.answer}</p>
+                  </div>
+                  <p className="text-xs text-gray-400 text-center mb-4">
+                    From: {currentCard.sourceCardTitle}
+                  </p>
+
+                  {/* Review buttons - Again / Good / Easy */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      onClick={() => handleReviewRate(0)}
+                      className="py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold transition-colors"
+                    >
+                      Again
+                      <span className="block text-xs font-normal opacity-80">{getIntervalPreview(0, currentCard)}</span>
+                    </button>
+                    <button
+                      onClick={() => handleReviewRate(2)}
+                      className="py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold transition-colors"
+                    >
+                      Good
+                      <span className="block text-xs font-normal opacity-80">{getIntervalPreview(2, currentCard)}</span>
+                    </button>
+                    <button
+                      onClick={() => handleReviewRate(3)}
+                      className="py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-semibold transition-colors"
+                    >
+                      Easy
+                      <span className="block text-xs font-normal opacity-80">{getIntervalPreview(3, currentCard)}</span>
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
           </div>
 
-          {/* Skip confirmation dialog */}
+          {/* Skip confirmation */}
           <ConfirmDialog
             isOpen={showSkipConfirm}
             title="Remove flashcard?"
@@ -6854,187 +7315,248 @@ export default function Canvas() {
       )
     }
 
-    // Home view (default)
+    // Add Topics screen
+    if (studyView === 'addTopics') {
+      return (
+        <div className="flex flex-col h-full overflow-auto">
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-100">
+            <button
+              onClick={() => setStudyView('hub')}
+              className="flex items-center gap-1 text-gray-600 hover:text-gray-800 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              <span className="text-sm font-medium">Back</span>
+            </button>
+            <span className="text-sm font-semibold text-gray-700">Add Topics</span>
+            <div className="w-16" />
+          </div>
+
+          {/* Topics grouped by category */}
+          <div className="flex-1 p-4 space-y-4">
+            {Object.keys(availableTopics).length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-4xl mb-3">📚</div>
+                <h3 className="font-semibold text-gray-800 mb-1">No topics available</h3>
+                <p className="text-sm text-gray-500 mb-4">
+                  Claim cards while learning to add topics here
+                </p>
+                <button
+                  onClick={onGoToLearn}
+                  className="text-indigo-600 hover:text-indigo-700 font-medium text-sm"
+                >
+                  Go to Learn →
+                </button>
+              </div>
+            ) : (
+              Object.entries(availableTopics).map(([categoryId, topics]) => {
+                const categoryNode = getTreeNode(categoryId)
+                const categoryName = categoryNode?.title || categoryId
+
+                return (
+                  <div key={categoryId} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+                    <div className="px-4 py-3 bg-gray-50 border-b border-gray-100">
+                      <h4 className="font-semibold text-gray-700">{categoryName}</h4>
+                    </div>
+                    <div className="divide-y divide-gray-50">
+                      {topics.map(topic => (
+                        <div
+                          key={topic.id}
+                          className="px-4 py-3 flex items-center justify-between"
+                        >
+                          <div className="flex-1 mr-3">
+                            <p className="text-gray-800 font-medium truncate">{topic.name}</p>
+                            <p className="text-xs text-gray-500">
+                              {topic.flashcardCount} flashcards • {topic.claimedCount} cards
+                            </p>
+                          </div>
+                          {topic.inStudyDeck ? (
+                            <span className="px-3 py-1.5 rounded-lg text-sm font-medium bg-green-100 text-green-700">
+                              Added
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleAddTopic(topic.id)}
+                              className="px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-100 text-indigo-600 hover:bg-indigo-200 transition-colors"
+                            >
+                              + Add
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })
+            )}
+          </div>
+        </div>
+      )
+    }
+
+    // Hub view (default) - Two mode hero cards
     return (
       <div className="flex flex-col h-full overflow-auto">
-        {/* Header with back button */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-100">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-1 text-gray-600 hover:text-gray-800 transition-colors"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            <span className="text-sm font-medium">Back</span>
-          </button>
-          <span className="text-sm font-semibold text-gray-700">Flashcards</span>
-          <div className="w-16" /> {/* Spacer for centering */}
+        {/* Header */}
+        <div className="p-4 border-b border-gray-100">
+          <h1 className="text-lg font-semibold text-gray-800 text-center">Study</h1>
         </div>
 
-        {/* Review Section */}
-        <div className="p-4">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            {dueCards.length > 0 ? (
-              // Cards due
+        <div className="p-4 space-y-4">
+          {/* Learn New Hero Card */}
+          <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-5 text-white shadow-lg">
+            {learningCards.length > 0 ? (
               <>
-                <div className="text-center mb-4">
-                  <span className="text-4xl font-bold text-indigo-600">{dueCards.length}</span>
-                  <span className="text-lg text-gray-600 ml-2">cards due</span>
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h3 className="font-semibold text-lg">Learn New</h3>
+                    <p className="text-emerald-100 text-sm">Intensive practice</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-4xl font-bold">{learningCards.length}</span>
+                    <p className="text-emerald-100 text-xs">cards waiting</p>
+                  </div>
+                </div>
+                <button
+                  onClick={startLearning}
+                  className="w-full bg-white text-emerald-600 py-3 rounded-xl font-semibold transition-colors hover:bg-emerald-50 shadow-md"
+                >
+                  Start Learning
+                </button>
+              </>
+            ) : (
+              <div className="text-center py-3">
+                <div className="text-3xl mb-2">✓</div>
+                <h3 className="font-semibold mb-1">No new cards</h3>
+                <p className="text-emerald-100 text-sm">
+                  Add topics or wait for cards to graduate back
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Review Hero Card */}
+          <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-5 text-white shadow-lg">
+            {reviewCards.length > 0 ? (
+              <>
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h3 className="font-semibold text-lg">Review</h3>
+                    <p className="text-indigo-100 text-sm">Spaced repetition</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-4xl font-bold">{reviewCards.length}</span>
+                    <p className="text-indigo-100 text-xs">cards due</p>
+                  </div>
                 </div>
                 <button
                   onClick={startReview}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-xl font-semibold text-lg transition-colors shadow-md"
+                  className="w-full bg-white text-indigo-600 py-3 rounded-xl font-semibold transition-colors hover:bg-indigo-50 shadow-md"
                 >
                   Start Review
                 </button>
-                <p className="text-xs text-gray-400 text-center mt-3">
-                  Each review builds on your progress
-                </p>
-              </>
-            ) : totalFlashcards > 0 ? (
-              // Caught up
-              <>
-                <div className="text-center">
-                  <div className="text-4xl mb-2">🎉</div>
-                  <h3 className="text-lg font-bold text-gray-800 mb-1">All caught up!</h3>
-                  {nextReview && (
-                    <p className="text-gray-500 text-sm">
-                      Next review in {formatTimeUntilReview(nextReview)}
-                    </p>
-                  )}
-                  <p className="text-gray-400 text-xs mt-2">
-                    {totalFlashcards} flashcards total
-                  </p>
-                </div>
               </>
             ) : (
-              // No flashcards yet
-              <>
-                <div className="text-center">
-                  <div className="text-4xl mb-2">📚</div>
-                  <h3 className="text-lg font-bold text-gray-800 mb-1">No flashcards yet</h3>
-                  <p className="text-gray-500 text-sm">
-                    Generate flashcards from your claimed cards below
+              <div className="text-center py-3">
+                <div className="text-3xl mb-2">✨</div>
+                <h3 className="font-semibold mb-1">No reviews due</h3>
+                {nextReviewTime ? (
+                  <p className="text-indigo-100 text-sm">
+                    Next review in {formatTimeUntilReview(nextReviewTime)}
                   </p>
-                </div>
-              </>
+                ) : (
+                  <p className="text-indigo-100 text-sm">
+                    Graduate cards from Learn New to start
+                  </p>
+                )}
+              </div>
             )}
           </div>
         </div>
 
-        {/* Flashcard Queue Section */}
+        {/* My Study Deck Section */}
         <div className="flex-1 p-4 pt-0">
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-            Create Flashcards
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+              My Study Deck
+            </h3>
+            <span className="text-xs text-gray-400">{studyDeck.length} topics</span>
+          </div>
 
-          {cardsNeedingFlashcards.length > 0 ? (
-            <div className="space-y-4">
-              {/* Group cards by parent topic */}
-              {(() => {
-                // Group cards by deckId
-                const grouped = {}
-                cardsNeedingFlashcards.forEach(card => {
-                  const deckId = card.deckId || 'uncategorized'
-                  if (!grouped[deckId]) {
-                    // Get deck name from tree or dynamic deck
-                    const treeNode = getTreeNode(deckId)
-                    const dynamicDeck = getDynamicDeck(deckId)
-                    const deckName = treeNode?.title || dynamicDeck?.name || deckId.split('-').pop()
-                    grouped[deckId] = { name: deckName, cards: [] }
-                  }
-                  grouped[deckId].cards.push(card)
-                })
-
-                return Object.entries(grouped).map(([deckId, group]) => {
-                  const isExpanded = expandedTopics[deckId] !== false // Default to expanded
-                  return (
-                    <div key={deckId} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-                      {/* Topic header - clickable accordion */}
-                      <button
-                        onClick={() => toggleTopic(deckId)}
-                        className="w-full px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between hover:bg-gray-100 transition-colors"
-                      >
-                        <h4 className="font-semibold text-gray-800">{group.name}</h4>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-500">{group.cards.length} cards</span>
-                          <motion.span
-                            animate={{ rotate: isExpanded ? 180 : 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="text-gray-400"
-                          >
-                            ▼
-                          </motion.span>
-                        </div>
-                      </button>
-                      {/* Cards in this topic - collapsible */}
-                      <AnimatePresence initial={false}>
-                        {isExpanded && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="overflow-hidden"
-                          >
-                            <div className="divide-y divide-gray-50">
-                              {group.cards.map(card => (
-                                <div
-                                  key={card.id}
-                                  className="px-4 py-3 flex items-center justify-between"
-                                >
-                                  <p className="text-gray-600 text-sm truncate flex-1 mr-3">{card.title}</p>
-                                  <button
-                                    onClick={() => generateForCard(card)}
-                                    disabled={generatingCardId === card.id}
-                                    className={`px-3 py-1.5 rounded-lg font-medium text-sm transition-colors flex-shrink-0 ${
-                                      generatingCardId === card.id
-                                        ? 'bg-gray-100 text-gray-400'
-                                        : 'bg-indigo-100 text-indigo-600 hover:bg-indigo-200'
-                                    }`}
-                                  >
-                                    {generatingCardId === card.id ? (
-                                      <span className="flex items-center gap-1.5">
-                                        <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24">
-                                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                        </svg>
-                                        Creating...
-                                      </span>
-                                    ) : (
-                                      'Generate'
-                                    )}
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+          {studyDeck.length > 0 ? (
+            <div className="space-y-2 mb-4">
+              {studyDeck.map(topicId => {
+                const info = getTopicInfo(topicId)
+                const isGenerating = generatingTopicId === topicId
+                return (
+                  <div
+                    key={topicId}
+                    className="bg-white rounded-xl border border-gray-100 p-4 flex items-center justify-between"
+                  >
+                    <div className="flex-1 mr-3">
+                      <p className="font-medium text-gray-800 truncate">{info.name}</p>
+                      <p className="text-xs text-gray-500">
+                        {isGenerating ? 'Generating...' : `${info.flashcardCount} flashcards`}
+                      </p>
                     </div>
-                  )
-                })
-              })()}
+                    <div className="flex items-center gap-2">
+                      {info.flashcardCount === 0 && !isGenerating && (
+                        <button
+                          onClick={() => handleGenerateForTopic(topicId)}
+                          className="px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-100 text-indigo-600 hover:bg-indigo-200 transition-colors"
+                        >
+                          Generate
+                        </button>
+                      )}
+                      {isGenerating && (
+                        <svg className="animate-spin h-5 w-5 text-indigo-600" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                      )}
+                      <button
+                        onClick={() => setShowRemoveConfirm(topicId)}
+                        className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           ) : (
-            <div className="text-center py-8">
-              <p className="text-gray-400 text-sm">
-                {totalFlashcards > 0
-                  ? 'All your claimed cards have flashcards!'
-                  : 'Claim cards while learning to create flashcards here'}
+            <div className="bg-gray-50 rounded-xl p-6 text-center mb-4">
+              <p className="text-gray-500 text-sm">
+                No topics in your study deck yet
               </p>
-              {totalFlashcards === 0 && (
-                <button
-                  onClick={onGoToLearn}
-                  className="mt-4 text-indigo-600 hover:text-indigo-700 font-medium text-sm"
-                >
-                  Go to Learn →
-                </button>
-              )}
             </div>
           )}
+
+          {/* Add Topics Button */}
+          <button
+            onClick={() => setStudyView('addTopics')}
+            className="w-full bg-indigo-100 hover:bg-indigo-200 text-indigo-600 py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Add Topics to Study
+          </button>
         </div>
+
+        {/* Remove topic confirmation */}
+        <ConfirmDialog
+          isOpen={showRemoveConfirm !== null}
+          title="Remove from study deck?"
+          message="This topic's flashcards won't appear in reviews until you add it back."
+          onConfirm={() => handleRemoveTopic(showRemoveConfirm)}
+          onCancel={() => setShowRemoveConfirm(null)}
+        />
       </div>
     )
   }
@@ -7160,25 +7682,38 @@ export default function Canvas() {
         {/* Top navigation bar */}
         <div className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200">
           <div className="flex items-center justify-between px-3 py-2">
-            {/* User button / Sign In */}
-            {user ? (
+            {/* User button / Sign In + Reset */}
+            <div className="flex items-center gap-2">
+              {user ? (
+                <button
+                  onClick={() => signOut()}
+                  className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
+                >
+                  <span className="w-7 h-7 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
+                    {user.email?.charAt(0).toUpperCase()}
+                  </span>
+                  <span className="text-sm hidden sm:inline">Sign Out</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => setShowAuth(true)}
+                  className="text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
+                >
+                  Sign In
+                </button>
+              )}
               <button
-                onClick={() => signOut()}
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
+                onClick={() => {
+                  if (window.confirm('Reset all data? This cannot be undone.')) {
+                    localStorage.clear()
+                    window.location.reload()
+                  }
+                }}
+                className="text-xs text-gray-400 hover:text-red-500 transition-colors"
               >
-                <span className="w-7 h-7 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
-                  {user.email?.charAt(0).toUpperCase()}
-                </span>
-                <span className="text-sm hidden sm:inline">Sign Out</span>
+                Reset
               </button>
-            ) : (
-              <button
-                onClick={() => setShowAuth(true)}
-                className="text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
-              >
-                Sign In
-              </button>
-            )}
+            </div>
             <span className="font-semibold text-gray-800">Learn</span>
             <div className="bg-gray-100 rounded-full px-3 py-1">
               <span className="text-gray-500 text-xs">Cards: </span>
@@ -7301,15 +7836,31 @@ export default function Canvas() {
     )
   }
 
-  // Collections screen - Trophy Case with Drawers
+  // Collections screen - Trophy Case with Drawers (grouped by topic)
   if (stack.length === 1 && stack[0] === 'collections') {
-    const cardsByCategory = getClaimedCardsByCategory()
-    const categoriesWithCards = CATEGORIES.filter(cat => cardsByCategory[cat.id]?.length > 0)
-      .sort((a, b) => a.name.localeCompare(b.name)) // Alphabetical order
+    const cardsByCategoryAndDeck = getClaimedCardsByCategoryAndDeck()
 
-    // Calculate rarity counts
-    const allCards = Object.values(cardsByCategory).flat()
+    // Build category data with topic counts
+    const categoriesWithTopics = CATEGORIES.filter(cat => {
+      const decks = cardsByCategoryAndDeck[cat.id]
+      return decks && Object.keys(decks).length > 0
+    }).map(cat => {
+      const decks = cardsByCategoryAndDeck[cat.id]
+      const topics = Object.values(decks).sort((a, b) => {
+        // Sort by most recently interacted first
+        if (!a.lastInteracted && !b.lastInteracted) return a.name.localeCompare(b.name)
+        if (!a.lastInteracted) return 1
+        if (!b.lastInteracted) return -1
+        return new Date(b.lastInteracted) - new Date(a.lastInteracted)
+      })
+      const totalCards = topics.reduce((sum, t) => sum + t.claimedCount, 0)
+      return { ...cat, topics, topicCount: topics.length, totalCards }
+    }).sort((a, b) => a.name.localeCompare(b.name))
+
+    // Calculate total stats
+    const allCards = categoriesWithTopics.flatMap(cat => cat.topics.flatMap(t => t.cards))
     const totalCards = allCards.length
+    const totalTopics = categoriesWithTopics.reduce((sum, cat) => sum + cat.topicCount, 0)
     const rarityCount = {
       common: allCards.filter(c => !c.rarity || c.rarity === 'common').length,
       rare: allCards.filter(c => c.rarity === 'rare').length,
@@ -7317,23 +7868,95 @@ export default function Canvas() {
       legendary: allCards.filter(c => c.rarity === 'legendary').length
     }
 
-    // Rarity border colors
-    const getRarityBorder = (rarity) => {
-      switch (rarity) {
-        case 'rare': return 'border-blue-400'
-        case 'epic': return 'border-purple-500'
-        case 'legendary': return 'border-yellow-400'
-        default: return 'border-gray-300'
-      }
-    }
+    // Topic Card View - shows cards for a specific topic
+    if (selectedCollectionTopic) {
+      const topic = selectedCollectionTopic
+      const rootCategoryId = findRootCategory(topic.id)
+      const theme = getCategoryTheme(rootCategoryId)
+      const isComplete = topic.claimedCount >= topic.expectedTotal
 
-    const getRarityGlow = (rarity) => {
-      switch (rarity) {
-        case 'legendary': return 'shadow-[0_0_8px_rgba(250,204,21,0.5)]'
-        case 'epic': return 'shadow-[0_0_6px_rgba(168,85,247,0.4)]'
-        case 'rare': return 'shadow-[0_0_4px_rgba(96,165,250,0.4)]'
-        default: return 'shadow-sm'
-      }
+      return (
+        <div className="w-screen min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 overflow-auto pb-20">
+          {/* Header with back button */}
+          <div className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-sm border-b border-slate-700">
+            <div className="px-4 py-3 flex items-center gap-3">
+              <button
+                onClick={() => setSelectedCollectionTopic(null)}
+                className="text-slate-400 hover:text-white transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <div className="flex-1 min-w-0">
+                <h1 className="text-lg font-semibold text-white truncate">{topic.name}</h1>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-400">{topic.claimedCount}/{topic.expectedTotal}</span>
+                  {isComplete && <span className="text-green-400 text-sm">✓ Complete</span>}
+                </div>
+              </div>
+            </div>
+            {/* Progress bar */}
+            <div className="px-4 pb-3">
+              <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-300"
+                  style={{
+                    width: `${Math.round((topic.claimedCount / topic.expectedTotal) * 100)}%`,
+                    background: theme.accent
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Card grid */}
+          <div className="p-4">
+            <div className="flex flex-wrap gap-3 justify-center">
+              {topic.cards.map((card) => (
+                <MiniCollectionCard
+                  key={card.id}
+                  card={card}
+                  rootCategoryId={rootCategoryId}
+                  size="medium"
+                  onClick={() => setSelectedCollectionCard(card)}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Bottom navigation */}
+          <BottomNav />
+
+          {/* Card detail */}
+          <AnimatePresence>
+            {selectedCollectionCard && (
+              <ExpandedCard
+                card={{
+                  ...selectedCollectionCard,
+                  content: selectedCollectionCard.content || getCardContent(selectedCollectionCard.id),
+                  contentLoaded: true
+                }}
+                index={selectedCollectionCard.number || 0}
+                total={topic.cards.length}
+                claimed={true}
+                onClaim={() => {}}
+                onClose={() => setSelectedCollectionCard(null)}
+                deckName={topic.name}
+                onContentGenerated={() => {}}
+                allCards={topic.cards}
+                hasNext={false}
+                hasPrev={false}
+                onNext={() => {}}
+                onPrev={() => {}}
+                startFlipped={true}
+                tint="#fafbfc"
+                rootCategoryId={rootCategoryId}
+              />
+            )}
+          </AnimatePresence>
+        </div>
+      )
     }
 
     return (
@@ -7349,6 +7972,8 @@ export default function Canvas() {
               <div className="text-center mb-3">
                 <span className="text-4xl font-bold text-white">{totalCards}</span>
                 <span className="text-slate-400 ml-2">Cards</span>
+                <span className="text-slate-500 mx-2">·</span>
+                <span className="text-slate-400">{totalTopics} Topics</span>
               </div>
 
               {/* Rarity breakdown */}
@@ -7382,7 +8007,7 @@ export default function Canvas() {
 
         {/* Drawers */}
         <div className="p-4">
-          {categoriesWithCards.length === 0 ? (
+          {categoriesWithTopics.length === 0 ? (
             <div className="text-center py-16">
               <div className="text-5xl mb-4">🏆</div>
               <p className="text-slate-300 text-lg mb-2">Your collection is empty</p>
@@ -7390,7 +8015,7 @@ export default function Canvas() {
               <button
                 onClick={() => {
                   setActiveTab('learn')
-                  setStack(['my-decks'])
+                  setStack([])
                 }}
                 className="mt-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors"
               >
@@ -7399,10 +8024,9 @@ export default function Canvas() {
             </div>
           ) : (
             <div className="space-y-3">
-              {categoriesWithCards.map((category) => {
-                const categoryCards = cardsByCategory[category.id] || []
+              {categoriesWithTopics.map((category) => {
                 const isExpanded = expandedCollectionCategory === category.id
-                const previewCards = categoryCards.slice(0, 4)
+                const previewTopics = category.topics.slice(0, 3)
 
                 return (
                   <motion.div
@@ -7417,25 +8041,25 @@ export default function Canvas() {
                     >
                       <div className="flex items-center gap-3">
                         <span className="font-medium text-white">{category.name}</span>
-                        <span className="text-slate-400 text-sm">({categoryCards.length})</span>
+                        <span className="text-slate-400 text-sm">
+                          ({category.topicCount} {category.topicCount === 1 ? 'topic' : 'topics'}, {category.totalCards} cards)
+                        </span>
                       </div>
 
                       <div className="flex items-center gap-3">
-                        {/* Mini card previews (when collapsed) - actual mini cards */}
+                        {/* Topic name pills (when collapsed) */}
                         {!isExpanded && (
-                          <div className="flex -space-x-2">
-                            {previewCards.slice(0, 3).map((card, i) => (
-                              <MiniCollectionCard
-                                key={card.id}
-                                card={card}
-                                rootCategoryId={category.id}
-                                style={{ zIndex: 3 - i }}
-                              />
+                          <div className="flex gap-1.5">
+                            {previewTopics.map((topic) => (
+                              <span
+                                key={topic.id}
+                                className="px-2 py-0.5 bg-slate-700 text-slate-300 text-xs rounded-full truncate max-w-[80px]"
+                              >
+                                {topic.name}
+                              </span>
                             ))}
-                            {categoryCards.length > 3 && (
-                              <div className="flex items-center justify-center ml-2">
-                                <span className="text-xs text-slate-400 font-medium">+{categoryCards.length - 3}</span>
-                              </div>
+                            {category.topicCount > 3 && (
+                              <span className="text-xs text-slate-500">+{category.topicCount - 3}</span>
                             )}
                           </div>
                         )}
@@ -7452,7 +8076,7 @@ export default function Canvas() {
                       </div>
                     </button>
 
-                    {/* Expanded content */}
+                    {/* Expanded content - topic list with progress */}
                     <AnimatePresence>
                       {isExpanded && (
                         <motion.div
@@ -7462,18 +8086,44 @@ export default function Canvas() {
                           transition={{ duration: 0.2 }}
                           className="overflow-hidden"
                         >
-                          <div className="px-4 pb-4 pt-3 border-t border-slate-700">
-                            <div className="flex flex-wrap gap-3 justify-center">
-                              {categoryCards.map((card) => (
-                                <MiniCollectionCard
-                                  key={card.id}
-                                  card={card}
-                                  rootCategoryId={category.id}
-                                  size="medium"
-                                  onClick={() => setSelectedCollectionCard(card)}
-                                />
-                              ))}
-                            </div>
+                          <div className="px-4 pb-4 pt-2 border-t border-slate-700 space-y-2">
+                            {category.topics.map((topic) => {
+                              const progressPercent = Math.round((topic.claimedCount / topic.expectedTotal) * 100)
+                              const isComplete = topic.claimedCount >= topic.expectedTotal
+                              const theme = getCategoryTheme(category.id)
+
+                              return (
+                                <button
+                                  key={topic.id}
+                                  onClick={() => setSelectedCollectionTopic(topic)}
+                                  className="w-full p-3 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors text-left"
+                                >
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="text-white font-medium truncate pr-2">{topic.name}</span>
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                      <span className="text-slate-400 text-sm">
+                                        {topic.claimedCount}/{topic.expectedTotal}
+                                      </span>
+                                      {isComplete ? (
+                                        <span className="text-green-400">✓</span>
+                                      ) : (
+                                        <span className="text-slate-500">→</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  {/* Progress bar */}
+                                  <div className="w-full h-1.5 bg-slate-600 rounded-full overflow-hidden">
+                                    <div
+                                      className="h-full rounded-full transition-all duration-300"
+                                      style={{
+                                        width: `${progressPercent}%`,
+                                        background: isComplete ? '#22c55e' : theme.accent
+                                      }}
+                                    />
+                                  </div>
+                                </button>
+                              )
+                            })}
                           </div>
                         </motion.div>
                       )}
@@ -7484,34 +8134,6 @@ export default function Canvas() {
             </div>
           )}
         </div>
-
-        {/* Card detail - use ExpandedCard component */}
-        <AnimatePresence>
-          {selectedCollectionCard && (
-            <ExpandedCard
-              card={{
-                ...selectedCollectionCard,
-                content: selectedCollectionCard.content || getCardContent(selectedCollectionCard.id),
-                contentLoaded: true
-              }}
-              index={selectedCollectionCard.number || 0}
-              total={1}
-              claimed={true}
-              onClaim={() => {}}
-              onClose={() => setSelectedCollectionCard(null)}
-              deckName={selectedCollectionCard.deckName || 'Collection'}
-              onContentGenerated={() => {}}
-              allCards={[selectedCollectionCard]}
-              hasNext={false}
-              hasPrev={false}
-              onNext={() => {}}
-              onPrev={() => {}}
-              startFlipped={true}
-              tint="#fafbfc"
-              rootCategoryId={findRootCategory(selectedCollectionCard.deckId)}
-            />
-          )}
-        </AnimatePresence>
 
         {/* Bottom navigation */}
         <BottomNav />
