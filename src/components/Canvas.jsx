@@ -812,7 +812,7 @@ function ContinueExploringSection({ decks, onOpenDeck }) {
           return (
             <motion.button
               key={deck.id}
-              onClick={() => onOpenDeck({ id: deck.id, name: deck.name, rootCategoryId: deck.rootCategoryId })}
+              onClick={() => onOpenDeck({ id: deck.id, name: deck.name, rootCategoryId: deck.rootCategoryId, fromContinueExploring: true })}
               className="flex-shrink-0 w-32 rounded-xl p-3 text-left transition-all"
               style={{
                 background: isThemed ? theme.cardBg : '#ffffff',
@@ -4097,9 +4097,22 @@ export default function Canvas() {
   }
 
   const openDeck = async (deck) => {
+    // Check if this is a category (top-level or subcategory) - these should NOT show preview cards
+    const isCategory = CATEGORIES.find(c => c.id === deck.id) || SUBCATEGORIES[deck.id]
+
     // Check if this is a leaf topic that should show a preview card first
-    const isLeafTopic = deck.isLeaf || deck.source === 'vital-articles' ||
-      (getTreeNode(deck.id)?.children?.length === 0)
+    // Only actual leaf topics (articles) should show preview cards, NOT categories or intermediate nodes
+    // The isLeaf property must be explicitly true - getTreeNode returns isLeaf from the tree
+    const treeNode = getTreeNode(deck.id)
+    const isLeafTopic = !isCategory && (
+      deck.isLeaf === true || treeNode?.isLeaf === true || deck.source === 'vital-articles'
+    )
+
+    // If coming from Continue Exploring, skip preview and go directly to topic with proper theming
+    if (deck.fromContinueExploring && deck.rootCategoryId) {
+      setStack([deck.rootCategoryId, deck.id])
+      return
+    }
 
     if (isLeafTopic) {
       // Build parent path for context (used by both preview and outline)
@@ -4208,7 +4221,16 @@ export default function Canvas() {
       }
     } else {
       // Not a leaf topic, navigate directly
-      setStack(prev => [...prev, deck.id])
+      // If we have rootCategoryId (e.g., from Continue Exploring) and stack is empty/non-category,
+      // build proper navigation stack
+      const isFromSpecialContext = deck.rootCategoryId &&
+        (stack.length === 0 || stack[0] === 'my-decks' || stack[0] === 'collections')
+
+      if (isFromSpecialContext) {
+        setStack([deck.rootCategoryId, deck.id])
+      } else {
+        setStack(prev => [...prev, deck.id])
+      }
     }
   }
 
@@ -6214,6 +6236,42 @@ export default function Canvas() {
             />
           )}
         </AnimatePresence>
+
+        {/* Preview card modal for Continue Exploring (non-wander) */}
+        <AnimatePresence>
+          {showPreviewCard && !showPreviewCard.navigatePath && (
+            <PreviewCardModal
+              topic={showPreviewCard.title}
+              preview={showPreviewCard.preview}
+              isLoading={showPreviewCard.isLoading}
+              claimed={showPreviewCard.claimed}
+              cardId={showPreviewCard.cardId}
+              rootCategoryId={showPreviewCard.rootCategoryId}
+              isCurrentPage={false}
+              onClaim={() => {
+                claimPreviewCard(showPreviewCard.deckId)
+                setClaimedCards(getClaimedCardIds())
+                setShowPreviewCard(prev => ({ ...prev, claimed: true }))
+              }}
+              onDealMeIn={() => {
+                // From Continue Exploring - set stack with root category
+                if (showPreviewCard.rootCategoryId) {
+                  setStack([showPreviewCard.rootCategoryId, showPreviewCard.deckId])
+                } else {
+                  setStack([showPreviewCard.deckId])
+                }
+                setShowPreviewCard(null)
+              }}
+              onWander={() => {
+                setShowPreviewCard(null)
+                handleWander()
+              }}
+              onBack={() => {
+                setShowPreviewCard(null)
+              }}
+            />
+          )}
+        </AnimatePresence>
       </div>
     )
   }
@@ -6943,11 +7001,16 @@ export default function Canvas() {
             }}
             onDealMeIn={() => {
               // From clicking a topic - build proper stack with root category
-              if (stack.length === 0 && showPreviewCard.rootCategoryId) {
-                // Coming from home (e.g., Continue Exploring) - set stack with root category first
+              // Check if we have a rootCategoryId from Continue Exploring (or similar direct navigation)
+              // In that case, always build a fresh stack with the root category first
+              const isFromContinueExploring = showPreviewCard.rootCategoryId &&
+                (stack.length === 0 || stack[0] === 'my-decks' || stack[0] === 'collections')
+
+              if (isFromContinueExploring) {
+                // Coming from Continue Exploring or similar - set clean stack with root category
                 setStack([showPreviewCard.rootCategoryId, showPreviewCard.deckId])
               } else {
-                // Already navigating - add to current stack
+                // Already navigating within categories - add to current stack
                 setStack(prev => [...prev, showPreviewCard.deckId])
               }
               setShowPreviewCard(null)
