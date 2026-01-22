@@ -6,6 +6,19 @@ const anthropic = new Anthropic({
   dangerouslyAllowBrowser: true
 });
 
+// =============================================================================
+// MODEL CONFIGURATION - Flip this to switch back to Sonnet if Opus is too slow
+// =============================================================================
+const USE_OPUS = true;  // Set to false to revert to Sonnet
+
+const MODELS = {
+  // For main content generation (outlines, cards, previews)
+  CONTENT: USE_OPUS ? 'claude-opus-4-20250514' : 'claude-sonnet-4-20250514',
+  // For quick tasks (classification, definitions) - always fast
+  FAST: 'claude-3-5-haiku-20241022',
+};
+// =============================================================================
+
 /**
  * Topic types for content generation
  * Each type gets different outline templates and card generation strategies
@@ -153,7 +166,7 @@ They're also contagious. The 1848 revolts hit 50 countries in a single year.
 Write ONLY the preview text - no intro, no labels.`;
 
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: MODELS.CONTENT,
       max_tokens: 250,
       messages: [{ role: 'user', content: prompt }]
     });
@@ -363,7 +376,7 @@ OUTPUT FORMAT (JSON only, no explanation):
 
   try {
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: MODELS.CONTENT,
       max_tokens: 3000,
       messages: [{ role: 'user', content: prompt }]
     });
@@ -616,7 +629,7 @@ CRITICAL - COVER THE FULL TOPIC:
     // Use streaming if onChunk callback is provided
     if (onChunk) {
       const stream = await anthropic.messages.stream({
-        model: 'claude-sonnet-4-20250514',
+        model: MODELS.CONTENT,
         max_tokens: 1800,
         messages: [{ role: 'user', content: prompt }]
       });
@@ -630,7 +643,7 @@ CRITICAL - COVER THE FULL TOPIC:
     } else {
       // Non-streaming fallback
       const message = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: MODELS.CONTENT,
         max_tokens: 1800,
         messages: [{ role: 'user', content: prompt }]
       });
@@ -739,7 +752,7 @@ Return ONLY a JSON object (no markdown):
 }`;
 
     const suggestionsMessage = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: MODELS.CONTENT,
       max_tokens: 256,
       messages: [{ role: 'user', content: suggestionsPrompt }]
     });
@@ -938,7 +951,7 @@ CRITICAL HYPERLINK RULES - FOLLOW THESE STRICTLY:
    - Only link SPECIFIC people, places, or events with their own story: "[[Bernhard Riemann]]", "[[Aqua Claudia]]"`;
 
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: MODELS.CONTENT,
       max_tokens: 2048,
       messages: [{ role: 'user', content: prompt }]
     });
@@ -1022,7 +1035,7 @@ Return ONLY a JSON object in this exact format (no markdown, no explanation):
 }`;
 
     const suggestionsMessage = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: MODELS.CONTENT,
       max_tokens: 256,
       messages: [{ role: 'user', content: suggestionsPrompt }]
     });
@@ -1127,7 +1140,7 @@ EXAMPLES:
 Write a shocking Quick Card for "${term}" - NO QUESTIONS, just drama:`;
 
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: MODELS.CONTENT,
       max_tokens: 256,
       messages: [{ role: 'user', content: prompt }]
     });
@@ -1357,7 +1370,7 @@ RULES:
 If none are good, pick the least boring one. Return ONLY the topic name.`;
 
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: MODELS.CONTENT,
       max_tokens: 100,
       temperature: 0.7,
       messages: [{ role: 'user', content: prompt }]
@@ -1511,7 +1524,7 @@ Write Part ${partNumber} now:`;
     // Use streaming if onChunk callback is provided
     if (onChunk) {
       const stream = await anthropic.messages.stream({
-        model: 'claude-sonnet-4-20250514',
+        model: MODELS.CONTENT,
         max_tokens: 1200,
         messages: [{ role: 'user', content: prompt }]
       });
@@ -1525,7 +1538,7 @@ Write Part ${partNumber} now:`;
     } else {
       // Non-streaming fallback
       const message = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: MODELS.CONTENT,
         max_tokens: 1200,
         messages: [{ role: 'user', content: prompt }]
       });
@@ -2159,7 +2172,7 @@ Generate exactly ${config.cardNumbers.length} cards now:`;
 
   try {
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: MODELS.CONTENT,
       max_tokens: 2500,
       messages: [{ role: 'user', content: prompt }]
     });
@@ -2461,7 +2474,7 @@ Return ONLY the text content (80-120 words):`;
           'anthropic-dangerous-direct-browser-access': 'true'
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
+          model: MODELS.CONTENT,
           max_tokens: 250,
           messages: [{ role: 'user', content: prompt }],
           stream: true
@@ -2504,7 +2517,7 @@ Return ONLY the text content (80-120 words):`;
 
     // Non-streaming fallback (for background generation)
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: MODELS.CONTENT,
       max_tokens: 250,
       messages: [{ role: 'user', content: prompt }]
     });
@@ -2642,7 +2655,7 @@ Output each card with delimiters:
       let cardsFound = 0;
 
       const stream = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: MODELS.CONTENT,
         max_tokens: 2000, // Increased for up to 6 cards
         messages: [{ role: 'user', content: prompt }],
         stream: true
@@ -2699,7 +2712,7 @@ Output each card with delimiters:
     } else {
       // Non-streaming fallback (for background generation)
       const message = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: MODELS.CONTENT,
         max_tokens: 2000, // Increased for up to 6 cards
         messages: [{ role: 'user', content: prompt }]
       });
@@ -2978,7 +2991,7 @@ Start your response with [ and end with ]
 
   try {
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',  // Better quality flashcards
+      model: MODELS.CONTENT,  // Better quality flashcards
       max_tokens: 1500,
       messages: [{ role: 'user', content: prompt }]
     })
