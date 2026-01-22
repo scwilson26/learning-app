@@ -22,52 +22,52 @@ export const COMMON_CARD = {
   accentWidth: '5px',         // Left stripe width
 }
 
-// Category accent colors - distinct palette spread across color zones
+// Category accent colors - bold, saturated palette
 // These are the ONLY category-specific colors (used for left stripe)
-// Goal: Every category distinguishable at a glance
+// Bold enough to work across all rarities (common → legendary)
 export const CATEGORY_THEMES = {
   // Warm colors
   arts: {
-    accent: '#E88B9E',        // Rose pink
+    accent: '#D94F6E',        // Bold rose
   },
   history: {
-    accent: '#D4A84B',        // Amber gold
+    accent: '#C9852A',        // Rich amber
   },
   people: {
-    accent: '#C67B5A',        // Terracotta
+    accent: '#B85A3A',        // Burnt orange
   },
   everyday: {
-    accent: '#C9B896',        // Warm sand
+    accent: '#A89050',        // Ochre
   },
   // Cool colors
   geography: {
-    accent: '#4A90B8',        // Ocean blue
+    accent: '#2E7DAF',        // Strong blue
   },
   technology: {
-    accent: '#3AAFCF',        // Cyan
+    accent: '#1896B8',        // Electric teal
   },
   physics: {
-    accent: '#6B8A99',        // Slate blue
+    accent: '#4A6E82',        // Deep slate
   },
   // Greens
   biology: {
-    accent: '#7BAF7B',        // Sage green
+    accent: '#4A9B5A',        // Forest green
   },
   health: {
-    accent: '#4ABFAD',        // Teal aqua
+    accent: '#2A9D8F',        // Bold teal
   },
   // Purples/neutrals
   philosophy: {
-    accent: '#6B5B95',        // Deep indigo
+    accent: '#5B4B9E',        // Royal indigo
   },
   mathematics: {
-    accent: '#8B8B9E',        // Cool gray
+    accent: '#6A6A7A',        // Graphite
   },
   society: {
-    accent: '#9E7B9E',        // Dusty plum
+    accent: '#8B4A8B',        // Deep magenta
   },
   default: {
-    accent: '#8B8B9E',        // Cool gray
+    accent: '#6A6A7A',        // Graphite
   }
 }
 
