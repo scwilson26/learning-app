@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { generateQuickCard } from '../services/claude'
 import { recordHyperlinkClick, recordQuickCardView, recordSurpriseMeClick } from '../services/stats'
 import LoadingFacts from './LoadingFacts'
 import CardCarousel from './CardCarousel'

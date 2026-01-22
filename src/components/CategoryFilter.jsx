@@ -1,4 +1,14 @@
-import { TOPIC_CATEGORIES } from '../services/claude'
+// Dead code - only used by old App.jsx flow (USE_CANVAS = true)
+const TOPIC_CATEGORIES = {
+  history: { name: 'History', emoji: '📜' },
+  science: { name: 'Science', emoji: '🔬' },
+  culture: { name: 'Culture', emoji: '🎭' },
+  nature: { name: 'Nature', emoji: '🌿' },
+  people: { name: 'People', emoji: '👤' },
+  ideas: { name: 'Ideas', emoji: '💡' },
+  places: { name: 'Places', emoji: '🗺️' },
+  technology: { name: 'Technology', emoji: '⚙️' }
+}
 
 const CATEGORIES_KEY = 'selectedCategories'
 

@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { generateArticleHook, generateArticleBody, generateSurpriseTopic, generateArticleContinuation } from './services/claude'
 import { recordArticleRead, recordSurpriseMeClick, resetSession, loadStats, saveJourney, loadJourneys } from './services/stats'
 import LearnScreen from './components/LearnScreen'
 import ReviewScreen from './components/ReviewScreen'
@@ -265,55 +264,7 @@ function App() {
   }
 
   const handleKeepReading = async () => {
-    if (currentPart >= 4 || loadingContinuation || !learnData) return
-
-    setLoadingContinuation(true)
-    try {
-      const nextPart = currentPart + 1
-      // Build the full existing content (just body, no hook - hook is too specific to Part 1)
-      const existingContent = learnData.content
-
-      // Store the base content before streaming starts
-      const baseContent = learnData.content
-      const partDivider = `\n\n---PART-${nextPart}---\n\n`
-
-      const { content: newContent, hyperlinks: newHyperlinks } = await generateArticleContinuation(
-        learnData.topic,
-        existingContent,
-        nextPart,
-        // Streaming callback - update content as it comes in
-        (streamedContent) => {
-          setLearnData(prev => ({
-            ...prev,
-            content: baseContent + partDivider + streamedContent
-          }))
-        }
-      )
-
-      // Final update with complete content and hyperlinks
-      const updatedContent = baseContent + partDivider + newContent
-      const updatedHyperlinks = [...(learnData.hyperlinks || []), ...newHyperlinks]
-
-      const updatedData = {
-        ...learnData,
-        content: updatedContent,
-        hyperlinks: updatedHyperlinks
-      }
-
-      setLearnData(updatedData)
-      setCurrentPart(nextPart)
-
-      // Update breadcrumbs with the updated data
-      setBreadcrumbs(prev => {
-        const newBreadcrumbs = [...prev]
-        newBreadcrumbs[currentIndex] = updatedData
-        return newBreadcrumbs
-      })
-    } catch (err) {
-      console.error('Error loading continuation:', err)
-    } finally {
-      setLoadingContinuation(false)
-    }
+    // Dead code - USE_CANVAS is true, this old flow is not used
   }
 
   const handleBreadcrumbClick = (index) => {
