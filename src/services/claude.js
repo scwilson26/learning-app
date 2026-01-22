@@ -271,39 +271,76 @@ You're planning cards across 2 tiers:
 COMPLETENESS TEST FOR CORE:
 Ask yourself: "Could someone who read only Core cards explain this topic clearly?" If yes, Core is complete. If they'd have obvious gaps, add more cards.
 
+IMPORTANT - TOPIC TYPE PATTERNS:
+- **Concepts** (Watt, GDP): definition → how it works → formulas/mechanics → real-world applications
+- **Processes** (Photosynthesis, Digestion): what it is → where/when it happens → stages/mechanism → outputs
+- **Works/artifacts** (Shakespeare's Sonnets, Guernica): what it is → structure/form → themes/content → why it matters
+- **People** (Marie Curie, Napoleon): who they were → background → key achievements → why they matter
+- **Events** (French Revolution, Moon Landing): what happened → causes → key phases → consequences
+
+For works/artifacts and people: Core covers what it IS and why it matters. Deep Dive covers the mysteries, trivia, specific famous examples, and historical gossip.
+
 GOLD STANDARD EXAMPLES:
 
-Example 1: "Watt" (unit of power)
-CORE (10 cards):
-1. "What Is a Watt?" - A watt measures how fast energy flows—one joule per second. It's the rate of energy use, not the total amount.
-2. "Watts vs Watt-Hours" - Watts = speed of energy flow. Watt-hours = total energy used over time. A 60W bulb running 2 hours = 120 Wh.
-3. "James Watt's Legacy" - Named after the Scottish engineer who improved the steam engine. He didn't invent it—he made it 3x more efficient.
-4. "Power = Voltage × Current" - The formula P = V × I. A 120V outlet with 10A flowing = 1,200 watts.
-5. "Kilowatts in Daily Life" - 1 kW = 1,000 watts. A microwave uses ~1 kW. Your house might peak at 5-10 kW.
-6. "Horsepower vs Watts" - 1 HP ≈ 746 watts. Watt himself defined horsepower to sell steam engines to horse-using miners.
-7. "Why Watts Matter for Batteries" - A 100 Wh battery can deliver 100W for 1 hour, or 50W for 2 hours. Watts determine how fast you drain it.
-8. "The Watt in Your Electric Bill" - You're billed in kWh. Running 1,000W for 1 hour = 1 kWh ≈ $0.12 average in the US.
-9. "Watts in Exercise" - A Tour de France cyclist sustains 250-400W. Sprinting can hit 2,000W briefly. Most people struggle past 100W for an hour.
-10. "Thermal Watts" - Heat output is measured in watts too. A human body at rest emits ~80W of heat—like a warm light bulb.
+Example 1: "Shakespeare's Sonnets" (body of work)
+CORE (5 cards):
+1. "What Are Shakespeare's Sonnets" - Shakespeare wrote 154 sonnets, published in 1609. Unlike his plays, they feel personal—exploring love, jealousy, aging, and death.
+2. "The Shakespearean Sonnet Structure" - Three quatrains (4 lines each) + final couplet (2 lines). Rhyme scheme ABAB CDCD EFEF GG. Quatrains develop an idea, couplet delivers the twist.
+3. "Iambic Pentameter" - Every line has 10 syllables in da-DUM da-DUM rhythm. Sounds natural, close to English speech, but gives a musical pulse.
+4. "The Major Themes" - Beauty fading with time, love and desire, jealousy and betrayal, whether art can make things immortal. Many are surprisingly dark.
+5. "Why They Matter" - Showed what English poetry could do. Adapted the Italian sonnet into something new. A window into private emotion from 400 years ago.
 
 DEEP DIVE (4 cards):
-1. "The Horsepower Marketing Trick" - Watt measured actual horses and found huge variation. He picked a high number so his engines would always exceed claims.
-2. "Watts in Sound" - Speaker power in watts is mostly marketing. A 100W speaker isn't 10x louder than 10W—it's about 3x louder (logarithmic).
-3. "Peak vs Sustained Watts" - Devices list peak watts for marketing. A "1500W" blender might only sustain 500W. Know the difference.
-4. "Negative Watts" - Solar panels on your roof can push watts back to the grid—your meter literally runs backward.
+1. "The Fair Youth" - Sonnets 1-126 address a beautiful young man. Identity unknown—maybe an earl Shakespeare knew. The relationship remains a mystery.
+2. "The Dark Lady" - Sonnets 127-152 shift to a dark-haired, seductive, unfaithful woman. Unlike idealized Renaissance women, she's real and flawed.
+3. "The Rival Poet" - Sonnets 78-86 mention another poet competing for attention. Shakespeare sounds insecure about his "plain words."
+4. "Sonnet 18" - "Shall I compare thee to a summer's day?" argues poetry is eternal while nature fades. Really about poetry's power to defeat time.
 
-Example 2: "Photosynthesis"
-CORE (5 cards):
-1. "The Basic Equation" - 6CO₂ + 6H₂O + light → C₆H₁₂O₆ + 6O₂. Plants take carbon dioxide and water, add sunlight, make sugar and release oxygen.
-2. "Where It Happens" - Inside chloroplasts—tiny green organelles in leaf cells. The green color comes from chlorophyll, the pigment that captures light.
-3. "Light Reactions vs Calvin Cycle" - Two stages: light reactions capture solar energy (in thylakoids), Calvin cycle uses that energy to build sugar (in stroma).
-4. "Why Plants Are Green" - Chlorophyll absorbs red and blue light but reflects green. That reflected green is what we see.
-5. "Oxygen as a Byproduct" - The oxygen we breathe is waste to plants. They split water molecules and release O₂ as a leftover.
+Example 2: "Large Language Model" (technology)
+CORE (6 cards):
+1. "What Is a Large Language Model" - Software that predicts text. Give it words, it guesses what comes next. ChatGPT, Claude, Gemini are all LLMs.
+2. "How It Learns" - Reads huge amounts of text, guesses missing words billions of times. To guess correctly, it must learn grammar, facts, reasoning.
+3. "What Are Parameters" - Internal settings adjusted during training. GPT-3 has 175 billion. More parameters = more complex patterns stored.
+4. "How It Generates Responses" - Doesn't look up answers. Predicts what text would naturally follow your question, one word at a time.
+5. "The Transformer Architecture" - Uses "attention" to look at all words at once and decide which matter most. This lets it understand context.
+6. "Why It Seems Smart" - Not thinking—pattern matching at massive scale. Output looks intelligent because the patterns are so complex.
 
-DEEP DIVE (3 cards):
-1. "C3 vs C4 Plants" - Most plants use C3 photosynthesis. Corn and sugarcane evolved C4—more efficient in hot, dry conditions. That's why they dominate warm climates.
-2. "The Great Oxygenation Event" - 2.4 billion years ago, cyanobacteria photosynthesis flooded Earth with oxygen. It was poison to most life then—the first mass extinction.
-3. "Artificial Photosynthesis" - Scientists are trying to replicate it for clean fuel. Current efficiency: ~2%. Plants hit 6%. Huge potential if we crack it.
+DEEP DIVE (4 cards):
+1. "Emergent Abilities" - Some abilities appear suddenly at scale. Small models can't do math; big ones can. No one fully understands why.
+2. "Fine-Tuning and RLHF" - Raw models just predict text. Fine-tuning teaches them to be helpful and refuse harmful requests.
+3. "Hallucination" - LLMs confidently make things up. They don't know what they know—just generate plausible-sounding text.
+4. "Context Windows" - Can only "see" limited text at once. Beyond the window, earlier content is forgotten.
+
+Example 3: "Marie Curie" (person)
+CORE (6 cards):
+1. "Who Was Marie Curie" - Physicist and chemist who discovered polonium and radium. First woman to win a Nobel Prize—she won two, in different sciences.
+2. "Where She Came From" - Born in Warsaw, Poland, 1867. Universities didn't admit women. Moved to Paris at 24, graduated first in physics.
+3. "The Discovery of Radioactivity" - Uranium emitted rays without external energy. She named it "radioactivity" and realized it came from the atom itself.
+4. "Finding Polonium and Radium" - Some ore was more radioactive than pure uranium. She processed tons by hand to isolate two new elements.
+5. "The Nobel Prizes" - 1903 Physics Nobel shared with Pierre. 1911 Chemistry Nobel solo. The second came after Pierre's death.
+6. "Why She Matters" - Proved radioactivity was atomic—leading to nuclear physics and cancer treatment. Broke barriers as a woman and immigrant.
+
+DEEP DIVE (4 cards):
+1. "The Radium Craze" - After her discoveries, radium became a fad. Radium toothpaste, water, cosmetics. Dangers weren't understood yet.
+2. "Her Death" - Died 1934 from radiation exposure. Her notebooks are still radioactive, kept in lead-lined boxes.
+3. "The Curie Family Legacy" - Daughter Irène also won a Nobel in Chemistry. Most Nobel-laden family in history.
+4. "Fighting Sexism" - French Academy refused to admit women. Newspapers focused on scandals over her work.
+
+Example 4: "French Revolution" (historical event)
+CORE (7 cards):
+1. "What Was the French Revolution" - Violent overthrow of France's monarchy 1789-1799. King executed, old social order destroyed, France became a republic.
+2. "The Old System" - Three estates: clergy, nobility, everyone else. First two had privileges and paid no taxes. Third estate was 97% of population.
+3. "The Financial Crisis" - By 1780s France was broke from wars. Nobility refused to pay taxes. King called the Estates-General—cracking everything open.
+4. "The Revolution Begins" - Third estate declared themselves National Assembly. Mob stormed the Bastille. Peasants burned nobles' estates.
+5. "The Terror" - By 1793, radicalized. King and queen guillotined, then thousands more. Robespierre led the Terror until he was guillotined too.
+6. "How It Ended" - Terror exhausted France. Weak government took over. Napoleon seized power in 1799 coup.
+7. "What It Changed" - Destroyed feudalism. Legal equality became the principle. Ideas spread across Europe—governments rule by consent.
+
+DEEP DIVE (4 cards):
+1. "Declaration of Rights of Man" - August 1789. Men born free and equal, government protects natural rights. Model for declarations worldwide.
+2. "Marie Antoinette" - Symbol of royal excess. "Let them eat cake"—probably never said it. Guillotined after a show trial.
+3. "The Revolutionary Calendar" - New calendar with 10-day weeks, renamed months, Year 1 of Republic. Lasted 12 years before Napoleon scrapped it.
+4. "The Vendée Uprising" - Peasants rose up to defend Church and king. Government killed 100,000-250,000. Not everyone welcomed the revolution.
 
 RULES:
 - Each concept = ONE specific teaching point (not a topic label)
@@ -311,7 +348,6 @@ RULES:
 - Build progressively—later cards assume earlier knowledge
 - Include specific facts, names, numbers in concept descriptions
 - DO NOT repeat anything from the preview card
-- Flag 2-4 terms per topic that need popup definitions (prerequisite knowledge the reader might lack)
 
 OUTPUT FORMAT (JSON only, no explanation):
 {
@@ -322,14 +358,13 @@ OUTPUT FORMAT (JSON only, no explanation):
   "deep_dive": [
     {"title": "Card title", "concept": "What this card teaches"},
     ...
-  ],
-  "defined_terms": ["term1", "term2", "term3"]
+  ]
 }`;
 
   try {
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 2500,
+      max_tokens: 3000,
       messages: [{ role: 'user', content: prompt }]
     });
 
@@ -2560,6 +2595,7 @@ ${config.guidance}
 Each card needs:
 - "title": Clear, specific topic (4-8 words)
 - "content": 50-70 words, one idea per card
+- "definedTerms": Array of 0-4 terms in this card that a reader might not know. These become tappable for popup definitions. Only flag terms that are prerequisite knowledge (not the main topic being taught).
 
 WRITING RULES:
 - One idea per card. If you're using "and" or "also", you probably have two ideas.
@@ -2588,10 +2624,11 @@ RULES:
 - Each card = one concept, fully explained
 - No overlap with previous cards
 - Every bolded term should be potentially quizzable
+- definedTerms: Only flag prerequisite terms the reader might not know (e.g., "joule" in a card about watts). Don't flag the main concept being taught. Can be empty array if no terms need defining.
 
 Output each card with delimiters:
 ###CARD###
-{"number": ${config.startNumber}, "title": "...", "content": "..."}
+{"number": ${config.startNumber}, "title": "...", "content": "...", "definedTerms": ["term1", "term2"]}
 ###END###
 (continue for all ${cardCount} cards)`;
 
@@ -2630,6 +2667,7 @@ Output each card with delimiters:
                   number: card.number || config.startNumber + cardsFound,
                   title: card.title,
                   content: card.content,
+                  definedTerms: card.definedTerms || [],
                   tier,
                   tierIndex: cardsFound,
                   contentLoaded: true
@@ -2679,6 +2717,7 @@ Output each card with delimiters:
             number: card.number || config.startNumber + allCards.length,
             title: card.title,
             content: card.content,
+            definedTerms: card.definedTerms || [],
             tier,
             tierIndex: allCards.length,
             contentLoaded: true
@@ -2704,6 +2743,7 @@ Output each card with delimiters:
               number: card.number || config.startNumber + index,
               title: card.title,
               content: card.content,
+              definedTerms: card.definedTerms || [],
               tier,
               tierIndex: index,
               contentLoaded: true

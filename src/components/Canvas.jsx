@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { CATEGORY_THEMES, getCategoryTheme, hasCustomTheme, isDarkTheme } from '../themes'
 import { generateSubDecks, generateSingleCardContent, generateTierCards, generateTopicPreview, generateTopicOutline, generateFlashcardsFromCard, classifyTopic } from '../services/claude'
 import { supabase, onAuthStateChange, signOut, syncCards, getCanonicalCardsForTopic, upsertCanonicalCard, getPreviewCardRemote, savePreviewCardRemote, getOutline, saveOutline, syncFlashcards, upsertFlashcardRemote, upsertFlashcardsRemote } from '../services/supabase'
 import Auth from './Auth'
@@ -90,168 +92,6 @@ const toTitleCase = (str) => {
   }).join(' ')
 }
 
-// Category visual themes - each category has its own visual world
-const CATEGORY_THEMES = {
-  technology: {
-    // Dark slate with circuit/grid energy, cyan accents
-    cardBg: '#0f172a',           // Dark slate
-    cardBgAlt: '#1e293b',        // Slightly lighter slate
-    textPrimary: '#f1f5f9',      // Light text
-    textSecondary: '#94a3b8',    // Muted light text
-    accent: '#22d3ee',           // Cyan
-    accentGlow: 'rgba(34, 211, 238, 0.4)',
-    pattern: 'grid',             // Grid pattern
-    borderStyle: 'glow',         // Glowing border effect
-  },
-  history: {
-    // Warm parchment with gold accents
-    cardBg: '#faf6f1',           // Warm cream
-    cardBgAlt: '#f5ebe0',        // Slightly darker cream
-    textPrimary: '#44403c',      // Warm dark brown
-    textSecondary: '#78716c',    // Muted brown
-    accent: '#b8860b',           // Dark gold
-    accentGlow: 'rgba(184, 134, 11, 0.3)',
-    pattern: 'texture',          // Paper texture
-    borderStyle: 'classic',      // Classic border
-  },
-  arts: {
-    // Creative studio - soft gradient, airy and expressive
-    cardBg: '#fffcfa',           // Warm white (top of gradient)
-    cardBgAlt: '#f5e6eb',        // Soft blush/lavender (bottom of gradient)
-    textPrimary: '#4a3540',      // Warm dark
-    textSecondary: '#7a636b',    // Muted rose-brown
-    accent: '#d4627a',           // Softer rose (lighter than before)
-    accentGlow: 'rgba(212, 98, 122, 0.4)',
-    pattern: 'gradient',         // Painterly gradient
-    borderStyle: 'glow',         // Soft glow instead of hard border
-  },
-  biology: {
-    // Beautiful science - organic but precise, like a natural history museum
-    cardBg: '#e8f0e8',           // Soft sage/muted green
-    cardBgAlt: '#dce8dc',        // Slightly deeper sage
-    textPrimary: '#1a3a2a',      // Deep forest
-    textSecondary: '#3d5c4a',    // Muted forest
-    accent: '#2d6a4f',           // Deep teal/forest green
-    accentGlow: 'rgba(45, 106, 79, 0.35)',
-    pattern: 'cellular',         // Organic cellular pattern
-    borderStyle: 'organic',
-  },
-  health: {
-    // Clinical, trustworthy - doctor's office, medical journal
-    cardBg: '#f0f7fa',           // Clean pale blue-white
-    cardBgAlt: '#e4eff5',        // Slightly deeper clinical blue
-    textPrimary: '#1e3a5f',      // Deep medical blue
-    textSecondary: '#4a6785',    // Muted blue
-    accent: '#3b82f6',           // Medical blue
-    accentGlow: 'rgba(59, 130, 246, 0.3)',
-    pattern: 'pulse',            // Heartbeat/pulse pattern
-    borderStyle: 'clinical',
-  },
-  everyday: {
-    // Cozy café, cookbook, weekend morning
-    cardBg: '#fffdf9',           // Near-white cream
-    cardBgAlt: '#faf5ed',        // Soft warm
-    textPrimary: '#2d1f15',      // Dark espresso brown
-    textSecondary: '#5c4a3d',    // Warm muted brown
-    accent: '#b85c2c',           // Warm terracotta (slightly darker)
-    accentGlow: 'rgba(184, 92, 44, 0.35)',
-    pattern: 'cozy',
-    borderStyle: 'shadow',       // No border, warm shadow
-  },
-  geography: {
-    // Maps, exploration, atlas, world traveler
-    cardBg: '#e8f4fa',           // Soft sky blue
-    cardBgAlt: '#d4e9f7',        // Deeper sky
-    textPrimary: '#1a3a4a',      // Deep ocean
-    textSecondary: '#3d6070',    // Muted ocean
-    accent: '#1e5f8a',           // Deep ocean blue
-    accentGlow: 'rgba(30, 95, 138, 0.35)',
-    pattern: 'topographic',
-    borderStyle: 'border',
-  },
-  mathematics: {
-    // Graph paper, precision, elegant logic
-    cardBg: '#fafafa',           // Clean white
-    cardBgAlt: '#f5f5f5',        // Slight gray
-    textPrimary: '#2e1a47',      // Deep purple
-    textSecondary: '#5b4670',    // Muted purple
-    accent: '#5b21b6',           // Deep purple
-    accentGlow: 'rgba(91, 33, 182, 0.3)',
-    pattern: 'grid',
-    borderStyle: 'precise',
-  },
-  people: {
-    // Portrait gallery, biography, personal and warm
-    cardBg: '#f7f4f0',           // Warm neutral
-    cardBgAlt: '#efe9e2',        // Slightly deeper
-    textPrimary: '#3d2e1f',      // Warm dark
-    textSecondary: '#6b5a48',    // Muted warm
-    accent: '#b45309',           // Warm amber/copper
-    accentGlow: 'rgba(180, 83, 9, 0.3)',
-    pattern: 'subtle',
-    borderStyle: 'border',
-  },
-  philosophy: {
-    // Contemplative, cosmic, transcendent, nighttime
-    cardBg: '#1e1b4b',           // Deep indigo
-    cardBgAlt: '#312e81',        // Slightly lighter indigo
-    textPrimary: '#ffffff',      // White for high contrast
-    textSecondary: '#c7d2fe',    // Lighter lavender for secondary
-    accent: '#818cf8',           // Soft purple glow
-    accentGlow: 'rgba(129, 140, 248, 0.4)',
-    pattern: 'celestial',
-    borderStyle: 'glow',         // Ethereal glow, no border
-  },
-  physics: {
-    // Lab notebook, precision, technical diagram
-    cardBg: '#f8fafc',           // White with blue tint
-    cardBgAlt: '#f0f7fa',        // Slight blue
-    textPrimary: '#0c4a6e',      // Deep teal
-    textSecondary: '#3d7a98',    // Muted teal
-    accent: '#0891b2',           // Sharp teal
-    accentGlow: 'rgba(8, 145, 178, 0.3)',
-    pattern: 'blueprint',
-    borderStyle: 'accent-left',  // Accent line on left only
-  },
-  society: {
-    // Civic, institutional, newspaper, structured
-    cardBg: '#f5f5f4',           // Light warm gray
-    cardBgAlt: '#e7e5e4',        // Slightly deeper
-    textPrimary: '#1c1917',      // Near black
-    textSecondary: '#57534e',    // Muted gray
-    accent: '#475569',           // Slate blue
-    accentGlow: 'rgba(71, 85, 105, 0.3)',
-    pattern: 'architectural',
-    borderStyle: 'border',
-  },
-  // Default theme for categories without custom themes
-  default: {
-    cardBg: '#ffffff',
-    cardBgAlt: '#f8fafc',
-    textPrimary: '#1e293b',
-    textSecondary: '#64748b',
-    accent: '#6366f1',
-    accentGlow: 'rgba(99, 102, 241, 0.3)',
-    pattern: 'none',
-    borderStyle: 'gradient',
-  }
-}
-
-// Get theme for a category
-function getCategoryTheme(categoryId) {
-  return CATEGORY_THEMES[categoryId] || CATEGORY_THEMES.default
-}
-
-// Check if category has a custom theme (not default)
-function hasCustomTheme(categoryId) {
-  return categoryId && CATEGORY_THEMES[categoryId] !== undefined
-}
-
-// Check if category uses dark background (needs light text)
-function isDarkTheme(categoryId) {
-  return categoryId === 'technology' || categoryId === 'philosophy'
-}
-
 // Helper to get card count for a deck (uses deck's overviewCardCount or default)
 function getDeckCardCount(deck) {
   return deck?.overviewCardCount ?? DEFAULT_OVERVIEW_CARDS
@@ -277,343 +117,36 @@ function getCardTint(gradient) {
   return '#fafbfc' // Default subtle gray
 }
 
-// Get expanded card styling for each theme (matches OverviewCard)
-// When claimed: adds prominent border + stronger glow for all themes
+// Get expanded card styling - clean, minimal design
+// White/light gray background, accent stripe on left, subtle shadow
 function getExpandedCardStyle(categoryId, theme, claimed, tint) {
-  const isThemed = hasCustomTheme(categoryId)
-
-  // Claimed state adds a prominent border and stronger glow for ALL themes
-  const claimedBorder = claimed ? `3px solid ${theme.accent}` : undefined
-  const claimedGlow = claimed ? `0 0 40px ${theme.accentGlow}, 0 0 20px ${theme.accentGlow}` : ''
-
-  // Technology - dark background, grid
-  if (categoryId === 'technology') {
-    return {
-      background: theme.cardBg,
-      border: claimedBorder,
-      boxShadow: claimed
-        ? `${claimedGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.5)`
-        : `0 25px 50px -12px rgba(0, 0, 0, 0.5)`
-    }
-  }
-
-  // History - warm parchment
-  if (categoryId === 'history') {
-    return {
-      background: theme.cardBg,
-      border: claimedBorder,
-      boxShadow: claimed
-        ? `${claimedGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.4)`
-        : `0 25px 50px -12px rgba(0, 0, 0, 0.4)`
-    }
-  }
-
-  // Arts - soft gradient, airy glow
-  if (categoryId === 'arts') {
-    return {
-      background: `linear-gradient(180deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-      border: claimedBorder,
-      boxShadow: claimed
-        ? `${claimedGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.15)`
-        : `0 0 30px ${theme.accentGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.1)`
-    }
-  }
-
-  // Biology - organic, green border
-  if (categoryId === 'biology') {
-    return {
-      background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-      border: claimed ? claimedBorder : `2px solid ${theme.accent}`,
-      boxShadow: claimed
-        ? `${claimedGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.15)`
-        : `0 25px 50px -12px rgba(0, 0, 0, 0.12)`
-    }
-  }
-
-  // Health - clinical, clean
-  if (categoryId === 'health') {
-    return {
-      background: theme.cardBg,
-      border: claimedBorder,
-      boxShadow: claimed
-        ? `${claimedGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.15)`
-        : `0 25px 50px -12px rgba(0, 0, 0, 0.12)`
-    }
-  }
-
-  // Everyday - cozy, warm
-  if (categoryId === 'everyday') {
-    return {
-      background: `linear-gradient(145deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-      border: claimedBorder,
-      boxShadow: claimed
-        ? `${claimedGlow}, 0 25px 50px -12px rgba(194, 112, 62, 0.2)`
-        : `0 8px 30px -4px rgba(194, 112, 62, 0.2), 0 25px 50px -12px rgba(0, 0, 0, 0.12)`
-    }
-  }
-
-  // Geography - maps, blue border
-  if (categoryId === 'geography') {
-    return {
-      background: `linear-gradient(180deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-      border: claimed ? claimedBorder : `2px solid ${theme.accent}`,
-      boxShadow: claimed
-        ? `${claimedGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.15)`
-        : `0 25px 50px -12px rgba(0, 0, 0, 0.12)`
-    }
-  }
-
-  // Mathematics - graph paper, purple border
-  if (categoryId === 'mathematics') {
-    return {
-      background: theme.cardBg,
-      border: claimed ? claimedBorder : `1.5px solid ${theme.accent}`,
-      boxShadow: claimed
-        ? `${claimedGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.15)`
-        : `0 25px 50px -12px rgba(0, 0, 0, 0.12)`
-    }
-  }
-
-  // People - portrait gallery, copper border
-  if (categoryId === 'people') {
-    return {
-      background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-      border: claimed ? claimedBorder : `2px solid ${theme.accent}`,
-      boxShadow: claimed
-        ? `${claimedGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.15)`
-        : `0 25px 50px -12px rgba(0, 0, 0, 0.12)`
-    }
-  }
-
-  // Philosophy - cosmic, ethereal glow
-  if (categoryId === 'philosophy') {
-    return {
-      background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-      border: claimedBorder,
-      boxShadow: claimed
-        ? `${claimedGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.4)`
-        : `0 0 25px ${theme.accentGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.35)`
-    }
-  }
-
-  // Physics - blueprint
-  if (categoryId === 'physics') {
-    return {
-      background: theme.cardBg,
-      border: claimedBorder,
-      boxShadow: claimed
-        ? `${claimedGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.15)`
-        : `0 25px 50px -12px rgba(0, 0, 0, 0.12)`
-    }
-  }
-
-  // Society - civic, slate border
-  if (categoryId === 'society') {
-    return {
-      background: theme.cardBg,
-      border: claimed ? claimedBorder : `2px solid ${theme.accent}`,
-      boxShadow: claimed
-        ? `${claimedGlow}, 0 25px 50px -12px rgba(0, 0, 0, 0.15)`
-        : `0 25px 50px -12px rgba(0, 0, 0, 0.12)`
-    }
-  }
-
-  // Default - unthemed
+  // All cards use the same clean white background
+  // Category-specific accent color used for left stripe (rendered separately)
   return {
-    background: `linear-gradient(135deg, #ffffff 0%, ${tint} 100%)`,
-    border: claimed ? '3px solid #10b981' : '1px solid #e5e7eb',
-    boxShadow: claimed
-      ? '0 0 40px rgba(16, 185, 129, 0.4), 0 0 20px rgba(16, 185, 129, 0.3), 0 25px 50px -12px rgba(0, 0, 0, 0.25)'
-      : '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+    background: theme.cardBg,
+    border: `1px solid ${theme.border}`,
+    boxShadow: claimed ? theme.shadowHover : theme.shadow,
+    borderRadius: theme.radius,
   }
 }
 
-// Render decorative elements for expanded card (matches OverviewCard)
-function renderExpandedCardDecorations(categoryId, theme, isBack = false) {
-  const opacity = isBack ? 'opacity-5' : 'opacity-10'
-  const pointerClass = isBack ? 'pointer-events-none' : ''
+// Render left accent stripe for card - the only decoration in clean design
+// Returns a colored stripe on the left edge that indicates category
+function renderCardAccentStripe(theme, claimed = false) {
+  return (
+    <div
+      className="absolute top-0 bottom-0 left-0 rounded-l-[12px]"
+      style={{
+        width: theme.accentWidth,
+        background: claimed ? theme.accent : theme.accentFaded,
+      }}
+    />
+  )
+}
 
-  // Technology - grid pattern + top accent line
-  if (categoryId === 'technology') {
-    return (
-      <>
-        <div
-          className={`absolute inset-0 ${opacity} ${pointerClass}`}
-          style={{
-            backgroundImage: `linear-gradient(${theme.accent} 1px, transparent 1px), linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)`,
-            backgroundSize: '16px 16px'
-          }}
-        />
-        <div
-          className={`absolute top-0 left-0 right-0 h-1.5 ${pointerClass}`}
-          style={{ background: `linear-gradient(90deg, transparent, ${theme.accent}, transparent)` }}
-        />
-      </>
-    )
-  }
-
-  // History - grid pattern + top accent line
-  if (categoryId === 'history') {
-    return (
-      <>
-        <div
-          className={`absolute inset-0 ${opacity} ${pointerClass}`}
-          style={{
-            backgroundImage: `linear-gradient(${theme.accent} 1px, transparent 1px), linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)`,
-            backgroundSize: '16px 16px'
-          }}
-        />
-        <div
-          className={`absolute top-0 left-0 right-0 h-1.5 ${pointerClass}`}
-          style={{ background: `linear-gradient(90deg, transparent, ${theme.accent}, transparent)` }}
-        />
-      </>
-    )
-  }
-
-  // Arts - no decorative elements, just gradient and glow
-  if (categoryId === 'arts') {
-    return null
-  }
-
-  // Biology - organic cellular pattern
-  if (categoryId === 'biology') {
-    return (
-      <div className={`absolute inset-0 opacity-[0.12] ${pointerClass}`}>
-        <div className="absolute top-6 right-8 w-10 h-10 rounded-full border" style={{ borderColor: theme.accent }} />
-        <div className="absolute top-16 right-4 w-5 h-5 rounded-full border" style={{ borderColor: theme.accent }} />
-        <div className="absolute bottom-10 left-6 w-8 h-8 rounded-full border" style={{ borderColor: theme.accent }} />
-        <div className="absolute bottom-6 left-16 w-3 h-3 rounded-full" style={{ background: theme.accent, opacity: 0.4 }} />
-        <div className="absolute top-24 left-8 w-3 h-3 rounded-full" style={{ background: theme.accent, opacity: 0.3 }} />
-      </div>
-    )
-  }
-
-  // Health - top accent line + heartbeat
-  if (categoryId === 'health') {
-    return (
-      <>
-        <div
-          className={`absolute top-0 left-4 right-4 h-1 rounded-b ${pointerClass}`}
-          style={{ background: theme.accent }}
-        />
-        <svg className={`absolute bottom-6 left-4 right-4 h-6 opacity-20 ${pointerClass}`} viewBox="0 0 100 20" preserveAspectRatio="none">
-          <path
-            d="M0,10 L30,10 L35,10 L40,2 L45,18 L50,6 L55,14 L60,10 L100,10"
-            fill="none"
-            stroke="#64748b"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </>
-    )
-  }
-
-  // Everyday - subtle radial dot texture
-  if (categoryId === 'everyday') {
-    return (
-      <div
-        className={`absolute inset-0 opacity-[0.04] ${pointerClass}`}
-        style={{
-          backgroundImage: `radial-gradient(${theme.accent} 1px, transparent 1px)`,
-          backgroundSize: '8px 8px'
-        }}
-      />
-    )
-  }
-
-  // Geography - topographic lines
-  if (categoryId === 'geography') {
-    return (
-      <div
-        className={`absolute inset-0 opacity-[0.08] ${pointerClass}`}
-        style={{
-          backgroundImage: `
-            repeating-linear-gradient(0deg, ${theme.accent} 0px, transparent 1px, transparent 16px),
-            repeating-linear-gradient(90deg, ${theme.accent} 0px, transparent 1px, transparent 24px)
-          `
-        }}
-      />
-    )
-  }
-
-  // Mathematics - graph paper grid
-  if (categoryId === 'mathematics') {
-    return (
-      <div
-        className={`absolute inset-0 opacity-[0.08] ${pointerClass}`}
-        style={{
-          backgroundImage: `
-            linear-gradient(${theme.accent} 1px, transparent 1px),
-            linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)
-          `,
-          backgroundSize: '14px 14px'
-        }}
-      />
-    )
-  }
-
-  // People - clean, no decorative elements
-  if (categoryId === 'people') {
-    return null
-  }
-
-  // Philosophy - celestial dots (stars)
-  if (categoryId === 'philosophy') {
-    return (
-      <div className={`absolute inset-0 opacity-30 ${pointerClass}`}>
-        <div className="absolute top-6 right-8 w-1.5 h-1.5 rounded-full" style={{ background: theme.accent }} />
-        <div className="absolute top-12 right-16 w-1 h-1 rounded-full" style={{ background: theme.accent }} />
-        <div className="absolute top-20 right-6 w-1.5 h-1.5 rounded-full" style={{ background: theme.accent }} />
-        <div className="absolute bottom-12 left-6 w-1 h-1 rounded-full" style={{ background: theme.accent }} />
-        <div className="absolute bottom-20 left-12 w-1.5 h-1.5 rounded-full" style={{ background: theme.accent }} />
-        <div className="absolute top-16 left-8 w-1 h-1 rounded-full" style={{ background: theme.accent }} />
-      </div>
-    )
-  }
-
-  // Physics - left accent line + blueprint grid
-  if (categoryId === 'physics') {
-    return (
-      <>
-        <div
-          className={`absolute top-4 bottom-4 left-0 w-1 rounded-r ${pointerClass}`}
-          style={{ background: theme.accent }}
-        />
-        <div
-          className={`absolute inset-0 opacity-[0.06] ${pointerClass}`}
-          style={{
-            backgroundImage: `
-              linear-gradient(${theme.accent} 1px, transparent 1px),
-              linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)
-            `,
-            backgroundSize: '18px 18px'
-          }}
-        />
-      </>
-    )
-  }
-
-  // Society - architectural grid
-  if (categoryId === 'society') {
-    return (
-      <div
-        className={`absolute inset-0 opacity-[0.05] ${pointerClass}`}
-        style={{
-          backgroundImage: `
-            linear-gradient(${theme.accent} 1px, transparent 1px),
-            linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)
-          `,
-          backgroundSize: '20px 20px'
-        }}
-      />
-    )
-  }
-
-  // Default - no decorations
-  return null
+// Legacy function name kept for compatibility - now just renders accent stripe
+function renderExpandedCardDecorations(categoryId, theme, isBack = false, claimed = false) {
+  return renderCardAccentStripe(theme, claimed)
 }
 
 // Category data - Level 1 decks (from VISION.md)
@@ -903,825 +436,63 @@ function getDeck(id) {
 }
 
 // Deck component - a card with subtle stack effect (cards underneath)
+// Deck component - clean, minimal design with left accent stripe
 function Deck({ deck, onOpen, claimed, rootCategoryId = null }) {
-  // Use the root category for theming, or fall back to deck's own id
   const themeId = rootCategoryId || deck.id
   const theme = getCategoryTheme(themeId)
 
-  // Technology: dark card with grid pattern and cyan glow
-  if (themeId === 'technology') {
-    return (
-      <motion.div
-        className="relative cursor-pointer group"
-        onClick={() => onOpen(deck)}
-        whileHover={{ y: -4 }}
-        whileTap={{ scale: 0.98 }}
-        style={{ paddingRight: 6, paddingBottom: 6 }}
-      >
-        {/* Stack layers */}
-        <div
-          className="absolute w-28 h-36 rounded-xl"
-          style={{
-            transform: 'translate(4px, 4px) rotate(2deg)',
-            background: theme.cardBgAlt,
-            boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
-          }}
-        />
-        <div
-          className="absolute w-28 h-36 rounded-xl"
-          style={{
-            transform: 'translate(2px, 2px) rotate(0.5deg)',
-            background: theme.cardBgAlt,
-            boxShadow: '0 1px 2px rgba(0,0,0,0.15)'
-          }}
-        />
-
-        {/* Top card */}
-        <div className="relative w-28 h-36">
-          <div
-            className="absolute inset-0 rounded-xl overflow-hidden"
-            style={{
-              background: theme.cardBg,
-              boxShadow: claimed
-                ? `0 0 20px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.4)`
-                : `0 8px 16px -4px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.2)`
-            }}
-          >
-            {/* Grid pattern overlay */}
-            <div
-              className="absolute inset-0 opacity-10"
-              style={{
-                backgroundImage: `
-                  linear-gradient(${theme.accent} 1px, transparent 1px),
-                  linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)
-                `,
-                backgroundSize: '12px 12px'
-              }}
-            />
-            {/* Accent line at top */}
-            <div
-              className="absolute top-0 left-0 right-0 h-1"
-              style={{ background: `linear-gradient(90deg, transparent, ${theme.accent}, transparent)` }}
-            />
-          </div>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xs font-semibold text-center px-2 leading-tight whitespace-pre-line" style={{ color: theme.textPrimary }}>{deck.name}</span>
-            {claimed && (
-              <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
-                <span className="text-slate-900 text-[10px] font-bold">✓</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </motion.div>
-    )
-  }
-
-  // Arts: creative studio - soft gradient, airy, expressive glow
-  if (themeId === 'arts') {
-    return (
-      <motion.div
-        className="relative cursor-pointer group"
-        onClick={() => onOpen(deck)}
-        whileHover={{ y: -4 }}
-        whileTap={{ scale: 0.98 }}
-        style={{ paddingRight: 6, paddingBottom: 6 }}
-      >
-        {/* Stack layers - soft, airy */}
-        <div
-          className="absolute w-28 h-36 rounded-xl"
-          style={{
-            transform: 'translate(4px, 4px) rotate(2deg)',
-            background: theme.cardBgAlt,
-            boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-          }}
-        />
-        <div
-          className="absolute w-28 h-36 rounded-xl"
-          style={{
-            transform: 'translate(2px, 2px) rotate(0.5deg)',
-            background: theme.cardBgAlt,
-            boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
-          }}
-        />
-
-        {/* Top card */}
-        <div className="relative w-28 h-36">
-          <div
-            className="absolute inset-0 rounded-xl overflow-hidden"
-            style={{
-              background: `linear-gradient(180deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-              boxShadow: claimed
-                ? `0 0 25px ${theme.accentGlow}, 0 8px 20px -4px rgba(212, 98, 122, 0.2)`
-                : `0 4px 15px -2px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.06)`
-            }}
-          />
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xs font-semibold text-center px-2 leading-tight whitespace-pre-line" style={{ color: theme.textPrimary }}>{deck.name}</span>
-            {claimed && (
-              <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
-                <span className="text-white text-[10px] font-bold">✓</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </motion.div>
-    )
-  }
-
-  // Biology: beautiful science - organic but precise, natural history museum feel
-  if (themeId === 'biology') {
-    return (
-      <motion.div
-        className="relative cursor-pointer group"
-        onClick={() => onOpen(deck)}
-        whileHover={{ y: -4 }}
-        whileTap={{ scale: 0.98 }}
-        style={{ paddingRight: 6, paddingBottom: 6 }}
-      >
-        {/* Stack layers */}
-        <div
-          className="absolute w-28 h-36 rounded-xl"
-          style={{
-            transform: 'translate(4px, 4px) rotate(2deg)',
-            background: theme.cardBgAlt,
-            border: `1px solid ${theme.accent}40`,
-            boxShadow: '0 1px 2px rgba(0,0,0,0.06)'
-          }}
-        />
-        <div
-          className="absolute w-28 h-36 rounded-xl"
-          style={{
-            transform: 'translate(2px, 2px) rotate(0.5deg)',
-            background: theme.cardBgAlt,
-            border: `1px solid ${theme.accent}40`,
-            boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
-          }}
-        />
-
-        {/* Top card */}
-        <div className="relative w-28 h-36">
-          <div
-            className="absolute inset-0 rounded-xl overflow-hidden"
-            style={{
-              background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-              border: `2px solid ${theme.accent}`,
-              boxShadow: claimed
-                ? `0 0 20px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.12)`
-                : `0 8px 16px -4px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)`
-            }}
-          >
-            {/* Organic cellular pattern - soft circles like looking through a microscope */}
-            <div className="absolute inset-0 opacity-[0.12]">
-              <div className="absolute top-3 right-4 w-6 h-6 rounded-full border" style={{ borderColor: theme.accent }} />
-              <div className="absolute top-8 right-2 w-3 h-3 rounded-full border" style={{ borderColor: theme.accent }} />
-              <div className="absolute bottom-5 left-3 w-5 h-5 rounded-full border" style={{ borderColor: theme.accent }} />
-              <div className="absolute bottom-3 left-8 w-2 h-2 rounded-full" style={{ background: theme.accent, opacity: 0.4 }} />
-              <div className="absolute top-12 left-4 w-2 h-2 rounded-full" style={{ background: theme.accent, opacity: 0.3 }} />
-            </div>
-          </div>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xs font-semibold text-center px-2 leading-tight whitespace-pre-line" style={{ color: theme.textPrimary }}>{deck.name}</span>
-            {claimed && (
-              <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
-                <span className="text-white text-[10px] font-bold">✓</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </motion.div>
-    )
-  }
-
-  // Health: clinical, clean - top accent line only
-  if (themeId === 'health') {
-    return (
-      <motion.div
-        className="relative cursor-pointer group"
-        onClick={() => onOpen(deck)}
-        whileHover={{ y: -4 }}
-        whileTap={{ scale: 0.98 }}
-        style={{ paddingRight: 6, paddingBottom: 6 }}
-      >
-        {/* Stack layers */}
-        <div
-          className="absolute w-28 h-36 rounded-xl"
-          style={{
-            transform: 'translate(4px, 4px) rotate(2deg)',
-            background: theme.cardBgAlt,
-            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-          }}
-        />
-        <div
-          className="absolute w-28 h-36 rounded-xl"
-          style={{
-            transform: 'translate(2px, 2px) rotate(0.5deg)',
-            background: theme.cardBgAlt,
-            boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
-          }}
-        />
-
-        {/* Top card - top accent line only */}
-        <div className="relative w-28 h-36">
-          <div
-            className="absolute inset-0 rounded-xl overflow-hidden"
-            style={{
-              background: theme.cardBg,
-              boxShadow: claimed
-                ? `0 0 18px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.1)`
-                : `0 8px 16px -4px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)`
-            }}
-          >
-            {/* Top accent line */}
-            <div
-              className="absolute top-0 left-2 right-2 h-[3px] rounded-b"
-              style={{ background: theme.accent }}
-            />
-            {/* Pulse/heartbeat line - soft gray */}
-            <svg className="absolute bottom-3 left-2 right-2 h-4 opacity-20" viewBox="0 0 100 20" preserveAspectRatio="none">
-              <path
-                d="M0,10 L30,10 L35,10 L40,2 L45,18 L50,6 L55,14 L60,10 L100,10"
-                fill="none"
-                stroke="#64748b"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xs font-semibold text-center px-2 leading-tight whitespace-pre-line" style={{ color: theme.textPrimary }}>{deck.name}</span>
-            {claimed && (
-              <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
-                <span className="text-white text-[10px] font-bold">✓</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </motion.div>
-    )
-  }
-
-  // Everyday: cozy café, no border, warm shadow
-  if (themeId === 'everyday') {
-    return (
-      <motion.div
-        className="relative cursor-pointer group"
-        onClick={() => onOpen(deck)}
-        whileHover={{ y: -4 }}
-        whileTap={{ scale: 0.98 }}
-        style={{ paddingRight: 6, paddingBottom: 6 }}
-      >
-        {/* Stack layers */}
-        <div
-          className="absolute w-28 h-36 rounded-xl"
-          style={{
-            transform: 'translate(4px, 4px) rotate(2deg)',
-            background: theme.cardBgAlt,
-            boxShadow: '0 1px 3px rgba(0,0,0,0.06)'
-          }}
-        />
-        <div
-          className="absolute w-28 h-36 rounded-xl"
-          style={{
-            transform: 'translate(2px, 2px) rotate(0.5deg)',
-            background: theme.cardBgAlt,
-            boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
-          }}
-        />
-
-        {/* Top card - no border, warm shadow */}
-        <div className="relative w-28 h-36">
-          <div
-            className="absolute inset-0 rounded-xl overflow-hidden"
-            style={{
-              background: `linear-gradient(145deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-              boxShadow: claimed
-                ? `0 0 20px ${theme.accentGlow}, 0 8px 20px -4px rgba(194, 112, 62, 0.2)`
-                : `0 4px 15px -2px rgba(194, 112, 62, 0.15), 0 8px 20px -4px rgba(0, 0, 0, 0.08)`
-            }}
-          >
-            {/* Subtle texture */}
-            <div
-              className="absolute inset-0 opacity-[0.04]"
-              style={{
-                backgroundImage: `radial-gradient(${theme.accent} 1px, transparent 1px)`,
-                backgroundSize: '6px 6px'
-              }}
-            />
-          </div>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xs font-semibold text-center px-2 leading-tight whitespace-pre-line" style={{ color: theme.textPrimary }}>{deck.name}</span>
-            {claimed && (
-              <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
-                <span className="text-white text-[10px] font-bold">✓</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </motion.div>
-    )
-  }
-
-  // Geography: maps, exploration, atlas - deep ocean border
-  if (themeId === 'geography') {
-    return (
-      <motion.div
-        className="relative cursor-pointer group"
-        onClick={() => onOpen(deck)}
-        whileHover={{ y: -4 }}
-        whileTap={{ scale: 0.98 }}
-        style={{ paddingRight: 6, paddingBottom: 6 }}
-      >
-        {/* Stack layers */}
-        <div
-          className="absolute w-28 h-36 rounded-xl"
-          style={{
-            transform: 'translate(4px, 4px) rotate(2deg)',
-            background: theme.cardBgAlt,
-            border: `1px solid ${theme.accent}40`,
-            boxShadow: '0 1px 2px rgba(0,0,0,0.06)'
-          }}
-        />
-        <div
-          className="absolute w-28 h-36 rounded-xl"
-          style={{
-            transform: 'translate(2px, 2px) rotate(0.5deg)',
-            background: theme.cardBgAlt,
-            border: `1px solid ${theme.accent}40`,
-            boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
-          }}
-        />
-
-        {/* Top card */}
-        <div className="relative w-28 h-36">
-          <div
-            className="absolute inset-0 rounded-xl overflow-hidden"
-            style={{
-              background: `linear-gradient(180deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-              border: `2px solid ${theme.accent}`,
-              boxShadow: claimed
-                ? `0 0 18px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.12)`
-                : `0 8px 16px -4px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)`
-            }}
-          >
-            {/* Topographic lines pattern */}
-            <div
-              className="absolute inset-0 opacity-[0.08]"
-              style={{
-                backgroundImage: `
-                  repeating-linear-gradient(0deg, ${theme.accent} 0px, transparent 1px, transparent 12px),
-                  repeating-linear-gradient(90deg, ${theme.accent} 0px, transparent 1px, transparent 20px)
-                `
-              }}
-            />
-          </div>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xs font-semibold text-center px-2 leading-tight whitespace-pre-line" style={{ color: theme.textPrimary }}>{deck.name}</span>
-            {claimed && (
-              <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
-                <span className="text-white text-[10px] font-bold">✓</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </motion.div>
-    )
-  }
-
-  // Mathematics: graph paper, precision, thin purple border
-  if (themeId === 'mathematics') {
-    return (
-      <motion.div
-        className="relative cursor-pointer group"
-        onClick={() => onOpen(deck)}
-        whileHover={{ y: -4 }}
-        whileTap={{ scale: 0.98 }}
-        style={{ paddingRight: 6, paddingBottom: 6 }}
-      >
-        {/* Stack layers */}
-        <div
-          className="absolute w-28 h-36 rounded-xl"
-          style={{
-            transform: 'translate(4px, 4px) rotate(2deg)',
-            background: theme.cardBgAlt,
-            border: `1px solid ${theme.accent}30`,
-            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-          }}
-        />
-        <div
-          className="absolute w-28 h-36 rounded-xl"
-          style={{
-            transform: 'translate(2px, 2px) rotate(0.5deg)',
-            background: theme.cardBgAlt,
-            border: `1px solid ${theme.accent}30`,
-            boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
-          }}
-        />
-
-        {/* Top card */}
-        <div className="relative w-28 h-36">
-          <div
-            className="absolute inset-0 rounded-xl overflow-hidden"
-            style={{
-              background: theme.cardBg,
-              border: `1.5px solid ${theme.accent}`,
-              boxShadow: claimed
-                ? `0 0 15px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.1)`
-                : `0 8px 16px -4px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)`
-            }}
-          >
-            {/* Faint grid pattern - graph paper */}
-            <div
-              className="absolute inset-0 opacity-[0.08]"
-              style={{
-                backgroundImage: `
-                  linear-gradient(${theme.accent} 1px, transparent 1px),
-                  linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)
-                `,
-                backgroundSize: '10px 10px'
-              }}
-            />
-          </div>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xs font-semibold text-center px-2 leading-tight whitespace-pre-line" style={{ color: theme.textPrimary }}>{deck.name}</span>
-            {claimed && (
-              <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
-                <span className="text-white text-[10px] font-bold">✓</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </motion.div>
-    )
-  }
-
-  // People: portrait gallery, warm amber/copper border
-  if (themeId === 'people') {
-    return (
-      <motion.div
-        className="relative cursor-pointer group"
-        onClick={() => onOpen(deck)}
-        whileHover={{ y: -4 }}
-        whileTap={{ scale: 0.98 }}
-        style={{ paddingRight: 6, paddingBottom: 6 }}
-      >
-        {/* Stack layers */}
-        <div
-          className="absolute w-28 h-36 rounded-xl"
-          style={{
-            transform: 'translate(4px, 4px) rotate(2deg)',
-            background: theme.cardBgAlt,
-            border: `1px solid ${theme.accent}40`,
-            boxShadow: '0 1px 2px rgba(0,0,0,0.06)'
-          }}
-        />
-        <div
-          className="absolute w-28 h-36 rounded-xl"
-          style={{
-            transform: 'translate(2px, 2px) rotate(0.5deg)',
-            background: theme.cardBgAlt,
-            border: `1px solid ${theme.accent}40`,
-            boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
-          }}
-        />
-
-        {/* Top card */}
-        <div className="relative w-28 h-36">
-          <div
-            className="absolute inset-0 rounded-xl overflow-hidden"
-            style={{
-              background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-              border: `2px solid ${theme.accent}`,
-              boxShadow: claimed
-                ? `0 0 18px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.12)`
-                : `0 8px 16px -4px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)`
-            }}
-          />
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xs font-semibold text-center px-2 leading-tight whitespace-pre-line" style={{ color: theme.textPrimary }}>{deck.name}</span>
-            {claimed && (
-              <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
-                <span className="text-white text-[10px] font-bold">✓</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </motion.div>
-    )
-  }
-
-  // Philosophy: cosmic, ethereal glow, no hard border
-  if (themeId === 'philosophy') {
-    return (
-      <motion.div
-        className="relative cursor-pointer group"
-        onClick={() => onOpen(deck)}
-        whileHover={{ y: -4 }}
-        whileTap={{ scale: 0.98 }}
-        style={{ paddingRight: 6, paddingBottom: 6 }}
-      >
-        {/* Stack layers - dark */}
-        <div
-          className="absolute w-28 h-36 rounded-xl"
-          style={{
-            transform: 'translate(4px, 4px) rotate(2deg)',
-            background: theme.cardBgAlt,
-            boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
-          }}
-        />
-        <div
-          className="absolute w-28 h-36 rounded-xl"
-          style={{
-            transform: 'translate(2px, 2px) rotate(0.5deg)',
-            background: theme.cardBgAlt,
-            boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
-          }}
-        />
-
-        {/* Top card - ethereal glow, no border */}
-        <div className="relative w-28 h-36">
-          <div
-            className="absolute inset-0 rounded-xl overflow-hidden"
-            style={{
-              background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-              boxShadow: claimed
-                ? `0 0 25px ${theme.accentGlow}, 0 8px 20px -4px rgba(0, 0, 0, 0.4)`
-                : `0 0 15px ${theme.accentGlow}, 0 8px 20px -4px rgba(0, 0, 0, 0.3)`
-            }}
-          >
-            {/* Celestial dots - stars */}
-            <div className="absolute inset-0 opacity-30">
-              <div className="absolute top-3 right-4 w-1 h-1 rounded-full" style={{ background: theme.accent }} />
-              <div className="absolute top-6 right-8 w-0.5 h-0.5 rounded-full" style={{ background: theme.accent }} />
-              <div className="absolute top-10 right-3 w-1 h-1 rounded-full" style={{ background: theme.accent }} />
-              <div className="absolute bottom-6 left-3 w-0.5 h-0.5 rounded-full" style={{ background: theme.accent }} />
-              <div className="absolute bottom-10 left-6 w-1 h-1 rounded-full" style={{ background: theme.accent }} />
-              <div className="absolute top-8 left-4 w-0.5 h-0.5 rounded-full" style={{ background: theme.accent }} />
-            </div>
-          </div>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xs font-semibold text-center px-2 leading-tight whitespace-pre-line" style={{ color: theme.textPrimary }}>{deck.name}</span>
-            {claimed && (
-              <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
-                <span className="text-indigo-900 text-[10px] font-bold">✓</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </motion.div>
-    )
-  }
-
-  // Physical Sciences: blueprint, accent line on left only
-  if (themeId === 'physics') {
-    return (
-      <motion.div
-        className="relative cursor-pointer group"
-        onClick={() => onOpen(deck)}
-        whileHover={{ y: -4 }}
-        whileTap={{ scale: 0.98 }}
-        style={{ paddingRight: 6, paddingBottom: 6 }}
-      >
-        {/* Stack layers */}
-        <div
-          className="absolute w-28 h-36 rounded-xl"
-          style={{
-            transform: 'translate(4px, 4px) rotate(2deg)',
-            background: theme.cardBgAlt,
-            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-          }}
-        />
-        <div
-          className="absolute w-28 h-36 rounded-xl"
-          style={{
-            transform: 'translate(2px, 2px) rotate(0.5deg)',
-            background: theme.cardBgAlt,
-            boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
-          }}
-        />
-
-        {/* Top card - accent line on left only */}
-        <div className="relative w-28 h-36">
-          <div
-            className="absolute inset-0 rounded-xl overflow-hidden"
-            style={{
-              background: theme.cardBg,
-              boxShadow: claimed
-                ? `0 0 15px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.1)`
-                : `0 8px 16px -4px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)`
-            }}
-          >
-            {/* Left accent line */}
-            <div
-              className="absolute top-2 bottom-2 left-0 w-[3px] rounded-r"
-              style={{ background: theme.accent }}
-            />
-            {/* Blueprint/schematic lines */}
-            <div
-              className="absolute inset-0 opacity-[0.06]"
-              style={{
-                backgroundImage: `
-                  linear-gradient(${theme.accent} 1px, transparent 1px),
-                  linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)
-                `,
-                backgroundSize: '14px 14px'
-              }}
-            />
-          </div>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xs font-semibold text-center px-2 leading-tight whitespace-pre-line" style={{ color: theme.textPrimary }}>{deck.name}</span>
-            {claimed && (
-              <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
-                <span className="text-white text-[10px] font-bold">✓</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </motion.div>
-    )
-  }
-
-  // Society: civic, structured, slate border
-  if (themeId === 'society') {
-    return (
-      <motion.div
-        className="relative cursor-pointer group"
-        onClick={() => onOpen(deck)}
-        whileHover={{ y: -4 }}
-        whileTap={{ scale: 0.98 }}
-        style={{ paddingRight: 6, paddingBottom: 6 }}
-      >
-        {/* Stack layers */}
-        <div
-          className="absolute w-28 h-36 rounded-xl"
-          style={{
-            transform: 'translate(4px, 4px) rotate(2deg)',
-            background: theme.cardBgAlt,
-            border: `1px solid ${theme.accent}40`,
-            boxShadow: '0 1px 2px rgba(0,0,0,0.06)'
-          }}
-        />
-        <div
-          className="absolute w-28 h-36 rounded-xl"
-          style={{
-            transform: 'translate(2px, 2px) rotate(0.5deg)',
-            background: theme.cardBgAlt,
-            border: `1px solid ${theme.accent}40`,
-            boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
-          }}
-        />
-
-        {/* Top card */}
-        <div className="relative w-28 h-36">
-          <div
-            className="absolute inset-0 rounded-xl overflow-hidden"
-            style={{
-              background: theme.cardBg,
-              border: `2px solid ${theme.accent}`,
-              boxShadow: claimed
-                ? `0 0 15px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.12)`
-                : `0 8px 16px -4px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)`
-            }}
-          >
-            {/* Architectural grid */}
-            <div
-              className="absolute inset-0 opacity-[0.05]"
-              style={{
-                backgroundImage: `
-                  linear-gradient(${theme.accent} 1px, transparent 1px),
-                  linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)
-                `,
-                backgroundSize: '16px 16px'
-              }}
-            />
-          </div>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xs font-semibold text-center px-2 leading-tight whitespace-pre-line" style={{ color: theme.textPrimary }}>{deck.name}</span>
-            {claimed && (
-              <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
-                <span className="text-white text-[10px] font-bold">✓</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </motion.div>
-    )
-  }
-
-  // History: warm parchment with grid pattern and top accent (no border)
-  if (themeId === 'history') {
-    return (
-      <motion.div
-        className="relative cursor-pointer group"
-        onClick={() => onOpen(deck)}
-        whileHover={{ y: -4 }}
-        whileTap={{ scale: 0.98 }}
-        style={{ paddingRight: 6, paddingBottom: 6 }}
-      >
-        {/* Stack layers */}
-        <div
-          className="absolute w-28 h-36 rounded-xl"
-          style={{
-            transform: 'translate(4px, 4px) rotate(2deg)',
-            background: theme.cardBgAlt,
-            boxShadow: '0 1px 2px rgba(0,0,0,0.08)'
-          }}
-        />
-        <div
-          className="absolute w-28 h-36 rounded-xl"
-          style={{
-            transform: 'translate(2px, 2px) rotate(0.5deg)',
-            background: theme.cardBgAlt,
-            boxShadow: '0 1px 2px rgba(0,0,0,0.06)'
-          }}
-        />
-
-        {/* Top card */}
-        <div className="relative w-28 h-36">
-          <div
-            className="absolute inset-0 rounded-xl overflow-hidden"
-            style={{
-              background: theme.cardBg,
-              boxShadow: claimed
-                ? `0 0 20px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.4)`
-                : `0 8px 16px -4px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.2)`
-            }}
-          >
-            {/* Grid pattern overlay */}
-            <div
-              className="absolute inset-0 opacity-10"
-              style={{
-                backgroundImage: `linear-gradient(${theme.accent} 1px, transparent 1px), linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)`,
-                backgroundSize: '12px 12px'
-              }}
-            />
-            {/* Accent line at top */}
-            <div
-              className="absolute top-0 left-0 right-0 h-1"
-              style={{ background: `linear-gradient(90deg, transparent, ${theme.accent}, transparent)` }}
-            />
-          </div>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xs font-semibold text-center px-2 leading-tight whitespace-pre-line" style={{ color: theme.textPrimary }}>{deck.name}</span>
-            {claimed && (
-              <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
-                <span className="text-white text-[10px] font-bold">✓</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </motion.div>
-    )
-  }
-
-  // Default: original gradient border style
   return (
     <motion.div
       className="relative cursor-pointer group"
       onClick={() => onOpen(deck)}
-      whileHover={{ y: -4 }}
+      whileHover={{ y: -4, boxShadow: theme.shadowHover }}
       whileTap={{ scale: 0.98 }}
       style={{ paddingRight: 6, paddingBottom: 6 }}
     >
-      {/* Stack layers - cards peeking out underneath with slight rotation */}
+      {/* Stack layers - subtle cards underneath */}
       <div
-        className="absolute w-28 h-36 rounded-xl bg-white border border-gray-300"
+        className="absolute w-28 h-36 rounded-xl"
         style={{
           transform: 'translate(4px, 4px) rotate(2deg)',
-          boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+          background: theme.cardBg,
+          border: `1px solid ${theme.border}`,
+          boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
         }}
       />
       <div
-        className="absolute w-28 h-36 rounded-xl bg-white border border-gray-300"
+        className="absolute w-28 h-36 rounded-xl"
         style={{
           transform: 'translate(2px, 2px) rotate(0.5deg)',
-          boxShadow: '0 1px 2px rgba(0,0,0,0.08)'
+          background: theme.cardBg,
+          border: `1px solid ${theme.border}`,
+          boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
         }}
       />
 
-      {/* Top card */}
+      {/* Top card - clean design with left accent stripe */}
       <div className="relative w-28 h-36">
         <div
-          className={`
-            absolute inset-0 rounded-xl
-            bg-gradient-to-br ${deck.gradient}
-            transition-all duration-200
-            ${claimed ? 'ring-4 ring-yellow-400' : ''}
-          `}
+          className="absolute inset-0 rounded-xl overflow-hidden"
           style={{
-            boxShadow: `
-              0 8px 16px -4px rgba(0, 0, 0, 0.2),
-              0 4px 6px -2px rgba(0, 0, 0, 0.1),
-              inset 0 1px 0 rgba(255, 255, 255, 0.15)
-            `
+            background: theme.cardBg,
+            border: `1px solid ${theme.border}`,
+            boxShadow: claimed ? theme.shadowHover : theme.shadow,
           }}
-        />
-        <div className="absolute inset-[3px] rounded-lg bg-white flex flex-col items-center justify-center">
-          <span className="text-xs font-semibold text-gray-800 text-center px-2 leading-tight">{deck.name}</span>
+        >
+          {/* Left accent stripe */}
+          <div
+            className="absolute top-0 bottom-0 left-0 rounded-l-xl"
+            style={{
+              width: theme.accentWidth,
+              background: claimed ? theme.accent : theme.accentFaded,
+            }}
+          />
+        </div>
+        <div className="absolute inset-0 flex flex-col items-center justify-center pl-1">
+          <span className="text-xs font-semibold text-center px-2 leading-tight whitespace-pre-line" style={{ color: theme.textPrimary }}>{deck.name}</span>
           {claimed && (
-            <div className="absolute top-1 right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center">
-              <span className="text-white text-[10px]">✓</span>
+            <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
+              <span className="text-white text-[10px] font-bold">✓</span>
             </div>
           )}
         </div>
@@ -1733,238 +504,33 @@ function Deck({ deck, onOpen, claimed, rootCategoryId = null }) {
 // Overview card component - same size as deck cards (w-28 h-36)
 // Matches the visual style of CategoryCard for each theme
 // Helper to get card styles for a category
+// Get overview card styling - clean, minimal design
+// White/light gray background, accent stripe on left, subtle shadow
 function getOverviewCardStyles(rootCategoryId, theme, claimed, tint) {
-  const styles = {
-    technology: {
-      background: theme.cardBg,
-      boxShadow: claimed
-        ? `0 0 20px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.4)`
-        : `0 8px 16px -4px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.2)`
-    },
-    history: {
-      background: theme.cardBg,
-      boxShadow: claimed
-        ? `0 0 20px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.4)`
-        : `0 8px 16px -4px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.2)`
-    },
-    arts: {
-      background: `linear-gradient(180deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-      boxShadow: claimed
-        ? `0 0 20px ${theme.accentGlow}, 0 8px 16px -4px rgba(212, 98, 122, 0.15)`
-        : `0 4px 12px -2px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.05)`
-    },
-    biology: {
-      background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-      border: `2px solid ${theme.accent}`,
-      boxShadow: claimed
-        ? `0 0 20px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.12)`
-        : `0 8px 16px -4px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)`
-    },
-    health: {
-      background: theme.cardBg,
-      boxShadow: claimed
-        ? `0 0 18px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.1)`
-        : `0 8px 16px -4px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)`
-    },
-    everyday: {
-      background: `linear-gradient(145deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-      boxShadow: claimed
-        ? `0 0 20px ${theme.accentGlow}, 0 8px 20px -4px rgba(194, 112, 62, 0.2)`
-        : `0 4px 15px -2px rgba(194, 112, 62, 0.15), 0 8px 20px -4px rgba(0, 0, 0, 0.08)`
-    },
-    geography: {
-      background: `linear-gradient(180deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-      border: `2px solid ${theme.accent}`,
-      boxShadow: claimed
-        ? `0 0 18px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.12)`
-        : `0 8px 16px -4px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)`
-    },
-    mathematics: {
-      background: theme.cardBg,
-      border: `1.5px solid ${theme.accent}`,
-      boxShadow: claimed
-        ? `0 0 15px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.1)`
-        : `0 8px 16px -4px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)`
-    },
-    people: {
-      background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-      border: `2px solid ${theme.accent}`,
-      boxShadow: claimed
-        ? `0 0 18px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.12)`
-        : `0 8px 16px -4px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)`
-    },
-    philosophy: {
-      background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-      boxShadow: claimed
-        ? `0 0 25px ${theme.accentGlow}, 0 8px 20px -4px rgba(0, 0, 0, 0.4)`
-        : `0 0 15px ${theme.accentGlow}, 0 8px 20px -4px rgba(0, 0, 0, 0.3)`
-    },
-    physics: {
-      background: theme.cardBg,
-      boxShadow: claimed
-        ? `0 0 15px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.1)`
-        : `0 8px 16px -4px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)`
-    },
-    society: {
-      background: theme.cardBg,
-      border: `2px solid ${theme.accent}`,
-      boxShadow: claimed
-        ? `0 0 15px ${theme.accentGlow}, 0 8px 16px -4px rgba(0, 0, 0, 0.12)`
-        : `0 8px 16px -4px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)`
-    }
-  }
-
-  return styles[rootCategoryId] || {
-    background: `linear-gradient(135deg, #ffffff 0%, ${tint} 100%)`,
-    border: '2px solid #e5e7eb',
-    boxShadow: claimed
-      ? `0 0 12px rgba(0, 0, 0, 0.15), 0 8px 16px -4px rgba(0, 0, 0, 0.15)`
-      : `0 8px 16px -4px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)`
+  return {
+    background: theme.cardBg,
+    border: `1px solid ${theme.border}`,
+    boxShadow: claimed ? theme.shadowHover : theme.shadow,
+    borderRadius: theme.radius,
   }
 }
 
-// Helper to render card decorations for a category
-function renderOverviewCardDecorations(rootCategoryId, theme) {
-  switch (rootCategoryId) {
-    case 'technology':
-    case 'history':
-      return (
-        <>
-          <div
-            className="absolute inset-0 opacity-10"
-            style={{
-              backgroundImage: `linear-gradient(${theme.accent} 1px, transparent 1px), linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)`,
-              backgroundSize: '12px 12px'
-            }}
-          />
-          <div
-            className="absolute top-0 left-0 right-0 h-1"
-            style={{ background: `linear-gradient(90deg, transparent, ${theme.accent}, transparent)` }}
-          />
-        </>
-      )
-    case 'biology':
-      return (
-        <div className="absolute inset-0 opacity-[0.12]">
-          <div className="absolute top-3 right-4 w-6 h-6 rounded-full border" style={{ borderColor: theme.accent }} />
-          <div className="absolute top-8 right-2 w-3 h-3 rounded-full border" style={{ borderColor: theme.accent }} />
-          <div className="absolute bottom-5 left-3 w-5 h-5 rounded-full border" style={{ borderColor: theme.accent }} />
-          <div className="absolute bottom-3 left-8 w-2 h-2 rounded-full" style={{ background: theme.accent, opacity: 0.4 }} />
-          <div className="absolute top-12 left-4 w-2 h-2 rounded-full" style={{ background: theme.accent, opacity: 0.3 }} />
-        </div>
-      )
-    case 'health':
-      return (
-        <>
-          <div
-            className="absolute top-0 left-2 right-2 h-[3px] rounded-b"
-            style={{ background: theme.accent }}
-          />
-          <svg className="absolute bottom-3 left-2 right-2 h-4 opacity-20" viewBox="0 0 100 20" preserveAspectRatio="none">
-            <path
-              d="M0,10 L30,10 L35,10 L40,2 L45,18 L50,6 L55,14 L60,10 L100,10"
-              fill="none"
-              stroke="#64748b"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </>
-      )
-    case 'everyday':
-      return (
-        <div
-          className="absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage: `radial-gradient(${theme.accent} 1px, transparent 1px)`,
-            backgroundSize: '6px 6px'
-          }}
-        />
-      )
-    case 'geography':
-      return (
-        <div
-          className="absolute inset-0 opacity-[0.08]"
-          style={{
-            backgroundImage: `
-              repeating-linear-gradient(0deg, ${theme.accent} 0px, transparent 1px, transparent 12px),
-              repeating-linear-gradient(90deg, ${theme.accent} 0px, transparent 1px, transparent 20px)
-            `
-          }}
-        />
-      )
-    case 'mathematics':
-      return (
-        <div
-          className="absolute inset-0 opacity-[0.08]"
-          style={{
-            backgroundImage: `
-              linear-gradient(${theme.accent} 1px, transparent 1px),
-              linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)
-            `,
-            backgroundSize: '10px 10px'
-          }}
-        />
-      )
-    case 'philosophy':
-      return (
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute top-3 right-4 w-1 h-1 rounded-full" style={{ background: theme.accent }} />
-          <div className="absolute top-6 right-8 w-0.5 h-0.5 rounded-full" style={{ background: theme.accent }} />
-          <div className="absolute top-10 right-3 w-1 h-1 rounded-full" style={{ background: theme.accent }} />
-          <div className="absolute bottom-6 left-3 w-0.5 h-0.5 rounded-full" style={{ background: theme.accent }} />
-          <div className="absolute bottom-10 left-6 w-1 h-1 rounded-full" style={{ background: theme.accent }} />
-          <div className="absolute top-8 left-4 w-0.5 h-0.5 rounded-full" style={{ background: theme.accent }} />
-        </div>
-      )
-    case 'physics':
-      return (
-        <>
-          <div
-            className="absolute top-2 bottom-2 left-0 w-[3px] rounded-r"
-            style={{ background: theme.accent }}
-          />
-          <div
-            className="absolute inset-0 opacity-[0.06]"
-            style={{
-              backgroundImage: `
-                linear-gradient(${theme.accent} 1px, transparent 1px),
-                linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)
-              `,
-              backgroundSize: '14px 14px'
-            }}
-          />
-        </>
-      )
-    case 'society':
-      return (
-        <div
-          className="absolute inset-0 opacity-[0.05]"
-          style={{
-            backgroundImage: `
-              linear-gradient(${theme.accent} 1px, transparent 1px),
-              linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)
-            `,
-            backgroundSize: '16px 16px'
-          }}
-        />
-      )
-    default:
-      return null
-  }
+// Render left accent stripe for overview card
+function renderOverviewCardDecorations(rootCategoryId, theme, claimed = false) {
+  return (
+    <div
+      className="absolute top-0 bottom-0 left-0 rounded-l-[12px]"
+      style={{
+        width: theme.accentWidth,
+        background: claimed ? theme.accent : theme.accentFaded,
+      }}
+    />
+  )
 }
 
 function OverviewCard({ card, index, total, onClaim, claimed, onRead, tint = '#fafbfc', rootCategoryId = null, isRevealed = true }) {
   const theme = getCategoryTheme(rootCategoryId)
-  const isThemed = hasCustomTheme(rootCategoryId)
   const cardStyles = getOverviewCardStyles(rootCategoryId, theme, claimed, tint)
-
-  // Get text colors based on theme
-  const textPrimary = isThemed ? theme.textPrimary : '#1f2937'
-  const textSecondary = isThemed ? theme.textSecondary : '#9ca3af'
-  const checkBg = isThemed ? theme.accent : '#6b7280'
-  const checkText = rootCategoryId === 'technology' ? 'text-slate-900' : (rootCategoryId === 'philosophy' ? 'text-indigo-900' : 'text-white')
 
   return (
     <div
@@ -1986,7 +552,7 @@ function OverviewCard({ card, index, total, onClaim, claimed, onRead, tint = '#f
       >
         {/* Front face (revealed) */}
         <motion.div
-          className="absolute inset-0 rounded-xl cursor-pointer flex flex-col items-center justify-center p-3 overflow-hidden"
+          className="absolute inset-0 rounded-xl cursor-pointer flex flex-col items-center justify-center p-3 pl-4 overflow-hidden"
           style={{
             ...cardStyles,
             backfaceVisibility: 'hidden',
@@ -1994,14 +560,15 @@ function OverviewCard({ card, index, total, onClaim, claimed, onRead, tint = '#f
             zIndex: isRevealed ? 2 : 1,
           }}
           onClick={() => isRevealed && onRead(card)}
-          whileHover={isRevealed ? { y: -6 } : {}}
+          whileHover={isRevealed ? { y: -4, boxShadow: theme.shadowHover } : {}}
           whileTap={isRevealed ? { scale: 0.98 } : {}}
         >
-          {renderOverviewCardDecorations(rootCategoryId, theme)}
-          <span className="text-xs font-semibold text-center leading-tight px-1 relative z-10" style={{ color: textPrimary }}>{card.title}</span>
+          {/* Left accent stripe */}
+          {renderOverviewCardDecorations(rootCategoryId, theme, claimed)}
+          <span className="text-xs font-semibold text-center leading-tight px-1 relative z-10" style={{ color: theme.textPrimary }}>{card.title}</span>
           {claimed && (
-            <div className="absolute top-1 left-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: checkBg }}>
-              <span className={`${checkText} text-[10px] font-bold`}>✓</span>
+            <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: theme.accent }}>
+              <span className="text-white text-[10px] font-bold">✓</span>
             </div>
           )}
         </motion.div>
@@ -2018,13 +585,14 @@ function OverviewCard({ card, index, total, onClaim, claimed, onRead, tint = '#f
             zIndex: isRevealed ? 1 : 2,
           }}
         >
-          {renderOverviewCardDecorations(rootCategoryId, theme)}
+          {/* Left accent stripe */}
+          {renderOverviewCardDecorations(rootCategoryId, theme, false)}
           {/* Subtle shimmer effect */}
           <div className="absolute inset-0 overflow-hidden rounded-xl">
             <div
               className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite]"
               style={{
-                background: `linear-gradient(90deg, transparent, ${isThemed ? theme.accent : '#ffffff'}20, transparent)`
+                background: `linear-gradient(90deg, transparent, ${theme.accent}20, transparent)`
               }}
             />
           </div>
@@ -2038,127 +606,49 @@ function OverviewCard({ card, index, total, onClaim, claimed, onRead, tint = '#f
 // size: 'small' (drawer preview), 'medium' (expanded grid), 'large' (future use)
 function MiniCollectionCard({ card, rootCategoryId, style = {}, size = 'small', onClick }) {
   const theme = getCategoryTheme(rootCategoryId)
-  const isThemed = hasCustomTheme(rootCategoryId)
 
-  // Size configurations
+  // Size configurations - with accent stripe width scaling
   const sizeConfig = {
-    small: { width: 'w-12', height: 'h-16', text: 'text-[6px]', check: 'w-2 h-2 text-[5px]', padding: 'p-1' },
-    medium: { width: 'w-20', height: 'h-28', text: 'text-[9px]', check: 'w-3 h-3 text-[7px]', padding: 'p-2' },
-    large: { width: 'w-28', height: 'h-36', text: 'text-xs', check: 'w-4 h-4 text-[10px]', padding: 'p-3' },
+    small: { width: 'w-12', height: 'h-16', text: 'text-[6px]', check: 'w-2 h-2 text-[5px]', padding: 'p-1 pl-2', stripeWidth: '3px' },
+    medium: { width: 'w-20', height: 'h-28', text: 'text-[9px]', check: 'w-3 h-3 text-[7px]', padding: 'p-2 pl-3', stripeWidth: '4px' },
+    large: { width: 'w-28', height: 'h-36', text: 'text-xs', check: 'w-4 h-4 text-[10px]', padding: 'p-3 pl-4', stripeWidth: '5px' },
   }
   const config = sizeConfig[size] || sizeConfig.small
-
-  // Simplified card styles for mini version
-  const getMiniCardStyles = () => {
-    const baseStyles = {
-      technology: {
-        background: theme.cardBg,
-        borderColor: theme.accent,
-      },
-      history: {
-        background: theme.cardBg,
-        borderColor: theme.accent,
-      },
-      arts: {
-        background: `linear-gradient(180deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-        borderColor: theme.accent,
-      },
-      biology: {
-        background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-        borderColor: theme.accent,
-      },
-      health: {
-        background: theme.cardBg,
-        borderColor: theme.accent,
-      },
-      everyday: {
-        background: `linear-gradient(145deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-        borderColor: theme.accent,
-      },
-      geography: {
-        background: `linear-gradient(180deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-        borderColor: theme.accent,
-      },
-      mathematics: {
-        background: theme.cardBg,
-        borderColor: theme.accent,
-      },
-      people: {
-        background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-        borderColor: theme.accent,
-      },
-      philosophy: {
-        background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-        borderColor: theme.accent,
-      },
-      physics: {
-        background: theme.cardBg,
-        borderColor: theme.accent,
-      },
-      society: {
-        background: theme.cardBg,
-        borderColor: theme.accent,
-      }
-    }
-
-    return baseStyles[rootCategoryId] || {
-      background: '#ffffff',
-      borderColor: '#e5e7eb',
-    }
-  }
-
-  const cardStyles = getMiniCardStyles()
-  const textColor = isThemed ? theme.textPrimary : '#1f2937'
 
   const Wrapper = onClick ? 'button' : 'div'
 
   return (
     <Wrapper
-      className={`${config.width} ${config.height} rounded-lg border-2 flex flex-col items-center justify-center ${config.padding} overflow-hidden relative ${onClick ? 'cursor-pointer hover:scale-105 transition-transform' : ''}`}
+      className={`${config.width} ${config.height} rounded-lg flex flex-col items-center justify-center ${config.padding} overflow-hidden relative ${onClick ? 'cursor-pointer hover:scale-105 transition-transform' : ''}`}
       style={{
-        background: cardStyles.background,
-        borderColor: cardStyles.borderColor,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
+        background: theme.cardBg,
+        border: `1px solid ${theme.border}`,
+        boxShadow: theme.shadow,
+        borderRadius: '8px',
         ...style
       }}
       onClick={onClick}
     >
-      {/* Mini decorations based on category */}
-      {rootCategoryId === 'technology' && (
-        <div className="absolute inset-0 overflow-hidden opacity-20">
-          <div className="absolute top-0 right-0 w-4 h-4 border-l border-b" style={{ borderColor: theme.accent }} />
-          <div className="absolute bottom-0 left-0 w-4 h-4 border-t border-r" style={{ borderColor: theme.accent }} />
-        </div>
-      )}
-      {rootCategoryId === 'history' && (
-        <div className="absolute inset-0 overflow-hidden opacity-30">
-          <div className="absolute top-1 left-1 w-1 h-1 rounded-full" style={{ background: theme.accent }} />
-          <div className="absolute bottom-1 right-1 w-1 h-1 rounded-full" style={{ background: theme.accent }} />
-        </div>
-      )}
-      {rootCategoryId === 'arts' && (
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-0.5" style={{ background: `linear-gradient(90deg, ${theme.accent}40, transparent)` }} />
-          <div className="absolute bottom-0 right-0 w-full h-0.5" style={{ background: `linear-gradient(90deg, transparent, ${theme.accent}40)` }} />
-        </div>
-      )}
-      {rootCategoryId === 'philosophy' && (
-        <div className="absolute inset-0 overflow-hidden opacity-20">
-          <div className="absolute inset-1 rounded border border-dashed" style={{ borderColor: theme.accent }} />
-        </div>
-      )}
+      {/* Left accent stripe */}
+      <div
+        className="absolute top-0 bottom-0 left-0 rounded-l-lg"
+        style={{
+          width: config.stripeWidth,
+          background: theme.accent,
+        }}
+      />
 
       {/* Card title - truncated */}
       <span
         className={`${config.text} font-semibold text-center leading-tight px-0.5 relative z-10 line-clamp-3`}
-        style={{ color: textColor }}
+        style={{ color: theme.textPrimary }}
       >
         {card.title}
       </span>
 
       {/* Claimed checkmark */}
       <div
-        className={`absolute top-0.5 left-0.5 ${config.check} rounded-full flex items-center justify-center`}
+        className={`absolute top-0.5 right-0.5 ${config.check} rounded-full flex items-center justify-center`}
         style={{ background: theme.accent }}
       >
         <span className="text-white font-bold">✓</span>
@@ -2167,79 +657,29 @@ function MiniCollectionCard({ card, rootCategoryId, style = {}, size = 'small', 
   )
 }
 
-// Locked card placeholder for locked tiers
+// Locked card placeholder for locked tiers - clean design
 function LockedCard({ index, rootCategoryId = null }) {
   const theme = getCategoryTheme(rootCategoryId)
 
-  // Technology themed locked card
-  if (rootCategoryId === 'technology') {
-    return (
-      <motion.div
-        className="relative w-28 h-36 rounded-xl border-2 border-dashed flex flex-col items-center justify-center p-3 opacity-50"
-        style={{
-          background: theme.cardBgAlt,
-          borderColor: '#334155'
-        }}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 0.5, y: 0 }}
-        transition={{ delay: index * 0.05 }}
-      >
-        <span className="text-xl mb-1">🔒</span>
-        <span className="text-xs text-center" style={{ color: theme.textSecondary }}>Locked</span>
-      </motion.div>
-    )
-  }
-
-  // History themed locked card
-  if (rootCategoryId === 'history') {
-    return (
-      <motion.div
-        className="relative w-28 h-36 rounded-xl border-2 border-dashed flex flex-col items-center justify-center p-3 opacity-50"
-        style={{
-          background: theme.cardBgAlt,
-          borderColor: `${theme.accent}60`
-        }}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 0.5, y: 0 }}
-        transition={{ delay: index * 0.05 }}
-      >
-        <span className="text-xl mb-1">🔒</span>
-        <span className="text-xs text-center" style={{ color: theme.textSecondary }}>Locked</span>
-      </motion.div>
-    )
-  }
-
-  // Arts themed locked card - soft gradient, airy
-  if (rootCategoryId === 'arts') {
-    return (
-      <motion.div
-        className="relative w-28 h-36 rounded-xl flex flex-col items-center justify-center p-3 opacity-50 overflow-hidden"
-        style={{
-          background: `linear-gradient(180deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-          boxShadow: `0 4px 10px -2px ${theme.accentGlow}`
-        }}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 0.5, y: 0 }}
-        transition={{ delay: index * 0.05 }}
-      >
-        <span className="text-xl mb-1">🔒</span>
-        <span className="text-xs text-center" style={{ color: theme.textSecondary }}>Locked</span>
-      </motion.div>
-    )
-  }
-
-  // Default/themed locked card
   return (
     <motion.div
-      className="relative w-28 h-36 rounded-xl border-2 border-dashed flex flex-col items-center justify-center p-3 opacity-50"
+      className="relative w-28 h-36 rounded-xl border-2 border-dashed flex flex-col items-center justify-center p-3 pl-4 opacity-50 overflow-hidden"
       style={{
-        background: theme.cardBgAlt,
-        borderColor: `${theme.accent}60`
+        background: theme.cardBg,
+        borderColor: theme.border,
       }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 0.5, y: 0 }}
       transition={{ delay: index * 0.05 }}
     >
+      {/* Faded left accent stripe */}
+      <div
+        className="absolute top-0 bottom-0 left-0 rounded-l-xl"
+        style={{
+          width: theme.accentWidth,
+          background: theme.accentFaded,
+        }}
+      />
       <span className="text-xl mb-1">🔒</span>
       <span className="text-xs text-center" style={{ color: theme.textSecondary }}>Locked</span>
     </motion.div>
@@ -2262,305 +702,26 @@ function CategoryCard({ deck, tint = '#fafbfc', rootCategoryId = null }) {
     setIsFlipped(!isFlipped)
   }
 
-  // Get themed card styling (same as child deck cards)
+  // Get card styling - clean, minimal design with left accent stripe
   const getCardStyle = () => {
-    if (!isThemed) {
-      return {
-        background: `linear-gradient(135deg, #ffffff 0%, ${tint} 100%)`,
-        border: '2px solid #e5e7eb',
-        boxShadow: '0 8px 16px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.06)'
-      }
-    }
-
-    // Technology - dark, no border
-    if (rootCategoryId === 'technology') {
-      return {
-        background: theme.cardBg,
-        boxShadow: `0 8px 16px rgba(0, 0, 0, 0.4), 0 4px 8px rgba(0, 0, 0, 0.2)`
-      }
-    }
-
-    // History - warm, no border
-    if (rootCategoryId === 'history') {
-      return {
-        background: theme.cardBg,
-        boxShadow: `0 8px 16px rgba(0, 0, 0, 0.4), 0 4px 8px rgba(0, 0, 0, 0.2)`
-      }
-    }
-
-    // Arts - soft gradient, no border
-    if (rootCategoryId === 'arts') {
-      return {
-        background: `linear-gradient(180deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-        boxShadow: `0 4px 12px -2px ${theme.accentGlow}, 0 8px 16px rgba(0, 0, 0, 0.05)`
-      }
-    }
-
-    // Biology - green border
-    if (rootCategoryId === 'biology') {
-      return {
-        background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-        border: `2px solid ${theme.accent}`,
-        boxShadow: `0 8px 16px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04)`
-      }
-    }
-
-    // Health - clean, no border
-    if (rootCategoryId === 'health') {
-      return {
-        background: theme.cardBg,
-        boxShadow: `0 8px 16px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04)`
-      }
-    }
-
-    // Everyday - warm, no border
-    if (rootCategoryId === 'everyday') {
-      return {
-        background: `linear-gradient(145deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-        boxShadow: `0 4px 15px -2px rgba(194, 112, 62, 0.15), 0 8px 16px rgba(0, 0, 0, 0.08)`
-      }
-    }
-
-    // Geography - blue border
-    if (rootCategoryId === 'geography') {
-      return {
-        background: `linear-gradient(180deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-        border: `2px solid ${theme.accent}`,
-        boxShadow: `0 8px 16px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04)`
-      }
-    }
-
-    // Mathematics - thin purple border
-    if (rootCategoryId === 'mathematics') {
-      return {
-        background: theme.cardBg,
-        border: `1.5px solid ${theme.accent}`,
-        boxShadow: `0 8px 16px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04)`
-      }
-    }
-
-    // People - copper border
-    if (rootCategoryId === 'people') {
-      return {
-        background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-        border: `2px solid ${theme.accent}`,
-        boxShadow: `0 8px 16px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04)`
-      }
-    }
-
-    // Philosophy - cosmic, no border
-    if (rootCategoryId === 'philosophy') {
-      return {
-        background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-        boxShadow: `0 0 15px ${theme.accentGlow}, 0 8px 16px rgba(0, 0, 0, 0.3)`
-      }
-    }
-
-    // Physics - clean, no border
-    if (rootCategoryId === 'physics') {
-      return {
-        background: theme.cardBg,
-        boxShadow: `0 8px 16px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04)`
-      }
-    }
-
-    // Society - slate border
-    if (rootCategoryId === 'society') {
-      return {
-        background: theme.cardBg,
-        border: `2px solid ${theme.accent}`,
-        boxShadow: `0 8px 16px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04)`
-      }
-    }
-
-    // Default themed
     return {
-      background: `linear-gradient(135deg, ${theme.cardBg} 0%, ${theme.cardBgAlt} 100%)`,
-      border: `2px solid ${theme.accent}`,
-      boxShadow: `0 8px 16px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04)`
+      background: theme.cardBg,
+      border: `1px solid ${theme.border}`,
+      boxShadow: theme.shadow,
     }
   }
 
-  // Render decorative elements (scaled up for larger card)
+  // Render left accent stripe decoration
   const renderDecorations = () => {
-    if (!isThemed) return null
-
-    // Technology - grid pattern + top accent
-    if (rootCategoryId === 'technology') {
-      return (
-        <>
-          <div
-            className="absolute inset-0 opacity-10 rounded-2xl overflow-hidden"
-            style={{
-              backgroundImage: `linear-gradient(${theme.accent} 1px, transparent 1px), linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)`,
-              backgroundSize: '14px 14px'
-            }}
-          />
-          <div
-            className="absolute top-0 left-0 right-0 h-1.5 rounded-t-2xl"
-            style={{ background: `linear-gradient(90deg, transparent, ${theme.accent}, transparent)` }}
-          />
-        </>
-      )
-    }
-
-    // History - grid pattern + top accent
-    if (rootCategoryId === 'history') {
-      return (
-        <>
-          <div
-            className="absolute inset-0 opacity-10 rounded-2xl overflow-hidden"
-            style={{
-              backgroundImage: `linear-gradient(${theme.accent} 1px, transparent 1px), linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)`,
-              backgroundSize: '14px 14px'
-            }}
-          />
-          <div
-            className="absolute top-0 left-0 right-0 h-1.5 rounded-t-2xl"
-            style={{ background: `linear-gradient(90deg, transparent, ${theme.accent}, transparent)` }}
-          />
-        </>
-      )
-    }
-
-    // Arts - no decorations
-    if (rootCategoryId === 'arts') return null
-
-    // Biology - organic circles
-    if (rootCategoryId === 'biology') {
-      return (
-        <div className="absolute inset-0 opacity-[0.12] pointer-events-none">
-          <div className="absolute top-4 right-6 w-8 h-8 rounded-full border" style={{ borderColor: theme.accent }} />
-          <div className="absolute top-12 right-3 w-4 h-4 rounded-full border" style={{ borderColor: theme.accent }} />
-          <div className="absolute bottom-6 left-4 w-6 h-6 rounded-full border" style={{ borderColor: theme.accent }} />
-          <div className="absolute bottom-4 left-12 w-2.5 h-2.5 rounded-full" style={{ background: theme.accent, opacity: 0.4 }} />
-          <div className="absolute top-16 left-5 w-2.5 h-2.5 rounded-full" style={{ background: theme.accent, opacity: 0.3 }} />
-        </div>
-      )
-    }
-
-    // Health - top accent + heartbeat
-    if (rootCategoryId === 'health') {
-      return (
-        <>
-          <div
-            className="absolute top-0 left-3 right-3 h-1 rounded-b"
-            style={{ background: theme.accent }}
-          />
-          <svg className="absolute bottom-4 left-3 right-3 h-5 opacity-20" viewBox="0 0 100 20" preserveAspectRatio="none">
-            <path
-              d="M0,10 L30,10 L35,10 L40,2 L45,18 L50,6 L55,14 L60,10 L100,10"
-              fill="none"
-              stroke="#64748b"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </>
-      )
-    }
-
-    // Everyday - subtle dot texture
-    if (rootCategoryId === 'everyday') {
-      return (
-        <div
-          className="absolute inset-0 opacity-[0.04] rounded-2xl overflow-hidden"
-          style={{
-            backgroundImage: `radial-gradient(${theme.accent} 1px, transparent 1px)`,
-            backgroundSize: '7px 7px'
-          }}
-        />
-      )
-    }
-
-    // Geography - topographic lines
-    if (rootCategoryId === 'geography') {
-      return (
-        <div
-          className="absolute inset-0 opacity-[0.08] rounded-2xl overflow-hidden"
-          style={{
-            backgroundImage: `
-              repeating-linear-gradient(0deg, ${theme.accent} 0px, transparent 1px, transparent 14px),
-              repeating-linear-gradient(90deg, ${theme.accent} 0px, transparent 1px, transparent 22px)
-            `
-          }}
-        />
-      )
-    }
-
-    // Mathematics - graph paper
-    if (rootCategoryId === 'mathematics') {
-      return (
-        <div
-          className="absolute inset-0 opacity-[0.08] rounded-2xl overflow-hidden"
-          style={{
-            backgroundImage: `
-              linear-gradient(${theme.accent} 1px, transparent 1px),
-              linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)
-            `,
-            backgroundSize: '12px 12px'
-          }}
-        />
-      )
-    }
-
-    // People - clean, no decorations
-    if (rootCategoryId === 'people') return null
-
-    // Philosophy - celestial dots
-    if (rootCategoryId === 'philosophy') {
-      return (
-        <div className="absolute inset-0 opacity-30 pointer-events-none">
-          <div className="absolute top-4 right-6 w-1.5 h-1.5 rounded-full" style={{ background: theme.accent }} />
-          <div className="absolute top-8 right-12 w-1 h-1 rounded-full" style={{ background: theme.accent }} />
-          <div className="absolute top-14 right-4 w-1.5 h-1.5 rounded-full" style={{ background: theme.accent }} />
-          <div className="absolute bottom-8 left-4 w-1 h-1 rounded-full" style={{ background: theme.accent }} />
-          <div className="absolute bottom-14 left-10 w-1.5 h-1.5 rounded-full" style={{ background: theme.accent }} />
-          <div className="absolute top-12 left-6 w-1 h-1 rounded-full" style={{ background: theme.accent }} />
-        </div>
-      )
-    }
-
-    // Physics - left accent + blueprint
-    if (rootCategoryId === 'physics') {
-      return (
-        <>
-          <div
-            className="absolute top-3 bottom-3 left-0 w-1 rounded-r"
-            style={{ background: theme.accent }}
-          />
-          <div
-            className="absolute inset-0 opacity-[0.06] rounded-2xl overflow-hidden"
-            style={{
-              backgroundImage: `
-                linear-gradient(${theme.accent} 1px, transparent 1px),
-                linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)
-              `,
-              backgroundSize: '16px 16px'
-            }}
-          />
-        </>
-      )
-    }
-
-    // Society - architectural grid
-    if (rootCategoryId === 'society') {
-      return (
-        <div
-          className="absolute inset-0 opacity-[0.05] rounded-2xl overflow-hidden"
-          style={{
-            backgroundImage: `
-              linear-gradient(${theme.accent} 1px, transparent 1px),
-              linear-gradient(90deg, ${theme.accent} 1px, transparent 1px)
-            `,
-            backgroundSize: '18px 18px'
-          }}
-        />
-      )
-    }
-
-    return null
+    return (
+      <div
+        className="absolute top-0 bottom-0 left-0 rounded-l-2xl"
+        style={{
+          width: '6px',
+          background: theme.accent,
+        }}
+      />
+    )
   }
 
   const cardStyle = getCardStyle()
@@ -2697,7 +858,7 @@ function ContinueExploringSection({ decks, onOpenDeck }) {
 }
 
 // Tier section component - shows cards for one tier with header and progress
-function TierSection({ tier, tierName, cards, claimedCards, onReadCard, completion, isLocked, onUnlock, isUnlocking, totalCards = 15, tint, rootCategoryId }) {
+function TierSection({ tier, tierName, cards, claimedCards, onReadCard, completion, isLocked, onUnlock, isUnlocking, totalCards = 15, tint, rootCategoryId, outline }) {
   const { claimed, total } = completion
   const isComplete = total > 0 && claimed === total
 
@@ -2718,6 +879,7 @@ function TierSection({ tier, tierName, cards, claimedCards, onReadCard, completi
   }, [cards])
 
   if (isLocked) {
+    const lockedCount = outline?.[tier]?.length || 5
     return (
       <div className="flex flex-col items-center gap-3">
         <div className="flex items-center gap-2">
@@ -2726,7 +888,7 @@ function TierSection({ tier, tierName, cards, claimedCards, onReadCard, completi
         </div>
         <p className="text-xs text-gray-400 mb-2">Complete the previous tier to unlock!</p>
         <div className="flex gap-2 flex-wrap justify-center opacity-50">
-          {Array.from({ length: 5 }).map((_, index) => (
+          {Array.from({ length: lockedCount }).map((_, index) => (
             <LockedCard key={`locked-${tier}-${index}`} index={index} rootCategoryId={rootCategoryId} />
           ))}
         </div>
@@ -2735,10 +897,11 @@ function TierSection({ tier, tierName, cards, claimedCards, onReadCard, completi
   }
 
   // Cards generated but tier accessible - show all slots (some may be face-down)
-  if (cards.length > 0) {
+  if (cards.length > 0 || (outline && outline[tier])) {
+    // Get expected count from outline (how many cards will be generated)
+    const expectedCount = outline?.[tier]?.length || cards.length || 5
     // Calculate offset based on tier (supports both new two-tier and legacy three-tier)
-    const tierOffset = tier === 'core' ? 0 : tier === 'deep_dive' ? cards.length : tier === 'deep_dive_1' ? 5 : 10
-    const expectedCount = cards.length || 5
+    const tierOffset = tier === 'core' ? 0 : tier === 'deep_dive' ? expectedCount : tier === 'deep_dive_1' ? 5 : 10
 
     return (
       <div className="flex flex-col items-center gap-3">
@@ -3583,7 +1746,7 @@ function renderMarkdown(text, definedTerms = [], onTermClick = null) {
                     return (
                       <span
                         key={tpi}
-                        onClick={(e) => { e.stopPropagation(); onTermClick(tp, e) }}
+                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); onTermClick(tp, e) }}
                         className="underline decoration-dotted decoration-blue-400 cursor-help"
                         style={{ textDecorationThickness: '2px' }}
                       >
@@ -3611,7 +1774,7 @@ function renderMarkdown(text, definedTerms = [], onTermClick = null) {
               return (
                 <span
                   key={`${i}-${tpi}`}
-                  onClick={(e) => { e.stopPropagation(); onTermClick(tp, e) }}
+                  onClick={(e) => { e.stopPropagation(); e.preventDefault(); onTermClick(tp, e) }}
                   className="underline decoration-dotted decoration-blue-400 cursor-help"
                   style={{ textDecorationThickness: '2px' }}
                 >
@@ -3679,31 +1842,42 @@ function DefinitionPopup({ term, position, topicContext, onClose }) {
     return () => { cancelled = true }
   }, [term, topicContext])
 
-  // Close on click outside
+  // Close on click outside (with small delay to avoid race condition with term click)
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (popupRef.current && !popupRef.current.contains(e.target)) {
         onClose()
       }
     }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    // Delay adding listener to avoid catching the same click that opened the popup
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside)
+    }, 100)
+    return () => {
+      clearTimeout(timeoutId)
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
   }, [onClose])
 
-  // Position popup near the clicked term
+  // Smart positioning - show above if not enough space below
+  const popupHeight = 100 // approximate
+  const spaceBelow = window.innerHeight - position.y
+  const showAbove = spaceBelow < popupHeight + 20
+
   const style = {
     position: 'fixed',
-    left: Math.min(position.x, window.innerWidth - 280),
-    top: position.y + 10,
-    zIndex: 9999
+    left: Math.min(Math.max(10, position.x - 50), window.innerWidth - 270),
+    top: showAbove ? position.y - popupHeight - 10 : position.y + 10,
+    zIndex: 99999
   }
 
-  return (
+  // Use portal to render at body level (escapes any overflow:hidden or transform ancestors)
+  return createPortal(
     <motion.div
       ref={popupRef}
-      initial={{ opacity: 0, y: -5 }}
+      initial={{ opacity: 0, y: showAbove ? 5 : -5 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -5 }}
+      exit={{ opacity: 0, y: showAbove ? 5 : -5 }}
       style={style}
       className="bg-gray-900 text-white rounded-lg shadow-xl p-3 max-w-[260px]"
     >
@@ -3715,7 +1889,8 @@ function DefinitionPopup({ term, position, topicContext, onClose }) {
       ) : (
         <div className="text-gray-200 text-xs leading-relaxed">{definition}</div>
       )}
-    </motion.div>
+    </motion.div>,
+    document.body
   )
 }
 
@@ -3756,7 +1931,7 @@ function SwipeHint({ hasPrev, hasNext }) {
 }
 
 // Expanded card - zooms in and can flip back and forth
-function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName, onContentGenerated, allCards, onNext, onPrev, hasNext, hasPrev, startFlipped = false, slideDirection = 0, tint = '#fafbfc', rootCategoryId = null, definedTerms = [] }) {
+function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName, onContentGenerated, allCards, onNext, onPrev, hasNext, hasPrev, startFlipped = false, slideDirection = 0, tint = '#fafbfc', rootCategoryId = null }) {
   const [isFlipped, setIsFlipped] = useState(startFlipped)
   const theme = getCategoryTheme(rootCategoryId)
   const isThemed = hasCustomTheme(rootCategoryId)
@@ -4027,7 +2202,7 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
                 <p className="text-red-500 text-center text-base">{error}</p>
               ) : (
                 <div className="text-sm leading-relaxed whitespace-pre-line" style={{ color: isThemed ? theme.textPrimary : '#374151' }}>
-                  {renderMarkdown(displayedContent, definedTerms, handleTermClick)}
+                  {renderMarkdown(displayedContent, card.definedTerms || [], handleTermClick)}
                 </div>
               )}
             </div>
@@ -4596,6 +2771,7 @@ function DeckSpread({
                 totalCards={allTierCards || 15}
                 tint={getCardTint(deck.gradient)}
                 rootCategoryId={rootCategoryId}
+                outline={outline}
               />
             )
           })}
@@ -8163,7 +6339,6 @@ export default function Canvas() {
                 startFlipped={true}
                 tint="#fafbfc"
                 rootCategoryId={rootCategoryId}
-                definedTerms={[]}
               />
             )}
           </AnimatePresence>
@@ -8510,7 +6685,6 @@ export default function Canvas() {
               slideDirection={expandedCardSlideDirection}
               tint="#fafbfc"
               rootCategoryId={categoryId}
-              definedTerms={[]}
             />
           )}
         </AnimatePresence>
@@ -8701,7 +6875,6 @@ export default function Canvas() {
                 setExpandedCard(prevCard.id)
               }
             }}
-            definedTerms={loadedOutlines[currentDeck?.id]?.defined_terms || []}
           />
         )}
       </AnimatePresence>
