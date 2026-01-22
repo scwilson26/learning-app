@@ -1176,10 +1176,10 @@ function PreviewCardModal({
             {/* Themed decorations */}
             {renderExpandedCardDecorations(rootCategoryId, theme)}
 
-            {/* Claimed badge - top left */}
+            {/* Claimed badge - top right (next to close button) */}
             {claimed && (
-              <div className="absolute top-3 left-3 w-8 h-8 rounded-full flex items-center justify-center shadow-md z-20" style={{ background: isThemed ? theme.accent : '#facc15' }}>
-                <span className={rootCategoryId === 'technology' ? 'text-slate-900 text-sm font-bold' : (rootCategoryId === 'philosophy' ? 'text-indigo-900 text-sm font-bold' : 'text-white text-sm font-bold')}>✓</span>
+              <div className="absolute top-3 right-12 w-8 h-8 rounded-full flex items-center justify-center shadow-md z-20" style={{ background: isThemed ? theme.accent : '#facc15' }}>
+                <span className="text-white text-sm font-bold">✓</span>
               </div>
             )}
 
@@ -1528,10 +1528,10 @@ function WanderCard({
             >
               {renderExpandedCardDecorations(rootCategoryId, theme)}
 
-              {/* Claimed badge - top left */}
-              {previewData.claimed && (
-                <div className="absolute top-3 left-3 w-8 h-8 rounded-full flex items-center justify-center shadow-md z-20" style={{ background: isThemed ? theme.accent : '#facc15' }}>
-                  <span className={rootCategoryId === 'technology' ? 'text-slate-900 text-sm font-bold' : (rootCategoryId === 'philosophy' ? 'text-indigo-900 text-sm font-bold' : 'text-white text-sm font-bold')}>✓</span>
+              {/* Claimed badge - top right (next to close button) */}
+              {previewData?.claimed && (
+                <div className="absolute top-3 right-12 w-8 h-8 rounded-full flex items-center justify-center shadow-md z-20" style={{ background: isThemed ? theme.accent : '#facc15' }}>
+                  <span className="text-white text-sm font-bold">✓</span>
                 </div>
               )}
 
@@ -2128,10 +2128,10 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
             {/* Themed decorative elements */}
             {renderExpandedCardDecorations(rootCategoryId, theme)}
 
-            {/* Claimed badge - top left */}
+            {/* Claimed badge - top right (next to close button) */}
             {claimed && (
-              <div className="absolute top-3 left-3 w-8 h-8 rounded-full flex items-center justify-center shadow-md z-20" style={{ background: isThemed ? theme.accent : '#facc15' }}>
-                <span className={rootCategoryId === 'technology' ? 'text-slate-900 text-sm font-bold' : (rootCategoryId === 'philosophy' ? 'text-indigo-900 text-sm font-bold' : 'text-white text-sm font-bold')}>✓</span>
+              <div className="absolute top-3 right-12 w-8 h-8 rounded-full flex items-center justify-center shadow-md z-20" style={{ background: isThemed ? theme.accent : '#facc15' }}>
+                <span className="text-white text-sm font-bold">✓</span>
               </div>
             )}
 
@@ -2490,10 +2490,10 @@ function CoverCard({ title, preview, claimed, onRead, rootCategoryId }) {
       {/* Decorations */}
       {renderOverviewCardDecorations(rootCategoryId, theme)}
 
-      {/* Claimed badge */}
+      {/* Claimed badge - top right */}
       {claimed && (
         <div
-          className="absolute top-1 left-1 w-4 h-4 rounded-full flex items-center justify-center z-20"
+          className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center z-20"
           style={{ background: checkBg }}
         >
           <span className={`${checkText} text-[10px] font-bold`}>✓</span>

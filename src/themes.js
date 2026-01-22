@@ -22,47 +22,52 @@ export const COMMON_CARD = {
   accentWidth: '5px',         // Left stripe width
 }
 
-// Category accent colors - muted, sophisticated palette
+// Category accent colors - distinct palette spread across color zones
 // These are the ONLY category-specific colors (used for left stripe)
+// Goal: Every category distinguishable at a glance
 export const CATEGORY_THEMES = {
+  // Warm colors
   arts: {
-    accent: '#c4748b',        // Dusty rose
-  },
-  biology: {
-    accent: '#6b9080',        // Sage green
-  },
-  health: {
-    accent: '#5aa3a3',        // Light teal
-  },
-  everyday: {
-    accent: '#c9a87c',        // Warm sand/tan
-  },
-  geography: {
-    accent: '#5b8fa8',        // Ocean blue
+    accent: '#E88B9E',        // Rose pink
   },
   history: {
-    accent: '#c9a227',        // Amber/warm gold
-  },
-  mathematics: {
-    accent: '#7c8594',        // Cool slate gray
+    accent: '#D4A84B',        // Amber gold
   },
   people: {
-    accent: '#c27c5c',        // Soft coral/terracotta
+    accent: '#C67B5A',        // Terracotta
   },
-  philosophy: {
-    accent: '#7c6ca8',        // Muted purple/indigo
+  everyday: {
+    accent: '#C9B896',        // Warm sand
   },
-  physics: {
-    accent: '#6b9eb8',        // Steel blue
+  // Cool colors
+  geography: {
+    accent: '#4A90B8',        // Ocean blue
   },
   technology: {
-    accent: '#5cb8c4',        // Cool cyan
+    accent: '#3AAFCF',        // Cyan
+  },
+  physics: {
+    accent: '#6B8A99',        // Slate blue
+  },
+  // Greens
+  biology: {
+    accent: '#7BAF7B',        // Sage green
+  },
+  health: {
+    accent: '#4ABFAD',        // Teal aqua
+  },
+  // Purples/neutrals
+  philosophy: {
+    accent: '#6B5B95',        // Deep indigo
+  },
+  mathematics: {
+    accent: '#8B8B9E',        // Cool gray
   },
   society: {
-    accent: '#8b9298',        // Neutral gray
+    accent: '#9E7B9E',        // Dusty plum
   },
   default: {
-    accent: '#8b8fa8',        // Neutral blue-gray
+    accent: '#8B8B9E',        // Cool gray
   }
 }
 

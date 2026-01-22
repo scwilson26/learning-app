@@ -1059,7 +1059,14 @@ export function findRootCategory(deckId) {
     return deckId
   }
 
-  // Try to find from the tree
+  // Try to extract from the ID prefix (e.g., "technology-media-..." -> "technology")
+  // This is fast and reliable since all IDs follow this pattern
+  const prefix = deckId?.split('-')[0]
+  if (prefix && categories.includes(prefix)) {
+    return prefix
+  }
+
+  // Fallback: Try to find from the tree by walking up
   const node = nodeIndex.get(deckId)
   if (node) {
     // Walk up to find the root category
