@@ -517,8 +517,15 @@ function parseOutlineText(text) {
 
     // Check for Roman numeral section header (I. II. III. etc)
     // Handles formats: "I. Section [CORE]" or "## I. Section [CORE]" (with markdown heading)
-    const sectionMatch = trimmed.match(/^(?:#{1,3}\s*)?([IVXLC]+)\.\s+(.+?)(?:\s+\[(CORE|DEEP DIVE)\])?$/i);
-    if (sectionMatch) {
+    // Must have [CORE] or [DEEP DIVE] tag, OR be a non-ambiguous Roman numeral (not single C, D, L, M which are subsection letters)
+    const sectionMatch = trimmed.match(/^(?:#{1,3}\s*)?([IVXLC]+)\.\s+(.+?)(?:\s+\[(CORE|DEEP DIVE)\])?\s*$/i);
+    const romanNumeral = sectionMatch?.[1]?.toUpperCase();
+    const hasTierTag = !!sectionMatch?.[3];
+    // Single letters C, D, L, M are ambiguous (could be subsections) - only treat as section if has tier tag
+    const isAmbiguousSingleLetter = romanNumeral && romanNumeral.length === 1 && ['C', 'D', 'L', 'M'].includes(romanNumeral);
+    const isValidSection = sectionMatch && (hasTierTag || !isAmbiguousSingleLetter);
+
+    if (isValidSection) {
       console.log(`[PARSER] Found section: "${sectionMatch[2]}" tier: ${sectionMatch[3] || 'default core'}`);
 
       // Save previous section if exists
