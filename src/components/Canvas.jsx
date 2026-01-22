@@ -138,7 +138,7 @@ function renderCardAccentStripe(theme, claimed = false) {
       className="absolute top-0 bottom-0 left-0 rounded-l-[12px]"
       style={{
         width: theme.accentWidth,
-        background: claimed ? theme.accent : theme.accentFaded,
+        background: theme.accent,
       }}
     />
   )
@@ -438,7 +438,8 @@ function getDeck(id) {
 // Deck component - a card with subtle stack effect (cards underneath)
 // Deck component - clean, minimal design with left accent stripe
 function Deck({ deck, onOpen, claimed, rootCategoryId = null }) {
-  const themeId = rootCategoryId || deck.id
+  // Use rootCategoryId if provided, otherwise extract from deck.id
+  const themeId = rootCategoryId || findRootCategory(deck.id) || deck.id
   const theme = getCategoryTheme(themeId)
 
   return (
@@ -479,12 +480,12 @@ function Deck({ deck, onOpen, claimed, rootCategoryId = null }) {
             boxShadow: claimed ? theme.shadowHover : theme.shadow,
           }}
         >
-          {/* Left accent stripe */}
+          {/* Left accent stripe - always full color for navigation decks */}
           <div
             className="absolute top-0 bottom-0 left-0 rounded-l-xl"
             style={{
               width: theme.accentWidth,
-              background: claimed ? theme.accent : theme.accentFaded,
+              background: theme.accent,
             }}
           />
         </div>
@@ -522,7 +523,7 @@ function renderOverviewCardDecorations(rootCategoryId, theme, claimed = false) {
       className="absolute top-0 bottom-0 left-0 rounded-l-[12px]"
       style={{
         width: theme.accentWidth,
-        background: claimed ? theme.accent : theme.accentFaded,
+        background: theme.accent,
       }}
     />
   )
@@ -672,12 +673,13 @@ function LockedCard({ index, rootCategoryId = null }) {
       animate={{ opacity: 0.5, y: 0 }}
       transition={{ delay: index * 0.05 }}
     >
-      {/* Faded left accent stripe */}
+      {/* Left accent stripe - slightly faded for locked */}
       <div
         className="absolute top-0 bottom-0 left-0 rounded-l-xl"
         style={{
           width: theme.accentWidth,
-          background: theme.accentFaded,
+          background: theme.accent,
+          opacity: 0.5,
         }}
       />
       <span className="text-xl mb-1">🔒</span>
@@ -1276,7 +1278,7 @@ function PreviewCardModal({
 
             {/* Action buttons - hide if already on this page and claimed */}
             {!(isCurrentPage && claimed) && (
-              <div className="mt-3 pt-3 relative z-10 space-y-2" style={{ borderTop: isThemed ? `1px solid ${theme.accent}20` : '1px solid #f3f4f6' }} onClick={e => e.stopPropagation()}>
+              <div className="mt-3 pt-3 relative z-10 space-y-2" style={{ borderTop: `1px solid ${theme.divider}` }} onClick={e => e.stopPropagation()}>
                 {/* Claim and Explore buttons side by side */}
                 <div className="flex gap-2">
                   <button
@@ -1284,13 +1286,9 @@ function PreviewCardModal({
                     disabled={claimed}
                     className="flex-1 py-3 rounded-xl font-bold text-base transition-all active:scale-[0.98] disabled:opacity-50"
                     style={{
-                      background: claimed
-                        ? (isThemed ? theme.cardBgAlt : '#e5e7eb')
-                        : (isThemed ? `linear-gradient(135deg, ${theme.accent}, ${theme.accent}cc)` : 'linear-gradient(135deg, #eab308, #d97706)'),
-                      color: claimed
-                        ? (isThemed ? theme.textSecondary : '#9ca3af')
-                        : (isThemed ? '#0f172a' : '#ffffff'),
-                      boxShadow: claimed ? 'none' : '0 4px 12px rgba(0,0,0,0.15)'
+                      background: claimed ? theme.buttonDisabledBg : theme.buttonPrimaryBg,
+                      color: claimed ? theme.buttonDisabledText : theme.buttonPrimaryText,
+                      boxShadow: claimed ? 'none' : theme.buttonPrimaryShadow
                     }}
                   >
                     {claimed ? 'Claimed' : 'Claim'}
@@ -1302,9 +1300,9 @@ function PreviewCardModal({
                     }}
                     className="flex-1 py-3 rounded-xl font-bold text-base transition-all active:scale-[0.98]"
                     style={{
-                      background: isThemed ? `linear-gradient(135deg, ${theme.accent}, ${theme.accent}cc)` : 'linear-gradient(135deg, #eab308, #d97706)',
-                      color: isThemed ? '#0f172a' : '#ffffff',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                      background: theme.buttonPrimaryBg,
+                      color: theme.buttonPrimaryText,
+                      boxShadow: theme.buttonPrimaryShadow
                     }}
                   >
                     Explore →
@@ -1317,9 +1315,9 @@ function PreviewCardModal({
                     onClick={onBack}
                     className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-1.5"
                     style={{
-                      background: '#ffffff',
-                      color: '#6b7280',
-                      border: '2px solid #e5e7eb'
+                      background: theme.buttonSecondaryBg,
+                      color: theme.buttonSecondaryText,
+                      border: `2px solid ${theme.buttonSecondaryBorder}`
                     }}
                   >
                     <span>←</span>
@@ -1329,9 +1327,9 @@ function PreviewCardModal({
                     onClick={onWander}
                     className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 hover:scale-[1.02] active:scale-[0.98]"
                     style={{
-                      background: 'linear-gradient(to right, #a855f7, #4f46e5)',
-                      color: '#ffffff',
-                      boxShadow: '0 4px 12px rgba(168, 85, 247, 0.3)'
+                      background: theme.buttonWanderGradient,
+                      color: theme.buttonWanderText,
+                      boxShadow: theme.buttonWanderShadow
                     }}
                   >
                     <span>🎲</span>
@@ -1619,13 +1617,9 @@ function WanderCard({
                     disabled={previewData.claimed}
                     className="flex-1 py-3 rounded-xl font-bold text-base transition-all active:scale-[0.98] disabled:opacity-50"
                     style={{
-                      background: previewData.claimed
-                        ? (isThemed ? theme.cardBgAlt : '#e5e7eb')
-                        : (isThemed ? `linear-gradient(135deg, ${theme.accent}, ${theme.accent}cc)` : 'linear-gradient(135deg, #eab308, #d97706)'),
-                      color: previewData.claimed
-                        ? (isThemed ? theme.textSecondary : '#9ca3af')
-                        : (isThemed ? '#0f172a' : '#ffffff'),
-                      boxShadow: previewData.claimed ? 'none' : '0 4px 12px rgba(0,0,0,0.15)'
+                      background: previewData.claimed ? theme.buttonDisabledBg : theme.buttonPrimaryBg,
+                      color: previewData.claimed ? theme.buttonDisabledText : theme.buttonPrimaryText,
+                      boxShadow: previewData.claimed ? 'none' : theme.buttonPrimaryShadow
                     }}
                   >
                     {previewData.claimed ? 'Claimed' : 'Claim'}
@@ -1637,9 +1631,9 @@ function WanderCard({
                     }}
                     className="flex-1 py-3 rounded-xl font-bold text-base transition-all active:scale-[0.98]"
                     style={{
-                      background: isThemed ? `linear-gradient(135deg, ${theme.accent}, ${theme.accent}cc)` : 'linear-gradient(135deg, #eab308, #d97706)',
-                      color: isThemed ? '#0f172a' : '#ffffff',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                      background: theme.buttonPrimaryBg,
+                      color: theme.buttonPrimaryText,
+                      boxShadow: theme.buttonPrimaryShadow
                     }}
                   >
                     Explore →
@@ -1651,9 +1645,9 @@ function WanderCard({
                     onClick={onWander}
                     className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 hover:scale-[1.02] active:scale-[0.98]"
                     style={{
-                      background: 'linear-gradient(to right, #a855f7, #4f46e5)',
-                      color: '#ffffff',
-                      boxShadow: '0 4px 12px rgba(168, 85, 247, 0.3)'
+                      background: theme.buttonWanderGradient,
+                      color: theme.buttonWanderText,
+                      boxShadow: theme.buttonWanderShadow
                     }}
                   >
                     <span>🎲</span>
@@ -1663,9 +1657,9 @@ function WanderCard({
                     onClick={onBack}
                     className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-1.5"
                     style={{
-                      background: '#ffffff',
-                      color: '#6b7280',
-                      border: '2px solid #e5e7eb'
+                      background: theme.buttonSecondaryBg,
+                      color: theme.buttonSecondaryText,
+                      border: `2px solid ${theme.buttonSecondaryBorder}`
                     }}
                   >
                     <span>←</span>
@@ -2251,14 +2245,10 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
                   disabled={isLoading || !content}
                   className="w-full py-3 rounded-xl font-bold text-base transition-all active:scale-[0.98]"
                   style={{
-                    background: isLoading || !content
-                      ? (isThemed ? theme.cardBgAlt : '#d1d5db')
-                      : (isThemed ? `linear-gradient(135deg, ${theme.accent}, ${theme.accent}cc)` : 'linear-gradient(135deg, #eab308, #d97706)'),
-                    color: isLoading || !content
-                      ? (isThemed ? theme.textSecondary : '#9ca3af')
-                      : (isThemed ? '#0f172a' : '#ffffff'),
+                    background: isLoading || !content ? theme.buttonDisabledBg : theme.buttonPrimaryBg,
+                    color: isLoading || !content ? theme.buttonDisabledText : theme.buttonPrimaryText,
                     cursor: isLoading || !content ? 'not-allowed' : 'pointer',
-                    boxShadow: isLoading || !content ? 'none' : '0 4px 12px rgba(0,0,0,0.15)'
+                    boxShadow: isLoading || !content ? 'none' : theme.buttonPrimaryShadow
                   }}
                 >
                   {isLoading ? 'Loading...' : 'Claim'}
