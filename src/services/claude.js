@@ -464,6 +464,12 @@ Return the full outline as structured text. End with POPUP TERMS section.`;
     const ddCount = outline.deep_dive.length;
     const totalCount = coreCount + ddCount;
 
+    // Debug: log first card to verify content exists
+    if (outline.core.length > 0) {
+      console.log(`[OUTLINE] First core card:`, JSON.stringify(outline.core[0], null, 2));
+      console.log(`[OUTLINE] Has content: ${!!outline.core[0].content}`);
+    }
+
     console.log(`[OUTLINE] ✅ Generated outline for: ${topic} (${totalCount} sections: Core=${coreCount}, DeepDive=${ddCount}, PopupTerms=${outline.popup_terms?.length || 0})`);
     return { outline, rawOutline: responseText };
   } catch (error) {
@@ -480,6 +486,8 @@ function parseOutlineText(text) {
   const core = [];
   const deep_dive = [];
   const popup_terms = [];
+
+  console.log(`[PARSER] Starting to parse outline, ${text.length} chars`);
 
   // Split into lines for processing
   const lines = text.split('\n');
@@ -508,8 +516,11 @@ function parseOutlineText(text) {
     }
 
     // Check for Roman numeral section header (I. II. III. etc)
-    const sectionMatch = trimmed.match(/^([IVXLC]+)\.\s+(.+?)(?:\s+\[(CORE|DEEP DIVE)\])?$/i);
+    // Handles formats: "I. Section [CORE]" or "## I. Section [CORE]" (with markdown heading)
+    const sectionMatch = trimmed.match(/^(?:#{1,3}\s*)?([IVXLC]+)\.\s+(.+?)(?:\s+\[(CORE|DEEP DIVE)\])?$/i);
     if (sectionMatch) {
+      console.log(`[PARSER] Found section: "${sectionMatch[2]}" tier: ${sectionMatch[3] || 'default core'}`);
+
       // Save previous section if exists
       if (currentSection && currentSubsections.length > 0) {
         const card = {
@@ -517,6 +528,7 @@ function parseOutlineText(text) {
           concept: formatSubsectionsAsConcept(currentSubsections),
           content: formatSubsectionsAsContent(currentSubsections)
         };
+        console.log(`[PARSER] Saved card: "${card.title}" with ${currentSubsections.length} subsections, content length: ${card.content.length}`);
         if (currentTier === 'core') {
           core.push(card);
         } else {
@@ -960,6 +972,14 @@ export async function generateTierCards(topicName, tier, previousCards = [], par
   const cardCount = tierOutline?.length || defaultCount;
 
   console.log(`[TIER] Generating ${config.name} (${cardCount} cards) for: ${topicName}${onCard ? ' [STREAMING]' : ''}${outline ? ' [WITH OUTLINE]' : ''}`);
+
+  // Debug: log what we received
+  console.log(`[TIER] Outline received:`, outline ? 'yes' : 'no');
+  console.log(`[TIER] Tier outline (${tier}):`, tierOutline ? `${tierOutline.length} items` : 'none');
+  if (tierOutline && tierOutline.length > 0) {
+    console.log(`[TIER] First item has content:`, !!tierOutline[0].content);
+    console.log(`[TIER] First item:`, JSON.stringify(tierOutline[0], null, 2));
+  }
 
   // NEW: If outline already has content (new detailed format), use it directly
   if (tierOutline && tierOutline.length > 0 && tierOutline[0].content) {
