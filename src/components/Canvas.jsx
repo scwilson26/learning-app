@@ -2734,10 +2734,11 @@ function TierSection({ tier, tierName, cards, claimedCards, onReadCard, completi
     )
   }
 
-  // Cards generated but tier accessible - show all 5 slots (some may be face-down)
+  // Cards generated but tier accessible - show all slots (some may be face-down)
   if (cards.length > 0) {
-    const tierOffset = tier === 'core' ? 0 : tier === 'deep_dive_1' ? 5 : 10
-    const expectedCount = 5
+    // Calculate offset based on tier (supports both new two-tier and legacy three-tier)
+    const tierOffset = tier === 'core' ? 0 : tier === 'deep_dive' ? cards.length : tier === 'deep_dive_1' ? 5 : 10
+    const expectedCount = cards.length || 5
 
     return (
       <div className="flex flex-col items-center gap-3">
@@ -2798,7 +2799,7 @@ function TierSection({ tier, tierName, cards, claimedCards, onReadCard, completi
   }
 
   // Tier accessible but not yet generated - show unlock prompt
-  const tierEmoji = tier === 'core' ? '📚' : tier === 'deep_dive_1' ? '🔬' : '🎓'
+  const tierEmoji = tier === 'core' ? '📚' : (tier === 'deep_dive' || tier === 'deep_dive_1') ? '🔬' : '🎓'
   return (
     <div className="flex flex-col items-center gap-3">
       <div className="flex items-center gap-2">
@@ -3551,19 +3552,78 @@ function SkeletonCard({ index, rootCategoryId = null }) {
 }
 
 // Simple markdown renderer for **bold** text and paragraph breaks
-function renderMarkdown(text) {
+// Optional: definedTerms array and onTermClick callback for tappable definitions
+function renderMarkdown(text, definedTerms = [], onTermClick = null) {
   if (!text) return null
 
   // Split by double newlines to create paragraphs
   const paragraphs = text.split(/\n\n+/)
+
+  // Create a case-insensitive regex to find defined terms
+  const termRegex = definedTerms.length > 0
+    ? new RegExp(`\\b(${definedTerms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`, 'gi')
+    : null
 
   return paragraphs.map((paragraph, pIndex) => {
     // Handle bold text within each paragraph
     const parts = paragraph.split(/(\*\*.*?\*\*)/g)
     const content = parts.map((part, i) => {
       if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={i} className="font-semibold">{part.slice(2, -2)}</strong>
+        const boldText = part.slice(2, -2)
+
+        // Check if bold text contains a defined term
+        if (termRegex && onTermClick) {
+          const termParts = boldText.split(termRegex)
+          if (termParts.length > 1) {
+            return (
+              <strong key={i} className="font-semibold">
+                {termParts.map((tp, tpi) => {
+                  const isDefinedTerm = definedTerms.some(t => t.toLowerCase() === tp.toLowerCase())
+                  if (isDefinedTerm) {
+                    return (
+                      <span
+                        key={tpi}
+                        onClick={(e) => { e.stopPropagation(); onTermClick(tp, e) }}
+                        className="underline decoration-dotted decoration-blue-400 cursor-help"
+                        style={{ textDecorationThickness: '2px' }}
+                      >
+                        {tp}
+                      </span>
+                    )
+                  }
+                  return tp
+                })}
+              </strong>
+            )
+          }
+        }
+
+        return <strong key={i} className="font-semibold">{boldText}</strong>
       }
+
+      // Check for defined terms in regular text
+      if (termRegex && onTermClick) {
+        const termParts = part.split(termRegex)
+        if (termParts.length > 1) {
+          return termParts.map((tp, tpi) => {
+            const isDefinedTerm = definedTerms.some(t => t.toLowerCase() === tp.toLowerCase())
+            if (isDefinedTerm) {
+              return (
+                <span
+                  key={`${i}-${tpi}`}
+                  onClick={(e) => { e.stopPropagation(); onTermClick(tp, e) }}
+                  className="underline decoration-dotted decoration-blue-400 cursor-help"
+                  style={{ textDecorationThickness: '2px' }}
+                >
+                  {tp}
+                </span>
+              )
+            }
+            return tp
+          })
+        }
+      }
+
       return part
     })
 
@@ -3573,6 +3633,90 @@ function renderMarkdown(text) {
       </p>
     )
   })
+}
+
+// Definition popup component
+function DefinitionPopup({ term, position, topicContext, onClose }) {
+  const [definition, setDefinition] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const popupRef = useRef(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    const fetchDefinition = async () => {
+      try {
+        // Check cache first
+        const cacheKey = `def_${term.toLowerCase()}`
+        const cached = sessionStorage.getItem(cacheKey)
+        if (cached) {
+          setDefinition(cached)
+          setLoading(false)
+          return
+        }
+
+        const { generateDefinition } = await import('../services/claude.js')
+        const result = await generateDefinition(term, topicContext)
+
+        if (!cancelled) {
+          setDefinition(result.definition)
+          // Cache for session
+          sessionStorage.setItem(cacheKey, result.definition)
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError('Failed to load definition')
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+        }
+      }
+    }
+
+    fetchDefinition()
+    return () => { cancelled = true }
+  }, [term, topicContext])
+
+  // Close on click outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (popupRef.current && !popupRef.current.contains(e.target)) {
+        onClose()
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [onClose])
+
+  // Position popup near the clicked term
+  const style = {
+    position: 'fixed',
+    left: Math.min(position.x, window.innerWidth - 280),
+    top: position.y + 10,
+    zIndex: 9999
+  }
+
+  return (
+    <motion.div
+      ref={popupRef}
+      initial={{ opacity: 0, y: -5 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -5 }}
+      style={style}
+      className="bg-gray-900 text-white rounded-lg shadow-xl p-3 max-w-[260px]"
+    >
+      <div className="font-semibold text-blue-300 text-sm mb-1">{term}</div>
+      {loading ? (
+        <div className="text-gray-400 text-xs">Loading...</div>
+      ) : error ? (
+        <div className="text-red-400 text-xs">{error}</div>
+      ) : (
+        <div className="text-gray-200 text-xs leading-relaxed">{definition}</div>
+      )}
+    </motion.div>
+  )
 }
 
 // Swipe hint that hides after 5 swipes
@@ -3612,7 +3756,7 @@ function SwipeHint({ hasPrev, hasNext }) {
 }
 
 // Expanded card - zooms in and can flip back and forth
-function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName, onContentGenerated, allCards, onNext, onPrev, hasNext, hasPrev, startFlipped = false, slideDirection = 0, tint = '#fafbfc', rootCategoryId = null }) {
+function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName, onContentGenerated, allCards, onNext, onPrev, hasNext, hasPrev, startFlipped = false, slideDirection = 0, tint = '#fafbfc', rootCategoryId = null, definedTerms = [] }) {
   const [isFlipped, setIsFlipped] = useState(startFlipped)
   const theme = getCategoryTheme(rootCategoryId)
   const isThemed = hasCustomTheme(rootCategoryId)
@@ -3626,6 +3770,16 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
   const [prevCardId, setPrevCardId] = useState(card.id)
   // Track initial rotation for new cards entering (to skip flip animation)
   const initialRotation = useRef(startFlipped ? 180 : 0)
+  // Definition popup state
+  const [definitionPopup, setDefinitionPopup] = useState(null) // { term, position }
+
+  const handleTermClick = (term, event) => {
+    const rect = event.target.getBoundingClientRect()
+    setDefinitionPopup({
+      term,
+      position: { x: rect.left, y: rect.bottom }
+    })
+  }
 
   // Generate content on mount if starting flipped without content
   useEffect(() => {
@@ -3873,10 +4027,22 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
                 <p className="text-red-500 text-center text-base">{error}</p>
               ) : (
                 <div className="text-sm leading-relaxed whitespace-pre-line" style={{ color: isThemed ? theme.textPrimary : '#374151' }}>
-                  {renderMarkdown(displayedContent)}
+                  {renderMarkdown(displayedContent, definedTerms, handleTermClick)}
                 </div>
               )}
             </div>
+
+            {/* Definition popup */}
+            <AnimatePresence>
+              {definitionPopup && (
+                <DefinitionPopup
+                  term={definitionPopup.term}
+                  position={definitionPopup.position}
+                  topicContext={deckName}
+                  onClose={() => setDefinitionPopup(null)}
+                />
+              )}
+            </AnimatePresence>
 
             {/* Card ID - bottom left corner */}
             {card.cardId && (
@@ -4201,15 +4367,24 @@ function DeckSpread({
 }) {
   // State for outline toggle
   const [showOutline, setShowOutline] = useState(false)
-  // Tier metadata
-  const tiers = [
-    { key: 'core', name: 'Core Essentials' },
-    { key: 'deep_dive_1', name: 'Deep Dive 1' },
-    { key: 'deep_dive_2', name: 'Deep Dive 2' },
-  ]
+
+  // Detect if this is a new two-tier outline or legacy three-tier
+  const isNewTwoTierSystem = outline?.deep_dive && !outline?.deep_dive_1
+
+  // Tier metadata - dynamically based on outline type
+  const tiers = isNewTwoTierSystem
+    ? [
+        { key: 'core', name: 'Core' },
+        { key: 'deep_dive', name: 'Deep Dive' },
+      ]
+    : [
+        { key: 'core', name: 'Core Essentials' },
+        { key: 'deep_dive_1', name: 'Deep Dive 1' },
+        { key: 'deep_dive_2', name: 'Deep Dive 2' },
+      ]
 
   // Check if we have tier data (new system) or legacy data
-  const hasTierData = tierCards && (tierCards.core?.length > 0 || tierCards.deep_dive_1?.length > 0 || tierCards.deep_dive_2?.length > 0)
+  const hasTierData = tierCards && (tierCards.core?.length > 0 || tierCards.deep_dive?.length > 0 || tierCards.deep_dive_1?.length > 0 || tierCards.deep_dive_2?.length > 0)
 
   return (
     <motion.div
@@ -4272,7 +4447,7 @@ function DeckSpread({
                   {/* Core */}
                   {outline.core && outline.core.length > 0 && (
                     <div className="mb-4">
-                      <div className="text-xs font-semibold text-gray-600 mb-2">Core Essentials</div>
+                      <div className="text-xs font-semibold text-gray-600 mb-2">Core ({outline.core.length} cards)</div>
                       <ul className="space-y-1">
                         {outline.core.map((card, i) => (
                           <li key={i} className="text-xs text-gray-600">
@@ -4286,8 +4461,25 @@ function DeckSpread({
                     </div>
                   )}
 
-                  {/* Deep Dive 1 */}
-                  {outline.deep_dive_1 && outline.deep_dive_1.length > 0 && (
+                  {/* Deep Dive (new two-tier system) */}
+                  {outline.deep_dive && outline.deep_dive.length > 0 && (
+                    <div>
+                      <div className="text-xs font-semibold text-gray-600 mb-2">Deep Dive ({outline.deep_dive.length} cards)</div>
+                      <ul className="space-y-1">
+                        {outline.deep_dive.map((card, i) => (
+                          <li key={i} className="text-xs text-gray-600">
+                            <span className="font-medium">{card.title}</span>
+                            {card.concept && (
+                              <span className="text-gray-400 ml-1">— {card.concept}</span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Legacy: Deep Dive 1 (for old outlines) */}
+                  {outline.deep_dive_1 && outline.deep_dive_1.length > 0 && !outline.deep_dive && (
                     <div className="mb-4">
                       <div className="text-xs font-semibold text-gray-600 mb-2">Deep Dive 1</div>
                       <ul className="space-y-1">
@@ -4303,8 +4495,8 @@ function DeckSpread({
                     </div>
                   )}
 
-                  {/* Deep Dive 2 */}
-                  {outline.deep_dive_2 && outline.deep_dive_2.length > 0 && (
+                  {/* Legacy: Deep Dive 2 (for old outlines) */}
+                  {outline.deep_dive_2 && outline.deep_dive_2.length > 0 && !outline.deep_dive && (
                     <div>
                       <div className="text-xs font-semibold text-gray-600 mb-2">Deep Dive 2</div>
                       <ul className="space-y-1">
@@ -5371,9 +5563,11 @@ export default function Canvas() {
 
       setGenerationProgress({ current: 5, total: 5, phase: 'complete' })
 
-      // Start background generation of Deep Dive 1
+      // Start background generation of Deep Dive
+      // Use new 'deep_dive' tier if outline uses new two-tier system, otherwise 'deep_dive_1'
+      const nextTier = outline?.deep_dive ? 'deep_dive' : 'deep_dive_1'
       setTimeout(() => {
-        generateTierInBackground(deck, 'deep_dive_1', coreCards, parentPath)
+        generateTierInBackground(deck, nextTier, coreCards, parentPath)
       }, 1000)
 
     } catch (error) {
@@ -5407,9 +5601,11 @@ export default function Canvas() {
         // Generate without streaming callback (just wait for all cards)
         const cards = await generateTierCards(deck.name, tier, previousCards, parentPath, null, outline)
 
-        // Calculate expected total from outline if available
+        // Calculate expected total from outline if available (supports both tier systems)
         const expectedTotal = outline
-          ? (outline.core?.length || 0) + (outline.deep_dive_1?.length || 0) + (outline.deep_dive_2?.length || 0)
+          ? outline.deep_dive
+            ? (outline.core?.length || 0) + (outline.deep_dive?.length || 0) // New two-tier
+            : (outline.core?.length || 0) + (outline.deep_dive_1?.length || 0) + (outline.deep_dive_2?.length || 0) // Legacy three-tier
           : null
 
         // Save to localStorage
@@ -5466,7 +5662,8 @@ export default function Canvas() {
           return updated
         })
 
-        // If DD1 just finished, start DD2
+        // If DD1 just finished (legacy three-tier), start DD2
+        // Note: New two-tier system uses 'deep_dive' which doesn't chain to anything
         if (tier === 'deep_dive_1') {
           const allPreviousCards = [...previousCards, ...cards]
           setTimeout(() => {
@@ -5511,18 +5708,18 @@ export default function Canvas() {
       let previousCards = []
       const existingTierCards = tierCards[deck.id] || {}
 
-      if (tier === 'deep_dive_1') {
-        // DD1 needs to know what Core covered
+      if (tier === 'deep_dive' || tier === 'deep_dive_1') {
+        // Deep Dive needs to know what Core covered
         previousCards = existingTierCards.core || []
       } else if (tier === 'deep_dive_2') {
-        // DD2 needs to know what Core AND DD1 covered
+        // DD2 (legacy) needs to know what Core AND DD1 covered
         const coreCards = existingTierCards.core || []
         const dd1Cards = existingTierCards.deep_dive_1 || []
         previousCards = [...coreCards, ...dd1Cards]
       }
 
       const streamedCards = []
-      const tierOffset = tier === 'deep_dive_1' ? 5 : 10
+      const tierOffset = tier === 'deep_dive' ? (existingTierCards.core?.length || 5) : (tier === 'deep_dive_1' ? 5 : 10)
 
       // Try to get outline for better quality
       let outline = null
@@ -5537,9 +5734,11 @@ export default function Canvas() {
         console.warn(`[UNLOCK] Error fetching outline:`, err)
       }
 
-      // Calculate expected total from outline if available
+      // Calculate expected total from outline if available (supports both tier systems)
       const expectedTotalForUnlock = outline
-        ? (outline.core?.length || 0) + (outline.deep_dive_1?.length || 0) + (outline.deep_dive_2?.length || 0)
+        ? outline.deep_dive
+          ? (outline.core?.length || 0) + (outline.deep_dive?.length || 0) // New two-tier
+          : (outline.core?.length || 0) + (outline.deep_dive_1?.length || 0) + (outline.deep_dive_2?.length || 0) // Legacy three-tier
         : null
 
       // Use streaming to show cards one-by-one
@@ -6288,11 +6487,16 @@ export default function Canvas() {
   }, [currentDeck?.id, claimedCards])
 
   // Get tier cards for current deck (merge with latest generated content)
+  // Supports both new two-tier (deep_dive) and legacy three-tier (deep_dive_1, deep_dive_2)
   const currentTierCards = currentDeck ? (() => {
-    const deckTierCards = tierCards[currentDeck.id] || { core: [], deep_dive_1: [], deep_dive_2: [] }
+    const deckTierCards = tierCards[currentDeck.id] || { core: [], deep_dive: [], deep_dive_1: [], deep_dive_2: [] }
     // Merge in latest generated content for each card (handle partially loaded tiers)
     return {
       core: (deckTierCards.core || []).map(card => ({
+        ...card,
+        content: generatedContent[card.id] || card.content || null
+      })),
+      deep_dive: (deckTierCards.deep_dive || []).map(card => ({
         ...card,
         content: generatedContent[card.id] || card.content || null
       })),
@@ -6305,7 +6509,7 @@ export default function Canvas() {
         content: generatedContent[card.id] || card.content || null
       }))
     }
-  })() : { core: [], deep_dive_1: [], deep_dive_2: [] }
+  })() : { core: [], deep_dive: [], deep_dive_1: [], deep_dive_2: [] }
 
   // Check for tier completion and show celebration
   useEffect(() => {
@@ -6317,35 +6521,41 @@ export default function Canvas() {
     // Debug logging
     console.log(`[CELEBRATION CHECK] deck=${currentDeck.id} core=${completion.core.claimed}/${completion.core.total} complete=${completion.core.complete} lastCompleted=${lastCompleted}`)
 
+    // Detect if this deck uses new two-tier or legacy three-tier system
+    const isNewTwoTier = !!(tierCards[currentDeck.id]?.deep_dive?.length > 0) || !!loadedOutlines[currentDeck.id]?.deep_dive
+
     // Check if core just completed
-    if (completion.core.complete && lastCompleted !== 'core' && lastCompleted !== 'deep_dive_1' && lastCompleted !== 'deep_dive_2') {
+    if (completion.core.complete && lastCompleted !== 'core' && lastCompleted !== 'deep_dive' && lastCompleted !== 'deep_dive_1' && lastCompleted !== 'deep_dive_2') {
       setExpandedCard(null) // Close expanded card so only celebration shows
       setShowCelebration({
-        tierName: 'Core Essentials',
-        nextTierName: 'Deep Dive 1',
+        tierName: 'Core',
+        nextTierName: 'Deep Dive',
         tier: 'core'
       })
       setLastCompletedTier(prev => ({ ...prev, [currentDeck.id]: 'core' }))
 
-      // Pre-generate Deep Dive 1 content in background
+      // Pre-generate Deep Dive content in background
       try {
         const deckTiers = tierCards[currentDeck.id] || {}
-        const dd1Cards = deckTiers.deep_dive_1 || []
-        const allCards = [...(deckTiers.core || []), ...dd1Cards, ...(deckTiers.deep_dive_2 || [])]
-        console.log(`[BACKGROUND] Starting DD1 pre-generation for ${dd1Cards.length} cards`)
-        dd1Cards.forEach(card => {
+        // Use new deep_dive if available, otherwise fall back to deep_dive_1
+        const ddCards = isNewTwoTier ? (deckTiers.deep_dive || []) : (deckTiers.deep_dive_1 || [])
+        const allCards = isNewTwoTier
+          ? [...(deckTiers.core || []), ...ddCards]
+          : [...(deckTiers.core || []), ...ddCards, ...(deckTiers.deep_dive_2 || [])]
+        console.log(`[BACKGROUND] Starting Deep Dive pre-generation for ${ddCards.length} cards`)
+        ddCards.forEach(card => {
           if (card?.id && card?.number && card?.title && !getCardContent(card.id)) {
             generateSingleCardContent(currentDeck.name, card.number, card.title, allCards)
               .then(content => {
                 saveCardContent(card.id, content)
                 setGeneratedContent(prev => ({ ...prev, [card.id]: content }))
-                console.log(`[BACKGROUND] DD1 content ready for card ${card.number}: ${card.title}`)
+                console.log(`[BACKGROUND] Deep Dive content ready for card ${card.number}: ${card.title}`)
               })
-              .catch(err => console.error(`[BACKGROUND] Failed DD1 card ${card?.number}:`, err))
+              .catch(err => console.error(`[BACKGROUND] Failed Deep Dive card ${card?.number}:`, err))
           }
         })
       } catch (err) {
-        console.error('[BACKGROUND] DD1 pre-generation error:', err)
+        console.error('[BACKGROUND] Deep Dive pre-generation error:', err)
       }
     }
     // Check if deep_dive_1 just completed
@@ -6403,8 +6613,9 @@ export default function Canvas() {
   }, [showCelebration, stackDecks])
 
   // Find the expanded card data (check both tier cards and legacy cards)
+  // Combine all tier cards (supports both new two-tier and legacy three-tier)
   const allCurrentCards = currentTierCards.core.length > 0
-    ? [...currentTierCards.core, ...currentTierCards.deep_dive_1, ...currentTierCards.deep_dive_2]
+    ? [...currentTierCards.core, ...currentTierCards.deep_dive, ...currentTierCards.deep_dive_1, ...currentTierCards.deep_dive_2]
     : overviewCards
   // expandedCard can be either a card ID (string) or full card object (from Collections view)
   const expandedCardData = expandedCard
@@ -7952,6 +8163,7 @@ export default function Canvas() {
                 startFlipped={true}
                 tint="#fafbfc"
                 rootCategoryId={rootCategoryId}
+                definedTerms={[]}
               />
             )}
           </AnimatePresence>
@@ -8298,6 +8510,7 @@ export default function Canvas() {
               slideDirection={expandedCardSlideDirection}
               tint="#fafbfc"
               rootCategoryId={categoryId}
+              definedTerms={[]}
             />
           )}
         </AnimatePresence>
@@ -8488,6 +8701,7 @@ export default function Canvas() {
                 setExpandedCard(prevCard.id)
               }
             }}
+            definedTerms={loadedOutlines[currentDeck?.id]?.defined_terms || []}
           />
         )}
       </AnimatePresence>

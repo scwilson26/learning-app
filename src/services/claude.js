@@ -258,53 +258,78 @@ IMPORTANT - THE USER ALREADY SAW THIS PREVIEW:
 """
 ${previewText}
 """
-Do NOT repeat any facts, numbers, or details from the preview. The 15 cards should teach NEW information that builds on (but doesn't duplicate) what the preview already covered.` : '';
-
-  // Get topic-type specific structure guidance
-  const structureGuidance = getOutlineStructure(topicType);
+Do NOT repeat any facts, numbers, or details from the preview. Cards should teach NEW information that builds on (but doesn't duplicate) what the preview already covered.` : '';
 
   const prompt = `Create a learning outline for "${topic}".${contextNote}${typeNote}${previewNote}
 
-You're planning 12-18 learning cards across 3 tiers. Each tier should have 4-6 cards depending on how much depth the topic needs.
-- Simple/focused topics: 12 cards (4 per tier)
-- Average topics: 15 cards (5 per tier)
-- Complex/rich topics: 18 cards (6 per tier)
+You're planning cards across 2 tiers:
 
-For each card, write a 1-2 sentence concept (what this card teaches).
-${structureGuidance ? structureGuidance : `
-TIER STRUCTURE:
-- CORE (4-6 cards): Foundation. What it is, why it matters, key components/ingredients, how it works, where it came from. After these cards, someone should "get it."
-- DEEP_DIVE_1 (4-6 cards): Deeper angles. Specific examples, notable cases, historical stories, related innovations, how experts think about it.
-- DEEP_DIVE_2 (4-6 cards): Expert territory. Complications, edge cases, modern relevance, connections to other fields, counterintuitive facts.`}
+**CORE (5-10 cards)**: The actual lesson. After Core, someone could explain this topic to a friend and answer basic questions. Stop when you've covered the essentials—not when you hit a number.
+
+**DEEP DIVE (3-6 cards)**: Optional bonus content for the curious. Surprising connections, historical stories, expert-level nuances, "I had no idea" moments.
+
+COMPLETENESS TEST FOR CORE:
+Ask yourself: "Could someone who read only Core cards explain this topic clearly?" If yes, Core is complete. If they'd have obvious gaps, add more cards.
+
+GOLD STANDARD EXAMPLES:
+
+Example 1: "Watt" (unit of power)
+CORE (10 cards):
+1. "What Is a Watt?" - A watt measures how fast energy flows—one joule per second. It's the rate of energy use, not the total amount.
+2. "Watts vs Watt-Hours" - Watts = speed of energy flow. Watt-hours = total energy used over time. A 60W bulb running 2 hours = 120 Wh.
+3. "James Watt's Legacy" - Named after the Scottish engineer who improved the steam engine. He didn't invent it—he made it 3x more efficient.
+4. "Power = Voltage × Current" - The formula P = V × I. A 120V outlet with 10A flowing = 1,200 watts.
+5. "Kilowatts in Daily Life" - 1 kW = 1,000 watts. A microwave uses ~1 kW. Your house might peak at 5-10 kW.
+6. "Horsepower vs Watts" - 1 HP ≈ 746 watts. Watt himself defined horsepower to sell steam engines to horse-using miners.
+7. "Why Watts Matter for Batteries" - A 100 Wh battery can deliver 100W for 1 hour, or 50W for 2 hours. Watts determine how fast you drain it.
+8. "The Watt in Your Electric Bill" - You're billed in kWh. Running 1,000W for 1 hour = 1 kWh ≈ $0.12 average in the US.
+9. "Watts in Exercise" - A Tour de France cyclist sustains 250-400W. Sprinting can hit 2,000W briefly. Most people struggle past 100W for an hour.
+10. "Thermal Watts" - Heat output is measured in watts too. A human body at rest emits ~80W of heat—like a warm light bulb.
+
+DEEP DIVE (4 cards):
+1. "The Horsepower Marketing Trick" - Watt measured actual horses and found huge variation. He picked a high number so his engines would always exceed claims.
+2. "Watts in Sound" - Speaker power in watts is mostly marketing. A 100W speaker isn't 10x louder than 10W—it's about 3x louder (logarithmic).
+3. "Peak vs Sustained Watts" - Devices list peak watts for marketing. A "1500W" blender might only sustain 500W. Know the difference.
+4. "Negative Watts" - Solar panels on your roof can push watts back to the grid—your meter literally runs backward.
+
+Example 2: "Photosynthesis"
+CORE (5 cards):
+1. "The Basic Equation" - 6CO₂ + 6H₂O + light → C₆H₁₂O₆ + 6O₂. Plants take carbon dioxide and water, add sunlight, make sugar and release oxygen.
+2. "Where It Happens" - Inside chloroplasts—tiny green organelles in leaf cells. The green color comes from chlorophyll, the pigment that captures light.
+3. "Light Reactions vs Calvin Cycle" - Two stages: light reactions capture solar energy (in thylakoids), Calvin cycle uses that energy to build sugar (in stroma).
+4. "Why Plants Are Green" - Chlorophyll absorbs red and blue light but reflects green. That reflected green is what we see.
+5. "Oxygen as a Byproduct" - The oxygen we breathe is waste to plants. They split water molecules and release O₂ as a leftover.
+
+DEEP DIVE (3 cards):
+1. "C3 vs C4 Plants" - Most plants use C3 photosynthesis. Corn and sugarcane evolved C4—more efficient in hot, dry conditions. That's why they dominate warm climates.
+2. "The Great Oxygenation Event" - 2.4 billion years ago, cyanobacteria photosynthesis flooded Earth with oxygen. It was poison to most life then—the first mass extinction.
+3. "Artificial Photosynthesis" - Scientists are trying to replicate it for clean fuel. Current efficiency: ~2%. Plants hit 6%. Huge potential if we crack it.
 
 RULES:
-- Each concept = one specific teaching point (not a topic label)
+- Each concept = ONE specific teaching point (not a topic label)
 - No overlap between cards
-- Build progressively — later cards assume earlier knowledge
+- Build progressively—later cards assume earlier knowledge
 - Include specific facts, names, numbers in concept descriptions
 - DO NOT repeat anything from the preview card
-- Use same number of cards in each tier (all 4, all 5, or all 6)
+- Flag 2-4 terms per topic that need popup definitions (prerequisite knowledge the reader might lack)
 
 OUTPUT FORMAT (JSON only, no explanation):
 {
   "core": [
     {"title": "Card title (4-8 words)", "concept": "What this card teaches (1-2 sentences)"},
-    ... (3-5 more, for 4-6 total)
+    ...
   ],
-  "deep_dive_1": [
+  "deep_dive": [
     {"title": "Card title", "concept": "What this card teaches"},
-    ... (3-5 more, for 4-6 total)
+    ...
   ],
-  "deep_dive_2": [
-    {"title": "Card title", "concept": "What this card teaches"},
-    ... (3-5 more, for 4-6 total)
-  ]
+  "defined_terms": ["term1", "term2", "term3"]
 }`;
 
   try {
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 2000,
+      max_tokens: 2500,
       messages: [{ role: 'user', content: prompt }]
     });
 
@@ -319,22 +344,24 @@ OUTPUT FORMAT (JSON only, no explanation):
 
     const outline = JSON.parse(jsonStr);
 
-    // Validate structure
-    if (!outline.core || !outline.deep_dive_1 || !outline.deep_dive_2) {
+    // Validate structure (now two tiers: core and deep_dive)
+    if (!outline.core || !outline.deep_dive) {
       throw new Error('Invalid outline structure');
     }
 
-    // Validate card counts (4-6 per tier, 12-18 total)
     const coreCount = outline.core.length;
-    const dd1Count = outline.deep_dive_1.length;
-    const dd2Count = outline.deep_dive_2.length;
-    const totalCount = coreCount + dd1Count + dd2Count;
+    const ddCount = outline.deep_dive.length;
+    const totalCount = coreCount + ddCount;
 
-    if (coreCount < 4 || coreCount > 6 || dd1Count < 4 || dd1Count > 6 || dd2Count < 4 || dd2Count > 6) {
-      console.warn(`[OUTLINE] Card counts outside 4-6 range: core=${coreCount}, dd1=${dd1Count}, dd2=${dd2Count}`);
+    // Validate card counts (core: 5-10, deep_dive: 3-6)
+    if (coreCount < 5 || coreCount > 10) {
+      console.warn(`[OUTLINE] Core card count outside 5-10 range: ${coreCount}`);
+    }
+    if (ddCount < 3 || ddCount > 6) {
+      console.warn(`[OUTLINE] Deep Dive card count outside 3-6 range: ${ddCount}`);
     }
 
-    console.log(`[OUTLINE] ✅ Generated outline for: ${topic} (${totalCount} concepts: ${coreCount}/${dd1Count}/${dd2Count})`);
+    console.log(`[OUTLINE] ✅ Generated outline for: ${topic} (${totalCount} concepts: Core=${coreCount}, DeepDive=${ddCount}, Terms=${outline.defined_terms?.length || 0})`);
     return { outline };
   } catch (error) {
     console.error('[OUTLINE] Error generating outline:', error);
@@ -2461,19 +2488,14 @@ Return ONLY the text content (80-120 words):`;
 
 const TIER_CONFIG = {
   core: {
-    name: 'Core Essentials',
+    name: 'Core',
     startNumber: 1,
-    guidance: `Foundation. What it is, why it matters, key components, how it works, where it came from. After these 5 cards, someone should GET it—could explain it to a friend.`,
+    guidance: `The actual lesson. After Core, someone could explain this topic to a friend and answer basic questions. Cover the essentials—what it is, why it matters, how it works.`,
   },
-  deep_dive_1: {
-    name: 'Deep Dive 1',
-    startNumber: 6,
-    guidance: `Deeper angles. Specific examples, notable cases, historical stories, related innovations, how experts think about it. Builds on Core knowledge.`,
-  },
-  deep_dive_2: {
-    name: 'Deep Dive 2',
-    startNumber: 11,
-    guidance: `Expert territory. Complications, edge cases, modern relevance, connections to other fields, counterintuitive facts. The stuff that makes someone say "I had no idea."`,
+  deep_dive: {
+    name: 'Deep Dive',
+    startNumber: 11, // Starts after Core (max 10 core cards)
+    guidance: `Optional bonus content for the curious. Surprising connections, historical stories, expert-level nuances, "I had no idea" moments. Reward the learner who wants more.`,
   }
 };
 
@@ -2492,9 +2514,10 @@ export async function generateTierCards(topicName, tier, previousCards = [], par
   const config = TIER_CONFIG[tier];
   if (!config) throw new Error(`Unknown tier: ${tier}`);
 
-  // Determine card count from outline (default to 5 if no outline)
+  // Determine card count from outline (default to 5 for core, 3 for deep_dive if no outline)
   const tierOutline = outline?.[tier];
-  const cardCount = tierOutline?.length || 5;
+  const defaultCount = tier === 'core' ? 5 : 3;
+  const cardCount = tierOutline?.length || defaultCount;
 
   console.log(`[TIER] Generating ${config.name} (${cardCount} cards) for: ${topicName}${onCard ? ' [STREAMING]' : ''}${outline ? ' [WITH OUTLINE]' : ''}`);
 
@@ -2520,20 +2543,10 @@ ${tierOutline.map((c, i) => `${i + 1}. "${c.title}": ${c.concept}`).join('\n')}
 
 Write the full content for each of these planned cards. Use the titles and concepts as your guide.\n`;
 
-      // Also show what's coming in other tiers for context
-      const otherTiers = [];
-      if (tier === 'core' && outline.deep_dive_1) {
-        otherTiers.push(`DEEP DIVE 1 (coming later): ${outline.deep_dive_1.map(c => c.title).join(', ')}`);
-      }
-      if (tier === 'core' && outline.deep_dive_2) {
-        otherTiers.push(`DEEP DIVE 2 (coming later): ${outline.deep_dive_2.map(c => c.title).join(', ')}`);
-      }
-      if (tier === 'deep_dive_1' && outline.deep_dive_2) {
-        otherTiers.push(`DEEP DIVE 2 (coming later): ${outline.deep_dive_2.map(c => c.title).join(', ')}`);
-      }
-      if (otherTiers.length > 0) {
-        outlineContext += `\nFUTURE TIERS (don't cover these yet, but know they're coming):
-${otherTiers.join('\n')}\n`;
+      // Show Deep Dive coming later if generating Core
+      if (tier === 'core' && outline.deep_dive) {
+        outlineContext += `\nDEEP DIVE (coming later - don't cover these yet):
+${outline.deep_dive.map(c => c.title).join(', ')}\n`;
       }
     }
   }
@@ -2546,28 +2559,34 @@ ${config.guidance}
 
 Each card needs:
 - "title": Clear, specific topic (4-8 words)
-- "content": 80-120 words in 2-4 SHORT paragraphs
+- "content": 50-70 words, one idea per card
 
-WRITING STYLE:
-- Hook first with something surprising or concrete
-- Short paragraphs (2-4 sentences max, then whitespace)
-- One main idea per card, explained thoroughly
-- Bold **key terms** that are testable facts (names, dates, numbers, definitions, places)
-- Last line should land with a memorable takeaway
-- Use \\n\\n between paragraphs (line breaks in JSON)
+WRITING RULES:
+- One idea per card. If you're using "and" or "also", you probably have two ideas.
+- Short, clean sentences. No filler words.
+- Build logically—each card assumes knowledge from previous cards.
+- Bold **key terms** that are testable (names, dates, numbers, definitions).
+- Use \\n\\n between paragraphs for readability.
 
-TONE: Like a smart friend explaining something they find fascinating. Conversational but not dumbed down. Confident, direct. Occasional wit, never forced.
+TONE: Like a smart friend explaining something interesting. Confident, direct, conversational. No "Did you know?" energy.
 
-WORD COUNT: Each card MUST be 80-120 words. Not shorter. Count carefully.
+WORD COUNT: Each card MUST be 50-70 words. Count carefully.
 
-EXAMPLE content value (note: ~100 words):
-"The **Rosetta Stone** wasn't one translation—it was three. The same decree appeared in **hieroglyphics**, **Demotic script**, and **Greek**, carved in **196 BC** by priests honoring King Ptolemy V.\\n\\nFor centuries, hieroglyphics were indecipherable—an entire civilization's written history, locked away. Scholars knew the Greek text was the key, but matching symbols to sounds took **23 years** of obsessive work.\\n\\n**Jean-François Champollion** finally cracked it in **1822**, realizing hieroglyphics mixed alphabetic and symbolic elements. His breakthrough unlocked 3,000 years of Egyptian history overnight—temple inscriptions, royal tombs, and medical texts suddenly readable for the first time since antiquity."
+GOLD STANDARD EXAMPLES (note the density and clarity):
+
+Example 1 - "What Is a Watt?" (62 words):
+"A **watt** measures how fast energy flows—one **joule per second**. It's the rate of energy use, not the total amount.\\n\\nThink of it like water: watts are how fast water flows through a pipe, not how much water you have. A 100W bulb uses energy twice as fast as a 50W bulb."
+
+Example 2 - "The Basic Equation" for Photosynthesis (58 words):
+"**6CO₂ + 6H₂O + light → C₆H₁₂O₆ + 6O₂**\\n\\nPlants take carbon dioxide and water, add sunlight, and produce sugar and oxygen. The sugar fuels the plant's growth. The oxygen is released as a byproduct—the air you're breathing right now came from this reaction."
+
+Example 3 - "Horsepower vs Watts" (54 words):
+"**1 horsepower ≈ 746 watts**. James Watt himself created the horsepower unit to sell steam engines to miners who used horses.\\n\\nHe measured how much work a horse could do, then showed his engines could match it. The comparison stuck—we still rate car engines in horsepower today."
 
 RULES:
 - Specific facts, numbers, names (not vague statements)
-- Each card = one concept, not a summary
+- Each card = one concept, fully explained
 - No overlap with previous cards
-- No "Did you know?" or "Fascinating!" energy
 - Every bolded term should be potentially quizzable
 
 Output each card with delimiters:
@@ -2704,6 +2723,55 @@ Output each card with delimiters:
   } catch (error) {
     console.error(`[TIER] Error generating ${config.name}:`, error);
     throw error;
+  }
+}
+
+// ============================================================================
+// POPUP DEFINITIONS: On-demand term definitions
+// ============================================================================
+
+/**
+ * Generate a brief definition for a term when user taps it
+ * @param {string} term - The term to define
+ * @param {string} topicContext - The topic the term appears in (for context)
+ * @returns {Promise<{definition: string}>}
+ */
+export async function generateDefinition(term, topicContext = null) {
+  console.log(`[DEFINITION] Generating definition for: "${term}"${topicContext ? ` (context: ${topicContext})` : ''}`);
+
+  const contextNote = topicContext ? ` in the context of "${topicContext}"` : '';
+
+  const prompt = `Define "${term}"${contextNote} in ONE brief phrase or sentence.
+
+RULES:
+- Maximum 15 words
+- Simple, everyday language
+- Just the definition—no "X is..." or "X refers to..."
+- If it's a unit, include what it measures
+- If it's a person, include why they matter (2-3 words)
+
+EXAMPLES:
+- "joule" → "A unit of energy—roughly the energy to lift an apple one meter"
+- "chloroplast" → "Tiny green structures inside plant cells where photosynthesis happens"
+- "James Watt" → "Scottish engineer who dramatically improved the steam engine"
+- "ATP" → "The molecule cells use as energy currency"
+- "photon" → "A single particle of light"
+
+Output ONLY the definition, nothing else.`;
+
+  try {
+    const message = await anthropic.messages.create({
+      model: 'claude-3-5-haiku-20241022', // Fast model for quick definitions
+      max_tokens: 100,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    const definition = message.content[0].text.trim();
+    console.log(`[DEFINITION] ✅ "${term}" → "${definition}"`);
+    return { definition };
+  } catch (error) {
+    console.error('[DEFINITION] Error generating definition:', error);
+    throw new Error('Failed to generate definition');
   }
 }
 
