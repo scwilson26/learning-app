@@ -578,7 +578,7 @@ function formatSubsectionsAsConcept(subsections) {
 }
 
 /**
- * Format subsections into card content (the actual teaching text)
+ * Format subsections into card content (preserves outline structure)
  */
 function formatSubsectionsAsContent(subsections) {
   const parts = [];
@@ -587,9 +587,9 @@ function formatSubsectionsAsContent(subsections) {
     // Add subsection title as bold header
     let section = `**${sub.title}**`;
 
-    // Add bullets as sentences
+    // Add bullets as a list (preserving structure)
     if (sub.bullets.length > 0) {
-      section += '\n' + sub.bullets.join(' ');
+      section += '\n' + sub.bullets.map(b => `• ${b}`).join('\n');
     }
 
     parts.push(section);

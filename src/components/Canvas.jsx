@@ -2602,79 +2602,53 @@ function DeckSpread({
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
               >
-                <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 text-left">
+                <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 text-left max-h-96 overflow-y-auto">
                   {outline.topic_type && (
                     <div className="mb-3 text-xs text-gray-400 uppercase tracking-wide">
                       {outline.topic_type}
                     </div>
                   )}
 
-                  {/* Core */}
-                  {outline.core && outline.core.length > 0 && (
-                    <div className="mb-4">
-                      <div className="text-xs font-semibold text-gray-600 mb-2">Core ({outline.core.length} cards)</div>
-                      <ul className="space-y-1">
-                        {outline.core.map((card, i) => (
-                          <li key={i} className="text-xs text-gray-600">
-                            <span className="font-medium">{card.title}</span>
-                            {card.concept && (
-                              <span className="text-gray-400 ml-1">— {card.concept}</span>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                  {/* New: Show raw outline if available */}
+                  {outline.raw_outline ? (
+                    <pre className="text-xs text-gray-700 whitespace-pre-wrap font-sans leading-relaxed">
+                      {outline.raw_outline}
+                    </pre>
+                  ) : (
+                    /* Legacy: Show card list for old outlines */
+                    <>
+                      {outline.core && outline.core.length > 0 && (
+                        <div className="mb-4">
+                          <div className="text-xs font-semibold text-gray-600 mb-2">Core ({outline.core.length} cards)</div>
+                          <ul className="space-y-1">
+                            {outline.core.map((card, i) => (
+                              <li key={i} className="text-xs text-gray-600">
+                                <span className="font-medium">{card.title}</span>
+                                {card.concept && (
+                                  <span className="text-gray-400 ml-1">— {card.concept}</span>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
 
-                  {/* Deep Dive (new two-tier system) */}
-                  {outline.deep_dive && outline.deep_dive.length > 0 && (
-                    <div>
-                      <div className="text-xs font-semibold text-gray-600 mb-2">Deep Dive ({outline.deep_dive.length} cards)</div>
-                      <ul className="space-y-1">
-                        {outline.deep_dive.map((card, i) => (
-                          <li key={i} className="text-xs text-gray-600">
-                            <span className="font-medium">{card.title}</span>
-                            {card.concept && (
-                              <span className="text-gray-400 ml-1">— {card.concept}</span>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Legacy: Deep Dive 1 (for old outlines) */}
-                  {outline.deep_dive_1 && outline.deep_dive_1.length > 0 && !outline.deep_dive && (
-                    <div className="mb-4">
-                      <div className="text-xs font-semibold text-gray-600 mb-2">Deep Dive 1</div>
-                      <ul className="space-y-1">
-                        {outline.deep_dive_1.map((card, i) => (
-                          <li key={i} className="text-xs text-gray-600">
-                            <span className="font-medium">{card.title}</span>
-                            {card.concept && (
-                              <span className="text-gray-400 ml-1">— {card.concept}</span>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Legacy: Deep Dive 2 (for old outlines) */}
-                  {outline.deep_dive_2 && outline.deep_dive_2.length > 0 && !outline.deep_dive && (
-                    <div>
-                      <div className="text-xs font-semibold text-gray-600 mb-2">Deep Dive 2</div>
-                      <ul className="space-y-1">
-                        {outline.deep_dive_2.map((card, i) => (
-                          <li key={i} className="text-xs text-gray-600">
-                            <span className="font-medium">{card.title}</span>
-                            {card.concept && (
-                              <span className="text-gray-400 ml-1">— {card.concept}</span>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+                      {outline.deep_dive && outline.deep_dive.length > 0 && (
+                        <div>
+                          <div className="text-xs font-semibold text-gray-600 mb-2">Deep Dive ({outline.deep_dive.length} cards)</div>
+                          <ul className="space-y-1">
+                            {outline.deep_dive.map((card, i) => (
+                              <li key={i} className="text-xs text-gray-600">
+                                <span className="font-medium">{card.title}</span>
+                                {card.concept && (
+                                  <span className="text-gray-400 ml-1">— {card.concept}</span>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </motion.div>
@@ -4039,11 +4013,12 @@ export default function Canvas() {
     console.log(`[OUTLINE] Starting background outline generation for: ${topicName}${previewText ? ' (with preview context)' : ''}${topicType ? ` [${topicType}]` : ''}`)
     const promise = (async () => {
       try {
-        const { outline } = await generateTopicOutline(topicName, parentContext, previewText, topicType)
+        const { outline, rawOutline } = await generateTopicOutline(topicName, parentContext, previewText, topicType)
 
-        // Add topicType to outline for future reference
+        // Add topicType and rawOutline for future reference
         const outlineWithMeta = {
           ...outline,
+          raw_outline: rawOutline,
           topic_type: topicType || null
         }
 
