@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { CATEGORY_THEMES, getCategoryTheme, hasCustomTheme, isDarkTheme } from '../themes'
+import { getCategoryTheme, hasCustomTheme, isDarkTheme } from '../themes'
 import { generateSubDecks, generateSingleCardContent, generateTierCards, generateTopicPreview, generateTopicOutline, generateFlashcardsFromCard, classifyTopic } from '../services/claude'
 import { supabase, onAuthStateChange, signOut, syncCards, getCanonicalCardsForTopic, upsertCanonicalCard, getPreviewCardRemote, savePreviewCardRemote, getOutline, saveOutline, syncFlashcards, upsertFlashcardRemote, upsertFlashcardsRemote } from '../services/supabase'
 import Auth from './Auth'
@@ -812,7 +812,7 @@ function ContinueExploringSection({ decks, onOpenDeck }) {
           return (
             <motion.button
               key={deck.id}
-              onClick={() => onOpenDeck({ id: deck.id, name: deck.name })}
+              onClick={() => onOpenDeck({ id: deck.id, name: deck.name, rootCategoryId: deck.rootCategoryId })}
               className="flex-shrink-0 w-32 rounded-xl p-3 text-left transition-all"
               style={{
                 background: isThemed ? theme.cardBg : '#ffffff',
@@ -4107,6 +4107,9 @@ export default function Canvas() {
         ? stackDecks.map(d => d.name).join(' > ')
         : null
 
+      // Determine root category for theming - from deck prop, current stack, or extract from ID
+      const rootCategoryId = deck.rootCategoryId || stackDecks[0]?.id || findRootCategory(deck.id)
+
       // Check if we already have the preview card locally
       const existingPreview = getPreviewCard(deck.id)
       if (existingPreview) {
@@ -4117,7 +4120,8 @@ export default function Canvas() {
           preview: existingPreview.content,
           cardId: existingPreview.cardId,
           isLoading: false,
-          claimed: existingPreview.claimed
+          claimed: existingPreview.claimed,
+          rootCategoryId: rootCategoryId
         })
 
         // [BACKGROUND OUTLINE] Start outline generation while user reads preview
@@ -4131,7 +4135,8 @@ export default function Canvas() {
           preview: null,
           cardId: null,
           isLoading: true,
-          claimed: false
+          claimed: false,
+          rootCategoryId: rootCategoryId
         })
 
         try {
@@ -6928,7 +6933,7 @@ export default function Canvas() {
             isLoading={showPreviewCard.isLoading}
             claimed={showPreviewCard.claimed}
             cardId={showPreviewCard.cardId}
-            rootCategoryId={stackDecks[0]?.id}
+            rootCategoryId={showPreviewCard.rootCategoryId || stackDecks[0]?.id}
             isCurrentPage={showPreviewCard.deckId === stackDecks[stackDecks.length - 1]?.id}
             onClaim={() => {
               // Claim the preview card
@@ -6937,8 +6942,14 @@ export default function Canvas() {
               setShowPreviewCard(prev => ({ ...prev, claimed: true }))
             }}
             onDealMeIn={() => {
-              // From clicking a topic - just add to current stack
-              setStack(prev => [...prev, showPreviewCard.deckId])
+              // From clicking a topic - build proper stack with root category
+              if (stack.length === 0 && showPreviewCard.rootCategoryId) {
+                // Coming from home (e.g., Continue Exploring) - set stack with root category first
+                setStack([showPreviewCard.rootCategoryId, showPreviewCard.deckId])
+              } else {
+                // Already navigating - add to current stack
+                setStack(prev => [...prev, showPreviewCard.deckId])
+              }
               setShowPreviewCard(null)
             }}
             onWander={() => {
