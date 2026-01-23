@@ -23,6 +23,7 @@ import {
   getTierCards,
   getDeckTierCompletion,
   unlockTier,
+  getUnlockedTiers,
   getTreeChildren,
   isTreeDeck,
   getTreeNode,
@@ -2698,6 +2699,7 @@ function DeckSpread({
   // Tier-related props
   tierCards,
   tierCompletion,
+  unlockedTiers,
   onUnlockTier,
   unlockingTier,
   // Section-related props (for Level 1)
@@ -2903,9 +2905,9 @@ function DeckSpread({
           {tiers.map((tier, tierIndex) => {
             const cards = tierCards[tier.key] || []
             const completion = tierCompletion[tier.key] || { claimed: 0, total: 0 }
-            const prevTier = tierIndex > 0 ? tiers[tierIndex - 1] : null
-            const prevComplete = prevTier ? tierCompletion[prevTier.key]?.complete : true
-            const isLocked = !prevComplete
+            // Tier is locked if not explicitly unlocked (core is always unlocked)
+            // Handle both new (deep_dive) and legacy (deep_dive_1) tier names
+            const isLocked = tier.key !== 'core' && !unlockedTiers?.includes(tier.key)
 
             // Hide Deep Dive 2 entirely until Deep Dive 1 is complete
             if (tier.key === 'deep_dive_2' && !tierCompletion.deep_dive_1?.complete) {
@@ -7530,6 +7532,7 @@ export default function Canvas() {
               }}
               tierCards={currentTierCards}
               tierCompletion={currentTierCompletion}
+              unlockedTiers={currentDeck ? getUnlockedTiers(currentDeck.id) : ['core']}
               onUnlockTier={handleUnlockTier}
               unlockingTier={unlockingTier}
               sections={currentSections}

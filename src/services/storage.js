@@ -1288,6 +1288,17 @@ export function unlockTier(deckId, tier) {
 }
 
 /**
+ * Get unlocked tiers for a deck
+ * @param {string} deckId - The deck ID
+ * @returns {Array} Array of unlocked tier names (e.g., ['core', 'deep_dive'])
+ */
+export function getUnlockedTiers(deckId) {
+  const data = getData()
+  const deck = data.decks[deckId]
+  return deck?.unlockedTiers || ['core']
+}
+
+/**
  * Get user archetype
  * @returns {string|null} The archetype or null if not set
  */
