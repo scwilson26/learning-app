@@ -1116,6 +1116,7 @@ function RabbitHoleSheet({
   onClaim,
   onExplore,
   onClose,
+  onRabbitHoleClick,
   rootCategoryId
 }) {
   const theme = getCategoryTheme(rootCategoryId)
@@ -1133,7 +1134,7 @@ function RabbitHoleSheet({
 
   return (
     <motion.div
-      className="fixed inset-0 z-50 flex items-end justify-center"
+      className="fixed inset-0 z-[60] flex items-end justify-center"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -1141,7 +1142,7 @@ function RabbitHoleSheet({
     >
       {/* Dimmed backdrop */}
       <motion.div
-        className="absolute inset-0 bg-black/40"
+        className="absolute inset-0 bg-black/50"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -1243,7 +1244,7 @@ function RabbitHoleSheet({
               className="text-sm leading-relaxed whitespace-pre-line"
               style={{ color: isThemed ? theme.textPrimary : '#374151' }}
             >
-              {renderMarkdown(preview)}
+              {renderMarkdown(preview, topic, onRabbitHoleClick)}
             </div>
           )}
         </div>
@@ -1281,6 +1282,7 @@ function PreviewCardModal({
   onDealMeIn,
   onWander,
   onBack,
+  onRabbitHoleClick,
   rootCategoryId,
   isCurrentPage = false // True if we're already on this topic's page
 }) {
@@ -1415,7 +1417,7 @@ function PreviewCardModal({
             {/* Content area */}
             <div className="flex-1 overflow-auto relative z-10">
               <div className="text-sm leading-relaxed whitespace-pre-line" style={{ color: isThemed ? theme.textPrimary : '#374151' }}>
-                {renderMarkdown(preview)}
+                {renderMarkdown(preview, topic, onRabbitHoleClick)}
               </div>
             </div>
 
@@ -1523,6 +1525,7 @@ function WanderCard({
   onExplore,
   onWander,
   onBack,
+  onRabbitHoleClick,
   rootCategoryId
 }) {
   const [isFlipped, setIsFlipped] = useState(true) // Start flipped to show content
@@ -1749,7 +1752,7 @@ function WanderCard({
 
               {/* Content */}
               <div className="flex-1 overflow-auto text-sm leading-relaxed relative z-10" style={{ color: isThemed ? theme.textPrimary : '#374151' }}>
-                {renderMarkdown(previewData.preview)}
+                {renderMarkdown(previewData.preview, previewData.title, onRabbitHoleClick)}
               </div>
 
               {/* Card ID - bottom left corner */}
@@ -3539,7 +3542,10 @@ export default function Canvas() {
       updateDeckLastInteracted(rabbitHolePreview.treeNodeId)
     }
 
+    // Close everything - rabbit hole sheet, any underlying preview card, expanded card
     setRabbitHolePreview(null)
+    setShowPreviewCard(null)
+    setWanderPathSteps([])
     setExpandedCard(null)
   }
 
@@ -6893,6 +6899,7 @@ export default function Canvas() {
                 setWanderPathSteps([])
                 setIsWandering(false)
               }}
+              onRabbitHoleClick={handleRabbitHoleClick}
               rootCategoryId={showPreviewCard?.navigatePath?.[0] || wanderPathSteps[0]?.id}
             />
           )}
@@ -6936,6 +6943,7 @@ export default function Canvas() {
               onBack={() => {
                 setShowPreviewCard(null)
               }}
+              onRabbitHoleClick={handleRabbitHoleClick}
             />
           )}
         </AnimatePresence>
@@ -7597,6 +7605,7 @@ export default function Canvas() {
             }}
             onExplore={handleExploreRabbitHole}
             onClose={() => setRabbitHolePreview(null)}
+            onRabbitHoleClick={handleRabbitHoleClick}
             rootCategoryId={rabbitHolePreview.category}
           />
         )}
@@ -7691,6 +7700,7 @@ export default function Canvas() {
             onBack={() => {
               setShowPreviewCard(null)
             }}
+            onRabbitHoleClick={handleRabbitHoleClick}
           />
         )}
       </AnimatePresence>
@@ -7741,6 +7751,7 @@ export default function Canvas() {
               setWanderPathSteps([])
               setIsWandering(false)
             }}
+            onRabbitHoleClick={handleRabbitHoleClick}
             rootCategoryId={showPreviewCard?.navigatePath?.[0] || wanderPathSteps[0]?.id}
           />
         )}
