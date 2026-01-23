@@ -274,7 +274,7 @@ DEEP_DIVE_2 (11-15): Controversies, competitors, internal culture, future challe
  * @param {string} topicType - Optional classified topic type for structure guidance
  * @returns {Promise<{outline: Object}>} outline with core, deep_dive_1, deep_dive_2 arrays
  */
-export async function generateTopicOutline(topic, parentContext = null, previewText = null, topicType = null, onSection = null) {
+export async function generateTopicOutline(topic, parentContext = null, previewText = null, topicType = null, onSection = null, onCounts = null) {
   console.log(`[OUTLINE] Generating outline for: ${topic}${previewText ? ' (with preview context)' : ''}${topicType ? ` [${topicType}]` : ''}${onSection ? ' [STREAMING]' : ''}`);
 
   const contextNote = parentContext ? `\nContext: "${topic}" is under "${parentContext}"` : '';
@@ -293,6 +293,12 @@ Do NOT repeat any facts, numbers, or details from the preview. The outline shoul
 You're a teacher planning a lesson. Write out EVERYTHING someone needs to understand this topic - organized logically, with full explanations.
 
 This is not a list of facts. This is the actual lesson, written out in outline form.
+
+IMPORTANT - START WITH COUNTS:
+Before writing the outline, output exactly these two lines first:
+[CORE_COUNT: X]
+[DEEP_COUNT: X]
+where X is the number of sections you plan to write for each. Then write the outline as normal.
 
 FORMAT:
 - Roman numerals (I, II, III) for main sections
@@ -446,11 +452,17 @@ Return the full outline as structured text with [CORE] and [DEEP DIVE] labels. E
     // If streaming callback provided, stream and parse sections as they complete
     if (onSection) {
       let buffer = '';
-      let sectionCount = 0;
+      let totalSectionCount = 0;
+      const tierSectionCount = { core: 0, deep_dive: 0 };
       const streamedCards = { core: [], deep_dive: [] };
+      let countsParsed = false;
 
       // Regex to detect section headers
       const sectionHeaderRegex = /^(?:#{1,3}\s*)?([IVXLC]+)\.\s+(.+?)(?:\s+\[(CORE|DEEP DIVE)\])?\s*$/im;
+
+      // Regex to detect count lines
+      const coreCountRegex = /\[CORE_COUNT:\s*(\d+)\]/i;
+      const deepCountRegex = /\[DEEP_COUNT:\s*(\d+)\]/i;
 
       const stream = await anthropic.messages.create({
         model: MODELS.CONTENT,
@@ -462,6 +474,19 @@ Return the full outline as structured text with [CORE] and [DEEP DIVE] labels. E
       for await (const event of stream) {
         if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
           buffer += event.delta.text;
+
+          // Try to parse counts early (before sections start)
+          if (!countsParsed && onCounts) {
+            const coreMatch = buffer.match(coreCountRegex);
+            const deepMatch = buffer.match(deepCountRegex);
+            if (coreMatch && deepMatch) {
+              const coreCount = parseInt(coreMatch[1], 10);
+              const deepCount = parseInt(deepMatch[1], 10);
+              console.log(`[OUTLINE STREAM] Counts detected: core=${coreCount}, deep_dive=${deepCount}`);
+              onCounts(coreCount, deepCount);
+              countsParsed = true;
+            }
+          }
 
           // Check if we have a complete section (next section header found)
           // Split buffer to find section boundaries
@@ -489,14 +514,15 @@ Return the full outline as structured text with [CORE] and [DEEP DIVE] labels. E
             // Parse this single section
             const parsed = parseSingleSection(sectionText);
             if (parsed) {
-              sectionCount++;
               const tier = parsed.tier === 'deep_dive' ? 'deep_dive' : 'core';
+              tierSectionCount[tier]++;
+              totalSectionCount++;
               streamedCards[tier].push(parsed.card);
 
-              console.log(`[OUTLINE STREAM] Section ${sectionCount} ready: "${parsed.card.title}" [${tier}]`);
+              console.log(`[OUTLINE STREAM] Section ${totalSectionCount} ready: "${parsed.card.title}" [${tier}] (${tier} #${tierSectionCount[tier]})`);
 
-              // Fire callback with the card
-              onSection(parsed.card, tier, sectionCount);
+              // Fire callback with the card - pass tier-specific section number for placeholder indexing
+              onSection(parsed.card, tier, tierSectionCount[tier]);
             }
 
             // Keep only from the next section onwards in buffer
@@ -514,11 +540,12 @@ Return the full outline as structured text with [CORE] and [DEEP DIVE] labels. E
         if (remainingSection.trim()) {
           const parsed = parseSingleSection(remainingSection);
           if (parsed) {
-            sectionCount++;
             const tier = parsed.tier === 'deep_dive' ? 'deep_dive' : 'core';
+            tierSectionCount[tier]++;
+            totalSectionCount++;
             streamedCards[tier].push(parsed.card);
-            console.log(`[OUTLINE STREAM] Final section ${sectionCount} ready: "${parsed.card.title}" [${tier}]`);
-            onSection(parsed.card, tier, sectionCount);
+            console.log(`[OUTLINE STREAM] Final section ${totalSectionCount} ready: "${parsed.card.title}" [${tier}] (${tier} #${tierSectionCount[tier]})`);
+            onSection(parsed.card, tier, tierSectionCount[tier]);
           }
         }
       }
@@ -532,7 +559,7 @@ Return the full outline as structured text with [CORE] and [DEEP DIVE] labels. E
         popup_terms: popupTerms
       };
 
-      console.log(`[OUTLINE] ✅ Streamed outline for: ${topic} (${sectionCount} sections: Core=${outline.core.length}, DeepDive=${outline.deep_dive.length})`);
+      console.log(`[OUTLINE] ✅ Streamed outline for: ${topic} (${totalSectionCount} sections: Core=${outline.core.length}, DeepDive=${outline.deep_dive.length})`);
       return { outline, rawOutline: buffer };
     }
 

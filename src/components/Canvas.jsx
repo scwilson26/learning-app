@@ -882,7 +882,8 @@ function TierSection({ tier, tierName, cards, claimedCards, onReadCard, completi
   }, [cards])
 
   if (isLocked) {
-    const lockedCount = outline?.[tier]?.length || 5
+    // Get count from outline, or from cards array (which may have placeholders), or default to 3
+    const lockedCount = outline?.[tier]?.length || cards?.length || 3
     return (
       <div className="flex flex-col items-center gap-3">
         <div className="flex items-center gap-2">
@@ -2082,6 +2083,58 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
   const isTech = rootCategoryId === 'technology'
   const isHistory = rootCategoryId === 'history'
   const isArts = rootCategoryId === 'arts'
+
+  // If this is a placeholder card, render shimmer skeleton
+  if (card.isPlaceholder) {
+    return (
+      <div
+        className="relative w-full rounded-2xl overflow-hidden"
+        style={{
+          maxWidth: '340px',
+          aspectRatio: '3/4',
+          ...getExpandedCardStyle(rootCategoryId, theme, false, tint)
+        }}
+      >
+        {renderExpandedCardDecorations(rootCategoryId, theme)}
+        {/* Close button */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onClose(); }}
+          className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full transition-colors z-20"
+          style={{
+            background: isThemed ? theme.cardBgAlt : '#f3f4f6',
+            color: isThemed ? theme.textSecondary : '#6b7280'
+          }}
+          aria-label="Close"
+        >
+          <span className="text-lg font-light">×</span>
+        </button>
+        {/* Shimmer loading skeleton */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-6">
+          <style>{`
+            @keyframes shimmer {
+              0% { background-position: -200% 0; }
+              100% { background-position: 200% 0; }
+            }
+            .shimmer-bar {
+              background: linear-gradient(90deg,
+                ${isThemed ? theme.cardBgAlt : '#e5e7eb'} 25%,
+                ${isThemed ? theme.cardBg : '#f3f4f6'} 50%,
+                ${isThemed ? theme.cardBgAlt : '#e5e7eb'} 75%);
+              background-size: 200% 100%;
+              animation: shimmer 1.5s infinite;
+            }
+          `}</style>
+          {/* Title placeholder */}
+          <div className="shimmer-bar w-3/4 h-6 rounded-md mb-4" />
+          <div className="shimmer-bar w-1/2 h-4 rounded-md" />
+          <div className="absolute bottom-6 text-sm" style={{ color: isThemed ? theme.textSecondary : '#9ca3af' }}>
+            Loading...
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   // Content comes directly from the outline - no separate generation needed
   const [content, setContent] = useState(card.content || null)
   const [displayedContent, setDisplayedContent] = useState(card.content || '')
@@ -2663,7 +2716,9 @@ function DeckSpread({
   const [showOutline, setShowOutline] = useState(false)
 
   // Detect if this is a new two-tier outline or legacy three-tier
-  const isNewTwoTierSystem = outline?.deep_dive && !outline?.deep_dive_1
+  // Check both outline AND tierCards (tierCards may have placeholders before outline loads)
+  const isNewTwoTierSystem = (outline?.deep_dive && !outline?.deep_dive_1) ||
+                             (tierCards?.deep_dive?.length > 0 && !tierCards?.deep_dive_1?.length)
 
   // Tier metadata - dynamically based on outline type
   const tiers = isNewTwoTierSystem
@@ -3731,33 +3786,38 @@ export default function Canvas() {
       if (streamingInProgress) {
         console.log(`[PREBUILT] Background streaming still in progress, subscribing to updates...`)
 
+        // Helper to count non-placeholder cards
+        const countRealCards = (cards) => cards.filter(c => !c.isPlaceholder).length
+
         // Track what we've already shown (using closure to persist across interval calls)
-        let lastSeenCoreCount = coreCards.length
-        let lastSeenDeepDiveCount = deepDiveCards.length
+        let lastSeenCoreReal = countRealCards(coreCards)
+        let lastSeenDeepDiveReal = countRealCards(deepDiveCards)
         let hasShownFirstCard = coreCards.length > 0
 
         // Poll for new cards while streaming continues (500ms to reduce spam)
         const pollInterval = setInterval(() => {
           const currentPrebuilt = prebuiltCardsRef.current[deck.id]
           if (currentPrebuilt && currentPrebuilt.core) {
-            const currentCoreCount = currentPrebuilt.core.length
-            const currentDeepDiveCount = currentPrebuilt.deep_dive.length
+            const currentCoreReal = countRealCards(currentPrebuilt.core)
+            const currentDeepDiveReal = countRealCards(currentPrebuilt.deep_dive)
+            const totalCards = currentPrebuilt.core.length + currentPrebuilt.deep_dive.length
 
-            // Only update if there are actually NEW cards since last poll
-            if (currentCoreCount > lastSeenCoreCount || currentDeepDiveCount > lastSeenDeepDiveCount) {
-              console.log(`[PREBUILT] New cards: core=${lastSeenCoreCount}→${currentCoreCount}, deep_dive=${lastSeenDeepDiveCount}→${currentDeepDiveCount}`)
+            // Update on: new placeholders added (array length change) OR placeholders replaced with real content
+            const hasNewPlaceholders = (currentPrebuilt.core.length + currentPrebuilt.deep_dive.length) > (coreCards.length + deepDiveCards.length)
+            const hasNewRealCards = currentCoreReal > lastSeenCoreReal || currentDeepDiveReal > lastSeenDeepDiveReal
 
-              // Clear loading on first card
-              if (!hasShownFirstCard && currentCoreCount > 0) {
+            if (hasNewPlaceholders || hasNewRealCards) {
+              console.log(`[PREBUILT] Update: core=${lastSeenCoreReal}→${currentCoreReal}/${currentPrebuilt.core.length}, deep_dive=${lastSeenDeepDiveReal}→${currentDeepDiveReal}/${currentPrebuilt.deep_dive.length}`)
+
+              // Clear loading on first card (even if placeholder)
+              if (!hasShownFirstCard && totalCards > 0) {
                 setLoadingDeck(null)
                 hasShownFirstCard = true
               }
 
-              // Update content cache for truly new cards
-              const newCoreCards = currentPrebuilt.core.slice(lastSeenCoreCount)
-              const newDeepDiveCards = currentPrebuilt.deep_dive.slice(lastSeenDeepDiveCount)
-              ;[...newCoreCards, ...newDeepDiveCards].forEach(card => {
-                if (card.content) {
+              // Update content cache for new real cards
+              ;[...currentPrebuilt.core, ...currentPrebuilt.deep_dive].forEach(card => {
+                if (card.content && !card.isPlaceholder) {
                   setGeneratedContent(prevContent => ({
                     ...prevContent,
                     [card.id]: card.content
@@ -3766,8 +3826,8 @@ export default function Canvas() {
               })
 
               // Update the counts BEFORE updating state to prevent re-triggering
-              lastSeenCoreCount = currentCoreCount
-              lastSeenDeepDiveCount = currentDeepDiveCount
+              lastSeenCoreReal = currentCoreReal
+              lastSeenDeepDiveReal = currentDeepDiveReal
 
               setTierCards(prev => ({
                 ...prev,
@@ -4501,41 +4561,86 @@ export default function Canvas() {
       console.warn(`[OUTLINE] Error checking for existing outline:`, err)
     }
 
-    // Initialize pre-built cards storage
-    prebuiltCardsRef.current[deckId] = { core: [], deep_dive: [] }
+    // Initialize pre-built cards storage with expected counts
+    prebuiltCardsRef.current[deckId] = {
+      core: [],
+      deep_dive: [],
+      expectedCoreCount: null,
+      expectedDeepCount: null
+    }
 
     // Start new generation WITH STREAMING - cards are pre-built as sections complete
     console.log(`[OUTLINE] Starting STREAMING background generation for: ${topicName}${previewText ? ' (with preview context)' : ''}${topicType ? ` [${topicType}]` : ''}`)
     const promise = (async () => {
       try {
+        // Counts callback - fires early when we know how many cards to expect
+        const onCounts = (coreCount, deepCount) => {
+          console.log(`[OUTLINE STREAM] Creating ${coreCount} core + ${deepCount} deep_dive placeholders`)
+          prebuiltCardsRef.current[deckId].expectedCoreCount = coreCount
+          prebuiltCardsRef.current[deckId].expectedDeepCount = deepCount
+
+          // Create placeholder cards for core tier
+          for (let i = 0; i < coreCount; i++) {
+            const placeholderId = `${deckId}-core-placeholder-${i}`
+            prebuiltCardsRef.current[deckId].core.push({
+              id: placeholderId,
+              tier: 'core',
+              tierIndex: i,
+              title: null,
+              content: null,
+              isPlaceholder: true
+            })
+          }
+
+          // Create placeholder cards for deep_dive tier
+          for (let i = 0; i < deepCount; i++) {
+            const placeholderId = `${deckId}-deep_dive-placeholder-${i}`
+            prebuiltCardsRef.current[deckId].deep_dive.push({
+              id: placeholderId,
+              tier: 'deep_dive',
+              tierIndex: i,
+              title: null,
+              content: null,
+              isPlaceholder: true
+            })
+          }
+        }
+
         // Streaming callback - pre-build cards as sections complete
+        // Now replaces placeholder cards instead of pushing new ones
         const onSection = (card, tier, sectionNumber) => {
           const timestamp = Date.now()
+          const tierArray = tier === 'core'
+            ? prebuiltCardsRef.current[deckId].core
+            : prebuiltCardsRef.current[deckId].deep_dive
+
+          // Find the placeholder index (sectionNumber is 1-based, array is 0-based)
+          const placeholderIndex = sectionNumber - 1
+
           const cardWithMeta = {
             ...card,
             id: `${deckId}-${tier}-${sectionNumber}-${timestamp}`,
             tier,
-            tierIndex: tier === 'core'
-              ? prebuiltCardsRef.current[deckId].core.length
-              : prebuiltCardsRef.current[deckId].deep_dive.length,
-            contentLoaded: true
+            tierIndex: placeholderIndex,
+            contentLoaded: true,
+            isPlaceholder: false
           }
 
           // Save card to localStorage immediately
           const cardId = saveStreamedCard(deckId, topicName, cardWithMeta, tier, null)
           cardWithMeta.cardId = cardId
 
-          // Store in pre-built cards ref
-          if (tier === 'core') {
-            prebuiltCardsRef.current[deckId].core.push(cardWithMeta)
+          // Replace placeholder at the correct index, or push if no placeholder exists
+          if (placeholderIndex < tierArray.length && tierArray[placeholderIndex]?.isPlaceholder) {
+            tierArray[placeholderIndex] = cardWithMeta
+            console.log(`[OUTLINE STREAM] Replaced placeholder ${placeholderIndex}: "${card.title}" [${tier}]`)
           } else {
-            prebuiltCardsRef.current[deckId].deep_dive.push(cardWithMeta)
+            tierArray.push(cardWithMeta)
+            console.log(`[OUTLINE STREAM] Pre-built card ${sectionNumber}: "${card.title}" [${tier}]`)
           }
-
-          console.log(`[OUTLINE STREAM] Pre-built card ${sectionNumber}: "${card.title}" [${tier}]`)
         }
 
-        const { outline, rawOutline } = await generateTopicOutline(topicName, parentContext, previewText, topicType, onSection)
+        const { outline, rawOutline } = await generateTopicOutline(topicName, parentContext, previewText, topicType, onSection, onCounts)
 
         // Add topicType and rawOutline for future reference
         const outlineWithMeta = {
@@ -5301,17 +5406,34 @@ export default function Canvas() {
   useEffect(() => {
     if (!currentDeck) return
 
+    // Helper: Check if a specific tier has all its cards generated (non-placeholder)
+    const isTierFullyGenerated = (tier) => {
+      const prebuilt = prebuiltCardsRef.current[currentDeck.id]
+      if (!prebuilt) return true // No prebuilt data means not using streaming, allow check
+
+      const expectedCount = tier === 'core' ? prebuilt.expectedCoreCount
+                          : tier === 'deep_dive' ? prebuilt.expectedDeepCount
+                          : null
+      if (expectedCount === null || expectedCount === undefined) return true // No expected count, allow check
+
+      const tierCards = prebuilt[tier] || []
+      const realCards = tierCards.filter(c => !c.isPlaceholder)
+      return realCards.length >= expectedCount
+    }
+
     const completion = getDeckTierCompletion(currentDeck.id)
     const lastCompleted = lastCompletedTier[currentDeck.id]
 
     // Debug logging
-    console.log(`[CELEBRATION CHECK] deck=${currentDeck.id} core=${completion.core.claimed}/${completion.core.total} complete=${completion.core.complete} lastCompleted=${lastCompleted}`)
+    const coreReady = isTierFullyGenerated('core')
+    const deepDiveReady = isTierFullyGenerated('deep_dive')
+    console.log(`[CELEBRATION CHECK] deck=${currentDeck.id} core=${completion.core.claimed}/${completion.core.total} complete=${completion.core.complete} lastCompleted=${lastCompleted} coreReady=${coreReady} ddReady=${deepDiveReady}`)
 
     // Detect if this deck uses new two-tier or legacy three-tier system
     const isNewTwoTier = !!(tierCards[currentDeck.id]?.deep_dive?.length > 0) || !!loadedOutlines[currentDeck.id]?.deep_dive
 
-    // Check if core just completed
-    if (completion.core.complete && lastCompleted !== 'core' && lastCompleted !== 'deep_dive' && lastCompleted !== 'deep_dive_1' && lastCompleted !== 'deep_dive_2') {
+    // Check if core just completed - only if all core cards have been generated
+    if (completion.core.complete && isTierFullyGenerated('core') && lastCompleted !== 'core' && lastCompleted !== 'deep_dive' && lastCompleted !== 'deep_dive_1' && lastCompleted !== 'deep_dive_2') {
       setExpandedCard(null) // Close expanded card so only celebration shows
       setShowCelebration({
         tierName: 'Core',
@@ -5344,8 +5466,8 @@ export default function Canvas() {
         console.error('[BACKGROUND] Deep Dive pre-generation error:', err)
       }
     }
-    // Check if deep_dive just completed (new 2-tier system)
-    else if (isNewTwoTier && completion.deep_dive.complete && lastCompleted === 'core') {
+    // Check if deep_dive just completed (new 2-tier system) - only if all deep_dive cards have been generated
+    else if (isNewTwoTier && completion.deep_dive.complete && isTierFullyGenerated('deep_dive') && lastCompleted === 'core') {
       setExpandedCard(null) // Close expanded card so only celebration shows
       setShowCelebration({
         tierName: 'Deep Dive',
