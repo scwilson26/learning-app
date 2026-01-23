@@ -200,19 +200,6 @@ export function resetSession() {
   return stats;
 }
 
-/**
- * Get a summary for display
- */
-export function getStatsSummary() {
-  const stats = loadStats();
-  return {
-    totalArticles: stats.totalArticlesRead,
-    currentStreak: stats.currentStreak,
-    longestChain: stats.longestChainEver,
-    hyperlinksClicked: stats.totalHyperlinksClicked,
-  };
-}
-
 // ============ Journey Management ============
 
 const JOURNEYS_KEY = 'savedJourneys';
@@ -286,38 +273,3 @@ export function saveJourney(breadcrumbs, currentIndex) {
   return journey.id;
 }
 
-/**
- * Get a journey by ID
- * @param {string} journeyId - The journey ID
- * @returns {Object|null} The journey data or null
- */
-export function getJourney(journeyId) {
-  const journeys = loadJourneys();
-  return journeys.find(j => j.id === journeyId) || null;
-}
-
-/**
- * Delete a journey by ID
- * @param {string} journeyId - The journey ID to delete
- */
-export function deleteJourney(journeyId) {
-  const journeys = loadJourneys();
-  const filtered = journeys.filter(j => j.id !== journeyId);
-  saveJourneys(filtered);
-}
-
-/**
- * Update journey's lastVisitedAt when resuming
- * @param {string} journeyId - The journey ID
- */
-export function touchJourney(journeyId) {
-  const journeys = loadJourneys();
-  const journey = journeys.find(j => j.id === journeyId);
-  if (journey) {
-    journey.lastVisitedAt = new Date().toISOString();
-    // Move to front of list
-    const filtered = journeys.filter(j => j.id !== journeyId);
-    filtered.unshift(journey);
-    saveJourneys(filtered);
-  }
-}

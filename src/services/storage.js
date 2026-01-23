@@ -514,16 +514,6 @@ export function getTreeNode(deckId) {
  * Get all top-level categories from the vital articles tree
  * @returns {Array} Array of category objects
  */
-export function getTreeCategories() {
-  if (!vitalArticlesTree.children) return []
-
-  return vitalArticlesTree.children.map(cat => ({
-    id: cat.id,
-    name: cat.title,
-    title: cat.title,
-    articleCount: cat.articleCount || 0,
-  }))
-}
 
 /**
  * Score a topic for "interestingness" based on heuristics
@@ -729,16 +719,6 @@ export function saveData(data) {
   } catch (error) {
     console.error('Error saving to localStorage:', error)
   }
-}
-
-/**
- * Check if a deck's cards have been generated and cached
- * @param {string} deckId - The deck ID to check
- * @returns {boolean} True if deck has cached cards
- */
-export function hasDeckCards(deckId) {
-  const data = getData()
-  return !!data.decks[deckId]?.cardIds?.length
 }
 
 /**
@@ -1118,27 +1098,6 @@ export function claimCategoryNode(nodeId, title) {
   return true
 }
 
-/**
- * Claim all ancestor category nodes in a path
- * @param {Array} path - Array of node IDs from root to current
- * @param {Function} getNodeInfo - Function to get node title by ID
- * @returns {number} Number of newly claimed nodes
- */
-export function claimAncestorCategories(path, getNodeInfo) {
-  let newlyClaimed = 0
-
-  // Claim each node in the path (except possibly the last one if it's an article)
-  for (const nodeId of path) {
-    const nodeInfo = getNodeInfo(nodeId)
-    if (nodeInfo && claimCategoryNode(nodeId, nodeInfo.title)) {
-      newlyClaimed++
-      console.log(`[claimAncestorCategories] Auto-claimed category: ${nodeInfo.title}`)
-    }
-  }
-
-  return newlyClaimed
-}
-
 // ============================================================================
 // PREVIEW CARDS (Cover cards shown before committing to a topic)
 // ============================================================================
@@ -1276,6 +1235,7 @@ export function getDeckTierCompletion(deckId) {
 
   const result = {
     core: { claimed: 0, total: 0, complete: false },
+    deep_dive: { claimed: 0, total: 0, complete: false },
     deep_dive_1: { claimed: 0, total: 0, complete: false },
     deep_dive_2: { claimed: 0, total: 0, complete: false },
   }
@@ -1285,51 +1245,16 @@ export function getDeckTierCompletion(deckId) {
   }
 
   // Count claimed cards per tier
-  // Each tier has exactly 5 cards - only complete when all 5 are claimed
   Object.entries(deck.cardsByTier).forEach(([tier, cardIds]) => {
     if (cardIds && result[tier]) {
       result[tier].total = cardIds.length
       result[tier].claimed = cardIds.filter(id => data.cards[id]?.claimed).length
-      // Tier is only complete when all 5 cards exist AND all 5 are claimed
-      result[tier].complete = result[tier].total === 5 && result[tier].claimed === 5
+      // Tier is complete when all cards are claimed (and there's at least one card)
+      result[tier].complete = result[tier].total > 0 && result[tier].claimed === result[tier].total
     }
   })
 
   return result
-}
-
-/**
- * Check if a tier is accessible (prior tier must be complete)
- * @param {string} deckId - The deck ID
- * @param {string} tier - The tier to check access for
- * @returns {boolean} True if tier is accessible
- */
-export function canAccessTier(deckId, tier) {
-  if (tier === 'core') return true
-
-  const completion = getDeckTierCompletion(deckId)
-
-  if (tier === 'deep_dive_1') {
-    return completion.core.complete
-  }
-
-  if (tier === 'deep_dive_2') {
-    return completion.core.complete && completion.deep_dive_1.complete
-  }
-
-  return false
-}
-
-/**
- * Check if a tier has been generated for a deck
- * @param {string} deckId - The deck ID
- * @param {string} tier - The tier to check
- * @returns {boolean} True if tier has been generated
- */
-export function hasTierCards(deckId, tier) {
-  const data = getData()
-  const deck = data.decks[deckId]
-  return !!(deck?.cardsByTier?.[tier]?.length > 0)
 }
 
 /**
@@ -1353,78 +1278,12 @@ export function unlockTier(deckId, tier) {
 }
 
 /**
- * Check if a tier is unlocked for a deck
- * @param {string} deckId - The deck ID
- * @param {string} tier - The tier to check
- * @returns {boolean} True if tier is unlocked
- */
-export function isTierUnlocked(deckId, tier) {
-  if (tier === 'core') return true
-
-  const data = getData()
-  const deck = data.decks[deckId]
-  return deck?.unlockedTiers?.includes(tier) || false
-}
-
-/**
- * Get the overall completion state of a deck
- * @param {string} deckId - The deck ID
- * @returns {string} Completion state: 'none' | 'core_complete' | 'deep_dive_1_complete' | 'fully_mastered'
- */
-export function getDeckCompletionState(deckId) {
-  const completion = getDeckTierCompletion(deckId)
-
-  if (completion.deep_dive_2.complete) {
-    return 'fully_mastered'
-  }
-  if (completion.deep_dive_1.complete) {
-    return 'deep_dive_1_complete'
-  }
-  if (completion.core.complete) {
-    return 'core_complete'
-  }
-  return 'none'
-}
-
-/**
- * Get total claimed card count
- * @returns {number} Number of claimed cards
- */
-export function getClaimedCount() {
-  const data = getData()
-  return Object.values(data.cards).filter(c => c.claimed).length
-}
-
-/**
- * Set user archetype (from personality quiz)
- * @param {string} archetype - The archetype ID
- */
-export function setUserArchetype(archetype) {
-  const data = getData()
-  data.userProfile.archetype = archetype
-  if (!data.userProfile.createdAt) {
-    data.userProfile.createdAt = new Date().toISOString()
-  }
-  saveData(data)
-}
-
-/**
  * Get user archetype
  * @returns {string|null} The archetype or null if not set
  */
 export function getUserArchetype() {
   const data = getData()
   return data.userProfile.archetype
-}
-
-/**
- * Check if a deck's children have been generated
- * @param {string} deckId - The deck ID
- * @returns {boolean} True if children have been generated (even if empty/leaf)
- */
-export function hasDeckChildren(deckId) {
-  const data = getData()
-  return data.dynamicDecks[deckId]?.childrenGenerated === true
 }
 
 /**
@@ -1514,183 +1373,6 @@ export function getDynamicDeck(deckId) {
  */
 export function clearAllData() {
   localStorage.removeItem(STORAGE_KEY)
-}
-
-/**
- * Export data for cloud sync (returns the full object)
- * @returns {Object} The complete data object
- */
-export function exportForSync() {
-  return getData()
-}
-
-/**
- * Get count of explored decks (decks with generated cards)
- * Used to determine if we should generate new paths or use existing ones
- * @returns {number} Count of explored decks
- */
-export function getExploredDecksCount() {
-  const data = getData()
-  return Object.keys(data.decks).length
-}
-
-/**
- * Get all decks that have cards with at least one unclaimed card
- * Used for the Wander feature to find interesting destinations
- * @param {string} currentDeckId - The current deck ID to exclude
- * @param {number} minDepth - Minimum depth (default 2)
- * @param {number} maxDepth - Maximum depth (default 6)
- * @returns {Array} Array of wanderable deck objects with unclaimed card info
- */
-export function getWanderableDecks(currentDeckId = null, minDepth = 2, maxDepth = 6) {
-  const data = getData()
-  const wanderable = []
-
-  // Check regular decks (from data.decks) - these have generated cards
-  Object.entries(data.decks).forEach(([deckId, deck]) => {
-    // Skip current deck
-    if (deckId === currentDeckId) return
-
-    // Get the deck's depth from dynamicDecks or estimate from parentPath
-    const dynamicDeck = data.dynamicDecks?.[deckId]
-    let depth = dynamicDeck?.depth || 2
-
-    // If no depth info, try to estimate from parentPath
-    if (!dynamicDeck?.depth && dynamicDeck?.parentPath) {
-      depth = dynamicDeck.parentPath.split(' > ').length + 1
-    }
-
-    // Check depth constraints
-    if (depth < minDepth || depth > maxDepth) return
-
-    // IMPORTANT: Only wander to article pages, not category pages
-    // Check multiple sources to determine if this is an article:
-    // 1. dynamicDeck has wikiTitle or isLeaf
-    // 2. Tree node has wikiTitle or is a leaf (no children)
-    const treeNode = getTreeNode(deckId)
-    const isArticle =
-      dynamicDeck?.wikiTitle ||
-      dynamicDeck?.isLeaf ||
-      treeNode?.wikiTitle ||
-      (treeNode && (!treeNode.children || treeNode.children.length === 0))
-    if (!isArticle) return
-
-    // Check if deck has cards
-    if (!deck.cardIds?.length) return
-
-    // Count unclaimed cards
-    const unclaimedCards = deck.cardIds.filter(cardId => {
-      const card = data.cards[cardId]
-      return card && !card.claimed
-    })
-
-    // Must have at least one unclaimed card
-    if (unclaimedCards.length === 0) return
-
-    // Get the first unclaimed card
-    const firstUnclaimedId = unclaimedCards[0]
-    const firstUnclaimedCard = data.cards[firstUnclaimedId]
-
-    wanderable.push({
-      deckId,
-      deckName: deck.name || dynamicDeck?.name || deckId,
-      depth,
-      unclaimedCount: unclaimedCards.length,
-      totalCards: deck.cardIds.length,
-      firstUnclaimedCardId: firstUnclaimedId,
-      firstUnclaimedCardTitle: firstUnclaimedCard?.title,
-      parentPath: dynamicDeck?.parentPath || null,
-      gradient: dynamicDeck?.gradient,
-      borderColor: dynamicDeck?.borderColor,
-    })
-  })
-
-  return wanderable
-}
-
-/**
- * Pick a random wanderable deck with interest-based scoring
- * @param {string} currentDeckId - The current deck ID to exclude
- * @returns {Object|null} A random wanderable deck or null if none available
- */
-export function pickRandomWanderDeck(currentDeckId = null) {
-  // First try with preferred depth (3-5 levels - not too shallow, not too deep)
-  let candidates = getWanderableDecks(currentDeckId, 3, 5)
-
-  // Fallback: relax depth constraints (2-7 levels)
-  if (candidates.length === 0) {
-    candidates = getWanderableDecks(currentDeckId, 2, 7)
-  }
-
-  // Still nothing? Try any depth
-  if (candidates.length === 0) {
-    candidates = getWanderableDecks(currentDeckId, 1, 10)
-  }
-
-  if (candidates.length === 0) {
-    return null
-  }
-
-  // Score each candidate for interestingness
-  const scored = candidates.map(deck => ({
-    ...deck,
-    interestScore: scoreTopicInterestForWander({
-      id: deck.deckId,
-      title: deck.deckName,
-      wikiTitle: deck.wikiTitle
-    })
-  }))
-
-  // Sort by interest score (highest first)
-  scored.sort((a, b) => b.interestScore - a.interestScore)
-
-  // Pick randomly from top 5 (or all if fewer) to add variety
-  const topCandidates = scored.slice(0, Math.min(5, scored.length))
-  const randomIndex = Math.floor(Math.random() * topCandidates.length)
-  return topCandidates[randomIndex]
-}
-
-/**
- * Import data from cloud sync
- * @param {Object} cloudData - Data from cloud
- * @param {string} strategy - Merge strategy: 'replace' | 'merge'
- */
-export function importFromSync(cloudData, strategy = 'replace') {
-  if (strategy === 'replace') {
-    saveData(cloudData)
-  } else if (strategy === 'merge') {
-    const localData = getData()
-
-    // Merge cards - keep newer versions
-    Object.entries(cloudData.cards || {}).forEach(([id, cloudCard]) => {
-      const localCard = localData.cards[id]
-      if (!localCard || new Date(cloudCard.generatedAt) > new Date(localCard.generatedAt)) {
-        localData.cards[id] = cloudCard
-      }
-      // If local is claimed but cloud isn't, keep claimed status
-      if (localCard?.claimed && !cloudCard.claimed) {
-        localData.cards[id].claimed = true
-        localData.cards[id].claimedAt = localCard.claimedAt
-      }
-    })
-
-    // Merge decks
-    Object.entries(cloudData.decks || {}).forEach(([id, cloudDeck]) => {
-      const localDeck = localData.decks[id]
-      if (!localDeck || new Date(cloudDeck.generatedAt) > new Date(localDeck.generatedAt)) {
-        localData.decks[id] = cloudDeck
-      }
-    })
-
-    // Keep user profile from whichever is newer
-    if (cloudData.userProfile?.createdAt &&
-        (!localData.userProfile?.createdAt ||
-         new Date(cloudData.userProfile.createdAt) < new Date(localData.userProfile.createdAt))) {
-      localData.userProfile = cloudData.userProfile
-    }
-
-    saveData(localData)
-  }
 }
 
 // ============================================================================
@@ -1790,17 +1472,6 @@ export function updateFlashcard(flashcardId, updates) {
 export function skipFlashcard(flashcardId) {
   updateFlashcard(flashcardId, { status: 'skipped' })
   console.log(`[skipFlashcard] Marked ${flashcardId} as skipped`)
-}
-
-/**
- * Check if flashcards have been generated for a source card
- * @param {string} sourceCardId - The source card ID
- * @returns {boolean}
- */
-export function hasFlashcardsForCard(sourceCardId) {
-  const data = getData()
-  if (!data.flashcardMeta?.generatedFromCards) return false
-  return data.flashcardMeta.generatedFromCards.includes(sourceCardId)
 }
 
 /**
@@ -2262,17 +1933,6 @@ export function getStudyDeckFlashcards() {
 
       return false
     })
-}
-
-/**
- * Get due flashcards from topics in the study deck only
- * @returns {Array} Array of due flashcard objects from study deck topics
- */
-export function getStudyDeckDueFlashcards() {
-  const now = new Date()
-  return getStudyDeckFlashcards()
-    .filter(fc => new Date(fc.nextReview) <= now)
-    .sort((a, b) => new Date(a.nextReview) - new Date(b.nextReview))
 }
 
 /**

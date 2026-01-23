@@ -91,9 +91,9 @@ const BUTTON_STYLES = {
 // These are the functions Canvas.jsx imports and uses.
 
 /**
- * Get the accent color for a category
+ * Get the accent color for a category (internal helper)
  */
-export function getCategoryAccent(categoryId) {
+function getCategoryAccent(categoryId) {
   return CATEGORY_ACCENTS[categoryId] || CATEGORY_ACCENTS.default
 }
 
@@ -160,7 +160,3 @@ export function isDarkTheme(categoryId) {
   return false
 }
 
-// ============================================================================
-// EXPORTS FOR DIRECT ACCESS (if needed)
-// ============================================================================
-export { CATEGORY_ACCENTS, COMMON_CARD, BUTTON_STYLES }

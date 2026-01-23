@@ -58,24 +58,6 @@ export async function signOut() {
 }
 
 /**
- * Get the current user session
- * @returns {Promise<{session: Session|null, error: Error|null}>}
- */
-export async function getSession() {
-  const { data: { session }, error } = await supabase.auth.getSession()
-  return { session, error }
-}
-
-/**
- * Get the current user
- * @returns {Promise<{user: User|null, error: Error|null}>}
- */
-export async function getUser() {
-  const { data: { user }, error } = await supabase.auth.getUser()
-  return { user, error }
-}
-
-/**
  * Subscribe to auth state changes
  * @param {Function} callback - Called with (event, session) on auth changes
  * @returns {Function} Unsubscribe function

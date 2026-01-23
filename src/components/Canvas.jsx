@@ -4822,7 +4822,17 @@ export default function Canvas() {
         console.error('[BACKGROUND] Deep Dive pre-generation error:', err)
       }
     }
-    // Check if deep_dive_1 just completed
+    // Check if deep_dive just completed (new 2-tier system)
+    else if (isNewTwoTier && completion.deep_dive.complete && lastCompleted === 'core') {
+      setExpandedCard(null) // Close expanded card so only celebration shows
+      setShowCelebration({
+        tierName: 'Deep Dive',
+        nextTierName: null, // No more tiers after deep_dive in 2-tier system
+        tier: 'deep_dive'
+      })
+      setLastCompletedTier(prev => ({ ...prev, [currentDeck.id]: 'deep_dive' }))
+    }
+    // Check if deep_dive_1 just completed (legacy 3-tier system)
     else if (completion.deep_dive_1.complete && lastCompleted === 'core') {
       setExpandedCard(null) // Close expanded card so only celebration shows
       setShowCelebration({
