@@ -314,6 +314,19 @@ READING LEVEL:
 - If a term is important to know (like "hemoglobin"), bold it and explain it in the same sentence, then add it to popup terms
 - No academic or medical-speak - write like you're explaining to a curious friend
 
+CONCISENESS:
+- Say it once, say it clearly, move on
+- Cut filler phrases: "It's important to note that..." → just state it
+- If a sentence doesn't teach something new, cut it
+- Aim for clarity in fewer words, not thoroughness in more words
+- Each bullet should be 1-2 sentences, not a paragraph
+
+BAD (too wordy):
+   - Pure mathematics seeks truth through logical proof rather than experimental evidence. When a mathematician proves something, it becomes eternally true in a way that scientific theories can never be.
+
+GOOD (concise):
+   - Pure mathematics proves things through logic, not experiments. Once proven, a theorem stays true forever.
+
 BAD (fragment list):
    - Born in Budapest, 1930
    - Jewish family
@@ -330,8 +343,8 @@ BAD (jargon-heavy):
    - Hemoglobin degradation produces biliverdin and bilirubin, causing color changes.
 
 GOOD (plain language):
-   - Within minutes of injury, your body sends white blood cells to clean up the leaked blood and damaged tissue. This causes swelling and redness.
-   - As the trapped blood breaks down, it changes color - from red to purple to green to yellow - before finally fading away.
+   - Within minutes of injury, your body sends white blood cells to clean up the leaked blood and damaged tissue.
+   - As the trapped blood breaks down, it changes color - from red to purple to green to yellow - before fading away.
 
 [CORE] sections:
 - Essential knowledge to understand this topic
@@ -390,86 +403,77 @@ EXAMPLE - "Watt" (concept):
 
 I. What is a watt? [CORE]
    A. Definition
-      - A watt measures power, which is the rate at which energy gets used. It's not how much energy you have - it's how fast you're using it.
-      - One watt equals one joule of energy per second. A joule is a small unit of energy - about what it takes to lift an apple one meter.
+      - A watt measures power - the rate at which energy gets used. Not how much energy, but how fast you're using it.
+      - One watt equals one joule of energy per second.
    B. Everyday examples
-      - Your phone charger uses about 20 watts - it draws energy slowly. Your microwave uses about 1000 watts - it draws energy fast.
+      - Phone charger: about 20 watts (slow). Microwave: about 1000 watts (fast).
       - Both use electricity, but at very different rates. That's what wattage tells you.
 
 II. Energy vs power [CORE]
    A. The key distinction
-      - Energy is the total amount of work done. Power is how fast that work happens.
-      - Think of it like driving: energy is like the total miles you travel, power is like your speed.
+      - Energy is the total amount. Power is the speed you use it.
+      - Like driving: energy is miles traveled, power is your speed.
    B. How they connect
-      - If you sustain power over time, you get energy. A 100-watt bulb uses 100 joules every second it's on.
-      - Leave that bulb on for an hour and you've used 360,000 joules total. The wattage stayed constant - the energy accumulated.
-      - This is why your electric bill charges for kilowatt-hours (power × time), not just watts.
+      - Power sustained over time equals energy. A 100-watt bulb uses 100 joules every second.
+      - Leave it on for an hour: 360,000 joules total. Wattage stayed constant, energy accumulated.
 
 III. The formula: Watts = Volts × Amps [CORE]
    A. What is voltage?
-      - Voltage is electrical pressure - how hard electricity is being pushed through a wire.
-      - US wall outlets provide 120 volts. Heavy appliances like dryers get 240 volts - more pressure.
+      - Electrical pressure - how hard electricity is pushed through a wire.
+      - US outlets: 120 volts. Dryers: 240 volts (more pressure).
    B. What are amps?
-      - Amps measure current - how much electricity is actually flowing through.
-      - Think of water in a pipe: voltage is the water pressure, amps is the gallons per minute flowing through.
+      - Current - how much electricity is actually flowing.
+      - Think of water: voltage is pressure, amps is gallons per minute.
    C. How they combine
-      - Multiply the pressure (volts) by the flow (amps) and you get power (watts).
-      - A hair dryer plugged into a 120-volt outlet drawing 10 amps uses 1,200 watts.
+      - Pressure × flow = power. A hair dryer on a 120-volt outlet drawing 10 amps = 1,200 watts.
 
 IV. Kilowatts and your electric bill [CORE]
    A. What's a kilowatt?
-      - A kilowatt is just 1,000 watts. It's a more convenient unit for talking about household power use.
+      - Just 1,000 watts. A more convenient unit for household use.
    B. What's a kilowatt-hour?
-      - A kilowatt-hour is power multiplied by time. It measures the total energy you actually used.
-      - If you run a 1,000-watt microwave for one hour, that's 1 kWh.
-      - At typical rates of about $0.15 per kWh, that hour of microwaving costs about 15 cents.
-   C. Why this matters for bills
-      - Your electric bill charges for kilowatt-hours, not watts. It's not about how powerful your appliances are - it's about how long you run them.
+      - Power × time. A 1,000-watt microwave running one hour = 1 kWh.
+      - At $0.15 per kWh, that's 15 cents.
+   C. Why this matters
+      - Your bill charges for kilowatt-hours, not watts. It's about how long you run things, not just how powerful they are.
 
 V. Reading wattage in real life [CORE]
-   A. What appliance labels tell you
-      - The wattage on an appliance tells you its power draw. Phone charger: 20W. Laptop: 60W. Microwave: 1000W. Hair dryer: 1500W. Space heater: 1500W.
-      - Higher watts means faster energy use, which means higher bills if you run it a lot.
+   A. Appliance labels
+      - Phone charger: 20W. Laptop: 60W. Microwave: 1000W. Hair dryer: 1500W.
+      - Higher watts = faster energy use = higher bills.
    B. Why high-wattage appliances are different
-      - High-wattage devices need more current flowing through wires, which generates heat.
-      - This is why heavy appliances like dryers and ovens need thicker wires and special outlets - regular wiring could overheat.
+      - They need more current, which generates heat. That's why dryers need thicker wires and special outlets.
 
 VI. Why it's called a watt [DEEP DIVE]
-   A. James Watt
-      - The unit is named after James Watt (1736-1819), a Scottish inventor.
-      - He didn't invent the steam engine - but he made it vastly more efficient by adding a separate condenser.
+   A. James Watt (1736-1819)
+      - Scottish inventor who made the steam engine efficient - he didn't invent it, but transformed it.
    B. The honor
-      - The watt was adopted as a unit of power in 1889, nearly 70 years after his death.
-      - It was a way of honoring the man whose work powered the Industrial Revolution.
+      - The unit was adopted in 1889, nearly 70 years after his death, honoring the man who powered the Industrial Revolution.
 
 VII. The horsepower connection [DEEP DIVE]
    A. The sales problem
-      - When Watt was selling his improved steam engines, customers didn't understand physics. They understood horses.
-      - He needed a way to compare his engines to the horses they were replacing.
-   B. His calculation (and his trick)
-      - Watt calculated that a strong horse could lift 33,000 pounds one foot per minute.
-      - But he probably inflated the number to make his engines look more impressive by comparison.
-      - The result: 1 horsepower equals 746 watts. That conversion is still used today for car engines and motors.
+      - Watt needed to sell engines to people who understood horses, not physics.
+   B. His calculation
+      - He calculated what a horse could lift, probably inflating the number to make his engines look better.
+      - Result: 1 horsepower = 746 watts. Still used today for car engines.
 
 VIII. Peak vs continuous watts [DEEP DIVE]
-   A. What the difference means
-      - Peak watts is the maximum a device can handle in short bursts. Continuous watts is what it can sustain over time.
-      - A "1000W power supply" might only deliver 700-800 watts continuously.
-   B. Where this matters
-      - Computer power supplies, car amplifiers, solar inverters, space heaters - all use peak ratings in marketing.
-      - Your electric bill sees continuous watts. The gap between peak and continuous is usually 20-30%.
+   A. The difference
+      - Peak: maximum in short bursts. Continuous: what it sustains over time.
+      - A "1000W power supply" might only deliver 700-800W continuously.
+   B. Where it matters
+      - Power supplies, solar inverters, space heaters all use peak in marketing. Your bill sees continuous.
 
 POPUP TERMS:
-- Joule: A unit of energy. Lifting an apple one meter takes about one joule. Named after physicist James Joule.
-- Voltage/Volts: Electrical pressure - how hard electricity is being pushed through wires. US outlets are 120V; dryers use 240V.
-- Amps/Current: How much electricity is flowing. Like gallons per minute through a pipe.
-- Kilowatt-hour: A unit of energy used for billing. Power (in kW) multiplied by time (in hours). What your electric bill actually charges for.
+- Joule: A unit of energy. About what it takes to lift an apple one meter.
+- Voltage/Volts: Electrical pressure. US outlets are 120V; dryers use 240V.
+- Amps/Current: How much electricity flows. Like gallons per minute through a pipe.
+- Kilowatt-hour: Power × time. What your electric bill charges for.
 
 END OF EXAMPLE
 
 RULES:
 - Write explanations, not fragment lists
-- Be thorough - don't skip concepts someone would need
+- Be concise - every sentence should teach something new
 - Be specific - use real facts, numbers, names
 - Connect ideas - show how one thing leads to another
 - For people: lead with fame/achievement, not chronological biography
