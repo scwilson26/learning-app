@@ -3407,7 +3407,8 @@ export default function Canvas() {
         preview: cachedPreview.content,
         isLoading: false,
         treeNodeId: topicResult.id,
-        pathIds: topicResult.pathIds
+        pathIds: topicResult.pathIds,
+        navigatePath: [...(topicResult.pathIds || []), topicResult.id]
       })
 
       // Still start outline generation in background (in case it wasn't done before)
@@ -3428,7 +3429,8 @@ export default function Canvas() {
       preview: null,
       isLoading: true,
       treeNodeId: topicResult.id,
-      pathIds: topicResult.pathIds
+      pathIds: topicResult.pathIds,
+      navigatePath: [...(topicResult.pathIds || []), topicResult.id]
     })
 
     try {
@@ -3471,25 +3473,14 @@ export default function Canvas() {
   const handleExploreRabbitHole = () => {
     if (!rabbitHolePreview) return
 
-    const { topic, treeNodeId, pathIds } = rabbitHolePreview
-    console.log(`[RABBIT HOLE] Exploring: ${topic} (id: ${treeNodeId})`)
-
-    if (!treeNodeId) {
-      console.error('[RABBIT HOLE] No tree node ID found')
-      setRabbitHolePreview(null)
-      return
+    // Use stored navigatePath (same pattern as Wander)
+    if (rabbitHolePreview.navigatePath) {
+      setStack(rabbitHolePreview.navigatePath)
+      updateDeckLastInteracted(rabbitHolePreview.treeNodeId)
     }
 
-    // Build the full navigation stack
-    const fullStack = [...(pathIds || []), treeNodeId]
-    console.log(`[RABBIT HOLE] Navigating with stack:`, fullStack)
-
-    // Close the preview and navigate to the topic
     setRabbitHolePreview(null)
-    setExpandedCard(null) // Close any expanded card
-
-    // Navigate using the full stack
-    setStack(fullStack)
+    setExpandedCard(null)
   }
 
   // Background flashcard generation (non-blocking)
@@ -4655,6 +4646,13 @@ export default function Canvas() {
       // Determine root category for theming - from deck prop, current stack, or extract from ID
       const rootCategoryId = deck.rootCategoryId || stackDecks[0]?.id || findRootCategory(deck.id)
 
+      // Compute navigatePath at preview time (same pattern as Wander)
+      const isFromSpecialContext = rootCategoryId &&
+        (stack.length === 0 || stack[0] === 'my-decks' || stack[0] === 'collections')
+      const navigatePath = isFromSpecialContext
+        ? [rootCategoryId, deck.id]
+        : [...stack, deck.id]
+
       // Check if we already have the preview card locally
       const existingPreview = getPreviewCard(deck.id)
       if (existingPreview) {
@@ -4666,7 +4664,8 @@ export default function Canvas() {
           cardId: existingPreview.cardId,
           isLoading: false,
           claimed: existingPreview.claimed,
-          rootCategoryId: rootCategoryId
+          rootCategoryId: rootCategoryId,
+          navigatePath: navigatePath
         })
 
         // [BACKGROUND OUTLINE] Start outline generation while user reads preview
@@ -4681,7 +4680,8 @@ export default function Canvas() {
           cardId: null,
           isLoading: true,
           claimed: false,
-          rootCategoryId: rootCategoryId
+          rootCategoryId: rootCategoryId,
+          navigatePath: navigatePath
         })
 
         try {
@@ -6837,7 +6837,7 @@ export default function Canvas() {
 
         {/* Preview card modal for Continue Exploring (non-wander) */}
         <AnimatePresence>
-          {showPreviewCard && !showPreviewCard.navigatePath && (
+          {showPreviewCard && wanderPathSteps.length === 0 && (
             <PreviewCardModal
               topic={showPreviewCard.title}
               preview={showPreviewCard.preview}
@@ -6852,13 +6852,13 @@ export default function Canvas() {
                 setShowPreviewCard(prev => ({ ...prev, claimed: true }))
               }}
               onDealMeIn={() => {
-                // Use full stack if available (from search), otherwise use root + deck
-                if (showPreviewCard.fullStack) {
+                // Use navigatePath (same pattern as Wander)
+                if (showPreviewCard.navigatePath) {
+                  setStack(showPreviewCard.navigatePath)
+                  updateDeckLastInteracted(showPreviewCard.deckId)
+                } else if (showPreviewCard.fullStack) {
+                  // Fallback for search results
                   setStack(showPreviewCard.fullStack)
-                } else if (showPreviewCard.rootCategoryId) {
-                  setStack([showPreviewCard.rootCategoryId, showPreviewCard.deckId])
-                } else {
-                  setStack([showPreviewCard.deckId])
                 }
                 setShowPreviewCard(null)
               }}
@@ -7583,7 +7583,7 @@ export default function Canvas() {
 
       {/* Preview card modal (shown before committing to a topic - for DIRECT clicks only) */}
       <AnimatePresence>
-        {showPreviewCard && !showPreviewCard.navigatePath && (
+        {showPreviewCard && wanderPathSteps.length === 0 && (
           <PreviewCardModal
             topic={showPreviewCard.title}
             preview={showPreviewCard.preview}
@@ -7599,18 +7599,10 @@ export default function Canvas() {
               setShowPreviewCard(prev => ({ ...prev, claimed: true }))
             }}
             onDealMeIn={() => {
-              // From clicking a topic - build proper stack with root category
-              // Check if we have a rootCategoryId from Continue Exploring (or similar direct navigation)
-              // In that case, always build a fresh stack with the root category first
-              const isFromContinueExploring = showPreviewCard.rootCategoryId &&
-                (stack.length === 0 || stack[0] === 'my-decks' || stack[0] === 'collections')
-
-              if (isFromContinueExploring) {
-                // Coming from Continue Exploring or similar - set clean stack with root category
-                setStack([showPreviewCard.rootCategoryId, showPreviewCard.deckId])
-              } else {
-                // Already navigating within categories - add to current stack
-                setStack(prev => [...prev, showPreviewCard.deckId])
+              // Use navigatePath (same pattern as Wander)
+              if (showPreviewCard.navigatePath) {
+                setStack(showPreviewCard.navigatePath)
+                updateDeckLastInteracted(showPreviewCard.deckId)
               }
               setShowPreviewCard(null)
             }}
