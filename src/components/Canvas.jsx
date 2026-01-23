@@ -3528,25 +3528,46 @@ export default function Canvas() {
     }
   }
 
-  // Handle exploring a rabbit hole topic (navigate to it)
-  const handleExploreRabbitHole = () => {
-    if (!rabbitHolePreview) return
+  /**
+   * ============================================================================
+   * SHARED EXPLORE HANDLER - SINGLE SOURCE OF TRUTH
+   * ============================================================================
+   *
+   * ALL exploration flows MUST use this function:
+   * - Wander (WanderCard onExplore)
+   * - Browser (PreviewCardModal onDealMeIn)
+   * - Rabbit Hole popups (RabbitHoleSheet onExplore)
+   *
+   * DO NOT create separate navigation/claim logic elsewhere.
+   * If you need to modify explore behavior, modify it HERE.
+   *
+   * @param {string} deckId - The topic/deck ID to navigate to
+   * @param {string[]} navigatePath - The full navigation stack path
+   */
+  const sharedExploreHandler = (deckId, navigatePath) => {
+    if (!deckId) return
 
-    // Auto-claim the preview card on explore (same as other preview flows)
-    claimPreviewCard(rabbitHolePreview.treeNodeId)
+    // 1. Claim the preview card
+    claimPreviewCard(deckId)
     setClaimedCards(getClaimedCardIds())
 
-    // Use stored navigatePath (same pattern as Wander)
-    if (rabbitHolePreview.navigatePath) {
-      setStack(rabbitHolePreview.navigatePath)
-      updateDeckLastInteracted(rabbitHolePreview.treeNodeId)
+    // 2. Navigate using the path
+    if (navigatePath) {
+      setStack(navigatePath)
+      updateDeckLastInteracted(deckId)
     }
 
-    // Close everything - rabbit hole sheet, any underlying preview card, expanded card
-    setRabbitHolePreview(null)
+    // 3. Close ALL modals (harmless if not open)
     setShowPreviewCard(null)
+    setRabbitHolePreview(null)
     setWanderPathSteps([])
     setExpandedCard(null)
+  }
+
+  // Rabbit hole explore - uses shared handler
+  const handleExploreRabbitHole = () => {
+    if (!rabbitHolePreview) return
+    sharedExploreHandler(rabbitHolePreview.treeNodeId, rabbitHolePreview.navigatePath)
   }
 
   // Background flashcard generation (non-blocking)
@@ -6877,18 +6898,7 @@ export default function Canvas() {
                 setClaimedCards(getClaimedCardIds())
                 setShowPreviewCard(prev => ({ ...prev, claimed: true }))
               }}
-              onExplore={() => {
-                // Auto-claim the preview card on explore
-                claimPreviewCard(showPreviewCard.deckId)
-                setClaimedCards(getClaimedCardIds())
-
-                if (showPreviewCard.navigatePath) {
-                  setStack(showPreviewCard.navigatePath)
-                  updateDeckLastInteracted(showPreviewCard.deckId)
-                }
-                setShowPreviewCard(null)
-                setWanderPathSteps([])
-              }}
+              onExplore={() => sharedExploreHandler(showPreviewCard.deckId, showPreviewCard.navigatePath)}
               onWander={() => {
                 setShowPreviewCard(null)
                 setWanderPathSteps([])
@@ -6921,21 +6931,7 @@ export default function Canvas() {
                 setClaimedCards(getClaimedCardIds())
                 setShowPreviewCard(prev => ({ ...prev, claimed: true }))
               }}
-              onDealMeIn={() => {
-                // Auto-claim the preview card on explore
-                claimPreviewCard(showPreviewCard.deckId)
-                setClaimedCards(getClaimedCardIds())
-
-                // Use navigatePath (same pattern as Wander)
-                if (showPreviewCard.navigatePath) {
-                  setStack(showPreviewCard.navigatePath)
-                  updateDeckLastInteracted(showPreviewCard.deckId)
-                } else if (showPreviewCard.fullStack) {
-                  // Fallback for search results
-                  setStack(showPreviewCard.fullStack)
-                }
-                setShowPreviewCard(null)
-              }}
+              onDealMeIn={() => sharedExploreHandler(showPreviewCard.deckId, showPreviewCard.navigatePath || showPreviewCard.fullStack)}
               onWander={() => {
                 setShowPreviewCard(null)
                 handleWander()
@@ -7681,18 +7677,7 @@ export default function Canvas() {
               setClaimedCards(getClaimedCardIds())
               setShowPreviewCard(prev => ({ ...prev, claimed: true }))
             }}
-            onDealMeIn={() => {
-              // Auto-claim the preview card on explore
-              claimPreviewCard(showPreviewCard.deckId)
-              setClaimedCards(getClaimedCardIds())
-
-              // Use navigatePath (same pattern as Wander)
-              if (showPreviewCard.navigatePath) {
-                setStack(showPreviewCard.navigatePath)
-                updateDeckLastInteracted(showPreviewCard.deckId)
-              }
-              setShowPreviewCard(null)
-            }}
+            onDealMeIn={() => sharedExploreHandler(showPreviewCard.deckId, showPreviewCard.navigatePath)}
             onWander={() => {
               setShowPreviewCard(null)
               handleWander()
@@ -7729,18 +7714,7 @@ export default function Canvas() {
               setClaimedCards(getClaimedCardIds())
               setShowPreviewCard(prev => ({ ...prev, claimed: true }))
             }}
-            onExplore={() => {
-              // Auto-claim the preview card on explore
-              claimPreviewCard(showPreviewCard.deckId)
-              setClaimedCards(getClaimedCardIds())
-
-              if (showPreviewCard.navigatePath) {
-                setStack(showPreviewCard.navigatePath)
-                updateDeckLastInteracted(showPreviewCard.deckId)
-              }
-              setShowPreviewCard(null)
-              setWanderPathSteps([])
-            }}
+            onExplore={() => sharedExploreHandler(showPreviewCard.deckId, showPreviewCard.navigatePath)}
             onWander={() => {
               setShowPreviewCard(null)
               setWanderPathSteps([])
