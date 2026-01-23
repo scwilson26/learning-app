@@ -146,6 +146,12 @@ FORMAT:
 
 TONE: Clear and direct. Like a friend explaining what something is, not selling you on it.
 
+READING LEVEL:
+- Write for a general audience (no specialized knowledge assumed)
+- Avoid jargon and technical terms unless they're the key terms you're bolding
+- If a word feels "medical" or "academic," use a simpler alternative
+- Examples: "acute" → "sudden" or "serious", "utilize" → "use", "approximately" → "about"
+
 RULES:
 - First sentence: What is it? (simple, clear definition or description)
 - Second sentence: Why does it matter? (context, significance, or what it connects to)
@@ -155,6 +161,7 @@ RULES:
 - No "You'll learn..." or "We'll explore..." — don't narrate the learning, just teach
 - No "dramatically" / "fundamentally" / "particularly fascinating"
 - No hooks or cliffhangers — just clarity
+
 ${typeGuidance}
 
 EXAMPLE (Cytoskeleton):
