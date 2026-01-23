@@ -842,7 +842,11 @@ export function saveStreamedCard(deckId, deckName, card, tier, expectedTotalCard
 
   // Add to cardsByTier if not already there
   if (!data.decks[deckId].cardsByTier) {
-    data.decks[deckId].cardsByTier = { core: [], deep_dive_1: [], deep_dive_2: [] }
+    data.decks[deckId].cardsByTier = { core: [], deep_dive: [], deep_dive_1: [], deep_dive_2: [] }
+  }
+  // Ensure the tier array exists (for backwards compatibility)
+  if (!data.decks[deckId].cardsByTier[tier]) {
+    data.decks[deckId].cardsByTier[tier] = []
   }
   if (!data.decks[deckId].cardsByTier[tier].includes(card.id)) {
     data.decks[deckId].cardsByTier[tier].push(card.id)

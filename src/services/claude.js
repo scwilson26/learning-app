@@ -9,7 +9,7 @@ const anthropic = new Anthropic({
 // =============================================================================
 // MODEL CONFIGURATION - Flip this to switch back to Sonnet if Opus is too slow
 // =============================================================================
-const USE_OPUS = true;  // Set to false to revert to Sonnet
+const USE_OPUS = false;  // Set to false to revert to Sonnet
 
 const MODELS = {
   // For main content generation (outlines, cards, previews)
