@@ -191,7 +191,7 @@ export async function getOutline(topicId) {
 /**
  * Save outline for a topic
  * @param {string} topicId - The topic ID
- * @param {Object} outline - The outline JSON { core: [...], deep_dive_1: [...], deep_dive_2: [...] }
+ * @param {Object} outline - The outline JSON { core: [...], deep_dive: [...] }
  * @returns {Promise<{data: Object|null, error: Error|null}>}
  */
 export async function saveOutline(topicId, outline) {

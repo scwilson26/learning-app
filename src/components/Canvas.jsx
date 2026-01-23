@@ -905,8 +905,8 @@ function TierSection({ tier, tierName, cards, claimedCards, onReadCard, completi
 
   // Cards generated but tier accessible - show all slots (some may be face-down)
   if (cards.length > 0 || (outline && outline[tier])) {
-    // Calculate offset based on tier (supports both new two-tier and legacy three-tier)
-    const tierOffset = tier === 'core' ? 0 : tier === 'deep_dive' ? expectedCount : tier === 'deep_dive_1' ? 5 : 10
+    // Calculate offset based on tier (core starts at 0, deep_dive starts after core)
+    const tierOffset = tier === 'core' ? 0 : expectedCount
 
     return (
       <div className="flex flex-col items-center gap-3">
@@ -967,7 +967,7 @@ function TierSection({ tier, tierName, cards, claimedCards, onReadCard, completi
   }
 
   // Tier accessible but not yet generated - show unlock prompt
-  const tierEmoji = tier === 'core' ? '📚' : (tier === 'deep_dive' || tier === 'deep_dive_1') ? '🔬' : '🎓'
+  const tierEmoji = tier === 'core' ? '📚' : '🔬'
   return (
     <div className="flex flex-col items-center gap-3">
       <div className="flex items-center gap-2">
@@ -2717,32 +2717,19 @@ function DeckSpread({
   // State for outline toggle
   const [showOutline, setShowOutline] = useState(false)
 
-  // Detect if this is a new two-tier outline or legacy three-tier
-  // Check both outline AND tierCards (tierCards may have placeholders before outline loads)
-  const isNewTwoTierSystem = (outline?.deep_dive && !outline?.deep_dive_1) ||
-                             (tierCards?.deep_dive?.length > 0 && !tierCards?.deep_dive_1?.length)
+  // Tier metadata - two tiers: Core and Deep Dive
+  const tiers = [
+    { key: 'core', name: 'Core' },
+    { key: 'deep_dive', name: 'Deep Dive' },
+  ]
 
-  // Tier metadata - dynamically based on outline type
-  const tiers = isNewTwoTierSystem
-    ? [
-        { key: 'core', name: 'Core' },
-        { key: 'deep_dive', name: 'Deep Dive' },
-      ]
-    : [
-        { key: 'core', name: 'Core Essentials' },
-        { key: 'deep_dive_1', name: 'Deep Dive 1' },
-        { key: 'deep_dive_2', name: 'Deep Dive 2' },
-      ]
-
-  // Check if we have tier data (new system) or legacy data
-  const hasTierData = tierCards && (tierCards.core?.length > 0 || tierCards.deep_dive?.length > 0 || tierCards.deep_dive_1?.length > 0 || tierCards.deep_dive_2?.length > 0)
+  // Check if we have tier data
+  const hasTierData = tierCards && (tierCards.core?.length > 0 || tierCards.deep_dive?.length > 0)
 
   // Check if at least 1 card has real content (not just a placeholder)
   const hasReadyCard = hasTierData && [
     ...(tierCards.core || []),
-    ...(tierCards.deep_dive || []),
-    ...(tierCards.deep_dive_1 || []),
-    ...(tierCards.deep_dive_2 || [])
+    ...(tierCards.deep_dive || [])
   ].some(card => !card.isPlaceholder && card.content)
 
   return (
@@ -2906,16 +2893,10 @@ function DeckSpread({
             const cards = tierCards[tier.key] || []
             const completion = tierCompletion[tier.key] || { claimed: 0, total: 0 }
             // Tier is locked if not explicitly unlocked (core is always unlocked)
-            // Handle both new (deep_dive) and legacy (deep_dive_1) tier names
             const isLocked = tier.key !== 'core' && !unlockedTiers?.includes(tier.key)
 
-            // Hide Deep Dive 2 entirely until Deep Dive 1 is complete
-            if (tier.key === 'deep_dive_2' && !tierCompletion.deep_dive_1?.complete) {
-              return null
-            }
-
             // Calculate total cards across all tiers
-            const allTierCards = (tierCards.core?.length || 0) + (tierCards.deep_dive_1?.length || 0) + (tierCards.deep_dive_2?.length || 0)
+            const allTierCards = (tierCards.core?.length || 0) + (tierCards.deep_dive?.length || 0)
 
             return (
               <TierSection
@@ -3345,11 +3326,11 @@ export default function Canvas() {
   const [selectedCollectionTopic, setSelectedCollectionTopic] = useState(null) // For topic card view { id, name, cards, ... }
 
   // Tier-related state
-  const [tierCards, setTierCards] = useState({}) // deckId -> { core: [], deep_dive_1: [], deep_dive_2: [] }
+  const [tierCards, setTierCards] = useState({}) // deckId -> { core: [], deep_dive: [] }
   const [unlockingTier, setUnlockingTier] = useState(null) // tier currently being unlocked/generated
   const [showCelebration, setShowCelebration] = useState(null) // { tierName, nextTierName } or null
   const [lastCompletedTier, setLastCompletedTier] = useState({}) // deckId -> last tier shown celebration for
-  const [backgroundGenerating, setBackgroundGenerating] = useState({}) // deckId -> { tier: 'deep_dive_1' | 'deep_dive_2', promise: Promise }
+  const [backgroundGenerating, setBackgroundGenerating] = useState({}) // deckId -> { tier: 'deep_dive', promise: Promise }
 
   // Preview card state (shown before committing to a topic)
   const [showPreviewCard, setShowPreviewCard] = useState(null) // { deckId, title, preview, isLoading } or null
@@ -3900,10 +3881,8 @@ export default function Canvas() {
     // Check localStorage cache - try tier-based storage
     const coreTierCards = getTierCards(deck.id, 'core')
     if (coreTierCards && coreTierCards.length > 0) {
-      // Load from tier-based cache (supports both old and new tier systems)
+      // Load from tier-based cache
       const deepDiveCards = getTierCards(deck.id, 'deep_dive') || []
-      const deepDive1Cards = getTierCards(deck.id, 'deep_dive_1') || []
-      const deepDive2Cards = getTierCards(deck.id, 'deep_dive_2') || []
 
       // Add content to cards
       const addContent = (cards) => cards.map(card => ({
@@ -3913,21 +3892,17 @@ export default function Canvas() {
 
       const coreWithContent = addContent(coreTierCards)
       const ddWithContent = addContent(deepDiveCards)
-      const dd1WithContent = addContent(deepDive1Cards)
-      const dd2WithContent = addContent(deepDive2Cards)
 
       setTierCards(prev => ({
         ...prev,
         [deck.id]: {
           core: coreWithContent,
-          deep_dive: ddWithContent,
-          deep_dive_1: dd1WithContent,
-          deep_dive_2: dd2WithContent
+          deep_dive: ddWithContent
         }
       }))
 
-      // Also populate content cache (include deep_dive for new two-tier system)
-      const allCards = [...coreWithContent, ...ddWithContent, ...dd1WithContent, ...dd2WithContent]
+      // Also populate content cache
+      const allCards = [...coreWithContent, ...ddWithContent]
       allCards.forEach(card => {
         if (card.content) {
           setGeneratedContent(prev => ({
@@ -3988,9 +3963,8 @@ export default function Canvas() {
         console.log(`[SHARED MAP] Found ${canonicalCards.length} canonical cards for "${deck.name}" in Supabase`)
 
         // Use the canonical cards from Supabase
-        const coreCards = canonicalCards.filter(c => c.tier === 'core' || !c.tier).slice(0, 5)
-        const dd1Cards = canonicalCards.filter(c => c.tier === 'deep_dive_1')
-        const dd2Cards = canonicalCards.filter(c => c.tier === 'deep_dive_2')
+        const coreCards = canonicalCards.filter(c => c.tier === 'core' || !c.tier)
+        const ddCards = canonicalCards.filter(c => c.tier === 'deep_dive')
 
         // Convert Supabase format to local format
         const convertCard = (card, index) => ({
@@ -4005,8 +3979,7 @@ export default function Canvas() {
         })
 
         const localCoreCards = coreCards.map((c, i) => convertCard(c, i))
-        const localDD1Cards = dd1Cards.map((c, i) => convertCard(c, i))
-        const localDD2Cards = dd2Cards.map((c, i) => convertCard(c, i))
+        const localDDCards = ddCards.map((c, i) => convertCard(c, i))
 
         // Calculate expected total from all canonical cards
         const expectedTotal = canonicalCards.length
@@ -4021,18 +3994,17 @@ export default function Canvas() {
           ...prev,
           [deck.id]: {
             core: localCoreCards,
-            deep_dive_1: localDD1Cards,
-            deep_dive_2: localDD2Cards
+            deep_dive: localDDCards
           }
         }))
 
         setGeneratedCards(prev => ({
           ...prev,
-          [deck.id]: [...localCoreCards, ...localDD1Cards, ...localDD2Cards]
+          [deck.id]: [...localCoreCards, ...localDDCards]
         }))
 
         // Cache content
-        const allLocalCards = [...localCoreCards, ...localDD1Cards, ...localDD2Cards]
+        const allLocalCards = [...localCoreCards, ...localDDCards]
         allLocalCards.forEach(card => {
           if (card.content) {
             setGeneratedContent(prev => ({
@@ -4121,7 +4093,6 @@ export default function Canvas() {
           setGenerationProgress({ current: sectionNumber, total: 6, phase: 'generating' })
 
           // Update UI immediately so card appears
-          // Use 'deep_dive' (new two-tier system) not 'deep_dive_1' (old three-tier)
           setTierCards(prev => ({
             ...prev,
             [deck.id]: {
@@ -4177,7 +4148,7 @@ export default function Canvas() {
         console.log(`[OUTLINE] Using cached outline for card generation: ${deck.name}`)
         setLoadedOutlines(prev => ({ ...prev, [deck.id]: outline }))
 
-        const expectedTotalFromOutline = (outline.core?.length || 0) + (outline.deep_dive?.length || 0) + (outline.deep_dive_1?.length || 0)
+        const expectedTotalFromOutline = (outline.core?.length || 0) + (outline.deep_dive?.length || 0)
 
         // Generate Core tier with streaming callback
         await generateTierCards(
@@ -4202,8 +4173,7 @@ export default function Canvas() {
               ...prev,
               [deck.id]: {
                 core: [...streamedCards],
-                deep_dive_1: prev[deck.id]?.deep_dive_1 || [],
-                deep_dive_2: prev[deck.id]?.deep_dive_2 || []
+                deep_dive: prev[deck.id]?.deep_dive || []
               }
             }))
 
@@ -4254,10 +4224,8 @@ export default function Canvas() {
       setGenerationProgress({ current: 5, total: 5, phase: 'complete' })
 
       // Start background generation of Deep Dive
-      // Use new 'deep_dive' tier if outline uses new two-tier system, otherwise 'deep_dive_1'
-      const nextTier = outline?.deep_dive ? 'deep_dive' : 'deep_dive_1'
       setTimeout(() => {
-        generateTierInBackground(deck, nextTier, coreCards, parentPath)
+        generateTierInBackground(deck, 'deep_dive', coreCards, parentPath)
       }, 1000)
 
     } catch (error) {
@@ -4291,11 +4259,9 @@ export default function Canvas() {
         // Generate without streaming callback (just wait for all cards)
         const cards = await generateTierCards(deck.name, tier, previousCards, parentPath, null, outline)
 
-        // Calculate expected total from outline if available (supports both tier systems)
+        // Calculate expected total from outline if available
         const expectedTotal = outline
-          ? outline.deep_dive
-            ? (outline.core?.length || 0) + (outline.deep_dive?.length || 0) // New two-tier
-            : (outline.core?.length || 0) + (outline.deep_dive_1?.length || 0) + (outline.deep_dive_2?.length || 0) // Legacy three-tier
+          ? (outline.core?.length || 0) + (outline.deep_dive?.length || 0)
           : null
 
         // Save to localStorage
@@ -4308,12 +4274,13 @@ export default function Canvas() {
 
         // Save to Supabase as canonical cards
         console.log(`[BACKGROUND] Saving ${cards.length} ${tier} cards to Supabase for "${deck.name}"`)
+        const coreCount = outline?.core?.length || 4
         for (let i = 0; i < cards.length; i++) {
           const card = cards[i]
           try {
             await upsertCanonicalCard({
               topic_id: deck.id,
-              card_number: (tier === 'deep_dive_1' ? 6 : 11) + i, // core: 1-5, dd1: 6-10, dd2: 11-15
+              card_number: coreCount + i + 1, // deep_dive cards start after core
               title: card.title,
               content: card.content,
               rarity: card.rarity || 'common',
@@ -4352,15 +4319,6 @@ export default function Canvas() {
           return updated
         })
 
-        // If DD1 just finished (legacy three-tier), start DD2
-        // Note: New two-tier system uses 'deep_dive' which doesn't chain to anything
-        if (tier === 'deep_dive_1') {
-          const allPreviousCards = [...previousCards, ...cards]
-          setTimeout(() => {
-            generateTierInBackground(deck, 'deep_dive_2', allPreviousCards, parentPath)
-          }, 500)
-        }
-
         return cards
       } catch (error) {
         console.error(`[BACKGROUND] Failed to generate ${tier}:`, error)
@@ -4395,21 +4353,11 @@ export default function Canvas() {
 
     try {
       // Collect full card data from previous tiers to avoid duplicate content
-      let previousCards = []
       const existingTierCards = tierCards[deck.id] || {}
-
-      if (tier === 'deep_dive' || tier === 'deep_dive_1') {
-        // Deep Dive needs to know what Core covered
-        previousCards = existingTierCards.core || []
-      } else if (tier === 'deep_dive_2') {
-        // DD2 (legacy) needs to know what Core AND DD1 covered
-        const coreCards = existingTierCards.core || []
-        const dd1Cards = existingTierCards.deep_dive_1 || []
-        previousCards = [...coreCards, ...dd1Cards]
-      }
+      const previousCards = existingTierCards.core || []
 
       const streamedCards = []
-      const tierOffset = tier === 'deep_dive' ? (existingTierCards.core?.length || 5) : (tier === 'deep_dive_1' ? 5 : 10)
+      const tierOffset = existingTierCards.core?.length || 4
 
       // Try to get outline for better quality
       let outline = null
@@ -4424,29 +4372,14 @@ export default function Canvas() {
         console.warn(`[UNLOCK] Error fetching outline:`, err)
       }
 
-      // Calculate expected total from outline if available (supports both tier systems)
+      // Calculate expected total from outline if available
       const expectedTotalForUnlock = outline
-        ? outline.deep_dive
-          ? (outline.core?.length || 0) + (outline.deep_dive?.length || 0) // New two-tier
-          : (outline.core?.length || 0) + (outline.deep_dive_1?.length || 0) + (outline.deep_dive_2?.length || 0) // Legacy three-tier
+        ? (outline.core?.length || 0) + (outline.deep_dive?.length || 0)
         : null
-
-      // Use streaming to show cards one-by-one
-      // Normalize tier name: deep_dive_1/deep_dive_2 -> deep_dive (for TIER_CONFIG)
-      const tierForGeneration = tier.startsWith('deep_dive') ? 'deep_dive' : tier
-
-      // Normalize outline to use 'deep_dive' key (handles both old and new formats)
-      let normalizedOutline = outline
-      if (outline && tier.startsWith('deep_dive')) {
-        normalizedOutline = {
-          ...outline,
-          deep_dive: outline.deep_dive || outline.deep_dive_1 || outline.deep_dive_2
-        }
-      }
 
       const cards = await generateTierCards(
         deck.name,
-        tierForGeneration,
+        tier,
         previousCards,
         parentPath,
         // Streaming callback - called for each card as it completes
@@ -4484,12 +4417,12 @@ export default function Canvas() {
           setGenerationProgress({
             current: tierOffset + cardNumber,
             total: 15,
-            phase: `Generating ${tier === 'deep_dive_1' ? 'Deep Dive 1' : 'Deep Dive 2'}`
+            phase: 'Generating Deep Dive'
           })
 
-          console.log(`[STREAM] ${tier} card ${cardNumber}/5: ${card.title}`)
+          console.log(`[STREAM] ${tier} card ${cardNumber}: ${card.title}`)
         },
-        normalizedOutline // Pass outline for better card generation quality
+        outline // Pass outline for better card generation quality
       )
 
       // Also update legacy generatedCards
@@ -4515,7 +4448,7 @@ export default function Canvas() {
     // Check if background generation already completed this tier
     const existingTierCards = tierCards[currentDeck.id]?.[tier] || []
 
-    if (existingTierCards.length === 5) {
+    if (existingTierCards.length >= 3) {
       // Cards already generated in background - just unlock!
       console.log(`[UNLOCK] ${tier} already ready from background generation!`)
       unlockTier(currentDeck.id, tier)
@@ -5382,8 +5315,7 @@ export default function Canvas() {
     if (!currentDeck) {
       return {
         core: { claimed: 0, total: 0, complete: false },
-        deep_dive_1: { claimed: 0, total: 0, complete: false },
-        deep_dive_2: { claimed: 0, total: 0, complete: false }
+        deep_dive: { claimed: 0, total: 0, complete: false }
       }
     }
     // Force re-read from localStorage when claimedCards state changes
@@ -5391,9 +5323,8 @@ export default function Canvas() {
   }, [currentDeck?.id, claimedCards])
 
   // Get tier cards for current deck (merge with latest generated content)
-  // Supports both new two-tier (deep_dive) and legacy three-tier (deep_dive_1, deep_dive_2)
   const currentTierCards = currentDeck ? (() => {
-    const deckTierCards = tierCards[currentDeck.id] || { core: [], deep_dive: [], deep_dive_1: [], deep_dive_2: [] }
+    const deckTierCards = tierCards[currentDeck.id] || { core: [], deep_dive: [] }
     // Merge in latest generated content for each card (handle partially loaded tiers)
     return {
       core: (deckTierCards.core || []).map(card => ({
@@ -5403,17 +5334,9 @@ export default function Canvas() {
       deep_dive: (deckTierCards.deep_dive || []).map(card => ({
         ...card,
         content: generatedContent[card.id] || card.content || null
-      })),
-      deep_dive_1: (deckTierCards.deep_dive_1 || []).map(card => ({
-        ...card,
-        content: generatedContent[card.id] || card.content || null
-      })),
-      deep_dive_2: (deckTierCards.deep_dive_2 || []).map(card => ({
-        ...card,
-        content: generatedContent[card.id] || card.content || null
       }))
     }
-  })() : { core: [], deep_dive: [], deep_dive_1: [], deep_dive_2: [] }
+  })() : { core: [], deep_dive: [] }
 
   // Check for tier completion and show celebration
   useEffect(() => {
@@ -5442,11 +5365,8 @@ export default function Canvas() {
     const deepDiveReady = isTierFullyGenerated('deep_dive')
     console.log(`[CELEBRATION CHECK] deck=${currentDeck.id} core=${completion.core.claimed}/${completion.core.total} complete=${completion.core.complete} lastCompleted=${lastCompleted} coreReady=${coreReady} ddReady=${deepDiveReady}`)
 
-    // Detect if this deck uses new two-tier or legacy three-tier system
-    const isNewTwoTier = !!(tierCards[currentDeck.id]?.deep_dive?.length > 0) || !!loadedOutlines[currentDeck.id]?.deep_dive
-
     // Check if core just completed - only if all core cards have been generated
-    if (completion.core.complete && isTierFullyGenerated('core') && lastCompleted !== 'core' && lastCompleted !== 'deep_dive' && lastCompleted !== 'deep_dive_1' && lastCompleted !== 'deep_dive_2') {
+    if (completion.core.complete && isTierFullyGenerated('core') && lastCompleted !== 'core' && lastCompleted !== 'deep_dive') {
       setExpandedCard(null) // Close expanded card so only celebration shows
       setShowCelebration({
         tierName: 'Core',
@@ -5458,11 +5378,8 @@ export default function Canvas() {
       // Pre-generate Deep Dive content in background
       try {
         const deckTiers = tierCards[currentDeck.id] || {}
-        // Use new deep_dive if available, otherwise fall back to deep_dive_1
-        const ddCards = isNewTwoTier ? (deckTiers.deep_dive || []) : (deckTiers.deep_dive_1 || [])
-        const allCards = isNewTwoTier
-          ? [...(deckTiers.core || []), ...ddCards]
-          : [...(deckTiers.core || []), ...ddCards, ...(deckTiers.deep_dive_2 || [])]
+        const ddCards = deckTiers.deep_dive || []
+        const allCards = [...(deckTiers.core || []), ...ddCards]
         console.log(`[BACKGROUND] Starting Deep Dive pre-generation for ${ddCards.length} cards`)
         ddCards.forEach(card => {
           if (card?.id && card?.number && card?.title && !getCardContent(card.id)) {
@@ -5479,56 +5396,15 @@ export default function Canvas() {
         console.error('[BACKGROUND] Deep Dive pre-generation error:', err)
       }
     }
-    // Check if deep_dive just completed (new 2-tier system) - only if all deep_dive cards have been generated
-    else if (isNewTwoTier && completion.deep_dive.complete && isTierFullyGenerated('deep_dive') && lastCompleted === 'core') {
+    // Check if deep_dive just completed - only if all deep_dive cards have been generated
+    else if (completion.deep_dive.complete && isTierFullyGenerated('deep_dive') && lastCompleted === 'core') {
       setExpandedCard(null) // Close expanded card so only celebration shows
       setShowCelebration({
         tierName: 'Deep Dive',
-        nextTierName: null, // No more tiers after deep_dive in 2-tier system
+        nextTierName: null, // No more tiers after deep_dive
         tier: 'deep_dive'
       })
       setLastCompletedTier(prev => ({ ...prev, [currentDeck.id]: 'deep_dive' }))
-    }
-    // Check if deep_dive_1 just completed (legacy 3-tier system)
-    else if (completion.deep_dive_1.complete && lastCompleted === 'core') {
-      setExpandedCard(null) // Close expanded card so only celebration shows
-      setShowCelebration({
-        tierName: 'Deep Dive 1',
-        nextTierName: 'Deep Dive 2',
-        tier: 'deep_dive_1'
-      })
-      setLastCompletedTier(prev => ({ ...prev, [currentDeck.id]: 'deep_dive_1' }))
-
-      // Pre-generate Deep Dive 2 content in background
-      try {
-        const deckTiers = tierCards[currentDeck.id] || {}
-        const dd2Cards = deckTiers.deep_dive_2 || []
-        const allCards = [...(deckTiers.core || []), ...(deckTiers.deep_dive_1 || []), ...dd2Cards]
-        console.log(`[BACKGROUND] Starting DD2 pre-generation for ${dd2Cards.length} cards`)
-        dd2Cards.forEach(card => {
-          if (card?.id && card?.number && card?.title && !getCardContent(card.id)) {
-            generateSingleCardContent(currentDeck.name, card.number, card.title, allCards)
-              .then(content => {
-                saveCardContent(card.id, content)
-                setGeneratedContent(prev => ({ ...prev, [card.id]: content }))
-                console.log(`[BACKGROUND] DD2 content ready for card ${card.number}: ${card.title}`)
-              })
-              .catch(err => console.error(`[BACKGROUND] Failed DD2 card ${card?.number}:`, err))
-          }
-        })
-      } catch (err) {
-        console.error('[BACKGROUND] DD2 pre-generation error:', err)
-      }
-    }
-    // Check if deep_dive_2 just completed
-    else if (completion.deep_dive_2.complete && lastCompleted === 'deep_dive_1') {
-      setExpandedCard(null) // Close expanded card so only celebration shows
-      setShowCelebration({
-        tierName: 'Deep Dive 2',
-        nextTierName: null,
-        tier: 'deep_dive_2'
-      })
-      setLastCompletedTier(prev => ({ ...prev, [currentDeck.id]: 'deep_dive_2' }))
     }
   }, [claimedCards, currentDeck?.id, tierCards])
 
@@ -5544,9 +5420,9 @@ export default function Canvas() {
   }, [showCelebration, stackDecks])
 
   // Find the expanded card data (check both tier cards and legacy cards)
-  // Combine all tier cards (supports both new two-tier and legacy three-tier)
+  // Combine all tier cards
   const allCurrentCards = currentTierCards.core.length > 0
-    ? [...currentTierCards.core, ...currentTierCards.deep_dive, ...currentTierCards.deep_dive_1, ...currentTierCards.deep_dive_2]
+    ? [...currentTierCards.core, ...currentTierCards.deep_dive]
     : overviewCards
   // expandedCard can be either a card ID (string) or full card object (from Collections view)
   const expandedCardData = expandedCard
@@ -7576,8 +7452,7 @@ export default function Canvas() {
             allCards={allCurrentCards}
             hasNext={(() => {
               const coreCards = currentTierCards.core
-              const dd1Cards = currentTierCards.deep_dive_1
-              const dd2Cards = currentTierCards.deep_dive_2
+              const ddCards = currentTierCards.deep_dive
               const currentCardId = allCurrentCards[expandedCardIndex]?.id
               const nextCard = allCurrentCards[expandedCardIndex + 1]
 
@@ -7587,15 +7462,9 @@ export default function Canvas() {
                 if (hasOtherUnclaimed) return true
               }
 
-              // At last Deep Dive 1 card - can loop back if there are OTHER unclaimed DD1 cards
-              if (expandedCardIndex === coreCards.length + dd1Cards.length - 1) {
-                const hasOtherUnclaimed = dd1Cards.some(card => !claimedCards.has(card.id) && card.id !== currentCardId)
-                if (hasOtherUnclaimed) return true
-              }
-
-              // At last Deep Dive 2 card - can loop back if there are OTHER unclaimed DD2 cards
-              if (expandedCardIndex === coreCards.length + dd1Cards.length + dd2Cards.length - 1) {
-                const hasOtherUnclaimed = dd2Cards.some(card => !claimedCards.has(card.id) && card.id !== currentCardId)
+              // At last Deep Dive card - can loop back if there are OTHER unclaimed DD cards
+              if (expandedCardIndex === coreCards.length + ddCards.length - 1) {
+                const hasOtherUnclaimed = ddCards.some(card => !claimedCards.has(card.id) && card.id !== currentCardId)
                 if (hasOtherUnclaimed) return true
               }
 
@@ -7609,8 +7478,7 @@ export default function Canvas() {
             rootCategoryId={stackDecks[0]?.id}
             onNext={() => {
               const coreCards = currentTierCards.core
-              const dd1Cards = currentTierCards.deep_dive_1
-              const dd2Cards = currentTierCards.deep_dive_2
+              const ddCards = currentTierCards.deep_dive
               const currentCardId = allCurrentCards[expandedCardIndex]?.id
 
               // At last Core card - loop back to card 1 if there are OTHER unclaimed Core cards
@@ -7627,29 +7495,15 @@ export default function Canvas() {
                 }
               }
 
-              // At last Deep Dive 1 card - loop back to card 6 if there are OTHER unclaimed DD1 cards
-              if (expandedCardIndex === coreCards.length + dd1Cards.length - 1) {
-                const hasOtherUnclaimed = dd1Cards.some(card => !claimedCards.has(card.id) && card.id !== currentCardId)
+              // At last Deep Dive card - loop back to first DD card if there are OTHER unclaimed DD cards
+              if (expandedCardIndex === coreCards.length + ddCards.length - 1) {
+                const hasOtherUnclaimed = ddCards.some(card => !claimedCards.has(card.id) && card.id !== currentCardId)
                 if (hasOtherUnclaimed) {
-                  const firstDD1Card = dd1Cards[0]
-                  if (firstDD1Card) {
+                  const firstDDCard = ddCards[0]
+                  if (firstDDCard) {
                     setExpandedCardSlideDirection(1)
                     setExpandedCardStartFlipped(true)
-                    setExpandedCard(firstDD1Card.id)
-                    return
-                  }
-                }
-              }
-
-              // At last Deep Dive 2 card - loop back to card 11 if there are OTHER unclaimed DD2 cards
-              if (expandedCardIndex === coreCards.length + dd1Cards.length + dd2Cards.length - 1) {
-                const hasOtherUnclaimed = dd2Cards.some(card => !claimedCards.has(card.id) && card.id !== currentCardId)
-                if (hasOtherUnclaimed) {
-                  const firstDD2Card = dd2Cards[0]
-                  if (firstDD2Card) {
-                    setExpandedCardSlideDirection(1)
-                    setExpandedCardStartFlipped(true)
-                    setExpandedCard(firstDD2Card.id)
+                    setExpandedCard(firstDDCard.id)
                     return
                   }
                 }
@@ -7698,17 +7552,13 @@ export default function Canvas() {
             nextTierName={showCelebration.nextTierName}
             nextTierReady={(() => {
               // Check if next tier cards are already generated (from background pre-generation)
-              // Detect new two-tier system (deep_dive) vs legacy three-tier (deep_dive_1/2)
+              if (showCelebration.tier !== 'core') return false // No next tier after deep_dive
               const deckTierCards = tierCards[currentDeck?.id] || {}
-              const isNewTwoTier = deckTierCards.deep_dive?.length > 0 || !deckTierCards.deep_dive_1?.length
-              const nextTier = showCelebration.tier === 'core'
-                ? (isNewTwoTier ? 'deep_dive' : 'deep_dive_1')
-                : 'deep_dive_2'
-              const nextTierCards = deckTierCards[nextTier] || []
-              return nextTierCards.length >= 3 // New system has 3 cards, legacy has 5
+              const nextTierCards = deckTierCards.deep_dive || []
+              return nextTierCards.length >= 3
             })()}
             topicName={currentDeck?.name || 'this topic'}
-            isFullyMastered={showCelebration.tier === 'deep_dive_2'}
+            isFullyMastered={showCelebration.tier === 'deep_dive'}
             siblingTopics={(() => {
               // Get sibling topics (other children of parent deck)
               const parentDeck = stackDecks.length > 1 ? stackDecks[stackDecks.length - 2] : null
@@ -7729,13 +7579,10 @@ export default function Canvas() {
             }}
             onContinue={() => setShowCelebration(null)}
             onUnlockNext={() => {
-              // Detect new two-tier system (deep_dive) vs legacy three-tier (deep_dive_1/2)
-              const deckTierCards = tierCards[currentDeck?.id] || {}
-              const isNewTwoTier = deckTierCards.deep_dive?.length > 0 || !deckTierCards.deep_dive_1?.length
-              const nextTier = showCelebration.tier === 'core'
-                ? (isNewTwoTier ? 'deep_dive' : 'deep_dive_1')
-                : 'deep_dive_2'
-              handleUnlockTier(nextTier)
+              // Only core tier has a next tier (deep_dive)
+              if (showCelebration.tier === 'core') {
+                handleUnlockTier('deep_dive')
+              }
               setShowCelebration(null)
             }}
             onWander={() => {

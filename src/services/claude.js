@@ -272,7 +272,7 @@ DEEP_DIVE_2 (11-15): Controversies, competitors, internal culture, future challe
  * @param {string} parentContext - Optional parent path context
  * @param {string} previewText - Optional preview card text to avoid repeating
  * @param {string} topicType - Optional classified topic type for structure guidance
- * @returns {Promise<{outline: Object}>} outline with core, deep_dive_1, deep_dive_2 arrays
+ * @returns {Promise<{outline: Object}>} outline with core and deep_dive arrays
  */
 export async function generateTopicOutline(topic, parentContext = null, previewText = null, topicType = null, onSection = null, onCounts = null) {
   console.log(`[OUTLINE] Generating outline for: ${topic}${previewText ? ' (with preview context)' : ''}${topicType ? ` [${topicType}]` : ''}${onSection ? ' [STREAMING]' : ''}`);
@@ -1147,7 +1147,7 @@ const TIER_CONFIG = {
  * Generate 4-6 cards for a specific tier with streaming support
  * Card count is determined by the outline (defaults to 5 if no outline)
  * @param {string} topicName - The topic
- * @param {string} tier - 'core' | 'deep_dive_1' | 'deep_dive_2'
+ * @param {string} tier - 'core' | 'deep_dive'
  * @param {Array} previousCards - Cards from previous tiers (to avoid repetition)
  * @param {string} parentContext - Optional parent context
  * @param {Function} onCard - Callback fired when each card is ready (for progressive display)

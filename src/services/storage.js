@@ -246,8 +246,7 @@ const SUBCATEGORY_CODES = {
 const TIER_NUMBERS = {
   'preview': '0',
   'core': '1',
-  'deep_dive_1': '2',
-  'deep_dive_2': '3',
+  'deep_dive': '2',
 }
 
 /**
@@ -289,7 +288,7 @@ function getDateCode() {
 /**
  * Get and increment the sequence counter for a given deck+tier+date combination
  * @param {string} deckCode - The 3-letter deck code
- * @param {string} tier - The tier ('core', 'deep_dive_1', 'deep_dive_2')
+ * @param {string} tier - The tier ('core', 'deep_dive')
  * @param {string} dateCode - The date code (YYMMDD)
  * @returns {string} The 4-digit sequence number (e.g., '0042')
  */
@@ -321,7 +320,7 @@ function getNextSequenceNumber(deckCode, tier, dateCode) {
  * Example: ANC-1-250116-0042
  *
  * @param {string} deckId - The deck ID
- * @param {string} tier - The tier ('core', 'deep_dive_1', 'deep_dive_2')
+ * @param {string} tier - The tier ('core', 'deep_dive')
  * @returns {string} The unique card ID
  */
 export function generateCardId(deckId, tier = 'core') {
@@ -753,7 +752,7 @@ export function getDeckCards(deckId) {
  * @param {string} deckId - The deck ID
  * @param {string} deckName - The deck name (for metadata)
  * @param {Array} cards - Array of card objects with id, title, and optionally tier
- * @param {string} tier - Optional tier: 'core' | 'deep_dive_1' | 'deep_dive_2'
+ * @param {string} tier - Optional tier: 'core' | 'deep_dive'
  */
 export function saveDeckCards(deckId, deckName, cards, tier = 'core', expectedTotalCards = null) {
   const data = getData()
@@ -764,7 +763,7 @@ export function saveDeckCards(deckId, deckName, cards, tier = 'core', expectedTo
     id: deckId,
     name: deckName,
     cardIds: [],
-    cardsByTier: { core: [], deep_dive_1: [], deep_dive_2: [] },
+    cardsByTier: { core: [], deep_dive: [] },
     unlockedTiers: ['core'], // Core is always unlocked
     generatedAt: now,
   }
@@ -796,7 +795,7 @@ export function saveDeckCards(deckId, deckName, cards, tier = 'core', expectedTo
       content: null,  // Content generated on flip
       tier: tier,
       tierIndex: index,  // Position within tier (0-4)
-      number: card.number || (tier === 'core' ? index + 1 : tier === 'deep_dive_1' ? index + 6 : index + 11),  // Global card number 1-15
+      number: card.number || (tier === 'core' ? index + 1 : index + 5),  // Global card number (core: 1-4, deep_dive: 5-7)
       rarity: 'common',  // Default, can be enhanced later
       claimed: false,
       claimedAt: null,
@@ -813,7 +812,7 @@ export function saveDeckCards(deckId, deckName, cards, tier = 'core', expectedTo
  * @param {string} deckId - The deck ID
  * @param {string} deckName - The deck name
  * @param {Object} card - The card object
- * @param {string} tier - The tier ('core', 'deep_dive_1', 'deep_dive_2')
+ * @param {string} tier - The tier ('core', 'deep_dive')
  * @param {number} expectedTotalCards - Optional expected total cards from outline
  */
 export function saveStreamedCard(deckId, deckName, card, tier, expectedTotalCards = null) {
@@ -826,7 +825,7 @@ export function saveStreamedCard(deckId, deckName, card, tier, expectedTotalCard
       id: deckId,
       name: deckName,
       cardIds: [],
-      cardsByTier: { core: [], deep_dive_1: [], deep_dive_2: [] },
+      cardsByTier: { core: [], deep_dive: [] },
       unlockedTiers: ['core'],
       generatedAt: now,
     }
@@ -844,7 +843,7 @@ export function saveStreamedCard(deckId, deckName, card, tier, expectedTotalCard
 
   // Add to cardsByTier if not already there
   if (!data.decks[deckId].cardsByTier) {
-    data.decks[deckId].cardsByTier = { core: [], deep_dive: [], deep_dive_1: [], deep_dive_2: [] }
+    data.decks[deckId].cardsByTier = { core: [], deep_dive: [] }
   }
   // Ensure the tier array exists (for backwards compatibility)
   if (!data.decks[deckId].cardsByTier[tier]) {
@@ -1180,7 +1179,7 @@ export function updateDeckLastInteracted(deckId) {
       id: deckId,
       name: deckId,
       cardIds: [],
-      cardsByTier: { core: [], deep_dive_1: [], deep_dive_2: [] },
+      cardsByTier: { core: [], deep_dive: [] },
       unlockedTiers: ['core'],
       generatedAt: new Date().toISOString(),
     }
@@ -1208,7 +1207,7 @@ export function hasPreviewCard(deckId) {
 /**
  * Get cards for a specific tier in a deck
  * @param {string} deckId - The deck ID
- * @param {string} tier - The tier: 'core' | 'deep_dive_1' | 'deep_dive_2'
+ * @param {string} tier - The tier: 'core' | 'deep_dive'
  * @returns {Array|null} Array of card objects or null if tier not generated
  */
 export function getTierCards(deckId, tier) {
@@ -1246,8 +1245,6 @@ export function getDeckTierCompletion(deckId) {
   const result = {
     core: { claimed: 0, total: 0, complete: false },
     deep_dive: { claimed: 0, total: 0, complete: false },
-    deep_dive_1: { claimed: 0, total: 0, complete: false },
-    deep_dive_2: { claimed: 0, total: 0, complete: false },
   }
 
   if (!deck?.cardsByTier) {
