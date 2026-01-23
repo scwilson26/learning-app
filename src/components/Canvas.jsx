@@ -7698,9 +7698,14 @@ export default function Canvas() {
             nextTierName={showCelebration.nextTierName}
             nextTierReady={(() => {
               // Check if next tier cards are already generated (from background pre-generation)
-              const nextTier = showCelebration.tier === 'core' ? 'deep_dive_1' : 'deep_dive_2'
-              const nextTierCards = tierCards[currentDeck?.id]?.[nextTier] || []
-              return nextTierCards.length === 5
+              // Detect new two-tier system (deep_dive) vs legacy three-tier (deep_dive_1/2)
+              const deckTierCards = tierCards[currentDeck?.id] || {}
+              const isNewTwoTier = deckTierCards.deep_dive?.length > 0 || !deckTierCards.deep_dive_1?.length
+              const nextTier = showCelebration.tier === 'core'
+                ? (isNewTwoTier ? 'deep_dive' : 'deep_dive_1')
+                : 'deep_dive_2'
+              const nextTierCards = deckTierCards[nextTier] || []
+              return nextTierCards.length >= 3 // New system has 3 cards, legacy has 5
             })()}
             topicName={currentDeck?.name || 'this topic'}
             isFullyMastered={showCelebration.tier === 'deep_dive_2'}
@@ -7724,7 +7729,12 @@ export default function Canvas() {
             }}
             onContinue={() => setShowCelebration(null)}
             onUnlockNext={() => {
-              const nextTier = showCelebration.tier === 'core' ? 'deep_dive_1' : 'deep_dive_2'
+              // Detect new two-tier system (deep_dive) vs legacy three-tier (deep_dive_1/2)
+              const deckTierCards = tierCards[currentDeck?.id] || {}
+              const isNewTwoTier = deckTierCards.deep_dive?.length > 0 || !deckTierCards.deep_dive_1?.length
+              const nextTier = showCelebration.tier === 'core'
+                ? (isNewTwoTier ? 'deep_dive' : 'deep_dive_1')
+                : 'deep_dive_2'
               handleUnlockTier(nextTier)
               setShowCelebration(null)
             }}
