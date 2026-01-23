@@ -862,8 +862,10 @@ function ContinueExploringSection({ decks, onOpenDeck }) {
 
 // Tier section component - shows cards for one tier with header and progress
 function TierSection({ tier, tierName, cards, claimedCards, onReadCard, completion, isLocked, onUnlock, isUnlocking, totalCards = 15, tint, rootCategoryId, outline }) {
-  const { claimed, total } = completion
-  const isComplete = total > 0 && claimed === total
+  const { claimed } = completion
+  // Get expected count from outline (how many cards will be generated) - use this for completion checks
+  const expectedCount = outline?.[tier]?.length || cards.length || 5
+  const isComplete = expectedCount > 0 && claimed === expectedCount
 
   // Track which cards have been revealed (for flip animation)
   const [revealedCards, setRevealedCards] = useState(new Set())
@@ -902,8 +904,6 @@ function TierSection({ tier, tierName, cards, claimedCards, onReadCard, completi
 
   // Cards generated but tier accessible - show all slots (some may be face-down)
   if (cards.length > 0 || (outline && outline[tier])) {
-    // Get expected count from outline (how many cards will be generated)
-    const expectedCount = outline?.[tier]?.length || cards.length || 5
     // Calculate offset based on tier (supports both new two-tier and legacy three-tier)
     const tierOffset = tier === 'core' ? 0 : tier === 'deep_dive' ? expectedCount : tier === 'deep_dive_1' ? 5 : 10
 
@@ -916,7 +916,7 @@ function TierSection({ tier, tierName, cards, claimedCards, onReadCard, completi
               ? 'bg-green-100 text-green-700'
               : 'bg-gray-100 text-gray-500'
           }`}>
-            {claimed}/{total || expectedCount}
+            {claimed}/{expectedCount}
           </span>
           {isComplete && <span className="text-green-500">✓</span>}
         </div>
