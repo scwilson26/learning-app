@@ -283,175 +283,184 @@ Do NOT repeat any facts, numbers, or details from the preview. The outline shoul
 
   const prompt = `Create a complete teaching outline for "${topic}".${contextNote}${typeNote}${previewNote}
 
-You're a teacher planning a lesson. Write out EVERYTHING someone needs to understand this topic - organized logically, with full detail.
+You're a teacher planning a lesson. Write out EVERYTHING someone needs to understand this topic - organized logically, with full explanations.
 
-This is not a list of card titles. This is the actual knowledge structure.
+This is not a list of facts. This is the actual lesson, written out in outline form.
 
 FORMAT:
 - Roman numerals (I, II, III) for main sections
 - Letters (A, B, C) for subsections within each section
-- Bullet points for specific facts, examples, details
+- Full sentences that explain, not fragments that list
 - Mark each main section as [CORE] or [DEEP DIVE]
+
+WRITING STYLE:
+- Write in complete sentences, not bullet fragments
+- Explain WHY things matter, not just WHAT happened
+- Connect the dots - show how one thing leads to another
+- Include specific facts, numbers, names - but embed them in explanations
+- Each bullet point should teach something, not just state something
+
+BAD (fragment list):
+   - Born in Budapest, 1930
+   - Jewish family
+   - Survived Nazi occupation with false identities
+   - Father was lawyer and Esperanto enthusiast
+
+GOOD (explanatory sentences):
+   - George Soros was born György Schwartz in Budapest, Hungary in 1930 to a Jewish family.
+   - When the Nazis occupied Hungary in 1944, his family survived by using false identities and splitting up. Soros was 14 years old.
+   - This experience shaped his lifelong fear of totalitarian regimes and his belief that open societies must be actively defended.
 
 [CORE] sections:
 - Essential knowledge to understand this topic
 - After Core, someone could explain this topic to a friend
+- Be thorough but focused - don't pad, but don't skip important stuff
 - Build logically - later sections assume earlier knowledge
 
 [DEEP DIVE] sections:
 - Optional bonus content for the curious
-- History, origin stories, edge cases, famous examples, weird facts
+- History, origin stories, edge cases, famous examples, lesser-known facts
 - Someone can skip these entirely and still understand the topic
-
-HOW DETAILED TO BE:
-- Each subsection (A, B, C) should have 2-4 bullet points
-- Include specific facts, numbers, names - not vague placeholders
-- Mini-explanations, not just labels
-- If something needs more detail to be clear, add it
 
 STRUCTURE GUIDE BY TOPIC TYPE:
 
 For CONCEPTS (Watt, GDP, Inflation):
-- What is it? (definition, core idea)
-- How does it work? (mechanics, formulas)
-- How does it show up in real life? (examples, applications)
-- Deep Dive: history, edge cases, common misconceptions
+- What is it? (clear definition with examples)
+- How does it work? (mechanics, formulas, the logic behind it)
+- How does it show up in real life? (practical applications)
+- Deep Dive: history, edge cases, misconceptions
 
 For PROCESSES (Photosynthesis, Digestion, Evaporation):
-- What is it? (definition, purpose)
-- What's needed? (inputs, conditions)
-- How does it work? (stages, mechanism)
-- What's produced? (outputs, results)
+- What is it and why does it happen? (definition, purpose)
+- What's needed for it to work? (inputs, conditions)
+- How does it actually work? (stages, mechanism - explained clearly)
+- What's the result? (outputs, why it matters)
 - Deep Dive: variations, exceptions, discovery history
 
-For PEOPLE (Marie Curie, Napoleon, Shakespeare):
-- Who were they? (identity, era, role)
-- Where did they come from? (background, context)
-- What did they do? (key achievements, contributions)
-- Why do they matter? (impact, legacy)
+For PEOPLE (Marie Curie, Napoleon, Soros):
+- Who are they and why are they famous? (the 1-2 sentence answer - lead with their most known achievement)
+- The key achievement or moment (what they're most known for - explain it fully)
+- How did they get there? (relevant background that explains the achievement)
+- What's their impact or legacy? (why they still matter)
 - Deep Dive: personal life, controversies, lesser-known facts
 
 For EVENTS (French Revolution, Moon Landing, WW2):
-- What happened? (basic description, dates)
-- What caused it? (background, triggers)
+- What happened? (clear description, dates, key facts)
+- What caused it? (background, triggers - explain the why)
 - How did it unfold? (key phases, turning points)
-- What were the consequences? (immediate and long-term)
+- What were the consequences? (immediate and long-term impact)
 - Deep Dive: specific moments, key figures, myths vs reality
 
 For WORKS/ARTIFACTS (Shakespeare's Sonnets, Guernica, The Constitution):
-- What is it? (description, creator, date)
-- What's its structure? (form, components, organization)
+- What is it? (description, creator, context)
+- What's its structure? (form, components - explained)
 - What's it about? (themes, content, meaning)
 - Why does it matter? (significance, influence)
 - Deep Dive: creation story, famous parts, controversies
+
+IMPORTANT FOR PEOPLE:
+- Lead with why they're famous, not chronological biography
+- Their most significant achievement or moment should come early
+- Background/childhood goes in "how did they get there" - not first
+- Ask: "If someone only remembers one thing about this person, what should it be?" Put that front and center.
 
 EXAMPLE - "Watt" (concept):
 
 I. What is a watt? [CORE]
    A. Definition
-      - Measures power (rate of energy use)
-      - Not the same as energy (total amount)
-      - One watt = one joule per second
+      - A watt measures power, which is the rate at which energy gets used. It's not how much energy you have - it's how fast you're using it.
+      - One watt equals one joule of energy per second. A joule is a small unit of energy - about what it takes to lift an apple one meter.
    B. Everyday examples
-      - Phone charger: ~20 watts (slow energy use)
-      - Microwave: ~1000 watts (fast energy use)
-      - Same electricity, different speeds
+      - Your phone charger uses about 20 watts - it draws energy slowly. Your microwave uses about 1000 watts - it draws energy fast.
+      - Both use electricity, but at very different rates. That's what wattage tells you.
 
 II. Energy vs power [CORE]
    A. The key distinction
-      - Energy = total amount used
-      - Power = speed of use
-      - Like miles (energy) vs mph (power)
-   B. How they relate
-      - Power sustained over time = energy
-      - 100W bulb for 1 hour = 360,000 joules
-      - Wattage stays constant, energy adds up
+      - Energy is the total amount of work done. Power is how fast that work happens.
+      - Think of it like driving: energy is like the total miles you travel, power is like your speed.
+   B. How they connect
+      - If you sustain power over time, you get energy. A 100-watt bulb uses 100 joules every second it's on.
+      - Leave that bulb on for an hour and you've used 360,000 joules total. The wattage stayed constant - the energy accumulated.
+      - This is why your electric bill charges for kilowatt-hours (power × time), not just watts.
 
 III. The formula: Watts = Volts × Amps [CORE]
    A. What is voltage?
-      - Electrical pressure
-      - How hard electricity gets pushed
-      - US outlets: 120V. Dryers: 240V.
+      - Voltage is electrical pressure - how hard electricity is being pushed through a wire.
+      - US wall outlets provide 120 volts. Heavy appliances like dryers get 240 volts - more pressure.
    B. What are amps?
-      - Current (flow of electricity)
-      - Like gallons per minute through a pipe
-   C. Putting it together
-      - Pressure × flow = power
-      - 120V × 10A = 1,200 watts
+      - Amps measure current - how much electricity is actually flowing through.
+      - Think of water in a pipe: voltage is the water pressure, amps is the gallons per minute flowing through.
+   C. How they combine
+      - Multiply the pressure (volts) by the flow (amps) and you get power (watts).
+      - A hair dryer plugged into a 120-volt outlet drawing 10 amps uses 1,200 watts.
 
 IV. Kilowatts and your electric bill [CORE]
-   A. Kilowatts
-      - 1,000 watts = 1 kilowatt
-      - Just a bigger unit
-   B. Kilowatt-hours
-      - Power × time = energy used
-      - What your bill charges for
-      - 1,000W for 1 hour = 1 kWh
-   C. Real cost
-      - Average ~$0.15 per kWh
-      - 1 hour of microwave = 15 cents
+   A. What's a kilowatt?
+      - A kilowatt is just 1,000 watts. It's a more convenient unit for talking about household power use.
+   B. What's a kilowatt-hour?
+      - A kilowatt-hour is power multiplied by time. It measures the total energy you actually used.
+      - If you run a 1,000-watt microwave for one hour, that's 1 kWh.
+      - At typical rates of about $0.15 per kWh, that hour of microwaving costs about 15 cents.
+   C. Why this matters for bills
+      - Your electric bill charges for kilowatt-hours, not watts. It's not about how powerful your appliances are - it's about how long you run them.
 
 V. Reading wattage in real life [CORE]
-   A. Appliance labels
-      - Phone charger: 20W
-      - Laptop: 60W
-      - Microwave: 1000W
-      - Hair dryer: 1500W
-   B. What higher watts means
-      - More electricity used
-      - Higher bills
-      - More heat generated
-   C. Wiring implications
-      - High-wattage needs thicker wires
-      - Why dryers need special outlets
+   A. What appliance labels tell you
+      - The wattage on an appliance tells you its power draw. Phone charger: 20W. Laptop: 60W. Microwave: 1000W. Hair dryer: 1500W. Space heater: 1500W.
+      - Higher watts means faster energy use, which means higher bills if you run it a lot.
+   B. Why high-wattage appliances are different
+      - High-wattage devices need more current flowing through wires, which generates heat.
+      - This is why heavy appliances like dryers and ovens need thicker wires and special outlets - regular wiring could overheat.
 
 VI. Why it's called a watt [DEEP DIVE]
-   A. James Watt (1736-1819)
-      - Scottish inventor
-      - Made steam engines efficient (not invented)
-   B. The naming
-      - Unit adopted in 1889
-      - Nearly 70 years after his death
+   A. James Watt
+      - The unit is named after James Watt (1736-1819), a Scottish inventor.
+      - He didn't invent the steam engine - but he made it vastly more efficient by adding a separate condenser.
+   B. The honor
+      - The watt was adopted as a unit of power in 1889, nearly 70 years after his death.
+      - It was a way of honoring the man whose work powered the Industrial Revolution.
 
 VII. The horsepower connection [DEEP DIVE]
-   A. The problem
-      - Needed to sell engines
-      - Customers understood horses, not physics
-   B. His calculation
-      - Measured horse lifting power
-      - Deliberately inflated the number
-      - 1 horsepower = 746 watts
+   A. The sales problem
+      - When Watt was selling his improved steam engines, customers didn't understand physics. They understood horses.
+      - He needed a way to compare his engines to the horses they were replacing.
+   B. His calculation (and his trick)
+      - Watt calculated that a strong horse could lift 33,000 pounds one foot per minute.
+      - But he probably inflated the number to make his engines look more impressive by comparison.
+      - The result: 1 horsepower equals 746 watts. That conversion is still used today for car engines and motors.
 
 VIII. Peak vs continuous watts [DEEP DIVE]
-   A. The difference
-      - Peak = brief bursts
-      - Continuous = sustained output
-   B. The gap
-      - Continuous usually 20-30% lower
-      - Marketing uses peak; bills see continuous
+   A. What the difference means
+      - Peak watts is the maximum a device can handle in short bursts. Continuous watts is what it can sustain over time.
+      - A "1000W power supply" might only deliver 700-800 watts continuously.
+   B. Where this matters
+      - Computer power supplies, car amplifiers, solar inverters, space heaters - all use peak ratings in marketing.
+      - Your electric bill sees continuous watts. The gap between peak and continuous is usually 20-30%.
 
 POPUP TERMS:
-- Joule: A unit of energy. Lifting an apple one meter takes about one joule.
-- Voltage/Volts: Electrical pressure. How hard electricity gets pushed.
-- Amps/Current: How much electricity flows. Like gallons per minute through a pipe.
-- Kilowatt-hour: Unit of energy for billing. Power multiplied by time.
+- Joule: A unit of energy. Lifting an apple one meter takes about one joule. Named after physicist James Joule.
+- Voltage/Volts: Electrical pressure - how hard electricity is being pushed through wires. US outlets are 120V; dryers use 240V.
+- Amps/Current: How much electricity is flowing. Like gallons per minute through a pipe.
+- Kilowatt-hour: A unit of energy used for billing. Power (in kW) multiplied by time (in hours). What your electric bill actually charges for.
 
 END OF EXAMPLE
 
 RULES:
-- Be thorough - don't skip important concepts
+- Write explanations, not fragment lists
+- Be thorough - don't skip concepts someone would need
 - Be specific - use real facts, numbers, names
-- Be logical - each section builds on the previous
-- Core must be complete - no gaps in foundational understanding
-- Flag 3-6 terms for popups (terms a beginner might not know)
+- Connect ideas - show how one thing leads to another
+- For people: lead with fame/achievement, not chronological biography
+- Core must be complete - no gaps in understanding
+- Flag 4-8 popup terms (terms a beginner might not know)
 
 OUTPUT:
-Return the full outline as structured text. End with POPUP TERMS section.`;
+Return the full outline as structured text with [CORE] and [DEEP DIVE] labels. End with POPUP TERMS section.`;
 
   try {
     const message = await anthropic.messages.create({
       model: MODELS.CONTENT,
-      max_tokens: 4000,
+      max_tokens: 6000,
       messages: [{ role: 'user', content: prompt }]
     });
 
