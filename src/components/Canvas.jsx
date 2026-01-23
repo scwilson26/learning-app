@@ -3730,26 +3730,31 @@ export default function Canvas() {
       if (streamingInProgress) {
         console.log(`[PREBUILT] Background streaming still in progress, subscribing to updates...`)
 
-        // Poll for new cards while streaming continues
+        // Track what we've already shown (using closure to persist across interval calls)
+        let lastSeenCoreCount = coreCards.length
+        let lastSeenDeepDiveCount = deepDiveCards.length
         let hasShownFirstCard = coreCards.length > 0
+
+        // Poll for new cards while streaming continues (500ms to reduce spam)
         const pollInterval = setInterval(() => {
           const currentPrebuilt = prebuiltCardsRef.current[deck.id]
           if (currentPrebuilt && currentPrebuilt.core) {
-            const prevCore = tierCards[deck.id]?.core || []
-            const prevDeepDive = tierCards[deck.id]?.deep_dive || []
-            // Only update if there are new cards
-            if (currentPrebuilt.core.length > prevCore.length || currentPrebuilt.deep_dive.length > prevDeepDive.length) {
-              console.log(`[PREBUILT] New cards arrived: core=${currentPrebuilt.core.length}, deep_dive=${currentPrebuilt.deep_dive.length}`)
+            const currentCoreCount = currentPrebuilt.core.length
+            const currentDeepDiveCount = currentPrebuilt.deep_dive.length
+
+            // Only update if there are actually NEW cards since last poll
+            if (currentCoreCount > lastSeenCoreCount || currentDeepDiveCount > lastSeenDeepDiveCount) {
+              console.log(`[PREBUILT] New cards: core=${lastSeenCoreCount}→${currentCoreCount}, deep_dive=${lastSeenDeepDiveCount}→${currentDeepDiveCount}`)
 
               // Clear loading on first card
-              if (!hasShownFirstCard && currentPrebuilt.core.length > 0) {
+              if (!hasShownFirstCard && currentCoreCount > 0) {
                 setLoadingDeck(null)
                 hasShownFirstCard = true
               }
 
-              // Update content cache for new cards
-              const newCoreCards = currentPrebuilt.core.slice(prevCore.length)
-              const newDeepDiveCards = currentPrebuilt.deep_dive.slice(prevDeepDive.length)
+              // Update content cache for truly new cards
+              const newCoreCards = currentPrebuilt.core.slice(lastSeenCoreCount)
+              const newDeepDiveCards = currentPrebuilt.deep_dive.slice(lastSeenDeepDiveCount)
               ;[...newCoreCards, ...newDeepDiveCards].forEach(card => {
                 if (card.content) {
                   setGeneratedContent(prevContent => ({
@@ -3758,6 +3763,10 @@ export default function Canvas() {
                   }))
                 }
               })
+
+              // Update the counts BEFORE updating state to prevent re-triggering
+              lastSeenCoreCount = currentCoreCount
+              lastSeenDeepDiveCount = currentDeepDiveCount
 
               setTierCards(prev => ({
                 ...prev,
@@ -3768,7 +3777,7 @@ export default function Canvas() {
               }))
             }
           }
-        }, 200)
+        }, 500)
 
         // Wait for streaming to complete, then clean up
         streamingInProgress.then((resultOutline) => {
