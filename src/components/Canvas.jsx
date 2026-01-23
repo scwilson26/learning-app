@@ -1111,6 +1111,9 @@ function RabbitHoleSheet({
   topic,
   preview,
   isLoading,
+  claimed,
+  cardId,
+  onClaim,
   onExplore,
   onClose,
   rootCategoryId
@@ -1180,17 +1183,38 @@ function RabbitHoleSheet({
           >
             {topic}
           </h3>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full transition-colors"
-            style={{
-              background: isThemed ? theme.cardBgAlt : '#f3f4f6',
-              color: isThemed ? theme.textSecondary : '#6b7280'
-            }}
-            aria-label="Close"
-          >
-            <span className="text-lg font-light">×</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Claim button */}
+            {!isLoading && preview && (
+              <button
+                onClick={claimed ? undefined : onClaim}
+                className={`w-8 h-8 flex items-center justify-center rounded-full transition-all ${
+                  claimed ? 'scale-110' : 'hover:scale-110 active:scale-95'
+                }`}
+                style={{
+                  background: claimed
+                    ? (isThemed ? theme.accent : '#10b981')
+                    : (isThemed ? theme.cardBgAlt : '#f3f4f6'),
+                  color: claimed ? '#ffffff' : (isThemed ? theme.textSecondary : '#6b7280'),
+                  cursor: claimed ? 'default' : 'pointer'
+                }}
+                aria-label={claimed ? 'Collected' : 'Add to collection'}
+              >
+                {claimed ? '✓' : '+'}
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="w-8 h-8 flex items-center justify-center rounded-full transition-colors"
+              style={{
+                background: isThemed ? theme.cardBgAlt : '#f3f4f6',
+                color: isThemed ? theme.textSecondary : '#6b7280'
+              }}
+              aria-label="Close"
+            >
+              <span className="text-lg font-light">×</span>
+            </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -3397,27 +3421,31 @@ export default function Canvas() {
 
     console.log(`[RABBIT HOLE] Found topic:`, topicResult.id, 'path:', topicResult.pathIds)
 
-    // Check for cached preview
+    // Build parent path for context
+    const parentPath = topicResult.pathIds?.length > 0
+      ? topicResult.pathIds.map(id => {
+          const node = getTreeNode(id)
+          return node?.name || node?.title || id
+        }).join(' > ')
+      : null
+
+    // Check for cached preview (same flow as browser: local → Supabase → generate)
     const cachedPreview = getPreviewCard(topicResult.id)
     if (cachedPreview?.content) {
-      console.log(`[RABBIT HOLE] Using cached preview for ${match.original}`)
+      console.log(`[RABBIT HOLE] Using local cached preview for ${match.original}`)
       setRabbitHolePreview({
         topic: match.original,
         category: match.category,
         preview: cachedPreview.content,
+        cardId: cachedPreview.cardId,
+        claimed: cachedPreview.claimed || false,
         isLoading: false,
         treeNodeId: topicResult.id,
         pathIds: topicResult.pathIds,
         navigatePath: [...(topicResult.pathIds || []), topicResult.id]
       })
 
-      // Still start outline generation in background (in case it wasn't done before)
-      const parentPath = topicResult.pathIds?.length > 0
-        ? topicResult.pathIds.map(id => {
-            const node = getTreeNode(id)
-            return node?.name || node?.title || id
-          }).join(' > ')
-        : null
+      // Start outline generation in background
       startOutlineGeneration(topicResult.id, match.original, parentPath, cachedPreview.content)
       return
     }
@@ -3427,6 +3455,8 @@ export default function Canvas() {
       topic: match.original,
       category: match.category,
       preview: null,
+      cardId: null,
+      claimed: false,
       isLoading: true,
       treeNodeId: topicResult.id,
       pathIds: topicResult.pathIds,
@@ -3434,31 +3464,57 @@ export default function Canvas() {
     })
 
     try {
-      // Generate a preview for this topic
-      const { preview } = await generateTopicPreview(match.original, match.category)
+      // [SHARED MAP] Check Supabase first for existing preview (same as browser flow)
+      const { data: remotePreview, error: fetchError } = await getPreviewCardRemote(topicResult.id)
 
-      // Save to cache
-      savePreviewCard(topicResult.id, match.original, preview)
+      if (!fetchError && remotePreview && remotePreview.content) {
+        console.log(`[RABBIT HOLE] Found preview in Supabase for ${match.original}`)
 
-      setRabbitHolePreview(prev => prev?.topic === match.original ? {
-        ...prev,
-        preview,
-        isLoading: false
-      } : prev)
+        // Save to local storage
+        savePreviewCard(topicResult.id, match.original, remotePreview.content)
+        const savedPreview = getPreviewCard(topicResult.id)
 
-      // Start outline generation in background (like wander does)
-      // Build parent path from pathIds for context
-      const parentPath = topicResult.pathIds?.length > 0
-        ? topicResult.pathIds.map(id => {
-            const node = getTreeNode(id)
-            return node?.name || node?.title || id
-          }).join(' > ')
-        : null
+        setRabbitHolePreview(prev => prev?.topic === match.original ? {
+          ...prev,
+          preview: remotePreview.content,
+          cardId: savedPreview?.cardId || null,
+          isLoading: false
+        } : prev)
 
-      // Classify topic type for proper outline structure
-      const topicType = await classifyTopic(match.original)
-      console.log(`[RABBIT HOLE] Starting outline generation for: ${match.original} [${topicType}]`)
-      startOutlineGeneration(topicResult.id, match.original, parentPath, preview, topicType)
+        // Start outline generation in background
+        startOutlineGeneration(topicResult.id, match.original, parentPath, remotePreview.content)
+      } else {
+        // No preview in Supabase, generate one
+        console.log(`[RABBIT HOLE] No preview found for ${match.original}, generating...`)
+
+        // Classify topic type for proper generation
+        const topicType = await classifyTopic(match.original, parentPath)
+        const { preview } = await generateTopicPreview(match.original, parentPath, topicType)
+
+        // Save to local storage
+        savePreviewCard(topicResult.id, match.original, preview)
+
+        // Save to Supabase for sharing
+        try {
+          await savePreviewCardRemote(topicResult.id, match.original, preview)
+          console.log(`[RABBIT HOLE] Saved preview to Supabase for ${match.original}`)
+        } catch (err) {
+          console.warn(`[RABBIT HOLE] Failed to save preview to Supabase:`, err)
+        }
+
+        const savedPreview = getPreviewCard(topicResult.id)
+
+        setRabbitHolePreview(prev => prev?.topic === match.original ? {
+          ...prev,
+          preview,
+          cardId: savedPreview?.cardId || null,
+          isLoading: false
+        } : prev)
+
+        // Start outline generation in background
+        console.log(`[RABBIT HOLE] Starting outline generation for: ${match.original} [${topicType}]`)
+        startOutlineGeneration(topicResult.id, match.original, parentPath, preview, topicType)
+      }
     } catch (err) {
       console.error('[RABBIT HOLE] Failed to generate preview:', err)
       setRabbitHolePreview(prev => prev?.topic === match.original ? {
@@ -3472,6 +3528,10 @@ export default function Canvas() {
   // Handle exploring a rabbit hole topic (navigate to it)
   const handleExploreRabbitHole = () => {
     if (!rabbitHolePreview) return
+
+    // Auto-claim the preview card on explore (same as other preview flows)
+    claimPreviewCard(rabbitHolePreview.treeNodeId)
+    setClaimedCards(getClaimedCardIds())
 
     // Use stored navigatePath (same pattern as Wander)
     if (rabbitHolePreview.navigatePath) {
@@ -6812,9 +6872,12 @@ export default function Canvas() {
                 setShowPreviewCard(prev => ({ ...prev, claimed: true }))
               }}
               onExplore={() => {
+                // Auto-claim the preview card on explore
+                claimPreviewCard(showPreviewCard.deckId)
+                setClaimedCards(getClaimedCardIds())
+
                 if (showPreviewCard.navigatePath) {
                   setStack(showPreviewCard.navigatePath)
-                  // Update lastInteracted so it shows in Continue Exploring
                   updateDeckLastInteracted(showPreviewCard.deckId)
                 }
                 setShowPreviewCard(null)
@@ -6852,6 +6915,10 @@ export default function Canvas() {
                 setShowPreviewCard(prev => ({ ...prev, claimed: true }))
               }}
               onDealMeIn={() => {
+                // Auto-claim the preview card on explore
+                claimPreviewCard(showPreviewCard.deckId)
+                setClaimedCards(getClaimedCardIds())
+
                 // Use navigatePath (same pattern as Wander)
                 if (showPreviewCard.navigatePath) {
                   setStack(showPreviewCard.navigatePath)
@@ -7521,6 +7588,13 @@ export default function Canvas() {
             topic={rabbitHolePreview.topic}
             preview={rabbitHolePreview.preview}
             isLoading={rabbitHolePreview.isLoading}
+            claimed={rabbitHolePreview.claimed}
+            cardId={rabbitHolePreview.cardId}
+            onClaim={() => {
+              claimPreviewCard(rabbitHolePreview.treeNodeId)
+              setClaimedCards(getClaimedCardIds())
+              setRabbitHolePreview(prev => ({ ...prev, claimed: true }))
+            }}
             onExplore={handleExploreRabbitHole}
             onClose={() => setRabbitHolePreview(null)}
             rootCategoryId={rabbitHolePreview.category}
@@ -7599,6 +7673,10 @@ export default function Canvas() {
               setShowPreviewCard(prev => ({ ...prev, claimed: true }))
             }}
             onDealMeIn={() => {
+              // Auto-claim the preview card on explore
+              claimPreviewCard(showPreviewCard.deckId)
+              setClaimedCards(getClaimedCardIds())
+
               // Use navigatePath (same pattern as Wander)
               if (showPreviewCard.navigatePath) {
                 setStack(showPreviewCard.navigatePath)
@@ -7642,9 +7720,12 @@ export default function Canvas() {
               setShowPreviewCard(prev => ({ ...prev, claimed: true }))
             }}
             onExplore={() => {
+              // Auto-claim the preview card on explore
+              claimPreviewCard(showPreviewCard.deckId)
+              setClaimedCards(getClaimedCardIds())
+
               if (showPreviewCard.navigatePath) {
                 setStack(showPreviewCard.navigatePath)
-                // Update lastInteracted so it shows in Continue Exploring
                 updateDeckLastInteracted(showPreviewCard.deckId)
               }
               setShowPreviewCard(null)
