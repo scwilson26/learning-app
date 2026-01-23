@@ -307,6 +307,13 @@ WRITING STYLE:
 - Include specific facts, numbers, names - but embed them in explanations
 - Each bullet point should teach something, not just state something
 
+READING LEVEL:
+- Write for a general audience (no specialized knowledge assumed)
+- Avoid jargon unless absolutely necessary - if you use a technical term, explain it immediately in plain language
+- Prefer simple words: "clotting" not "coagulation", "swelling" not "edema", "fatty layer" not "subcutaneous tissue"
+- If a term is important to know (like "hemoglobin"), bold it and explain it in the same sentence, then add it to popup terms
+- No academic or medical-speak - write like you're explaining to a curious friend
+
 BAD (fragment list):
    - Born in Budapest, 1930
    - Jewish family
@@ -317,6 +324,14 @@ GOOD (explanatory sentences):
    - George Soros was born György Schwartz in Budapest, Hungary in 1930 to a Jewish family.
    - When the Nazis occupied Hungary in 1944, his family survived by using false identities and splitting up. Soros was 14 years old.
    - This experience shaped his lifelong fear of totalitarian regimes and his belief that open societies must be actively defended.
+
+BAD (jargon-heavy):
+   - The inflammatory response triggers macrophage activity in the subcutaneous tissue.
+   - Hemoglobin degradation produces biliverdin and bilirubin, causing color changes.
+
+GOOD (plain language):
+   - Within minutes of injury, your body sends white blood cells to clean up the leaked blood and damaged tissue. This causes swelling and redness.
+   - As the trapped blood breaks down, it changes color - from red to purple to green to yellow - before finally fading away.
 
 [CORE] sections:
 - Essential knowledge to understand this topic
