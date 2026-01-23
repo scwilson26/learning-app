@@ -3685,10 +3685,127 @@ export default function Canvas() {
       return
     }
 
-    // Check localStorage cache first - try tier-based storage
+    // ========================================================================
+    // STREAM-AND-PREPARE: Check for pre-built cards FIRST (before localStorage)
+    // Pre-built cards are in memory with content - faster than reading from storage
+    // ========================================================================
+    const prebuiltCards = prebuiltCardsRef.current[deck.id]
+    if (prebuiltCards && prebuiltCards.core.length > 0) {
+      console.log(`[PREBUILT] Found ${prebuiltCards.core.length} pre-built core cards for: ${deck.name}`)
+
+      // Display pre-built cards immediately
+      setLoadingDeck(null) // Clear loading state instantly
+      setTierCards(prev => ({
+        ...prev,
+        [deck.id]: {
+          core: [...prebuiltCards.core],
+          deep_dive: [...prebuiltCards.deep_dive]
+        }
+      }))
+
+      // Update legacy state
+      setGeneratedCards(prev => ({
+        ...prev,
+        [deck.id]: [...prebuiltCards.core, ...prebuiltCards.deep_dive]
+      }))
+
+      // Also populate content cache for fast lookup
+      ;[...prebuiltCards.core, ...prebuiltCards.deep_dive].forEach(card => {
+        if (card.content) {
+          setGeneratedContent(prev => ({
+            ...prev,
+            [card.id]: card.content
+          }))
+        }
+      })
+
+      // If background streaming is still in progress, subscribe to updates
+      if (outlinePromisesRef.current[deck.id]) {
+        console.log(`[PREBUILT] Background streaming still in progress, subscribing to updates...`)
+
+        // Poll for new cards while streaming continues
+        const pollInterval = setInterval(() => {
+          const currentPrebuilt = prebuiltCardsRef.current[deck.id]
+          if (currentPrebuilt) {
+            setTierCards(prev => {
+              const prevCore = prev[deck.id]?.core || []
+              const prevDeepDive = prev[deck.id]?.deep_dive || []
+              // Only update if there are new cards
+              if (currentPrebuilt.core.length > prevCore.length || currentPrebuilt.deep_dive.length > prevDeepDive.length) {
+                console.log(`[PREBUILT] New cards arrived: core=${currentPrebuilt.core.length}, deep_dive=${currentPrebuilt.deep_dive.length}`)
+                // Also update content cache for new cards
+                const newCoreCards = currentPrebuilt.core.slice(prevCore.length)
+                const newDeepDiveCards = currentPrebuilt.deep_dive.slice(prevDeepDive.length)
+                ;[...newCoreCards, ...newDeepDiveCards].forEach(card => {
+                  if (card.content) {
+                    setGeneratedContent(prevContent => ({
+                      ...prevContent,
+                      [card.id]: card.content
+                    }))
+                  }
+                })
+                return {
+                  ...prev,
+                  [deck.id]: {
+                    core: [...currentPrebuilt.core],
+                    deep_dive: [...currentPrebuilt.deep_dive]
+                  }
+                }
+              }
+              return prev
+            })
+          }
+        }, 200)
+
+        // Wait for streaming to complete, then clean up
+        outlinePromisesRef.current[deck.id].then((resultOutline) => {
+          clearInterval(pollInterval)
+          setLoadedOutlines(prev => ({ ...prev, [deck.id]: resultOutline }))
+          // Final update with all cards
+          const finalPrebuilt = prebuiltCardsRef.current[deck.id]
+          if (finalPrebuilt) {
+            setTierCards(prev => ({
+              ...prev,
+              [deck.id]: {
+                core: [...finalPrebuilt.core],
+                deep_dive: [...finalPrebuilt.deep_dive]
+              }
+            }))
+            // Final content cache update
+            ;[...finalPrebuilt.core, ...finalPrebuilt.deep_dive].forEach(card => {
+              if (card.content) {
+                setGeneratedContent(prevContent => ({
+                  ...prevContent,
+                  [card.id]: card.content
+                }))
+              }
+            })
+          }
+          console.log(`[PREBUILT] Background streaming complete for: ${deck.name}`)
+        }).catch(() => {
+          clearInterval(pollInterval)
+        })
+      } else {
+        // Background streaming already complete - fetch outline from storage
+        try {
+          const { data: existingOutline, error } = await getOutline(deck.id)
+          if (!error && existingOutline && existingOutline.outline_json) {
+            setLoadedOutlines(prev => ({ ...prev, [deck.id]: existingOutline.outline_json }))
+          }
+        } catch (err) {
+          console.warn(`[OUTLINE] Error fetching outline:`, err)
+        }
+      }
+
+      setLoadingDeck(null)
+      return
+    }
+
+    // Check localStorage cache - try tier-based storage
     const coreTierCards = getTierCards(deck.id, 'core')
     if (coreTierCards && coreTierCards.length > 0) {
-      // Load from tier-based cache
+      // Load from tier-based cache (supports both old and new tier systems)
+      const deepDiveCards = getTierCards(deck.id, 'deep_dive') || []
       const deepDive1Cards = getTierCards(deck.id, 'deep_dive_1') || []
       const deepDive2Cards = getTierCards(deck.id, 'deep_dive_2') || []
 
@@ -3699,6 +3816,7 @@ export default function Canvas() {
       }))
 
       const coreWithContent = addContent(coreTierCards)
+      const ddWithContent = addContent(deepDiveCards)
       const dd1WithContent = addContent(deepDive1Cards)
       const dd2WithContent = addContent(deepDive2Cards)
 
@@ -3706,13 +3824,14 @@ export default function Canvas() {
         ...prev,
         [deck.id]: {
           core: coreWithContent,
+          deep_dive: ddWithContent,
           deep_dive_1: dd1WithContent,
           deep_dive_2: dd2WithContent
         }
       }))
 
-      // Also populate content cache
-      const allCards = [...coreWithContent, ...dd1WithContent, ...dd2WithContent]
+      // Also populate content cache (include deep_dive for new two-tier system)
+      const allCards = [...coreWithContent, ...ddWithContent, ...dd1WithContent, ...dd2WithContent]
       allCards.forEach(card => {
         if (card.content) {
           setGeneratedContent(prev => ({
@@ -3851,103 +3970,11 @@ export default function Canvas() {
     console.log(`[TOPIC TYPE] "${deck.name}" classified as: ${topicType}`)
 
     // ========================================================================
-    // STREAM-AND-PREPARE: Check for pre-built cards from background streaming
-    // Cards are built while user reads preview, ready instantly when they click
+    // No pre-built cards found - check for cached outline or start fresh streaming
     // ========================================================================
     let outline = null
-    let usedPrebuilt = false
+    let usedStreaming = false
 
-    // Check if we have pre-built cards from background streaming
-    const prebuiltCards = prebuiltCardsRef.current[deck.id]
-    if (prebuiltCards && prebuiltCards.core.length > 0) {
-      console.log(`[PREBUILT] Found ${prebuiltCards.core.length} pre-built core cards for: ${deck.name}`)
-      usedPrebuilt = true
-
-      // Display pre-built cards immediately
-      setLoadingDeck(null) // Clear loading state instantly
-      setTierCards(prev => ({
-        ...prev,
-        [deck.id]: {
-          core: [...prebuiltCards.core],
-          deep_dive: [...prebuiltCards.deep_dive]
-        }
-      }))
-
-      // Update legacy state
-      setGeneratedCards(prev => ({
-        ...prev,
-        [deck.id]: [...prebuiltCards.core, ...prebuiltCards.deep_dive]
-      }))
-
-      // If background streaming is still in progress, subscribe to updates
-      if (outlinePromisesRef.current[deck.id]) {
-        console.log(`[PREBUILT] Background streaming still in progress, subscribing to updates...`)
-
-        // Poll for new cards while streaming continues
-        const pollInterval = setInterval(() => {
-          const currentPrebuilt = prebuiltCardsRef.current[deck.id]
-          if (currentPrebuilt) {
-            setTierCards(prev => {
-              const prevCore = prev[deck.id]?.core || []
-              const prevDeepDive = prev[deck.id]?.deep_dive || []
-              // Only update if there are new cards
-              if (currentPrebuilt.core.length > prevCore.length || currentPrebuilt.deep_dive.length > prevDeepDive.length) {
-                console.log(`[PREBUILT] New cards arrived: core=${currentPrebuilt.core.length}, deep_dive=${currentPrebuilt.deep_dive.length}`)
-                return {
-                  ...prev,
-                  [deck.id]: {
-                    core: [...currentPrebuilt.core],
-                    deep_dive: [...currentPrebuilt.deep_dive]
-                  }
-                }
-              }
-              return prev
-            })
-          }
-        }, 200)
-
-        // Wait for streaming to complete, then clean up
-        outlinePromisesRef.current[deck.id].then((resultOutline) => {
-          clearInterval(pollInterval)
-          outline = resultOutline
-          setLoadedOutlines(prev => ({ ...prev, [deck.id]: outline }))
-          // Final update with all cards
-          const finalPrebuilt = prebuiltCardsRef.current[deck.id]
-          if (finalPrebuilt) {
-            setTierCards(prev => ({
-              ...prev,
-              [deck.id]: {
-                core: [...finalPrebuilt.core],
-                deep_dive: [...finalPrebuilt.deep_dive]
-              }
-            }))
-          }
-          console.log(`[PREBUILT] Background streaming complete for: ${deck.name}`)
-        }).catch(() => {
-          clearInterval(pollInterval)
-        })
-
-        // Return early - cards are already displayed
-        setLoadingDeck(null)
-        return
-      }
-
-      // Background streaming already complete
-      try {
-        const { data: existingOutline, error } = await getOutline(deck.id)
-        if (!error && existingOutline && existingOutline.outline_json) {
-          outline = existingOutline.outline_json
-          setLoadedOutlines(prev => ({ ...prev, [deck.id]: outline }))
-        }
-      } catch (err) {
-        console.warn(`[OUTLINE] Error fetching outline:`, err)
-      }
-
-      setLoadingDeck(null)
-      return
-    }
-
-    // No pre-built cards - check for cached outline or start fresh streaming
     try {
       // Check Supabase cache
       const { data: existingOutline, error } = await getOutline(deck.id)
@@ -4044,6 +4071,9 @@ export default function Canvas() {
         } catch (err) {
           console.warn(`[OUTLINE] Failed to save outline to Supabase:`, err)
         }
+
+        // Mark that we used streaming (cards already generated via onSection callback)
+        usedStreaming = true
       }
 
       // If we had a cached outline, use traditional generation (still fast since outline exists)
