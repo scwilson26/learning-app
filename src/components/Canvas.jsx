@@ -3686,79 +3686,92 @@ export default function Canvas() {
     }
 
     // ========================================================================
-    // STREAM-AND-PREPARE: Check for pre-built cards FIRST (before localStorage)
-    // Pre-built cards are in memory with content - faster than reading from storage
+    // STREAM-AND-PREPARE: Check for pre-built cards OR in-flight streaming
+    // If background streaming is in progress, wait for it instead of starting new generation
     // ========================================================================
     const prebuiltCards = prebuiltCardsRef.current[deck.id]
-    if (prebuiltCards && prebuiltCards.core.length > 0) {
-      console.log(`[PREBUILT] Found ${prebuiltCards.core.length} pre-built core cards for: ${deck.name}`)
+    const streamingInProgress = outlinePromisesRef.current[deck.id]
 
-      // Display pre-built cards immediately
-      setLoadingDeck(null) // Clear loading state instantly
-      setTierCards(prev => ({
-        ...prev,
-        [deck.id]: {
-          core: [...prebuiltCards.core],
-          deep_dive: [...prebuiltCards.deep_dive]
-        }
-      }))
+    if ((prebuiltCards && prebuiltCards.core.length > 0) || streamingInProgress) {
+      console.log(`[PREBUILT] Found pre-built cards or streaming in progress for: ${deck.name} (cards=${prebuiltCards?.core?.length || 0}, streaming=${!!streamingInProgress})`)
 
-      // Update legacy state
-      setGeneratedCards(prev => ({
-        ...prev,
-        [deck.id]: [...prebuiltCards.core, ...prebuiltCards.deep_dive]
-      }))
+      // Display any existing pre-built cards immediately (may be 0 if streaming just started)
+      const coreCards = prebuiltCards?.core || []
+      const deepDiveCards = prebuiltCards?.deep_dive || []
 
-      // Also populate content cache for fast lookup
-      ;[...prebuiltCards.core, ...prebuiltCards.deep_dive].forEach(card => {
-        if (card.content) {
-          setGeneratedContent(prev => ({
-            ...prev,
-            [card.id]: card.content
-          }))
-        }
-      })
+      if (coreCards.length > 0) {
+        setLoadingDeck(null) // Clear loading state if we have cards
+        setTierCards(prev => ({
+          ...prev,
+          [deck.id]: {
+            core: [...coreCards],
+            deep_dive: [...deepDiveCards]
+          }
+        }))
 
-      // If background streaming is still in progress, subscribe to updates
-      if (outlinePromisesRef.current[deck.id]) {
+        // Update legacy state
+        setGeneratedCards(prev => ({
+          ...prev,
+          [deck.id]: [...coreCards, ...deepDiveCards]
+        }))
+
+        // Also populate content cache for fast lookup
+        ;[...coreCards, ...deepDiveCards].forEach(card => {
+          if (card.content) {
+            setGeneratedContent(prev => ({
+              ...prev,
+              [card.id]: card.content
+            }))
+          }
+        })
+      }
+
+      // If background streaming is in progress, subscribe to updates (or wait if no cards yet)
+      if (streamingInProgress) {
         console.log(`[PREBUILT] Background streaming still in progress, subscribing to updates...`)
 
         // Poll for new cards while streaming continues
+        let hasShownFirstCard = coreCards.length > 0
         const pollInterval = setInterval(() => {
           const currentPrebuilt = prebuiltCardsRef.current[deck.id]
-          if (currentPrebuilt) {
-            setTierCards(prev => {
-              const prevCore = prev[deck.id]?.core || []
-              const prevDeepDive = prev[deck.id]?.deep_dive || []
-              // Only update if there are new cards
-              if (currentPrebuilt.core.length > prevCore.length || currentPrebuilt.deep_dive.length > prevDeepDive.length) {
-                console.log(`[PREBUILT] New cards arrived: core=${currentPrebuilt.core.length}, deep_dive=${currentPrebuilt.deep_dive.length}`)
-                // Also update content cache for new cards
-                const newCoreCards = currentPrebuilt.core.slice(prevCore.length)
-                const newDeepDiveCards = currentPrebuilt.deep_dive.slice(prevDeepDive.length)
-                ;[...newCoreCards, ...newDeepDiveCards].forEach(card => {
-                  if (card.content) {
-                    setGeneratedContent(prevContent => ({
-                      ...prevContent,
-                      [card.id]: card.content
-                    }))
-                  }
-                })
-                return {
-                  ...prev,
-                  [deck.id]: {
-                    core: [...currentPrebuilt.core],
-                    deep_dive: [...currentPrebuilt.deep_dive]
-                  }
-                }
+          if (currentPrebuilt && currentPrebuilt.core) {
+            const prevCore = tierCards[deck.id]?.core || []
+            const prevDeepDive = tierCards[deck.id]?.deep_dive || []
+            // Only update if there are new cards
+            if (currentPrebuilt.core.length > prevCore.length || currentPrebuilt.deep_dive.length > prevDeepDive.length) {
+              console.log(`[PREBUILT] New cards arrived: core=${currentPrebuilt.core.length}, deep_dive=${currentPrebuilt.deep_dive.length}`)
+
+              // Clear loading on first card
+              if (!hasShownFirstCard && currentPrebuilt.core.length > 0) {
+                setLoadingDeck(null)
+                hasShownFirstCard = true
               }
-              return prev
-            })
+
+              // Update content cache for new cards
+              const newCoreCards = currentPrebuilt.core.slice(prevCore.length)
+              const newDeepDiveCards = currentPrebuilt.deep_dive.slice(prevDeepDive.length)
+              ;[...newCoreCards, ...newDeepDiveCards].forEach(card => {
+                if (card.content) {
+                  setGeneratedContent(prevContent => ({
+                    ...prevContent,
+                    [card.id]: card.content
+                  }))
+                }
+              })
+
+              setTierCards(prev => ({
+                ...prev,
+                [deck.id]: {
+                  core: [...currentPrebuilt.core],
+                  deep_dive: [...currentPrebuilt.deep_dive]
+                }
+              }))
+            }
           }
         }, 200)
 
         // Wait for streaming to complete, then clean up
-        outlinePromisesRef.current[deck.id].then((resultOutline) => {
+        streamingInProgress.then((resultOutline) => {
           clearInterval(pollInterval)
           setLoadedOutlines(prev => ({ ...prev, [deck.id]: resultOutline }))
           // Final update with all cards
