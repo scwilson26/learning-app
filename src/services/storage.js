@@ -1009,7 +1009,7 @@ export function getClaimedCardsByCategoryAndDeck() {
           const treeNode = nodeIndex.get(card.deckId)
           const deckData = data.decks[card.deckId]
           const deckName = treeNode?.title || deckData?.name || card.deckId
-          const expectedTotal = deckData?.expectedTotalCards || 15
+          const expectedTotal = deckData?.expectedTotalCards || 8
           byCategory[rootCategory][card.deckId] = {
             id: card.deckId,
             name: deckName,
@@ -1819,12 +1819,20 @@ export function getInProgressDecks() {
     // Skip decks without cards
     if (!deck.cardIds?.length) return
 
-    // Count claimed cards
-    const claimedCount = deck.cardIds.filter(id => data.cards[id]?.claimed).length
-    // Use expectedTotalCards if available (from outline), otherwise fallback to 15
-    const expectedTotal = deck.expectedTotalCards || 15
-    // Current generated count (for progress calculation)
-    const generatedCount = deck.cardIds.length
+    // Check for preview card (stored separately with ID `${deckId}-preview`)
+    const previewId = `${deckId}-preview`
+    const previewCard = data.cards[previewId]
+    const hasPreview = !!previewCard
+    const previewClaimed = previewCard?.claimed || false
+
+    // Count claimed cards (tier cards + preview)
+    const tierClaimedCount = deck.cardIds.filter(id => data.cards[id]?.claimed).length
+    const claimedCount = tierClaimedCount + (previewClaimed ? 1 : 0)
+
+    // Use expectedTotalCards if available (from outline), otherwise fallback to 8 (1 preview + 4 core + 3 deep_dive)
+    const expectedTotal = deck.expectedTotalCards || 8
+    // Current generated count (tier cards + preview if exists)
+    const generatedCount = deck.cardIds.length + (hasPreview ? 1 : 0)
 
     // In-progress: some claimed but not all expected
     if (claimedCount > 0 && claimedCount < expectedTotal) {
@@ -1842,9 +1850,13 @@ export function getInProgressDecks() {
       // Find the root category for theming
       const rootCategory = findRootCategory(deckId)
 
+      // Get topic name - prefer stored name, fallback to tree node name
+      const treeNode = nodeIndex.get(deckId)
+      const topicName = (deck.name && deck.name !== deckId) ? deck.name : (treeNode?.name || treeNode?.title || deckId)
+
       inProgress.push({
         id: deckId,
-        name: deck.name,
+        name: topicName,
         claimedCount,
         totalCount: expectedTotal,
         generatedCount,
@@ -2013,7 +2025,7 @@ export function getAvailableStudyTopics() {
         id: deckId,
         name: deckName,
         claimedCount: 0,
-        expectedTotal: deckData?.expectedTotalCards || 15,
+        expectedTotal: deckData?.expectedTotalCards || 8,
         flashcardCount,
         lastInteracted: deckData?.lastInteracted || null,
         inStudyDeck: (data.studyDeck || []).includes(deckId)

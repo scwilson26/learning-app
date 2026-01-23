@@ -4210,7 +4210,8 @@ export default function Canvas() {
         console.log(`[OUTLINE] Using cached outline for card generation: ${deck.name}`)
         setLoadedOutlines(prev => ({ ...prev, [deck.id]: outline }))
 
-        const expectedTotalFromOutline = (outline.core?.length || 0) + (outline.deep_dive?.length || 0)
+        // +1 for preview card
+        const expectedTotalFromOutline = 1 + (outline.core?.length || 0) + (outline.deep_dive?.length || 0)
 
         // Generate Core tier with streaming callback
         await generateTierCards(
@@ -4321,9 +4322,9 @@ export default function Canvas() {
         // Generate without streaming callback (just wait for all cards)
         const cards = await generateTierCards(deck.name, tier, previousCards, parentPath, null, outline)
 
-        // Calculate expected total from outline if available
+        // Calculate expected total from outline if available (+1 for preview card)
         const expectedTotal = outline
-          ? (outline.core?.length || 0) + (outline.deep_dive?.length || 0)
+          ? 1 + (outline.core?.length || 0) + (outline.deep_dive?.length || 0)
           : null
 
         // Save to localStorage
@@ -4434,9 +4435,9 @@ export default function Canvas() {
         console.warn(`[UNLOCK] Error fetching outline:`, err)
       }
 
-      // Calculate expected total from outline if available
+      // Calculate expected total from outline if available (+1 for preview card)
       const expectedTotalForUnlock = outline
-        ? (outline.core?.length || 0) + (outline.deep_dive?.length || 0)
+        ? 1 + (outline.core?.length || 0) + (outline.deep_dive?.length || 0)
         : null
 
       const cards = await generateTierCards(
