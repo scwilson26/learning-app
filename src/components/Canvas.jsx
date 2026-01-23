@@ -1103,6 +1103,146 @@ function TierCompleteCelebration({
   )
 }
 
+// Bottom sheet for rabbit hole previews - slides up from bottom
+// Lets user peek at a topic without losing context of current card
+function RabbitHoleSheet({
+  topic,
+  preview,
+  isLoading,
+  onExplore,
+  onClose,
+  rootCategoryId
+}) {
+  const theme = getCategoryTheme(rootCategoryId)
+  const isThemed = hasCustomTheme(rootCategoryId)
+  const [dragY, setDragY] = useState(0)
+
+  const handleDragEnd = (e, info) => {
+    // If dragged down more than 100px, close the sheet
+    if (info.offset.y > 100) {
+      onClose()
+    } else {
+      setDragY(0)
+    }
+  }
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-50 flex items-end justify-center"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+    >
+      {/* Dimmed backdrop */}
+      <motion.div
+        className="absolute inset-0 bg-black/40"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+      />
+
+      {/* Bottom sheet */}
+      <motion.div
+        className="relative w-full max-w-lg mx-4 mb-4 rounded-2xl overflow-hidden shadow-2xl"
+        style={{
+          background: isThemed ? theme.cardBg : '#fafbfc',
+          borderLeft: `4px solid ${isThemed ? theme.accent : '#6b7280'}`,
+          maxHeight: '50vh',
+          y: dragY
+        }}
+        initial={{ y: '100%', opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: '100%', opacity: 0 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        drag="y"
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={{ top: 0, bottom: 0.5 }}
+        onDrag={(e, info) => setDragY(Math.max(0, info.offset.y))}
+        onDragEnd={handleDragEnd}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Drag handle */}
+        <div className="flex justify-center pt-3 pb-2">
+          <div
+            className="w-10 h-1 rounded-full"
+            style={{ background: isThemed ? theme.textSecondary + '40' : '#d1d5db' }}
+          />
+        </div>
+
+        {/* Header */}
+        <div className="px-4 pb-2 flex items-center justify-between">
+          <h3
+            className="text-lg font-bold flex-1 pr-2"
+            style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}
+          >
+            {topic}
+          </h3>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-full transition-colors"
+            style={{
+              background: isThemed ? theme.cardBgAlt : '#f3f4f6',
+              color: isThemed ? theme.textSecondary : '#6b7280'
+            }}
+            aria-label="Close"
+          >
+            <span className="text-lg font-light">×</span>
+          </button>
+        </div>
+
+        {/* Content */}
+        <div
+          className="px-4 pb-4 overflow-auto"
+          style={{ maxHeight: 'calc(50vh - 120px)' }}
+        >
+          {isLoading ? (
+            <div className="flex items-center gap-3 py-4">
+              <div
+                className="w-5 h-5 border-2 rounded-full animate-spin"
+                style={{
+                  borderColor: isThemed ? theme.cardBgAlt : '#e5e7eb',
+                  borderTopColor: isThemed ? theme.accent : '#6b7280'
+                }}
+              />
+              <span
+                className="text-sm"
+                style={{ color: isThemed ? theme.textSecondary : '#9ca3af' }}
+              >
+                Loading preview...
+              </span>
+            </div>
+          ) : (
+            <div
+              className="text-sm leading-relaxed whitespace-pre-line"
+              style={{ color: isThemed ? theme.textPrimary : '#374151' }}
+            >
+              {renderMarkdown(preview)}
+            </div>
+          )}
+        </div>
+
+        {/* Explore button */}
+        {!isLoading && preview && (
+          <div className="px-4 pb-4">
+            <button
+              onClick={onExplore}
+              className="w-full py-3 rounded-xl font-bold text-base transition-all active:scale-[0.98]"
+              style={{
+                background: isThemed ? theme.buttonPrimaryBg : 'linear-gradient(135deg, #6b7280, #6b7280cc)',
+                color: '#ffffff',
+                boxShadow: isThemed ? theme.buttonPrimaryShadow : '0 4px 12px rgba(0,0,0,0.15)'
+              }}
+            >
+              Explore {topic} →
+            </button>
+          </div>
+        )}
+      </motion.div>
+    </motion.div>
+  )
+}
+
 // Preview card modal - shown before committing to learn a topic
 // Styled to match ExpandedCard exactly with flip animation
 function PreviewCardModal({
@@ -1712,7 +1852,7 @@ function SkeletonCard({ index, rootCategoryId = null }) {
 // Simple markdown renderer for **bold** text and paragraph breaks
 // Supports rabbit hole links - tappable terms that match Wikipedia Vital Articles
 function renderMarkdown(text, currentTopic = '', onRabbitHoleClick = null) {
-  if (!text) return null
+  if (!text || typeof text !== 'string') return null
 
   // Find all topic matches in the full text (cached per render)
   const topicMatches = onRabbitHoleClick ? findTopicMatches(text, currentTopic, 15) : []
@@ -3211,22 +3351,78 @@ export default function Canvas() {
   const handleRabbitHoleClick = async (match) => {
     console.log(`[RABBIT HOLE] Clicked: ${match.original} (category: ${match.category})`)
 
+    // Search for the topic to get its actual tree node ID
+    const searchResults = searchTopics(match.original, 1)
+    const exactMatch = searchResults.find(r => r.title.toLowerCase() === match.original.toLowerCase())
+    const topicResult = exactMatch || searchResults[0]
+
+    if (!topicResult) {
+      console.log(`[RABBIT HOLE] Topic "${match.original}" not found in tree`)
+      return
+    }
+
+    console.log(`[RABBIT HOLE] Found topic:`, topicResult.id, 'path:', topicResult.pathIds)
+
+    // Check for cached preview
+    const cachedPreview = getPreviewCard(topicResult.id)
+    if (cachedPreview?.content) {
+      console.log(`[RABBIT HOLE] Using cached preview for ${match.original}`)
+      setRabbitHolePreview({
+        topic: match.original,
+        category: match.category,
+        preview: cachedPreview.content,
+        isLoading: false,
+        treeNodeId: topicResult.id,
+        pathIds: topicResult.pathIds
+      })
+
+      // Still start outline generation in background (in case it wasn't done before)
+      const parentPath = topicResult.pathIds?.length > 0
+        ? topicResult.pathIds.map(id => {
+            const node = getTreeNode(id)
+            return node?.name || node?.title || id
+          }).join(' > ')
+        : null
+      startOutlineGeneration(topicResult.id, match.original, parentPath, cachedPreview.content)
+      return
+    }
+
     // Show preview modal with loading state
     setRabbitHolePreview({
       topic: match.original,
       category: match.category,
       preview: null,
-      isLoading: true
+      isLoading: true,
+      treeNodeId: topicResult.id,
+      pathIds: topicResult.pathIds
     })
 
     try {
       // Generate a preview for this topic
-      const preview = await generateTopicPreview(match.original, match.category)
+      const { preview } = await generateTopicPreview(match.original, match.category)
+
+      // Save to cache
+      savePreviewCard(topicResult.id, match.original, preview)
+
       setRabbitHolePreview(prev => prev?.topic === match.original ? {
         ...prev,
         preview,
         isLoading: false
       } : prev)
+
+      // Start outline generation in background (like wander does)
+      // Build parent path from pathIds for context
+      const parentPath = topicResult.pathIds?.length > 0
+        ? topicResult.pathIds.map(id => {
+            const node = getTreeNode(id)
+            return node?.name || node?.title || id
+          }).join(' > ')
+        : null
+
+      // Classify topic type for proper outline structure
+      const topicType = await classifyTopic(match.original)
+      console.log(`[RABBIT HOLE] Starting outline generation for: ${match.original} [${topicType}]`)
+      startOutlineGeneration(topicResult.id, match.original, parentPath, preview, topicType)
     } catch (err) {
       console.error('[RABBIT HOLE] Failed to generate preview:', err)
       setRabbitHolePreview(prev => prev?.topic === match.original ? {
@@ -3241,25 +3437,25 @@ export default function Canvas() {
   const handleExploreRabbitHole = () => {
     if (!rabbitHolePreview) return
 
-    const { topic, category } = rabbitHolePreview
-    console.log(`[RABBIT HOLE] Exploring: ${topic}`)
+    const { topic, treeNodeId, pathIds } = rabbitHolePreview
+    console.log(`[RABBIT HOLE] Exploring: ${topic} (id: ${treeNodeId})`)
 
-    // Create a deck-like object for navigation
-    const deckId = `${category}-${topic.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
-    const newDeck = {
-      id: deckId,
-      name: topic,
-      title: topic,
-      isArticle: true,
-      categoryId: category
+    if (!treeNodeId) {
+      console.error('[RABBIT HOLE] No tree node ID found')
+      setRabbitHolePreview(null)
+      return
     }
+
+    // Build the full navigation stack
+    const fullStack = [...(pathIds || []), treeNodeId]
+    console.log(`[RABBIT HOLE] Navigating with stack:`, fullStack)
 
     // Close the preview and navigate to the topic
     setRabbitHolePreview(null)
     setExpandedCard(null) // Close any expanded card
 
-    // Push to stack
-    setStack(prev => [...prev, newDeck])
+    // Navigate using the full stack
+    setStack(fullStack)
   }
 
   // Background flashcard generation (non-blocking)
@@ -7064,18 +7260,15 @@ export default function Canvas() {
         )}
       </AnimatePresence>
 
-      {/* Rabbit hole preview modal */}
+      {/* Rabbit hole preview - bottom sheet */}
       <AnimatePresence>
         {rabbitHolePreview && (
-          <PreviewCardModal
+          <RabbitHoleSheet
             topic={rabbitHolePreview.topic}
             preview={rabbitHolePreview.preview}
             isLoading={rabbitHolePreview.isLoading}
-            claimed={false}
-            onClaim={() => {}}
-            onDealMeIn={handleExploreRabbitHole}
-            onWander={() => {}}
-            onBack={() => setRabbitHolePreview(null)}
+            onExplore={handleExploreRabbitHole}
+            onClose={() => setRabbitHolePreview(null)}
             rootCategoryId={rabbitHolePreview.category}
           />
         )}

@@ -10,6 +10,10 @@ const topicSet = new Set()
 const topicToCategory = new Map()
 const normalizedToOriginal = new Map()
 
+// Prefix index: maps partial names to full topics
+// e.g., "snow white" → { original: "Snow White and the Seven Dwarfs (1937 film)", category: "arts" }
+const prefixToTopic = new Map()
+
 // Populate the lookup structures
 Object.entries(vitalArticles).forEach(([category, topics]) => {
   topics.forEach(topic => {
@@ -17,8 +21,50 @@ Object.entries(vitalArticles).forEach(([category, topics]) => {
     topicSet.add(normalized)
     topicToCategory.set(normalized, category)
     normalizedToOriginal.set(normalized, topic)
+
+    // Build prefix index for multi-word topics
+    // Extract meaningful prefixes from topics like "Snow White and the Seven Dwarfs (1937 film)"
+    const prefixes = extractPrefixes(topic)
+    prefixes.forEach(prefix => {
+      const normalizedPrefix = prefix.toLowerCase().trim()
+      // Only add if prefix is different from full title and not already mapped
+      if (normalizedPrefix !== normalized && !prefixToTopic.has(normalizedPrefix)) {
+        prefixToTopic.set(normalizedPrefix, { original: topic, category })
+      }
+    })
   })
 })
+
+/**
+ * Extract meaningful prefixes from a topic title
+ * "Snow White and the Seven Dwarfs (1937 film)" → ["Snow White"]
+ * "World War II" → [] (no prefix, it's short enough)
+ */
+function extractPrefixes(topic) {
+  const prefixes = []
+
+  // Remove parenthetical suffixes first: "Something (year)" → "Something"
+  const withoutParens = topic.replace(/\s*\([^)]*\)\s*$/, '').trim()
+  if (withoutParens !== topic && withoutParens.length >= 6) {
+    prefixes.push(withoutParens)
+  }
+
+  // Split on " and " for titles like "Snow White and the Seven Dwarfs"
+  const andParts = withoutParens.split(/\s+and\s+/i)
+  if (andParts.length > 1 && andParts[0].length >= 6) {
+    prefixes.push(andParts[0])
+  }
+
+  // Split on ": " for titles like "Star Wars: A New Hope"
+  const colonParts = withoutParens.split(/:\s*/)
+  if (colonParts.length > 1 && colonParts[0].length >= 4) {
+    prefixes.push(colonParts[0])
+  }
+
+  return prefixes
+}
+
+console.log(`[topicMatcher] Built indexes: ${topicSet.size} topics, ${prefixToTopic.size} prefix mappings`)
 
 /**
  * Normalize a topic name for matching
@@ -40,20 +86,16 @@ function normalizeTermForMatching(term) {
 
   // Handle common plural patterns
   if (normalized.endsWith('ies') && normalized.length > 4) {
-    // e.g., "economies" -> "economy"
     const singular = normalized.slice(0, -3) + 'y'
     if (topicSet.has(singular)) return singular
   }
   if (normalized.endsWith('es') && normalized.length > 3) {
-    // e.g., "gases" -> "gas", "churches" -> "church"
     const singular = normalized.slice(0, -2)
     if (topicSet.has(singular)) return singular
-    // Also try just removing 's' for words like "houses"
     const singular2 = normalized.slice(0, -1)
     if (topicSet.has(singular2)) return singular2
   }
   if (normalized.endsWith('s') && normalized.length > 2) {
-    // e.g., "aztecs" -> "aztec"
     const singular = normalized.slice(0, -1)
     if (topicSet.has(singular)) return singular
   }
@@ -69,11 +111,17 @@ function normalizeTermForMatching(term) {
 export function matchTopic(term) {
   const normalized = normalizeTermForMatching(term)
 
+  // Exact match (highest priority)
   if (topicSet.has(normalized)) {
     return {
       original: normalizedToOriginal.get(normalized),
       category: topicToCategory.get(normalized)
     }
+  }
+
+  // Prefix match: "Snow White" → "Snow White and the Seven Dwarfs (1937 film)"
+  if (prefixToTopic.has(normalized)) {
+    return prefixToTopic.get(normalized)
   }
 
   return null
