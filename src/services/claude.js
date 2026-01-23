@@ -561,7 +561,8 @@ function parseOutlineText(text) {
     }
 
     // Check for subsection (A. B. C. etc)
-    const subsectionMatch = trimmed.match(/^([A-Z])\.\s+(.+)$/);
+    // Handles formats: "A. Title" or "### A. Title" (with markdown heading)
+    const subsectionMatch = trimmed.match(/^(?:#{1,4}\s*)?([A-Z])\.\s+(.+)$/);
     if (subsectionMatch && currentSection) {
       currentSubsections.push({
         label: subsectionMatch[1],
