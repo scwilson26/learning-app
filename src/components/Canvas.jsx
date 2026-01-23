@@ -2082,6 +2082,7 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
   const isTech = rootCategoryId === 'technology'
   const isHistory = rootCategoryId === 'history'
   const isArts = rootCategoryId === 'arts'
+  // Content comes directly from the outline - no separate generation needed
   const [content, setContent] = useState(card.content || null)
   const [displayedContent, setDisplayedContent] = useState(card.content || '')
   const [isLoading, setIsLoading] = useState(false)
@@ -2090,7 +2091,7 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
   // Track initial rotation for new cards entering (to skip flip animation)
   const initialRotation = useRef(startFlipped ? 180 : 0)
 
-  // Generate content on mount if starting flipped without content
+  // Generate content on mount if starting flipped without content (fallback for old cards)
   useEffect(() => {
     if (startFlipped && !card.content && !isLoading) {
       setIsLoading(true)
@@ -2125,7 +2126,7 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
       setError(null)
       setPrevCardId(card.id)
 
-      // If no content, start generating it
+      // If no content, start generating it (fallback for old cards without outline content)
       if (!cardContent) {
         setIsLoading(true)
         const cardNumber = card.number || (index + 1)
@@ -2150,7 +2151,7 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
     }
   }, [card.id, prevCardId])
 
-  // Update content if it arrives from background generation (but not while loading)
+  // Update content if it arrives from background streaming
   useEffect(() => {
     if (card.content && !content && !isLoading) {
       setContent(card.content)
@@ -2164,14 +2165,14 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
     // Flip immediately
     setIsFlipped(!isFlipped)
 
-    // If flipping to back and no content yet, generate it
+    // If flipping to back and no content yet, generate it (fallback)
     if (!isFlipped && !content && !isLoading) {
-      setIsLoading(true)
       setError(null)
+      setIsLoading(true)
 
       const cardNumber = card.number || (index + 1)
 
-      // Generate content (no streaming - just wait for full content)
+      // Generate content (fallback for cards without outline content)
       generateSingleCardContent(
         deckName,
         cardNumber,

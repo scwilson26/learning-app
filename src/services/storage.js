@@ -742,6 +742,8 @@ export function getDeckCards(deckId) {
       cardId: card.cardId || null,  // Unique display ID
       title: card.title,
       content: card.content || null,
+      outline: card.outline || null,  // Outline skeleton for placeholder
+      concept: card.concept || null,  // Brief concept summary
     } : null
   }).filter(Boolean)
 }
@@ -863,6 +865,8 @@ export function saveStreamedCard(deckId, deckName, card, tier, expectedTotalCard
     deckId: deckId,
     title: card.title,
     content: card.content || null,
+    outline: card.outline || null,  // Outline skeleton for placeholder display
+    concept: card.concept || null,  // Brief concept summary
     tier: tier,
     tierIndex: card.tierIndex,
     number: card.number,
@@ -1222,6 +1226,8 @@ export function getTierCards(deckId, tier) {
       cardId: card.cardId || null,  // Unique display ID
       title: card.title,
       content: card.content || null,
+      outline: card.outline || null,  // Outline skeleton for placeholder
+      concept: card.concept || null,  // Brief concept summary
       tier: card.tier,
       tierIndex: card.tierIndex,
     } : null
