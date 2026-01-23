@@ -300,6 +300,13 @@ FORMAT:
 - Full sentences that explain, not fragments that list
 - Mark each main section as [CORE] or [DEEP DIVE]
 
+SECTION COUNT:
+- Core: typically 3-5 sections (cover the fundamentals completely, but don't pad)
+- Deep Dive: typically 2-4 sections
+- Each section: 2-3 subsections
+- Each subsection: 2-3 bullet points
+- If a topic genuinely needs more Core sections to cover the basics, that's fine - but ask yourself if you're going too deep
+
 WRITING STYLE:
 - Write in complete sentences, not bullet fragments
 - Explain WHY things matter, not just WHAT happened
@@ -331,20 +338,16 @@ BAD (fragment list):
    - Born in Budapest, 1930
    - Jewish family
    - Survived Nazi occupation with false identities
-   - Father was lawyer and Esperanto enthusiast
 
 GOOD (explanatory sentences):
    - George Soros was born György Schwartz in Budapest, Hungary in 1930 to a Jewish family.
-   - When the Nazis occupied Hungary in 1944, his family survived by using false identities and splitting up. Soros was 14 years old.
-   - This experience shaped his lifelong fear of totalitarian regimes and his belief that open societies must be actively defended.
+   - When the Nazis occupied Hungary in 1944, his family survived by using false identities. This shaped his lifelong belief that open societies must be defended.
 
 BAD (jargon-heavy):
    - The inflammatory response triggers macrophage activity in the subcutaneous tissue.
-   - Hemoglobin degradation produces biliverdin and bilirubin, causing color changes.
 
 GOOD (plain language):
    - Within minutes of injury, your body sends white blood cells to clean up the leaked blood and damaged tissue.
-   - As the trapped blood breaks down, it changes color - from red to purple to green to yellow - before fading away.
 
 [CORE] sections:
 - Essential knowledge to understand this topic
@@ -360,44 +363,33 @@ GOOD (plain language):
 STRUCTURE GUIDE BY TOPIC TYPE:
 
 For CONCEPTS (Watt, GDP, Inflation):
-- What is it? (clear definition with examples)
-- How does it work? (mechanics, formulas, the logic behind it)
-- How does it show up in real life? (practical applications)
+- What is it? → How does it work? → Real-life applications
 - Deep Dive: history, edge cases, misconceptions
 
-For PROCESSES (Photosynthesis, Digestion, Evaporation):
-- What is it and why does it happen? (definition, purpose)
-- What's needed for it to work? (inputs, conditions)
-- How does it actually work? (stages, mechanism - explained clearly)
-- What's the result? (outputs, why it matters)
+For PROCESSES (Photosynthesis, Digestion):
+- What is it? → What's needed? → How does it work? → What's the result?
 - Deep Dive: variations, exceptions, discovery history
 
-For PEOPLE (Marie Curie, Napoleon, Soros):
-- Who are they and why are they famous? (the 1-2 sentence answer - lead with their most known achievement)
-- The key achievement or moment (what they're most known for - explain it fully)
-- How did they get there? (relevant background that explains the achievement)
-- What's their impact or legacy? (why they still matter)
+For PEOPLE (Marie Curie, Napoleon):
+- Why are they famous? (lead with this) → Key achievement → How they got there → Impact/legacy
 - Deep Dive: personal life, controversies, lesser-known facts
 
-For EVENTS (French Revolution, Moon Landing, WW2):
-- What happened? (clear description, dates, key facts)
-- What caused it? (background, triggers - explain the why)
-- How did it unfold? (key phases, turning points)
-- What were the consequences? (immediate and long-term impact)
+For EVENTS (French Revolution, Moon Landing):
+- What happened? → What caused it? → How did it unfold? → Consequences
 - Deep Dive: specific moments, key figures, myths vs reality
 
-For WORKS/ARTIFACTS (Shakespeare's Sonnets, Guernica, The Constitution):
-- What is it? (description, creator, context)
-- What's its structure? (form, components - explained)
-- What's it about? (themes, content, meaning)
-- Why does it matter? (significance, influence)
+For WORKS/ARTIFACTS (Shakespeare's Sonnets, Guernica):
+- What is it? → Structure/form → What's it about? → Why it matters
 - Deep Dive: creation story, famous parts, controversies
+
+IF YOUR TOPIC DOESN'T FIT THESE CATEGORIES:
+- Structure it around: What is it? → How does it work? → Why does it matter?
+- Deep Dive: history, edge cases, interesting details
+- Ask yourself: What are the 3-5 things someone MUST understand? Those are your Core sections.
 
 IMPORTANT FOR PEOPLE:
 - Lead with why they're famous, not chronological biography
-- Their most significant achievement or moment should come early
-- Background/childhood goes in "how did they get there" - not first
-- Ask: "If someone only remembers one thing about this person, what should it be?" Put that front and center.
+- Ask: "If someone remembers one thing about this person, what should it be?" Put that first.
 
 EXAMPLE - "Watt" (concept):
 
@@ -418,50 +410,17 @@ II. Energy vs power [CORE]
       - Leave it on for an hour: 360,000 joules total. Wattage stayed constant, energy accumulated.
 
 III. The formula: Watts = Volts × Amps [CORE]
-   A. What is voltage?
-      - Electrical pressure - how hard electricity is pushed through a wire.
-      - US outlets: 120 volts. Dryers: 240 volts (more pressure).
-   B. What are amps?
-      - Current - how much electricity is actually flowing.
+   A. Voltage and current
+      - Voltage is electrical pressure. Amps measure how much electricity flows.
       - Think of water: voltage is pressure, amps is gallons per minute.
-   C. How they combine
-      - Pressure × flow = power. A hair dryer on a 120-volt outlet drawing 10 amps = 1,200 watts.
+   B. How they combine
+      - Pressure × flow = power. A 120-volt outlet with 10 amps flowing = 1,200 watts.
+
+[Continue pattern for remaining sections...]
 
 IV. Kilowatts and your electric bill [CORE]
-   A. What's a kilowatt?
-      - Just 1,000 watts. A more convenient unit for household use.
-   B. What's a kilowatt-hour?
-      - Power × time. A 1,000-watt microwave running one hour = 1 kWh.
-      - At $0.15 per kWh, that's 15 cents.
-   C. Why this matters
-      - Your bill charges for kilowatt-hours, not watts. It's about how long you run things, not just how powerful they are.
-
-V. Reading wattage in real life [CORE]
-   A. Appliance labels
-      - Phone charger: 20W. Laptop: 60W. Microwave: 1000W. Hair dryer: 1500W.
-      - Higher watts = faster energy use = higher bills.
-   B. Why high-wattage appliances are different
-      - They need more current, which generates heat. That's why dryers need thicker wires and special outlets.
-
-VI. Why it's called a watt [DEEP DIVE]
-   A. James Watt (1736-1819)
-      - Scottish inventor who made the steam engine efficient - he didn't invent it, but transformed it.
-   B. The honor
-      - The unit was adopted in 1889, nearly 70 years after his death, honoring the man who powered the Industrial Revolution.
-
-VII. The horsepower connection [DEEP DIVE]
-   A. The sales problem
-      - Watt needed to sell engines to people who understood horses, not physics.
-   B. His calculation
-      - He calculated what a horse could lift, probably inflating the number to make his engines look better.
-      - Result: 1 horsepower = 746 watts. Still used today for car engines.
-
-VIII. Peak vs continuous watts [DEEP DIVE]
-   A. The difference
-      - Peak: maximum in short bursts. Continuous: what it sustains over time.
-      - A "1000W power supply" might only deliver 700-800W continuously.
-   B. Where it matters
-      - Power supplies, solar inverters, space heaters all use peak in marketing. Your bill sees continuous.
+V. Why it's called a watt [DEEP DIVE]
+VI. The horsepower connection [DEEP DIVE]
 
 POPUP TERMS:
 - Joule: A unit of energy. About what it takes to lift an apple one meter.
