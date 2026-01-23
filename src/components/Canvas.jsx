@@ -4486,7 +4486,7 @@ export default function Canvas() {
         isLoading: false,
         claimed: existingPreview.claimed,
         rootCategoryId: rootCategoryId,
-        navigatePath: fullStack
+        fullStack: fullStack  // Full navigation path for search results
       })
       // Start outline generation in background
       startOutlineGeneration(result.id, result.title, parentPath, existingPreview.content)
@@ -4502,7 +4502,7 @@ export default function Canvas() {
       isLoading: true,
       claimed: false,
       rootCategoryId: rootCategoryId,
-      navigatePath: fullStack
+      fullStack: fullStack  // Full navigation path for search results
     })
 
     try {
@@ -6325,8 +6325,10 @@ export default function Canvas() {
                 setShowPreviewCard(prev => ({ ...prev, claimed: true }))
               }}
               onDealMeIn={() => {
-                // From Continue Exploring - set stack with root category
-                if (showPreviewCard.rootCategoryId) {
+                // Use full stack if available (from search), otherwise use root + deck
+                if (showPreviewCard.fullStack) {
+                  setStack(showPreviewCard.fullStack)
+                } else if (showPreviewCard.rootCategoryId) {
                   setStack([showPreviewCard.rootCategoryId, showPreviewCard.deckId])
                 } else {
                   setStack([showPreviewCard.deckId])
