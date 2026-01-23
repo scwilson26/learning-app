@@ -2793,43 +2793,46 @@ function DeckSpread({
                     </div>
                   )}
 
-                  {/* New: Show raw outline if available */}
+                  {/* Show full outline - prefer raw_outline, fallback to structured data */}
                   {outline.raw_outline ? (
                     <pre className="text-xs text-gray-700 whitespace-pre-wrap font-sans leading-relaxed">
-                      {outline.raw_outline}
+                      {outline.raw_outline
+                        .replace(/\[CORE_COUNT:\s*\d+\]\n?/gi, '')
+                        .replace(/\[DEEP_COUNT:\s*\d+\]\n?/gi, '')
+                        .trim()}
                     </pre>
                   ) : (
-                    /* Legacy: Show card list for old outlines */
+                    /* Fallback: Build full outline from card data */
                     <>
                       {outline.core && outline.core.length > 0 && (
                         <div className="mb-4">
                           <div className="text-xs font-semibold text-gray-600 mb-2">Core ({outline.core.length} cards)</div>
-                          <ul className="space-y-1">
-                            {outline.core.map((card, i) => (
-                              <li key={i} className="text-xs text-gray-600">
-                                <span className="font-medium">{card.title}</span>
-                                {card.concept && (
-                                  <span className="text-gray-400 ml-1">— {card.concept}</span>
-                                )}
-                              </li>
-                            ))}
-                          </ul>
+                          {outline.core.map((card, i) => (
+                            <div key={i} className="mb-3">
+                              <div className="text-xs font-medium text-gray-700">{card.title}</div>
+                              {card.content && (
+                                <pre className="text-xs text-gray-600 whitespace-pre-wrap font-sans mt-1 ml-2">
+                                  {card.content}
+                                </pre>
+                              )}
+                            </div>
+                          ))}
                         </div>
                       )}
 
                       {outline.deep_dive && outline.deep_dive.length > 0 && (
                         <div>
                           <div className="text-xs font-semibold text-gray-600 mb-2">Deep Dive ({outline.deep_dive.length} cards)</div>
-                          <ul className="space-y-1">
-                            {outline.deep_dive.map((card, i) => (
-                              <li key={i} className="text-xs text-gray-600">
-                                <span className="font-medium">{card.title}</span>
-                                {card.concept && (
-                                  <span className="text-gray-400 ml-1">— {card.concept}</span>
-                                )}
-                              </li>
-                            ))}
-                          </ul>
+                          {outline.deep_dive.map((card, i) => (
+                            <div key={i} className="mb-3">
+                              <div className="text-xs font-medium text-gray-700">{card.title}</div>
+                              {card.content && (
+                                <pre className="text-xs text-gray-600 whitespace-pre-wrap font-sans mt-1 ml-2">
+                                  {card.content}
+                                </pre>
+                              )}
+                            </div>
+                          ))}
                         </div>
                       )}
                     </>
