@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getCategoryTheme, hasCustomTheme, isDarkTheme } from '../themes'
+import { findTopicMatches, matchTopic } from '../utils/topicMatcher'
 import { generateSubDecks, generateSingleCardContent, generateTierCards, generateTopicPreview, generateTopicOutline, generateFlashcardsFromCard, classifyTopic } from '../services/claude'
 import { supabase, onAuthStateChange, signOut, syncCards, getCanonicalCardsForTopic, upsertCanonicalCard, getPreviewCardRemote, savePreviewCardRemote, getOutline, saveOutline, syncFlashcards, upsertFlashcardRemote, upsertFlashcardsRemote } from '../services/supabase'
 import Auth from './Auth'
@@ -1709,17 +1710,26 @@ function SkeletonCard({ index, rootCategoryId = null }) {
 }
 
 // Simple markdown renderer for **bold** text and paragraph breaks
-// Optional: definedTerms array and onTermClick callback for tappable definitions
-function renderMarkdown(text, definedTerms = [], onTermClick = null) {
+// Supports rabbit hole links - tappable terms that match Wikipedia Vital Articles
+function renderMarkdown(text, currentTopic = '', onRabbitHoleClick = null) {
   if (!text) return null
+
+  // Find all topic matches in the full text (cached per render)
+  const topicMatches = onRabbitHoleClick ? findTopicMatches(text, currentTopic, 15) : []
+
+  // Build a map from lowercase term -> match info for quick lookup
+  const matchMap = new Map()
+  topicMatches.forEach(m => {
+    matchMap.set(m.term.toLowerCase(), m)
+  })
+
+  // Create regex to find matching terms (if any)
+  const termRegex = topicMatches.length > 0
+    ? new RegExp(`\\b(${topicMatches.map(m => m.term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`, 'gi')
+    : null
 
   // Split by double newlines to create paragraphs
   const paragraphs = text.split(/\n\n+/)
-
-  // Create a case-insensitive regex to find defined terms
-  const termRegex = definedTerms.length > 0
-    ? new RegExp(`\\b(${definedTerms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`, 'gi')
-    : null
 
   return paragraphs.map((paragraph, pIndex) => {
     // Handle bold text within each paragraph
@@ -1728,21 +1738,21 @@ function renderMarkdown(text, definedTerms = [], onTermClick = null) {
       if (part.startsWith('**') && part.endsWith('**')) {
         const boldText = part.slice(2, -2)
 
-        // Check if bold text contains a defined term
-        if (termRegex && onTermClick) {
+        // Check if bold text contains a rabbit hole term
+        if (termRegex && onRabbitHoleClick) {
           const termParts = boldText.split(termRegex)
           if (termParts.length > 1) {
             return (
               <strong key={i} className="font-semibold">
                 {termParts.map((tp, tpi) => {
-                  const isDefinedTerm = definedTerms.some(t => t.toLowerCase() === tp.toLowerCase())
-                  if (isDefinedTerm) {
+                  const match = matchMap.get(tp.toLowerCase())
+                  if (match) {
                     return (
                       <span
                         key={tpi}
-                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); onTermClick(tp, e) }}
-                        className="underline decoration-dotted decoration-blue-400 cursor-help"
-                        style={{ textDecorationThickness: '2px' }}
+                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); onRabbitHoleClick(match, e) }}
+                        className="underline decoration-2 cursor-pointer text-indigo-600"
+                        style={{ textUnderlineOffset: '2px' }}
                       >
                         {tp}
                       </span>
@@ -1758,19 +1768,19 @@ function renderMarkdown(text, definedTerms = [], onTermClick = null) {
         return <strong key={i} className="font-semibold">{boldText}</strong>
       }
 
-      // Check for defined terms in regular text
-      if (termRegex && onTermClick) {
+      // Check for rabbit hole terms in regular text
+      if (termRegex && onRabbitHoleClick) {
         const termParts = part.split(termRegex)
         if (termParts.length > 1) {
           return termParts.map((tp, tpi) => {
-            const isDefinedTerm = definedTerms.some(t => t.toLowerCase() === tp.toLowerCase())
-            if (isDefinedTerm) {
+            const match = matchMap.get(tp.toLowerCase())
+            if (match) {
               return (
                 <span
                   key={`${i}-${tpi}`}
-                  onClick={(e) => { e.stopPropagation(); e.preventDefault(); onTermClick(tp, e) }}
-                  className="underline decoration-dotted decoration-blue-400 cursor-help"
-                  style={{ textDecorationThickness: '2px' }}
+                  onClick={(e) => { e.stopPropagation(); e.preventDefault(); onRabbitHoleClick(match, e) }}
+                  className="underline decoration-2 cursor-pointer text-indigo-600"
+                  style={{ textUnderlineOffset: '2px' }}
                 >
                   {tp}
                 </span>
@@ -1925,7 +1935,7 @@ function SwipeHint({ hasPrev, hasNext }) {
 }
 
 // Expanded card - zooms in and can flip back and forth
-function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName, onContentGenerated, allCards, onNext, onPrev, hasNext, hasPrev, startFlipped = false, slideDirection = 0, tint = '#fafbfc', rootCategoryId = null }) {
+function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName, onContentGenerated, allCards, onNext, onPrev, hasNext, hasPrev, startFlipped = false, slideDirection = 0, tint = '#fafbfc', rootCategoryId = null, onRabbitHoleClick = null }) {
   const [isFlipped, setIsFlipped] = useState(startFlipped)
   const theme = getCategoryTheme(rootCategoryId)
   const isThemed = hasCustomTheme(rootCategoryId)
@@ -1939,16 +1949,6 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
   const [prevCardId, setPrevCardId] = useState(card.id)
   // Track initial rotation for new cards entering (to skip flip animation)
   const initialRotation = useRef(startFlipped ? 180 : 0)
-  // Definition popup state
-  const [definitionPopup, setDefinitionPopup] = useState(null) // { term, position }
-
-  const handleTermClick = (term, event) => {
-    const rect = event.target.getBoundingClientRect()
-    setDefinitionPopup({
-      term,
-      position: { x: rect.left, y: rect.bottom }
-    })
-  }
 
   // Generate content on mount if starting flipped without content
   useEffect(() => {
@@ -2196,22 +2196,10 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
                 <p className="text-red-500 text-center text-base">{error}</p>
               ) : (
                 <div className="text-sm leading-relaxed whitespace-pre-line" style={{ color: isThemed ? theme.textPrimary : '#374151' }}>
-                  {renderMarkdown(displayedContent, card.definedTerms || [], handleTermClick)}
+                  {renderMarkdown(displayedContent, deckName, onRabbitHoleClick)}
                 </div>
               )}
             </div>
-
-            {/* Definition popup */}
-            <AnimatePresence>
-              {definitionPopup && (
-                <DefinitionPopup
-                  term={definitionPopup.term}
-                  position={definitionPopup.position}
-                  topicContext={deckName}
-                  onClose={() => setDefinitionPopup(null)}
-                />
-              )}
-            </AnimatePresence>
 
             {/* Card ID - bottom left corner */}
             {card.cardId && (
@@ -3159,6 +3147,9 @@ export default function Canvas() {
   const [previewCards, setPreviewCards] = useState({}) // deckId -> { preview, claimed }
   const [loadedOutlines, setLoadedOutlines] = useState({}) // deckId -> outline object
 
+  // Rabbit hole preview state (shown when tapping a linked topic in card content)
+  const [rabbitHolePreview, setRabbitHolePreview] = useState(null) // { topic, category, preview, isLoading } or null
+
   // Track in-flight outline generation promises (to avoid duplicate requests)
   const outlinePromisesRef = useRef({}) // deckId -> Promise<outline>
 
@@ -3214,6 +3205,61 @@ export default function Canvas() {
     } else {
       console.log(`[handleClaim] No content yet for ${cardId}, will generate when content loads`)
     }
+  }
+
+  // Handle rabbit hole click - when user taps a linked topic in card content
+  const handleRabbitHoleClick = async (match) => {
+    console.log(`[RABBIT HOLE] Clicked: ${match.original} (category: ${match.category})`)
+
+    // Show preview modal with loading state
+    setRabbitHolePreview({
+      topic: match.original,
+      category: match.category,
+      preview: null,
+      isLoading: true
+    })
+
+    try {
+      // Generate a preview for this topic
+      const preview = await generateTopicPreview(match.original, match.category)
+      setRabbitHolePreview(prev => prev?.topic === match.original ? {
+        ...prev,
+        preview,
+        isLoading: false
+      } : prev)
+    } catch (err) {
+      console.error('[RABBIT HOLE] Failed to generate preview:', err)
+      setRabbitHolePreview(prev => prev?.topic === match.original ? {
+        ...prev,
+        preview: 'Failed to load preview',
+        isLoading: false
+      } : prev)
+    }
+  }
+
+  // Handle exploring a rabbit hole topic (navigate to it)
+  const handleExploreRabbitHole = () => {
+    if (!rabbitHolePreview) return
+
+    const { topic, category } = rabbitHolePreview
+    console.log(`[RABBIT HOLE] Exploring: ${topic}`)
+
+    // Create a deck-like object for navigation
+    const deckId = `${category}-${topic.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
+    const newDeck = {
+      id: deckId,
+      name: topic,
+      title: topic,
+      isArticle: true,
+      categoryId: category
+    }
+
+    // Close the preview and navigate to the topic
+    setRabbitHolePreview(null)
+    setExpandedCard(null) // Close any expanded card
+
+    // Push to stack
+    setStack(prev => [...prev, newDeck])
   }
 
   // Background flashcard generation (non-blocking)
@@ -6475,6 +6521,7 @@ export default function Canvas() {
                 startFlipped={true}
                 tint="#fafbfc"
                 rootCategoryId={rootCategoryId}
+                onRabbitHoleClick={handleRabbitHoleClick}
               />
             )}
           </AnimatePresence>
@@ -6821,6 +6868,7 @@ export default function Canvas() {
               slideDirection={expandedCardSlideDirection}
               tint="#fafbfc"
               rootCategoryId={categoryId}
+              onRabbitHoleClick={handleRabbitHoleClick}
             />
           )}
         </AnimatePresence>
@@ -7011,6 +7059,24 @@ export default function Canvas() {
                 setExpandedCard(prevCard.id)
               }
             }}
+            onRabbitHoleClick={handleRabbitHoleClick}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Rabbit hole preview modal */}
+      <AnimatePresence>
+        {rabbitHolePreview && (
+          <PreviewCardModal
+            topic={rabbitHolePreview.topic}
+            preview={rabbitHolePreview.preview}
+            isLoading={rabbitHolePreview.isLoading}
+            claimed={false}
+            onClaim={() => {}}
+            onDealMeIn={handleExploreRabbitHole}
+            onWander={() => {}}
+            onBack={() => setRabbitHolePreview(null)}
+            rootCategoryId={rabbitHolePreview.category}
           />
         )}
       </AnimatePresence>
