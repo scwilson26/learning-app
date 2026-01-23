@@ -4447,16 +4447,112 @@ export default function Canvas() {
   const stackDecks = stack.map(id => getDeck(id)).filter(Boolean)
   const currentDeck = stackDecks.length > 0 ? stackDecks[stackDecks.length - 1] : null
 
-  // Handle search result navigation - builds stack from path
-  const handleSearchNavigate = (result) => {
+  // Handle search result navigation - shows preview card first, then navigates on explore
+  const handleSearchNavigate = async (result) => {
     console.log('[SEARCH] Navigating to:', result.title, 'via path:', result.pathIds)
 
     // Build the full navigation stack: pathIds + the result itself
     const fullStack = [...result.pathIds, result.id]
-    console.log('[SEARCH] Setting stack to:', fullStack)
+    console.log('[SEARCH] Full stack:', fullStack)
 
-    // Set the stack to navigate there
-    setStack(fullStack)
+    // Check if this is a leaf topic (article) - these should show preview first
+    const treeNode = getTreeNode(result.id)
+    const isLeafTopic = result.isLeaf === true || treeNode?.isLeaf === true
+
+    if (!isLeafTopic) {
+      // Not a leaf - navigate directly (it's a category)
+      setStack(fullStack)
+      return
+    }
+
+    // Leaf topic - show preview card first (like wander flow)
+    const rootCategoryId = fullStack[0]
+    const parentPath = result.pathIds.length > 0
+      ? result.pathIds.map(id => {
+          const node = getTreeNode(id)
+          return node?.name || id
+        }).join(' > ')
+      : null
+
+    // Check for existing preview
+    const existingPreview = getPreviewCard(result.id)
+    if (existingPreview) {
+      console.log('[SEARCH] Using existing preview for:', result.title)
+      setShowPreviewCard({
+        deckId: result.id,
+        title: result.title,
+        preview: existingPreview.content,
+        cardId: existingPreview.cardId,
+        isLoading: false,
+        claimed: existingPreview.claimed,
+        rootCategoryId: rootCategoryId,
+        navigatePath: fullStack
+      })
+      // Start outline generation in background
+      startOutlineGeneration(result.id, result.title, parentPath, existingPreview.content)
+      return
+    }
+
+    // Show loading state
+    setShowPreviewCard({
+      deckId: result.id,
+      title: result.title,
+      preview: null,
+      cardId: null,
+      isLoading: true,
+      claimed: false,
+      rootCategoryId: rootCategoryId,
+      navigatePath: fullStack
+    })
+
+    try {
+      // Check Supabase for existing preview
+      const { data: remotePreview, error: fetchError } = await getPreviewCardRemote(result.id)
+
+      if (!fetchError && remotePreview && remotePreview.content) {
+        console.log('[SEARCH] Found preview in Supabase for:', result.title)
+        savePreviewCard(result.id, result.title, remotePreview.content)
+        const savedPreview = getPreviewCard(result.id)
+
+        setShowPreviewCard(prev => prev?.deckId === result.id ? {
+          ...prev,
+          preview: remotePreview.content,
+          cardId: savedPreview?.cardId || null,
+          isLoading: false
+        } : prev)
+
+        startOutlineGeneration(result.id, result.title, parentPath, remotePreview.content)
+      } else {
+        // Generate new preview
+        console.log('[SEARCH] Generating preview for:', result.title)
+        const topicType = await classifyTopic(result.title, parentPath)
+        const { preview } = await generateTopicPreview(result.title, parentPath, topicType)
+
+        savePreviewCard(result.id, result.title, preview)
+        const savedPreview = getPreviewCard(result.id)
+
+        setShowPreviewCard(prev => prev?.deckId === result.id ? {
+          ...prev,
+          preview: preview,
+          cardId: savedPreview?.cardId || null,
+          isLoading: false
+        } : prev)
+
+        // Save to Supabase
+        try {
+          await savePreviewCardRemote(result.id, result.title, preview)
+        } catch (err) {
+          console.warn('[SEARCH] Failed to save preview to Supabase:', err)
+        }
+
+        startOutlineGeneration(result.id, result.title, parentPath, preview, topicType)
+      }
+    } catch (err) {
+      console.error('[SEARCH] Error loading preview:', err)
+      // On error, navigate directly
+      setShowPreviewCard(null)
+      setStack(fullStack)
+    }
   }
 
   // Build parent path for context (e.g., "History > Ancient World")
