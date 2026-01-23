@@ -2735,6 +2735,14 @@ function DeckSpread({
   // Check if we have tier data (new system) or legacy data
   const hasTierData = tierCards && (tierCards.core?.length > 0 || tierCards.deep_dive?.length > 0 || tierCards.deep_dive_1?.length > 0 || tierCards.deep_dive_2?.length > 0)
 
+  // Check if at least 1 card has real content (not just a placeholder)
+  const hasReadyCard = hasTierData && [
+    ...(tierCards.core || []),
+    ...(tierCards.deep_dive || []),
+    ...(tierCards.deep_dive_1 || []),
+    ...(tierCards.deep_dive_2 || [])
+  ].some(card => !card.isPlaceholder && card.content)
+
   return (
     <motion.div
       className="flex flex-col items-center gap-8 pb-8"
@@ -2853,8 +2861,8 @@ function DeckSpread({
         />
       )}
 
-      {/* Loading state - show progress while generating all 15 cards */}
-      {isArticle && isLoading && !hasTierData && (
+      {/* Loading state - show progress until at least 1 card has content */}
+      {isArticle && !hasReadyCard && (
         <div className="flex flex-col items-center gap-6 py-12">
           {/* Animated spinner */}
           <div className="relative">
@@ -2890,7 +2898,7 @@ function DeckSpread({
       )}
 
       {/* NEW: Tiered card display - shows progressively as tiers complete (only for articles) */}
-      {isArticle && hasTierData && (
+      {isArticle && hasReadyCard && (
         <div className="flex flex-col items-center gap-10 w-full">
           {tiers.map((tier, tierIndex) => {
             const cards = tierCards[tier.key] || []
