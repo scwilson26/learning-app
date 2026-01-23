@@ -274,8 +274,8 @@ DEEP_DIVE_2 (11-15): Controversies, competitors, internal culture, future challe
  * @param {string} topicType - Optional classified topic type for structure guidance
  * @returns {Promise<{outline: Object}>} outline with core, deep_dive_1, deep_dive_2 arrays
  */
-export async function generateTopicOutline(topic, parentContext = null, previewText = null, topicType = null) {
-  console.log(`[OUTLINE] Generating outline for: ${topic}${previewText ? ' (with preview context)' : ''}${topicType ? ` [${topicType}]` : ''}`);
+export async function generateTopicOutline(topic, parentContext = null, previewText = null, topicType = null, onSection = null) {
+  console.log(`[OUTLINE] Generating outline for: ${topic}${previewText ? ' (with preview context)' : ''}${topicType ? ` [${topicType}]` : ''}${onSection ? ' [STREAMING]' : ''}`);
 
   const contextNote = parentContext ? `\nContext: "${topic}" is under "${parentContext}"` : '';
   const typeNote = topicType ? `\nTopic type: ${topicType}` : '';
@@ -443,6 +443,100 @@ OUTPUT:
 Return the full outline as structured text with [CORE] and [DEEP DIVE] labels. End with POPUP TERMS section.`;
 
   try {
+    // If streaming callback provided, stream and parse sections as they complete
+    if (onSection) {
+      let buffer = '';
+      let sectionCount = 0;
+      const streamedCards = { core: [], deep_dive: [] };
+
+      // Regex to detect section headers
+      const sectionHeaderRegex = /^(?:#{1,3}\s*)?([IVXLC]+)\.\s+(.+?)(?:\s+\[(CORE|DEEP DIVE)\])?\s*$/im;
+
+      const stream = await anthropic.messages.create({
+        model: MODELS.CONTENT,
+        max_tokens: 6000,
+        messages: [{ role: 'user', content: prompt }],
+        stream: true
+      });
+
+      for await (const event of stream) {
+        if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+          buffer += event.delta.text;
+
+          // Check if we have a complete section (next section header found)
+          // Split buffer to find section boundaries
+          const lines = buffer.split('\n');
+          let sectionStartIdx = -1;
+          let nextSectionIdx = -1;
+
+          // Find first section header
+          for (let i = 0; i < lines.length; i++) {
+            if (sectionHeaderRegex.test(lines[i].trim())) {
+              if (sectionStartIdx === -1) {
+                sectionStartIdx = i;
+              } else {
+                nextSectionIdx = i;
+                break;
+              }
+            }
+          }
+
+          // If we found a complete section (has start AND next section), parse and emit it
+          if (sectionStartIdx !== -1 && nextSectionIdx !== -1) {
+            const sectionLines = lines.slice(sectionStartIdx, nextSectionIdx);
+            const sectionText = sectionLines.join('\n');
+
+            // Parse this single section
+            const parsed = parseSingleSection(sectionText);
+            if (parsed) {
+              sectionCount++;
+              const tier = parsed.tier === 'deep_dive' ? 'deep_dive' : 'core';
+              streamedCards[tier].push(parsed.card);
+
+              console.log(`[OUTLINE STREAM] Section ${sectionCount} ready: "${parsed.card.title}" [${tier}]`);
+
+              // Fire callback with the card
+              onSection(parsed.card, tier, sectionCount);
+            }
+
+            // Keep only from the next section onwards in buffer
+            buffer = lines.slice(nextSectionIdx).join('\n');
+          }
+        }
+      }
+
+      // Parse any remaining section at end of stream
+      if (buffer.trim()) {
+        // Check for POPUP TERMS first
+        const popupIdx = buffer.indexOf('POPUP TERMS');
+        let remainingSection = popupIdx !== -1 ? buffer.substring(0, popupIdx) : buffer;
+
+        if (remainingSection.trim()) {
+          const parsed = parseSingleSection(remainingSection);
+          if (parsed) {
+            sectionCount++;
+            const tier = parsed.tier === 'deep_dive' ? 'deep_dive' : 'core';
+            streamedCards[tier].push(parsed.card);
+            console.log(`[OUTLINE STREAM] Final section ${sectionCount} ready: "${parsed.card.title}" [${tier}]`);
+            onSection(parsed.card, tier, sectionCount);
+          }
+        }
+      }
+
+      // Parse popup terms from buffer
+      const popupTerms = parsePopupTerms(buffer);
+
+      const outline = {
+        core: streamedCards.core,
+        deep_dive: streamedCards.deep_dive,
+        popup_terms: popupTerms
+      };
+
+      console.log(`[OUTLINE] ✅ Streamed outline for: ${topic} (${sectionCount} sections: Core=${outline.core.length}, DeepDive=${outline.deep_dive.length})`);
+      return { outline, rawOutline: buffer };
+    }
+
+    // Non-streaming fallback (for background generation)
     const message = await anthropic.messages.create({
       model: MODELS.CONTENT,
       max_tokens: 6000,
@@ -470,6 +564,75 @@ Return the full outline as structured text with [CORE] and [DEEP DIVE] labels. E
     console.error('[OUTLINE] Error generating outline:', error);
     throw new Error('Failed to generate outline');
   }
+}
+
+/**
+ * Parse a single section from streaming text
+ */
+function parseSingleSection(text) {
+  const lines = text.split('\n');
+  const sectionMatch = lines[0].trim().match(/^(?:#{1,3}\s*)?([IVXLC]+)\.\s+(.+?)(?:\s+\[(CORE|DEEP DIVE)\])?\s*$/i);
+
+  if (!sectionMatch) return null;
+
+  const title = sectionMatch[2].trim();
+  const tier = sectionMatch[3]?.toLowerCase().replace(' ', '_') || 'core';
+  const subsections = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+
+    // Subsection header (A. B. C. etc)
+    const subsectionMatch = trimmed.match(/^(?:#{1,4}\s*)?([A-Z])\.\s+(.+)$/);
+    if (subsectionMatch) {
+      subsections.push({
+        label: subsectionMatch[1],
+        title: subsectionMatch[2],
+        bullets: []
+      });
+      continue;
+    }
+
+    // Bullet point
+    if (trimmed.startsWith('- ') && subsections.length > 0) {
+      subsections[subsections.length - 1].bullets.push(trimmed.substring(2));
+    }
+  }
+
+  if (subsections.length === 0) return null;
+
+  return {
+    tier: tier === 'deep_dive' ? 'deep_dive' : 'core',
+    card: {
+      title,
+      concept: formatSubsectionsAsConcept(subsections),
+      content: formatSubsectionsAsContent(subsections)
+    }
+  };
+}
+
+/**
+ * Parse popup terms from text
+ */
+function parsePopupTerms(text) {
+  const terms = [];
+  const lines = text.split('\n');
+  let inPopupSection = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('POPUP TERMS')) {
+      inPopupSection = true;
+      continue;
+    }
+    if (inPopupSection && trimmed.startsWith('- ') && trimmed.includes(':')) {
+      const colonIdx = trimmed.indexOf(':');
+      const term = trimmed.substring(2, colonIdx).trim();
+      const definition = trimmed.substring(colonIdx + 1).trim();
+      terms.push({ term, definition });
+    }
+  }
+  return terms;
 }
 
 /**
@@ -987,7 +1150,12 @@ export async function generateTierCards(topicName, tier, previousCards = [], par
   if (tierOutline && tierOutline.length > 0 && tierOutline[0].content) {
     console.log(`[TIER] Using pre-generated content from outline`);
     const timestamp = Date.now();
-    const cards = tierOutline.map((item, index) => {
+    const cards = [];
+
+    // Process cards with delays between callbacks so React renders each one
+    // (Without delays, React batches all synchronous state updates together)
+    for (let index = 0; index < tierOutline.length; index++) {
+      const item = tierOutline[index];
       const card = {
         id: `${topicName.toLowerCase().replace(/\s+/g, '-')}-${tier}-${index}-${timestamp}`,
         number: config.startNumber + index,
@@ -999,13 +1167,17 @@ export async function generateTierCards(topicName, tier, previousCards = [], par
         contentLoaded: true
       };
 
-      // Fire callback for each card if provided (for progressive display)
+      cards.push(card);
+
+      // Fire callback for each card if provided (with delays so React renders each one)
       if (onCard) {
         onCard(card, index + 1);
+        // Delay after each card (except last) so React can render before next update
+        if (index < tierOutline.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
       }
-
-      return card;
-    });
+    }
 
     console.log(`[TIER] ✅ Loaded ${cards.length} cards from outline for: ${topicName}`);
     return cards;

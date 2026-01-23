@@ -3850,52 +3850,66 @@ export default function Canvas() {
     const topicType = await topicTypePromise
     console.log(`[TOPIC TYPE] "${deck.name}" classified as: ${topicType}`)
 
-    // Try to get outline for better card generation quality
+    // Check if outline already exists (fast path - no waiting)
     let outline = null
+    let usedStreaming = false
+
     try {
-      outline = await getOutlineForTopic(deck.id)
-      if (outline) {
-        console.log(`[OUTLINE] Using pre-generated outline for: ${deck.name}`)
-        // Store outline for UI display
+      // Quick check for existing outline in Supabase (don't wait for in-flight generation)
+      const { data: existingOutline, error } = await getOutline(deck.id)
+      if (!error && existingOutline && existingOutline.outline_json) {
+        outline = existingOutline.outline_json
+        console.log(`[OUTLINE] Using cached outline for: ${deck.name}`)
         setLoadedOutlines(prev => ({ ...prev, [deck.id]: outline }))
-      } else {
-        console.log(`[OUTLINE] No outline available for: ${deck.name} - generating cards without outline`)
       }
     } catch (err) {
-      console.warn(`[OUTLINE] Error fetching outline:`, err)
+      console.warn(`[OUTLINE] Error checking for cached outline:`, err)
     }
 
-    // Calculate expected total from outline if available
-    const expectedTotalFromOutline = outline
-      ? (outline.core?.length || 0) + (outline.deep_dive_1?.length || 0) + (outline.deep_dive_2?.length || 0)
-      : null
-
     try {
-      // Generate Core tier with streaming callback (and optional outline)
-      const coreCards = await generateTierCards(
-        deck.name,
-        'core',
-        [],
-        parentPath,
-        // Callback fired for each card as it arrives
-        (card, cardNumber) => {
-          // Save card immediately to localStorage (creates card entry + adds to cardsByTier)
-          // Returns the generated cardId
-          const cardId = saveStreamedCard(deck.id, deck.name, card, 'core', expectedTotalFromOutline)
+      // If no cached outline, generate with streaming - cards appear as sections complete
+      if (!outline) {
+        console.log(`[OUTLINE] Generating with streaming for: ${deck.name}`)
+        usedStreaming = true
 
-          // Add cardId to the card object
-          const cardWithId = { ...card, cardId }
-          streamedCards.push(cardWithId)
+        const streamedCoreCards = []
+        const streamedDeepDiveCards = []
+
+        // Streaming callback - fired for each section as it completes
+        const onSection = (card, tier, sectionNumber) => {
+          const timestamp = Date.now()
+          const cardWithMeta = {
+            ...card,
+            id: `${deck.id}-${tier}-${sectionNumber}-${timestamp}`,
+            tier,
+            tierIndex: tier === 'core' ? streamedCoreCards.length : streamedDeepDiveCards.length,
+            contentLoaded: true
+          }
+
+          // Save card immediately to localStorage
+          const cardId = saveStreamedCard(deck.id, deck.name, cardWithMeta, tier, null)
+          cardWithMeta.cardId = cardId
+
+          if (tier === 'core') {
+            streamedCoreCards.push(cardWithMeta)
+          } else {
+            streamedDeepDiveCards.push(cardWithMeta)
+          }
+
+          // Clear loading state on first card so user can start reading immediately
+          if (sectionNumber === 1) {
+            setLoadingDeck(null)
+          }
 
           // Update progress
-          setGenerationProgress({ current: cardNumber, total: 5, phase: 'generating' })
+          setGenerationProgress({ current: sectionNumber, total: 6, phase: 'generating' })
 
           // Update UI immediately so card appears
           setTierCards(prev => ({
             ...prev,
             [deck.id]: {
-              core: [...streamedCards],
-              deep_dive_1: prev[deck.id]?.deep_dive_1 || [],
+              core: [...streamedCoreCards],
+              deep_dive_1: [...streamedDeepDiveCards],
               deep_dive_2: prev[deck.id]?.deep_dive_2 || []
             }
           }))
@@ -3903,19 +3917,94 @@ export default function Canvas() {
           // Update content cache
           setGeneratedContent(prev => ({
             ...prev,
-            [card.id]: card.content
+            [cardWithMeta.id]: cardWithMeta.content
           }))
 
           // Update legacy state
           setGeneratedCards(prev => ({
             ...prev,
-            [deck.id]: [...streamedCards]
+            [deck.id]: [...streamedCoreCards, ...streamedDeepDiveCards]
           }))
 
-          console.log(`[STREAM] Card ${cardNumber}/5 displayed: ${card.title}`)
-        },
-        outline // Pass outline for better card generation quality
-      )
+          // Track for later
+          streamedCards.push(cardWithMeta)
+
+          console.log(`[STREAM] Section ${sectionNumber} displayed: "${card.title}" [${tier}]`)
+        }
+
+        // Generate outline with streaming - cards appear as sections complete
+        const { outline: generatedOutline, rawOutline } = await generateTopicOutline(
+          deck.name,
+          parentPath,
+          null, // previewText - could pass it here
+          topicType,
+          onSection // streaming callback
+        )
+
+        outline = generatedOutline
+        setLoadedOutlines(prev => ({ ...prev, [deck.id]: outline }))
+
+        // Save outline to Supabase for future use
+        try {
+          await saveOutline(deck.id, { ...outline, raw_outline: rawOutline, topic_type: topicType })
+          console.log(`[OUTLINE] Saved streaming outline to Supabase for: ${deck.name}`)
+        } catch (err) {
+          console.warn(`[OUTLINE] Failed to save outline to Supabase:`, err)
+        }
+      }
+
+      // If we had a cached outline, use traditional generation (still fast since outline exists)
+      if (outline && !usedStreaming) {
+        console.log(`[OUTLINE] Using cached outline for card generation: ${deck.name}`)
+        setLoadedOutlines(prev => ({ ...prev, [deck.id]: outline }))
+
+        const expectedTotalFromOutline = (outline.core?.length || 0) + (outline.deep_dive?.length || 0) + (outline.deep_dive_1?.length || 0)
+
+        // Generate Core tier with streaming callback
+        await generateTierCards(
+          deck.name,
+          'core',
+          [],
+          parentPath,
+          // Callback fired for each card as it arrives
+          (card, cardNumber) => {
+            const cardId = saveStreamedCard(deck.id, deck.name, card, 'core', expectedTotalFromOutline)
+            const cardWithId = { ...card, cardId }
+            streamedCards.push(cardWithId)
+
+            // Clear loading state on first card
+            if (cardNumber === 1) {
+              setLoadingDeck(null)
+            }
+
+            setGenerationProgress({ current: cardNumber, total: 5, phase: 'generating' })
+
+            setTierCards(prev => ({
+              ...prev,
+              [deck.id]: {
+                core: [...streamedCards],
+                deep_dive_1: prev[deck.id]?.deep_dive_1 || [],
+                deep_dive_2: prev[deck.id]?.deep_dive_2 || []
+              }
+            }))
+
+            setGeneratedContent(prev => ({
+              ...prev,
+              [card.id]: card.content
+            }))
+
+            setGeneratedCards(prev => ({
+              ...prev,
+              [deck.id]: [...streamedCards]
+            }))
+
+            console.log(`[STREAM] Card ${cardNumber}/5 displayed: ${card.title}`)
+          },
+          outline
+        )
+      }
+
+      const coreCards = streamedCards.filter(c => c.tier === 'core' || !c.tier)
 
       console.log(`[loadOrGenerateCardsForDeck] ✅ Streamed Core tier for ${deck.name}`)
 
@@ -4288,7 +4377,7 @@ export default function Canvas() {
 
   // Get outline for a topic (from cache, in-flight, or Supabase)
   const getOutlineForTopic = async (deckId) => {
-    // Check if there's an in-flight promise
+    // Check if there's an in-flight promise - wait for it (outline = better quality cards)
     if (outlinePromisesRef.current[deckId]) {
       console.log(`[OUTLINE] Waiting for in-flight outline generation...`)
       try {
