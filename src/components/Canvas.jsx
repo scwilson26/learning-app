@@ -3010,22 +3010,6 @@ function DeckSpread({
         </div>
       )}
 
-      {/* Leaf indicator - show when deck has no sub-decks */}
-      {!isLoading && !isLoadingChildren && isLeaf && (overviewCards.length > 0 || hasTierData) && (
-        <motion.div
-          className="flex flex-col items-center gap-2 mt-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-        >
-          <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-50 to-orange-50 rounded-full border border-amber-200">
-            <span className="text-amber-600">🍂</span>
-            <span className="text-sm text-amber-700 font-medium">You've reached the deepest level</span>
-          </div>
-          <p className="text-xs text-gray-400">Try exploring other branches to discover more</p>
-        </motion.div>
-      )}
-
     </motion.div>
   )
 }
