@@ -6098,25 +6098,22 @@ export default function Canvas() {
         // Get all claimed cards for this topic
         const data = getData()
 
-        // Debug: log all cards for this topic
-        const allCardsForTopic = Object.values(data.cards || {}).filter(
-          card => card.deckId === topicId
-        )
-        console.log(`[handleGenerateForTopic] All cards for ${topicId}:`, allCardsForTopic.map(c => ({
-          id: c.id,
-          claimed: c.claimed,
-          hasContent: !!c.content,
-          title: c.title
-        })))
-
+        // Start with claimed regular cards
         const claimedCards = Object.values(data.cards || {}).filter(
-          card => card.claimed && card.deckId === topicId && card.content
+          card => card.claimed && card.deckId === topicId && card.content && card.type !== 'preview'
         )
 
-        console.log(`[handleGenerateForTopic] Found ${claimedCards.length} claimed cards WITH CONTENT for ${topicId}`)
+        // Also include the preview card if it exists and has content
+        const previewCard = getPreviewCard(topicId)
+        if (previewCard && previewCard.content) {
+          console.log(`[handleGenerateForTopic] Including preview card for ${topicId}`)
+          claimedCards.unshift(previewCard) // Add preview first
+        }
+
+        console.log(`[handleGenerateForTopic] Found ${claimedCards.length} cards to generate from (including preview)`)
 
         if (claimedCards.length === 0) {
-          console.log('[handleGenerateForTopic] No claimed cards with content found')
+          console.log('[handleGenerateForTopic] No cards with content found')
           setGeneratingTopicId(null)
           return
         }
