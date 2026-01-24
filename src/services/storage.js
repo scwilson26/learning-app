@@ -1700,12 +1700,26 @@ export function getNewCards(topicId = null) {
 
 /**
  * Get cards currently in acquisition (studyState === "acquiring")
+ * @param {string} topicId - Optional: filter by specific topic
  * @returns {Array} Array of flashcard objects in acquisition
  */
-export function getAcquiringCards() {
+export function getAcquiringCards(topicId = null) {
   const data = getData()
-  return Object.values(data.flashcards || {})
-    .filter(fc => fc.studyState === 'acquiring')
+  const studyDeck = getStudyDeck()
+
+  const allAcquiring = Object.values(data.flashcards || {})
+    .filter(fc => fc.studyState === 'acquiring' && fc.status !== 'skipped')
+
+  if (topicId) {
+    return filterByTopic(allAcquiring, topicId, data)
+  }
+
+  // Filter by study deck
+  if (studyDeck.length === 0) return []
+  return allAcquiring.filter(fc => {
+    const sourceCard = data.cards?.[fc.sourceCardId]
+    return sourceCard && studyDeck.includes(sourceCard.deckId)
+  })
 }
 
 /**

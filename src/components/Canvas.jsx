@@ -70,6 +70,7 @@ import {
   ACQUISITION_CONFIG,
   getNewCards,
   getNewCardCount,
+  getAcquiringCards,
   getLearningAvailableCount,
   getDueCards,
   getDueCardCount,
@@ -5797,23 +5798,34 @@ export default function Canvas() {
 
     // Start Acquisition session
     const startAcquisitionSession = (topicId = null) => {
-      const cards = getNewCards(topicId)
-      if (cards.length === 0) return
+      // Get cards already in acquisition (from previous incomplete sessions)
+      const alreadyAcquiring = getAcquiringCards(topicId)
+      // Get new cards not yet started
+      const newCards = getNewCards(topicId)
 
-      // Take first batch
+      const totalAvailable = alreadyAcquiring.length + newCards.length
+      if (totalAvailable === 0) return
+
+      // Build the rotation: start with acquiring cards, then add new ones to fill batch
       const batchSize = ACQUISITION_CONFIG.batchSize
-      const firstBatch = cards.slice(0, batchSize)
+      let rotation = [...alreadyAcquiring]
 
-      // Mark cards as acquiring
-      firstBatch.forEach(card => startAcquisition(card.id))
+      // If we have room in the batch, add new cards
+      if (rotation.length < batchSize && newCards.length > 0) {
+        const slotsAvailable = batchSize - rotation.length
+        const newToAdd = newCards.slice(0, slotsAvailable)
+        // Mark new cards as acquiring
+        newToAdd.forEach(card => startAcquisition(card.id))
+        rotation = [...rotation, ...newToAdd]
+      }
 
       // Shuffle the batch
-      const shuffled = [...firstBatch].sort(() => Math.random() - 0.5)
+      const shuffled = rotation.sort(() => Math.random() - 0.5)
 
       setAcquiringCards(shuffled)
       setCurrentCardIndex(0)
       setGraduatedCount(0)
-      setTotalCardsToLearn(cards.length)
+      setTotalCardsToLearn(totalAvailable)
       setSessionAttempts(0)
       setIsFlipped(false)
       setStudyView('acquisition')
