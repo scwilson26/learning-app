@@ -5750,6 +5750,9 @@ export default function Canvas() {
     const [isFlipped, setIsFlipped] = useState(false)
     const [showRemoveConfirm, setShowRemoveConfirm] = useState(null)
     const [showSkipConfirm, setShowSkipConfirm] = useState(false)
+    const [editingCard, setEditingCard] = useState(null) // { id, question, answer }
+    const [editQuestion, setEditQuestion] = useState('')
+    const [editAnswer, setEditAnswer] = useState('')
 
     // Load data on mount and run migrations
     useEffect(() => {
@@ -6078,6 +6081,51 @@ export default function Canvas() {
       moveToNextReviewCard()
     }
 
+    // Open edit modal for a flashcard
+    const openEditModal = (card) => {
+      setEditingCard(card)
+      setEditQuestion(card.question)
+      setEditAnswer(card.answer)
+    }
+
+    // Save edited flashcard
+    const handleSaveEdit = () => {
+      if (!editingCard) return
+
+      const updates = {
+        question: editQuestion.trim(),
+        answer: editAnswer.trim()
+      }
+
+      // Update in storage
+      updateFlashcard(editingCard.id, updates)
+
+      // Update in local state (acquisition mode)
+      setAcquiringCards(prev =>
+        prev.map(c => c.id === editingCard.id ? { ...c, ...updates } : c)
+      )
+
+      // Update in local state (review mode)
+      setReviewCards(prev =>
+        prev.map(c => c.id === editingCard.id ? { ...c, ...updates } : c)
+      )
+
+      // Sync to Supabase if logged in
+      if (user) {
+        const updatedCard = { ...editingCard, ...updates }
+        upsertFlashcardRemote(updatedCard, user.id).catch(console.error)
+      }
+
+      setEditingCard(null)
+    }
+
+    // Cancel edit
+    const handleCancelEdit = () => {
+      setEditingCard(null)
+      setEditQuestion('')
+      setEditAnswer('')
+    }
+
     // Remove topic from study deck
     const handleRemoveTopic = (topicId) => {
       removeFromStudyDeck(topicId)
@@ -6330,6 +6378,17 @@ export default function Canvas() {
                   className="absolute inset-0 bg-white rounded-2xl shadow-lg p-6 flex flex-col"
                   style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
                 >
+                  {/* Edit button */}
+                  <button
+                    onClick={() => openEditModal(currentCard)}
+                    className="absolute top-3 right-3 text-gray-400 hover:text-indigo-500 p-1"
+                    title="Edit flashcard"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  </button>
+
                   {/* Streak indicator at top */}
                   <div className="flex justify-center gap-1.5 mb-4">
                     {[...Array(streakNeeded)].map((_, i) => (
@@ -6466,6 +6525,17 @@ export default function Canvas() {
                   className="absolute inset-0 bg-white rounded-2xl shadow-lg p-6 flex flex-col"
                   style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
                 >
+                  {/* Edit button */}
+                  <button
+                    onClick={() => openEditModal(currentCard)}
+                    className="absolute top-3 left-3 text-gray-400 hover:text-indigo-500 p-1"
+                    title="Edit flashcard"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  </button>
+
                   {/* Skip button */}
                   <button
                     onClick={() => setShowSkipConfirm(true)}
@@ -6821,6 +6891,59 @@ export default function Canvas() {
           onConfirm={() => handleRemoveTopic(showRemoveConfirm)}
           onCancel={() => setShowRemoveConfirm(null)}
         />
+
+        {/* Edit Flashcard Modal */}
+        {editingCard && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl max-h-[90vh] overflow-auto"
+            >
+              <h3 className="text-lg font-bold text-gray-800 mb-4">Edit Flashcard</h3>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Question</label>
+                  <textarea
+                    value={editQuestion}
+                    onChange={(e) => setEditQuestion(e.target.value)}
+                    className="w-full p-3 border border-gray-200 rounded-xl text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    rows={3}
+                    placeholder="Enter question..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Answer</label>
+                  <textarea
+                    value={editAnswer}
+                    onChange={(e) => setEditAnswer(e.target.value)}
+                    className="w-full p-3 border border-gray-200 rounded-xl text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    rows={4}
+                    placeholder="Enter answer..."
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={handleCancelEdit}
+                  className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveEdit}
+                  disabled={!editQuestion.trim() || !editAnswer.trim()}
+                  className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white rounded-xl font-medium transition-colors"
+                >
+                  Save
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
       </div>
     )
   }
