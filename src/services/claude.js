@@ -194,79 +194,7 @@ Write ONLY the preview text - no intro, no labels.`;
 }
 
 /**
- * Get topic-type specific outline structure guidance
- * Each topic type has a different approach to structuring the 15 cards
- * @param {string} topicType - The classified topic type
- * @returns {string} Outline structure guidance
- */
-function getOutlineStructure(topicType) {
-  const structures = {
-    PERSON: `
-FOR A PERSON - Structure the outline as:
-CORE (1-5): Who they were, what they're known for, their key achievement, the context/era they lived in, what made them different
-DEEP_DIVE_1 (6-10): Their major works/actions, key relationships, pivotal moments, methods/approach, impact on their field
-DEEP_DIVE_2 (11-15): Lesser-known facts, controversies, legacy/influence today, what they got wrong, connections to other figures`,
-
-    PLACE: `
-FOR A PLACE - Structure the outline as:
-CORE (1-5): Where it is, why it matters, key features, who built/founded it, what happens there
-DEEP_DIVE_1 (6-10): History/timeline, notable events there, what visitors experience, unique characteristics, famous connections
-DEEP_DIVE_2 (11-15): Hidden secrets, controversies, how it's changed, future/threats, surprising facts`,
-
-    EVENT: `
-FOR AN EVENT - Structure the outline as:
-CORE (1-5): What happened, when and where, key players, immediate cause, the outcome
-DEEP_DIVE_1 (6-10): Build-up/context, turning points, individual stories, how it unfolded, immediate aftermath
-DEEP_DIVE_2 (11-15): Long-term effects, what we learned, myths vs reality, modern parallels, what almost happened differently`,
-
-    MEDICAL: `
-FOR A MEDICAL TOPIC - Structure the outline as:
-CORE (1-5): What it is, who it affects, main symptoms/features, causes, how it's diagnosed
-DEEP_DIVE_1 (6-10): Treatment options, prevention, history of discovery, how the body responds, risk factors
-DEEP_DIVE_2 (11-15): Latest research, complications, patient experiences, controversies, future directions`,
-
-    CONCEPT: `
-FOR A CONCEPT - Structure the outline as:
-CORE (1-5): What it means, why it matters, key components, where it came from, how it's used
-DEEP_DIVE_1 (6-10): Real examples, how experts apply it, common misconceptions, related concepts, how to recognize it
-DEEP_DIVE_2 (11-15): Edge cases, criticisms, modern applications, connections to other fields, how it's evolving`,
-
-    SCIENCE: `
-FOR A SCIENCE TOPIC - Structure the outline as:
-CORE (1-5): What it is, how it works, key principles, who discovered it, why it matters
-DEEP_DIVE_1 (6-10): The evidence, practical applications, famous experiments, how it connects to other science, common misconceptions
-DEEP_DIVE_2 (11-15): Current research, unsolved questions, real-world implications, how understanding has evolved, counterintuitive aspects`,
-
-    OBJECT: `
-FOR AN OBJECT - Structure the outline as:
-CORE (1-5): What it is, what it does, how it works, who invented it, what problem it solved
-DEEP_DIVE_1 (6-10): Evolution/versions, how it's made, famous examples, impact on society, related innovations
-DEEP_DIVE_2 (11-15): Unexpected uses, failures/disasters, future developments, cultural significance, what might replace it`,
-
-    ART: `
-FOR AN ART WORK - Structure the outline as:
-CORE (1-5): What it is, who created it, when/where, what it depicts/expresses, why it's significant
-DEEP_DIVE_1 (6-10): Creation story, techniques used, symbolism/meaning, initial reception, influence on other works
-DEEP_DIVE_2 (11-15): Hidden details, controversies, how interpretation has changed, where it is now, personal stories connected to it`,
-
-    ORGANISM: `
-FOR AN ORGANISM - Structure the outline as:
-CORE (1-5): What it is, where it lives, key characteristics, how it survives, why it's notable
-DEEP_DIVE_1 (6-10): Behavior, life cycle, diet/predators, evolution, relationship to humans
-DEEP_DIVE_2 (11-15): Surprising abilities, conservation status, research discoveries, myths vs facts, ecosystem role`,
-
-    ORGANIZATION: `
-FOR AN ORGANIZATION - Structure the outline as:
-CORE (1-5): What they do, who founded it, when/why, how big they are, why they matter
-DEEP_DIVE_1 (6-10): Key milestones, how they operate, notable leaders, major achievements, business model/funding
-DEEP_DIVE_2 (11-15): Controversies, competitors, internal culture, future challenges, impact on society`
-  };
-
-  return structures[topicType] || '';
-}
-
-/**
- * Generate an outline for a topic - 12-18 card concepts across 3 tiers (4-6 per tier)
+ * Generate an outline for a topic with core and deep_dive sections
  * Used for background pre-generation while user reads preview card
  * @param {string} topic - The topic name
  * @param {string} parentContext - Optional parent path context
@@ -307,11 +235,24 @@ FORMAT:
 - Mark each main section as [CORE] or [DEEP DIVE]
 
 SECTION COUNT:
-- Core: typically 3-5 sections (cover the fundamentals completely, but don't pad)
-- Deep Dive: typically 2-4 sections
-- Each section: 2-3 subsections
-- Each subsection: 2-3 bullet points
-- If a topic genuinely needs more Core sections to cover the basics, that's fine - but ask yourself if you're going too deep
+Let the topic dictate the count. Don't target a number.
+
+CORE sections: As many as needed to cover the fundamentals completely.
+- Simple topic (Pencil, Spoon): might only need 3
+- Medium topic (Photosynthesis, Napoleon): might need 5-6
+- Complex topic (World War II, Human Immune System): might need 7-8
+- Ask: "After these sections, could someone explain this topic to a friend with no gaps?" If not, add more.
+
+DEEP DIVE sections: As many as the topic warrants.
+- Some topics have rich history, controversies, edge cases worth 4-5 sections
+- Others have little worth exploring beyond the core - maybe just 1-2
+- Don't pad. Don't skip interesting stuff either.
+
+Total usually lands between 8-15 cards, but that's an outcome, not a target.
+
+Within each section:
+- 2-3 subsections
+- 2-3 bullet points per subsection
 
 WRITING STYLE:
 - Write in complete sentences, not bullet fragments
@@ -391,13 +332,14 @@ For WORKS/ARTIFACTS (Shakespeare's Sonnets, Guernica):
 IF YOUR TOPIC DOESN'T FIT THESE CATEGORIES:
 - Structure it around: What is it? → How does it work? → Why does it matter?
 - Deep Dive: history, edge cases, interesting details
-- Ask yourself: What are the 3-5 things someone MUST understand? Those are your Core sections.
+- Ask yourself: What questions MUST be answered for someone to understand this? Those are your Core sections.
 
 IMPORTANT FOR PEOPLE:
 - Lead with why they're famous, not chronological biography
 - Ask: "If someone remembers one thing about this person, what should it be?" Put that first.
 
 EXAMPLE - "Watt" (concept):
+Note: This example shows 4 CORE + 2 DEEP DIVE. Your topic may need more or fewer.
 
 I. What is a watt? [CORE]
    A. Definition
