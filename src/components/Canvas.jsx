@@ -6321,6 +6321,7 @@ export default function Canvas() {
       const streakNeeded = ACQUISITION_CONFIG.correctStreakToGraduate
 
       return (
+        <>
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex justify-between items-center p-4">
@@ -6352,7 +6353,22 @@ export default function Canvas() {
 
           {/* Flashcard */}
           <div className="flex-1 flex items-center justify-center p-4">
-            <div className="w-full max-w-sm mx-auto" style={{ perspective: '1000px' }}>
+            <div className="flex items-center gap-2 w-full max-w-md">
+              {/* Previous arrow */}
+              <button
+                onClick={() => {
+                  setIsFlipped(false)
+                  setCurrentCardIndex(prev => prev === 0 ? acquiringCards.length - 1 : prev - 1)
+                }}
+                className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                aria-label="Previous card"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+
+            <div className="flex-1 max-w-sm mx-auto" style={{ perspective: '1000px' }}>
               <motion.div
                 key={currentCard.id}
                 className="relative w-full h-80"
@@ -6387,12 +6403,13 @@ export default function Canvas() {
 
                 {/* Answer side */}
                 <div
-                  className="absolute inset-0 bg-white rounded-2xl shadow-lg p-6 flex flex-col"
+                  className="absolute inset-0 bg-white rounded-2xl shadow-lg p-6 flex flex-col cursor-pointer"
                   style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+                  onClick={() => setIsFlipped(false)}
                 >
                   {/* Edit button */}
                   <button
-                    onClick={() => openEditModal(currentCard)}
+                    onClick={(e) => { e.stopPropagation(); openEditModal(currentCard); }}
                     className="absolute top-3 right-3 text-gray-400 hover:text-indigo-500 p-1"
                     title="Edit flashcard"
                   >
@@ -6414,7 +6431,7 @@ export default function Canvas() {
                   </div>
 
                   <div className="flex-1 flex items-center justify-center">
-                    <p className="text-lg text-gray-800 text-center leading-relaxed">{currentCard.answer}</p>
+                    <p className="text-lg text-gray-800 text-center leading-relaxed whitespace-pre-line">{currentCard.answer}</p>
                   </div>
                   <p className="text-xs text-gray-400 text-center mb-4">
                     From: {currentCard.sourceCardTitle}
@@ -6423,14 +6440,14 @@ export default function Canvas() {
                   {/* Buttons: Missed / Got it */}
                   <div className="grid grid-cols-2 gap-3">
                     <button
-                      onClick={handleAcquisitionMissed}
+                      onClick={(e) => { e.stopPropagation(); handleAcquisitionMissed(); }}
                       className="py-4 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold transition-colors"
                     >
                       Missed
                       <span className="block text-xs font-normal opacity-80">streak resets</span>
                     </button>
                     <button
-                      onClick={handleAcquisitionGotIt}
+                      onClick={(e) => { e.stopPropagation(); handleAcquisitionGotIt(); }}
                       className="py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-semibold transition-colors"
                     >
                       Got it!
@@ -6442,8 +6459,74 @@ export default function Canvas() {
                 </div>
               </motion.div>
             </div>
+
+              {/* Next arrow */}
+              <button
+                onClick={() => {
+                  setIsFlipped(false)
+                  setCurrentCardIndex(prev => prev === acquiringCards.length - 1 ? 0 : prev + 1)
+                }}
+                className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                aria-label="Next card"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
+
+        {/* Edit Flashcard Modal */}
+        {editingCard && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl max-h-[90vh] overflow-auto"
+            >
+              <h3 className="text-lg font-bold text-gray-800 mb-4">Edit Flashcard</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Question</label>
+                  <textarea
+                    value={editQuestion}
+                    onChange={(e) => setEditQuestion(e.target.value)}
+                    className="w-full p-3 border border-gray-200 rounded-xl text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    rows={3}
+                    placeholder="Enter question..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Answer</label>
+                  <textarea
+                    value={editAnswer}
+                    onChange={(e) => setEditAnswer(e.target.value)}
+                    className="w-full p-3 border border-gray-200 rounded-xl text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    rows={4}
+                    placeholder="Enter answer..."
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={handleCancelEdit}
+                  className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveEdit}
+                  disabled={!editQuestion.trim() || !editAnswer.trim()}
+                  className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white rounded-xl font-medium transition-colors"
+                >
+                  Save
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+        </>
       )
     }
 
@@ -6464,6 +6547,7 @@ export default function Canvas() {
       const daysOverdue = getDaysOverdue(currentCard)
 
       return (
+        <>
         <div className="flex flex-col h-full">
           {/* Header with progress */}
           <div className="flex justify-between items-center p-4">
@@ -6497,7 +6581,22 @@ export default function Canvas() {
 
           {/* Flashcard */}
           <div className="flex-1 flex items-center justify-center p-4">
-            <div className="w-full max-w-sm mx-auto" style={{ perspective: '1000px' }}>
+            <div className="flex items-center gap-2 w-full max-w-md">
+              {/* Previous arrow */}
+              <button
+                onClick={() => {
+                  setIsFlipped(false)
+                  setReviewIndex(prev => prev === 0 ? reviewCards.length - 1 : prev - 1)
+                }}
+                className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                aria-label="Previous card"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+
+            <div className="flex-1 max-w-sm mx-auto" style={{ perspective: '1000px' }}>
               <motion.div
                 key={currentCard.id}
                 className="relative w-full h-80"
@@ -6534,12 +6633,13 @@ export default function Canvas() {
 
                 {/* Answer side */}
                 <div
-                  className="absolute inset-0 bg-white rounded-2xl shadow-lg p-6 flex flex-col"
+                  className="absolute inset-0 bg-white rounded-2xl shadow-lg p-6 flex flex-col cursor-pointer"
                   style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+                  onClick={() => setIsFlipped(false)}
                 >
                   {/* Edit button */}
                   <button
-                    onClick={() => openEditModal(currentCard)}
+                    onClick={(e) => { e.stopPropagation(); openEditModal(currentCard); }}
                     className="absolute top-3 left-3 text-gray-400 hover:text-indigo-500 p-1"
                     title="Edit flashcard"
                   >
@@ -6550,7 +6650,7 @@ export default function Canvas() {
 
                   {/* Skip button */}
                   <button
-                    onClick={() => setShowSkipConfirm(true)}
+                    onClick={(e) => { e.stopPropagation(); setShowSkipConfirm(true); }}
                     className="absolute top-3 right-3 text-gray-400 hover:text-red-500 text-sm"
                   >
                     ✕
@@ -6566,7 +6666,7 @@ export default function Canvas() {
                   </div>
 
                   <div className="flex-1 flex items-center justify-center">
-                    <p className="text-lg text-gray-800 text-center leading-relaxed">{currentCard.answer}</p>
+                    <p className="text-lg text-gray-800 text-center leading-relaxed whitespace-pre-line">{currentCard.answer}</p>
                   </div>
                   <p className="text-xs text-gray-400 text-center mb-4">
                     From: {currentCard.sourceCardTitle}
@@ -6575,7 +6675,7 @@ export default function Canvas() {
                   {/* Review buttons - Missed / Got it */}
                   <div className="grid grid-cols-2 gap-3">
                     <button
-                      onClick={handleReviewMissed}
+                      onClick={(e) => { e.stopPropagation(); handleReviewMissed(); }}
                       className="py-4 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold transition-colors"
                     >
                       Missed
@@ -6584,7 +6684,7 @@ export default function Canvas() {
                       </span>
                     </button>
                     <button
-                      onClick={handleReviewGotIt}
+                      onClick={(e) => { e.stopPropagation(); handleReviewGotIt(); }}
                       className="py-4 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl font-semibold transition-colors"
                     >
                       Got it!
@@ -6595,6 +6695,21 @@ export default function Canvas() {
                   </div>
                 </div>
               </motion.div>
+            </div>
+
+              {/* Next arrow */}
+              <button
+                onClick={() => {
+                  setIsFlipped(false)
+                  setReviewIndex(prev => prev === reviewCards.length - 1 ? 0 : prev + 1)
+                }}
+                className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                aria-label="Next card"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
             </div>
           </div>
 
@@ -6607,6 +6722,57 @@ export default function Canvas() {
             onCancel={() => setShowSkipConfirm(false)}
           />
         </div>
+
+        {/* Edit Flashcard Modal */}
+        {editingCard && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl max-h-[90vh] overflow-auto"
+            >
+              <h3 className="text-lg font-bold text-gray-800 mb-4">Edit Flashcard</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Question</label>
+                  <textarea
+                    value={editQuestion}
+                    onChange={(e) => setEditQuestion(e.target.value)}
+                    className="w-full p-3 border border-gray-200 rounded-xl text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    rows={3}
+                    placeholder="Enter question..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Answer</label>
+                  <textarea
+                    value={editAnswer}
+                    onChange={(e) => setEditAnswer(e.target.value)}
+                    className="w-full p-3 border border-gray-200 rounded-xl text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    rows={4}
+                    placeholder="Enter answer..."
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={handleCancelEdit}
+                  className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveEdit}
+                  disabled={!editQuestion.trim() || !editAnswer.trim()}
+                  className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white rounded-xl font-medium transition-colors"
+                >
+                  Save
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+        </>
       )
     }
 
