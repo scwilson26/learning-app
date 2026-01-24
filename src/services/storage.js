@@ -1394,7 +1394,118 @@ export function clearAllData() {
 }
 
 // ============================================================================
-// FLASHCARD STORAGE (Spaced Repetition)
+// FLASHCARD STORAGE (Two-Phase Study System)
+// ============================================================================
+
+// Leitner box configuration
+const LEITNER_BOXES = {
+  1: { baseInterval: 1, label: "Daily", color: "#ef4444" },        // red
+  2: { baseInterval: 3, label: "Every 3 days", color: "#f97316" }, // orange
+  3: { baseInterval: 7, label: "Weekly", color: "#eab308" },       // yellow
+  4: { baseInterval: 14, label: "Biweekly", color: "#22c55e" },    // green
+  5: { baseInterval: 30, label: "Monthly", color: "#3b82f6" },     // blue
+  6: { baseInterval: 90, label: "Mastered", color: "#8b5cf6" },    // purple
+};
+
+// Acquisition settings
+const ACQUISITION_CONFIG = {
+  batchSize: 5,                    // new cards per batch
+  correctStreakToGraduate: 3,      // correct in a row to pass
+  maxCombinedBatchSize: 15,        // cap to prevent overwhelm
+  stuckThreshold: 6,               // attempts before card is "stuck"
+};
+
+// SM-2 ease factor settings
+const EASE_CONFIG = {
+  initial: 2.5,                    // starting ease
+  minimum: 1.3,                    // floor (prevents interval from shrinking too much)
+  maximum: 2.5,                    // ceiling
+  correctBonus: 0.1,               // added on correct
+  incorrectPenalty: 0.2,           // subtracted on incorrect
+};
+
+// Export configs for UI use
+export { LEITNER_BOXES, ACQUISITION_CONFIG, EASE_CONFIG };
+
+// ============================================================================
+// LEITNER + SM-2 HYBRID ALGORITHM FUNCTIONS
+// ============================================================================
+
+/**
+ * Calculate actual interval using box base + ease factor
+ * @param {number} box - Leitner box number (1-6)
+ * @param {number} easeFactor - SM-2 style ease factor
+ * @returns {number} Interval in days
+ */
+export function calculateInterval(box, easeFactor) {
+  const baseInterval = LEITNER_BOXES[box]?.baseInterval || 1;
+  return Math.round(baseInterval * easeFactor);
+}
+
+/**
+ * Update ease factor based on performance (SM-2 style)
+ * @param {number} currentEase - Current ease factor
+ * @param {boolean} wasCorrect - Whether answer was correct
+ * @returns {number} Updated ease factor
+ */
+export function updateEaseFactor(currentEase, wasCorrect) {
+  if (wasCorrect) {
+    return Math.min(currentEase + EASE_CONFIG.correctBonus, EASE_CONFIG.maximum);
+  } else {
+    return Math.max(currentEase - EASE_CONFIG.incorrectPenalty, EASE_CONFIG.minimum);
+  }
+}
+
+/**
+ * Calculate next review date
+ * @param {number} box - Leitner box number
+ * @param {number} easeFactor - SM-2 style ease factor
+ * @returns {number} Timestamp when card is due
+ */
+export function getNextReviewDate(box, easeFactor) {
+  const intervalDays = calculateInterval(box, easeFactor);
+  const nextDate = new Date();
+  nextDate.setDate(nextDate.getDate() + intervalDays);
+  nextDate.setHours(0, 0, 0, 0); // normalize to start of day
+  return nextDate.getTime();
+}
+
+/**
+ * Get tomorrow at midnight (for graduation)
+ * @returns {number} Timestamp for tomorrow 00:00:00
+ */
+export function getTomorrowMidnight() {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(0, 0, 0, 0);
+  return tomorrow.getTime();
+}
+
+/**
+ * Check if card is due for review
+ * @param {Object} card - Flashcard object
+ * @returns {boolean} True if due
+ */
+export function isCardDue(card) {
+  if (!card.nextReviewDate) return false;
+  return Date.now() >= card.nextReviewDate;
+}
+
+/**
+ * Get days overdue (negative if not yet due)
+ * @param {Object} card - Flashcard object
+ * @returns {number} Days overdue
+ */
+export function getDaysOverdue(card) {
+  if (!card.nextReviewDate) return 0;
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const diffTime = now.getTime() - card.nextReviewDate;
+  return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+}
+
+// ============================================================================
+// FLASHCARD GETTERS
 // ============================================================================
 
 /**
@@ -1437,20 +1548,8 @@ export function getDueFlashcardCount() {
 }
 
 /**
- * Get next review time (for "All caught up" state)
- * @returns {Date|null} Next review timestamp or null if no flashcards
- */
-export function getNextReviewTime() {
-  const data = getData()
-  const activeCards = Object.values(data.flashcards || {})
-    .filter(fc => fc.status === 'active')
-    .sort((a, b) => new Date(a.nextReview) - new Date(b.nextReview))
-
-  return activeCards.length > 0 ? new Date(activeCards[0].nextReview) : null
-}
-
-/**
  * Save multiple flashcards (used during generation)
+ * Initializes new cards with the two-phase study model
  * @param {Array} flashcards - Array of flashcard objects
  */
 export function saveFlashcards(flashcards) {
@@ -1458,11 +1557,28 @@ export function saveFlashcards(flashcards) {
   if (!data.flashcards) data.flashcards = {}
 
   flashcards.forEach(fc => {
-    data.flashcards[fc.id] = fc
+    // Initialize with new two-phase model if not already set
+    data.flashcards[fc.id] = {
+      ...fc,
+      // Two-phase study model fields
+      studyState: fc.studyState || 'new',
+      acquisitionCorrectStreak: fc.acquisitionCorrectStreak || 0,
+      acquisitionTotalAttempts: fc.acquisitionTotalAttempts || 0,
+      acquisitionLastSeen: fc.acquisitionLastSeen || null,
+      leitnerBox: fc.leitnerBox || 0,
+      easeFactor: fc.easeFactor || EASE_CONFIG.initial,
+      nextReviewDate: fc.nextReviewDate || null,
+      lastReviewDate: fc.lastReviewDate || null,
+      reviewHistory: fc.reviewHistory || [],
+      totalReviews: fc.totalReviews || 0,
+      correctStreak: fc.correctStreak || 0,
+      masteredAt: fc.masteredAt || null,
+      createdAt: fc.createdAt || Date.now()
+    }
   })
 
   saveData(data)
-  console.log(`[saveFlashcards] Saved ${flashcards.length} flashcards`)
+  console.log(`[saveFlashcards] Saved ${flashcards.length} flashcards with two-phase model`)
 }
 
 /**
@@ -1534,158 +1650,385 @@ export function getAllFlashcardsArray() {
 }
 
 // ============================================================================
-// TWO-MODE STUDY SYSTEM (Learn New + Review)
+// TWO-PHASE STUDY SYSTEM (Acquisition + Retention)
 // ============================================================================
 
 /**
- * Get flashcards for Learn New mode (status = new or learning)
- * These are cards that haven't been graduated yet
+ * Helper: Filter flashcards by study deck
+ */
+function filterByStudyDeck(flashcards, data) {
+  const studyDeck = data.studyDeck || []
+  if (studyDeck.length === 0) return []
+
+  return flashcards.filter(fc => {
+    const sourceCardId = fc.sourceCardId || ''
+    const cardData = data.cards?.[sourceCardId]
+    if (cardData?.deckId && studyDeck.includes(cardData.deckId)) return true
+    return studyDeck.some(topicId =>
+      sourceCardId === topicId || sourceCardId.startsWith(topicId + '-')
+    )
+  })
+}
+
+/**
+ * Helper: Filter flashcards by specific topic
+ */
+function filterByTopic(flashcards, topicId, data) {
+  return flashcards.filter(fc => {
+    const sourceCardId = fc.sourceCardId || ''
+    const cardData = data.cards?.[sourceCardId]
+    if (cardData?.deckId === topicId) return true
+    return sourceCardId === topicId || sourceCardId.startsWith(topicId + '-')
+  })
+}
+
+/**
+ * Get NEW cards ready for acquisition (studyState === "new")
+ * @param {string} topicId - Optional: filter by specific topic
  * @returns {Array} Array of flashcard objects ready for learning
  */
-export function getLearningCards() {
+export function getNewCards(topicId = null) {
+  const data = getData()
+  const allNew = Object.values(data.flashcards || {})
+    .filter(fc => fc.studyState === 'new' && fc.status !== 'skipped')
+
+  if (topicId) {
+    return filterByTopic(allNew, topicId, data)
+  }
+  return filterByStudyDeck(allNew, data)
+}
+
+/**
+ * Get cards currently in acquisition (studyState === "acquiring")
+ * @returns {Array} Array of flashcard objects in acquisition
+ */
+export function getAcquiringCards() {
   const data = getData()
   return Object.values(data.flashcards || {})
-    .filter(fc => fc.status === 'new' || fc.status === 'learning')
+    .filter(fc => fc.studyState === 'acquiring')
 }
 
 /**
- * Get count of learning cards
+ * Get count of new cards ready for learning
+ * @param {string} topicId - Optional: filter by specific topic
  * @returns {number}
  */
-export function getLearningCardCount() {
-  return getLearningCards().length
+export function getNewCardCount(topicId = null) {
+  return getNewCards(topicId).length
 }
 
 /**
- * Get flashcards due for Review mode (status = learned, nextReview <= now)
- * @returns {Array} Array of flashcard objects due for review
+ * Get cards due for review (studyState === "learned" or "mastered", nextReviewDate <= now)
+ * @param {string} topicId - Optional: filter by specific topic
+ * @returns {Array} Sorted by: most overdue first, then lower box number
  */
-export function getReviewDueCards() {
+export function getDueCards(topicId = null) {
   const data = getData()
-  const now = new Date()
-  return Object.values(data.flashcards || {})
-    .filter(fc => fc.status === 'learned' && new Date(fc.nextReview) <= now)
-    .sort((a, b) => new Date(a.nextReview) - new Date(b.nextReview))
+  const now = Date.now()
+
+  const allDue = Object.values(data.flashcards || {})
+    .filter(fc =>
+      (fc.studyState === 'learned' || fc.studyState === 'mastered') &&
+      fc.nextReviewDate &&
+      fc.nextReviewDate <= now &&
+      fc.status !== 'skipped'
+    )
+    .sort((a, b) => {
+      // Most overdue first
+      const overdueA = getDaysOverdue(a)
+      const overdueB = getDaysOverdue(b)
+      if (overdueA !== overdueB) return overdueB - overdueA
+      // Then lower box first
+      return (a.leitnerBox || 1) - (b.leitnerBox || 1)
+    })
+
+  if (topicId) {
+    return filterByTopic(allDue, topicId, data)
+  }
+  return filterByStudyDeck(allDue, data)
 }
 
 /**
- * Get count of review due cards
+ * Get count of due cards
+ * @param {string} topicId - Optional: filter by specific topic
  * @returns {number}
  */
-export function getReviewDueCount() {
-  return getReviewDueCards().length
+export function getDueCardCount(topicId = null) {
+  return getDueCards(topicId).length
 }
 
 /**
- * Get next review time for learned cards
- * @returns {Date|null} Next review timestamp or null if no learned cards
+ * Get count of overdue cards (due before today)
+ * @returns {number}
  */
-export function getNextLearnedReviewTime() {
-  const data = getData()
-  const learnedCards = Object.values(data.flashcards || {})
-    .filter(fc => fc.status === 'learned')
-    .sort((a, b) => new Date(a.nextReview) - new Date(b.nextReview))
-
-  return learnedCards.length > 0 ? new Date(learnedCards[0].nextReview) : null
+export function getOverdueCardCount() {
+  return getDueCards().filter(card => getDaysOverdue(card) > 0).length
 }
 
 /**
- * Graduate a flashcard from learning to learned
- * Sets initial SM-2 values for spaced repetition
+ * Get card counts by Leitner box (for progress display)
+ * @returns {Object} { box1: n, box2: n, ..., box6: n, mastered: n, new: n, acquiring: n }
+ */
+export function getCardsByBox() {
+  const data = getData()
+  const studyDeck = data.studyDeck || []
+
+  const counts = {
+    box1: 0, box2: 0, box3: 0, box4: 0, box5: 0, box6: 0,
+    mastered: 0, new: 0, acquiring: 0, total: 0
+  }
+
+  Object.values(data.flashcards || {}).forEach(fc => {
+    // Filter by study deck
+    const sourceCardId = fc.sourceCardId || ''
+    const cardData = data.cards?.[sourceCardId]
+    const inStudyDeck = studyDeck.length === 0 ||
+      (cardData?.deckId && studyDeck.includes(cardData.deckId)) ||
+      studyDeck.some(topicId => sourceCardId === topicId || sourceCardId.startsWith(topicId + '-'))
+
+    if (!inStudyDeck || fc.status === 'skipped') return
+
+    counts.total++
+
+    if (fc.studyState === 'new') {
+      counts.new++
+    } else if (fc.studyState === 'acquiring') {
+      counts.acquiring++
+    } else if (fc.studyState === 'mastered') {
+      counts.mastered++
+      counts.box6++ // Mastered cards are in box 6
+    } else if (fc.studyState === 'learned' && fc.leitnerBox) {
+      const boxKey = `box${fc.leitnerBox}`
+      if (counts[boxKey] !== undefined) {
+        counts[boxKey]++
+      }
+    }
+  })
+
+  return counts
+}
+
+/**
+ * Get next review time for learned/mastered cards
+ * @returns {Date|null} Next review timestamp or null if no cards in SRS
+ */
+export function getNextReviewTime() {
+  const data = getData()
+  const studyDeck = data.studyDeck || []
+
+  const inSRS = Object.values(data.flashcards || {})
+    .filter(fc => {
+      if (fc.studyState !== 'learned' && fc.studyState !== 'mastered') return false
+      if (!fc.nextReviewDate) return false
+      // Filter by study deck
+      const sourceCardId = fc.sourceCardId || ''
+      const cardData = data.cards?.[sourceCardId]
+      return studyDeck.length === 0 ||
+        (cardData?.deckId && studyDeck.includes(cardData.deckId)) ||
+        studyDeck.some(topicId => sourceCardId === topicId || sourceCardId.startsWith(topicId + '-'))
+    })
+    .sort((a, b) => a.nextReviewDate - b.nextReviewDate)
+
+  return inSRS.length > 0 ? new Date(inSRS[0].nextReviewDate) : null
+}
+
+// ============================================================================
+// ACQUISITION PHASE FUNCTIONS
+// ============================================================================
+
+/**
+ * Start acquisition for a card (move from "new" to "acquiring")
  * @param {string} flashcardId - The flashcard ID
  */
-export function graduateFlashcard(flashcardId) {
+export function startAcquisition(flashcardId) {
   const data = getData()
   if (data.flashcards && data.flashcards[flashcardId]) {
-    const now = new Date()
-    now.setDate(now.getDate() + 1) // First review tomorrow
-
     data.flashcards[flashcardId] = {
       ...data.flashcards[flashcardId],
-      status: 'learned',
-      easeFactor: 2.5,
-      interval: 1,
-      repetitions: 0,
-      nextReview: now.toISOString(),
-      graduatedAt: new Date().toISOString()
+      studyState: 'acquiring',
+      acquisitionCorrectStreak: 0,
+      acquisitionTotalAttempts: 0,
+      acquisitionLastSeen: Date.now()
     }
     saveData(data)
-    console.log(`[graduateFlashcard] Graduated ${flashcardId}`)
   }
 }
 
 /**
- * Graduate multiple flashcards at once
- * @param {Array} flashcardIds - Array of flashcard IDs to graduate
- */
-export function graduateFlashcards(flashcardIds) {
-  flashcardIds.forEach(id => graduateFlashcard(id))
-}
-
-/**
- * Update learning state for a card (batch position, again count)
+ * Record an acquisition attempt (Got it / Missed)
  * @param {string} flashcardId - The flashcard ID
- * @param {Object} updates - { status?, batchPosition?, againCount? }
+ * @param {boolean} wasCorrect - Whether the user got it right
+ * @returns {Object} { graduated: boolean, correctStreak: number, totalAttempts: number }
  */
-export function updateLearningState(flashcardId, updates) {
+export function recordAcquisitionAttempt(flashcardId, wasCorrect) {
   const data = getData()
-  if (data.flashcards && data.flashcards[flashcardId]) {
-    data.flashcards[flashcardId] = {
-      ...data.flashcards[flashcardId],
-      ...updates
-    }
-    saveData(data)
+  if (!data.flashcards || !data.flashcards[flashcardId]) {
+    return { graduated: false, correctStreak: 0, totalAttempts: 0 }
   }
+
+  const card = data.flashcards[flashcardId]
+  let correctStreak = card.acquisitionCorrectStreak || 0
+  let totalAttempts = (card.acquisitionTotalAttempts || 0) + 1
+
+  if (wasCorrect) {
+    correctStreak++
+  } else {
+    correctStreak = 0 // Reset on miss
+  }
+
+  // Check if graduated (3 correct in a row)
+  const graduated = correctStreak >= ACQUISITION_CONFIG.correctStreakToGraduate
+
+  if (graduated) {
+    // Graduate to Leitner Box 1
+    data.flashcards[flashcardId] = {
+      ...card,
+      studyState: 'learned',
+      acquisitionCorrectStreak: correctStreak,
+      acquisitionTotalAttempts: totalAttempts,
+      acquisitionLastSeen: Date.now(),
+      leitnerBox: 1,
+      easeFactor: EASE_CONFIG.initial,
+      nextReviewDate: getTomorrowMidnight(),
+      lastReviewDate: null,
+      reviewHistory: [],
+      totalReviews: 0,
+      correctStreak: 0,
+      graduatedAt: Date.now()
+    }
+    console.log(`[recordAcquisitionAttempt] Card ${flashcardId} graduated to Box 1`)
+  } else {
+    data.flashcards[flashcardId] = {
+      ...card,
+      studyState: 'acquiring',
+      acquisitionCorrectStreak: correctStreak,
+      acquisitionTotalAttempts: totalAttempts,
+      acquisitionLastSeen: Date.now()
+    }
+  }
+
+  saveData(data)
+  return { graduated, correctStreak, totalAttempts }
 }
 
 /**
- * Mark a card as currently being learned (in a session)
+ * Check if a card is "stuck" (took many attempts)
+ * @param {Object} card - Flashcard object
+ * @returns {boolean}
+ */
+export function isCardStuck(card) {
+  return (card.acquisitionTotalAttempts || 0) > ACQUISITION_CONFIG.stuckThreshold
+}
+
+// ============================================================================
+// RETENTION PHASE FUNCTIONS (Leitner + SM-2)
+// ============================================================================
+
+/**
+ * Record a review attempt (Got it / Missed)
  * @param {string} flashcardId - The flashcard ID
+ * @param {boolean} wasCorrect - Whether the user got it right
+ * @returns {Object} { newBox: number, newInterval: number, easeFactor: number, mastered: boolean }
  */
-export function startLearningCard(flashcardId) {
-  updateLearningState(flashcardId, {
-    status: 'learning',
-    againCount: 0
-  })
+export function recordReviewAttempt(flashcardId, wasCorrect) {
+  const data = getData()
+  if (!data.flashcards || !data.flashcards[flashcardId]) {
+    return { newBox: 1, newInterval: 1, easeFactor: EASE_CONFIG.initial, mastered: false }
+  }
+
+  const card = data.flashcards[flashcardId]
+  const currentBox = card.leitnerBox || 1
+  const currentEase = card.easeFactor || EASE_CONFIG.initial
+  let correctStreak = card.correctStreak || 0
+
+  let newBox, newEase
+  if (wasCorrect) {
+    newBox = Math.min(currentBox + 1, 6)
+    newEase = updateEaseFactor(currentEase, true)
+    correctStreak++
+  } else {
+    newBox = 1 // Back to box 1 on miss (harsh but effective)
+    newEase = updateEaseFactor(currentEase, false)
+    correctStreak = 0
+  }
+
+  const newInterval = calculateInterval(newBox, newEase)
+  const nextReviewDate = getNextReviewDate(newBox, newEase)
+
+  // Check for mastery (box 6 with 3+ correct streak)
+  const mastered = newBox === 6 && correctStreak >= 3
+
+  // Add to review history
+  const reviewEntry = {
+    date: Date.now(),
+    box: currentBox,
+    wasCorrect,
+    interval: newInterval
+  }
+
+  data.flashcards[flashcardId] = {
+    ...card,
+    studyState: mastered ? 'mastered' : 'learned',
+    leitnerBox: newBox,
+    easeFactor: newEase,
+    nextReviewDate,
+    lastReviewDate: Date.now(),
+    reviewHistory: [...(card.reviewHistory || []), reviewEntry],
+    totalReviews: (card.totalReviews || 0) + 1,
+    correctStreak,
+    masteredAt: mastered ? Date.now() : card.masteredAt
+  }
+
+  saveData(data)
+
+  console.log(`[recordReviewAttempt] Card ${flashcardId}: Box ${currentBox} → ${newBox}, interval ${newInterval} days${mastered ? ' (MASTERED!)' : ''}`)
+
+  return { newBox, newInterval, easeFactor: newEase, mastered }
 }
 
-/**
- * Get learning cards filtered by study deck
- * @returns {Array} Learning cards from topics in the study deck
- */
-export function getStudyDeckLearningCards() {
-  const data = getData()
-  const studyDeck = data.studyDeck || []
-  if (studyDeck.length === 0) return []
-
-  return getLearningCards().filter(fc => {
-    const sourceCardId = fc.sourceCardId || ''
-    const cardData = data.cards?.[sourceCardId]
-    if (cardData?.deckId && studyDeck.includes(cardData.deckId)) return true
-    // Fallback: check if sourceCardId starts with any topic
-    return studyDeck.some(topicId =>
-      sourceCardId === topicId || sourceCardId.startsWith(topicId + '-')
-    )
-  })
-}
+// ============================================================================
+// MIGRATION & COMPATIBILITY
+// ============================================================================
 
 /**
- * Get review due cards filtered by study deck
- * @returns {Array} Review due cards from topics in the study deck
+ * Migrate existing flashcards to new two-phase model
+ * All existing cards become studyState: "new" (clean slate)
  */
-export function getStudyDeckReviewDueCards() {
+export function migrateFlashcardsToNewModel() {
   const data = getData()
-  const studyDeck = data.studyDeck || []
-  if (studyDeck.length === 0) return []
+  if (!data.flashcards) return { migrated: 0 }
 
-  return getReviewDueCards().filter(fc => {
-    const sourceCardId = fc.sourceCardId || ''
-    const cardData = data.cards?.[sourceCardId]
-    if (cardData?.deckId && studyDeck.includes(cardData.deckId)) return true
-    return studyDeck.some(topicId =>
-      sourceCardId === topicId || sourceCardId.startsWith(topicId + '-')
-    )
+  let migrated = 0
+  Object.keys(data.flashcards).forEach(id => {
+    const fc = data.flashcards[id]
+    // Only migrate if doesn't have studyState yet
+    if (!fc.studyState) {
+      data.flashcards[id] = {
+        ...fc,
+        studyState: 'new',
+        acquisitionCorrectStreak: 0,
+        acquisitionTotalAttempts: 0,
+        acquisitionLastSeen: null,
+        leitnerBox: 0,
+        easeFactor: EASE_CONFIG.initial,
+        nextReviewDate: null,
+        lastReviewDate: null,
+        reviewHistory: [],
+        totalReviews: 0,
+        correctStreak: 0,
+        masteredAt: null,
+        createdAt: fc.createdAt || Date.now()
+      }
+      migrated++
+    }
   })
+
+  if (migrated > 0) {
+    saveData(data)
+    console.log(`[migrateFlashcardsToNewModel] Migrated ${migrated} flashcards to new model`)
+  }
+
+  return { migrated }
 }
 
 /**
@@ -1714,10 +2057,228 @@ export function importFlashcardsFromRemote(remoteFlashcards) {
 
   saveData(data)
   console.log(`[importFlashcardsFromRemote] Imported ${remoteFlashcards.length} flashcards`)
+
+  // Run migration on imported cards
+  migrateFlashcardsToNewModel()
+}
+
+// Legacy function names for compatibility (will be removed later)
+export function getLearningCards() { return getNewCards() }
+export function getLearningCardCount() { return getNewCardCount() }
+export function getReviewDueCards() { return getDueCards() }
+export function getReviewDueCount() { return getDueCardCount() }
+export function getNextLearnedReviewTime() { return getNextReviewTime() }
+export function graduateFlashcard(id) { /* no-op, use recordAcquisitionAttempt */ }
+export function graduateFlashcards(ids) { /* no-op */ }
+export function updateLearningState(id, updates) {
+  const data = getData()
+  if (data.flashcards && data.flashcards[id]) {
+    data.flashcards[id] = { ...data.flashcards[id], ...updates }
+    saveData(data)
+  }
+}
+export function startLearningCard(id) { startAcquisition(id) }
+export function getStudyDeckLearningCards() { return getNewCards() }
+export function getStudyDeckReviewDueCards() { return getDueCards() }
+
+// ============================================================================
+// STUDY STATS & STREAKS
+// ============================================================================
+
+/**
+ * Get today's date as YYYY-MM-DD string (for streak tracking)
+ */
+function getTodayString() {
+  const today = new Date()
+  return today.toISOString().split('T')[0]
+}
+
+/**
+ * Get study stats (streaks, totals)
+ * @returns {Object} Study statistics
+ */
+export function getStudyStats() {
+  const data = getData()
+  return data.studyStats || {
+    currentStreak: 0,
+    longestStreak: 0,
+    lastStudyDate: null,
+    totalCardsLearned: 0,
+    totalReviews: 0,
+    totalStudyDays: 0
+  }
+}
+
+/**
+ * Record study activity for today (updates streak)
+ * Call this when user completes at least 1 card (learn or review)
+ * @param {string} activityType - 'learn' or 'review'
+ * @param {number} count - Number of cards completed
+ */
+export function recordStudyActivity(activityType, count = 1) {
+  const data = getData()
+  if (!data.studyStats) {
+    data.studyStats = {
+      currentStreak: 0,
+      longestStreak: 0,
+      lastStudyDate: null,
+      totalCardsLearned: 0,
+      totalReviews: 0,
+      totalStudyDays: 0
+    }
+  }
+
+  const today = getTodayString()
+  const stats = data.studyStats
+
+  // Update totals
+  if (activityType === 'learn') {
+    stats.totalCardsLearned = (stats.totalCardsLearned || 0) + count
+  } else if (activityType === 'review') {
+    stats.totalReviews = (stats.totalReviews || 0) + count
+  }
+
+  // Update streak
+  if (stats.lastStudyDate !== today) {
+    // Check if yesterday was studied (streak continues)
+    const yesterday = new Date()
+    yesterday.setDate(yesterday.getDate() - 1)
+    const yesterdayString = yesterday.toISOString().split('T')[0]
+
+    if (stats.lastStudyDate === yesterdayString) {
+      // Streak continues
+      stats.currentStreak = (stats.currentStreak || 0) + 1
+    } else if (stats.lastStudyDate === null || stats.lastStudyDate < yesterdayString) {
+      // Streak broken or first day
+      stats.currentStreak = 1
+    }
+    // else: already studied today, don't increment
+
+    stats.lastStudyDate = today
+    stats.totalStudyDays = (stats.totalStudyDays || 0) + 1
+
+    // Update longest streak
+    if (stats.currentStreak > (stats.longestStreak || 0)) {
+      stats.longestStreak = stats.currentStreak
+    }
+  }
+
+  saveData(data)
+  console.log(`[recordStudyActivity] ${activityType} +${count}, streak: ${stats.currentStreak}`)
+
+  return stats
+}
+
+/**
+ * Check and update streak (call on app load to handle missed days)
+ * @returns {Object} Updated study stats
+ */
+export function checkAndUpdateStreak() {
+  const data = getData()
+  if (!data.studyStats) return getStudyStats()
+
+  const stats = data.studyStats
+
+  // If last study was before yesterday, streak is broken
+  if (stats.lastStudyDate) {
+    const yesterday = new Date()
+    yesterday.setDate(yesterday.getDate() - 1)
+    const yesterdayString = yesterday.toISOString().split('T')[0]
+
+    if (stats.lastStudyDate < yesterdayString) {
+      stats.currentStreak = 0
+      saveData(data)
+      console.log(`[checkAndUpdateStreak] Streak broken (last study: ${stats.lastStudyDate})`)
+    }
+  }
+
+  return stats
+}
+
+/**
+ * Reset study stats (for testing)
+ */
+export function resetStudyStats() {
+  const data = getData()
+  data.studyStats = {
+    currentStreak: 0,
+    longestStreak: 0,
+    lastStudyDate: null,
+    totalCardsLearned: 0,
+    totalReviews: 0,
+    totalStudyDays: 0
+  }
+  saveData(data)
 }
 
 // ============================================================================
-// SM-2 SPACED REPETITION ALGORITHM
+// SESSION STATE (for resume capability)
+// ============================================================================
+
+/**
+ * Save acquisition session state (for resume if user leaves)
+ * @param {Object} sessionState - { cardsInRotation: [...ids], progress: {...} }
+ */
+export function saveAcquisitionSession(sessionState) {
+  const data = getData()
+  data.acquisitionSession = {
+    ...sessionState,
+    savedAt: Date.now()
+  }
+  saveData(data)
+}
+
+/**
+ * Load saved acquisition session
+ * @returns {Object|null} Saved session or null
+ */
+export function loadAcquisitionSession() {
+  const data = getData()
+  return data.acquisitionSession || null
+}
+
+/**
+ * Clear acquisition session (after completion)
+ */
+export function clearAcquisitionSession() {
+  const data = getData()
+  delete data.acquisitionSession
+  saveData(data)
+}
+
+/**
+ * Save review session state (for resume if user leaves)
+ * @param {Object} sessionState - { remainingCardIds: [...ids], progress: {...} }
+ */
+export function saveReviewSession(sessionState) {
+  const data = getData()
+  data.reviewSession = {
+    ...sessionState,
+    savedAt: Date.now()
+  }
+  saveData(data)
+}
+
+/**
+ * Load saved review session
+ * @returns {Object|null} Saved session or null
+ */
+export function loadReviewSession() {
+  const data = getData()
+  return data.reviewSession || null
+}
+
+/**
+ * Clear review session (after completion)
+ */
+export function clearReviewSession() {
+  const data = getData()
+  delete data.reviewSession
+  saveData(data)
+}
+
+// ============================================================================
+// SM-2 SPACED REPETITION ALGORITHM (Legacy - kept for reference)
 // ============================================================================
 
 /**

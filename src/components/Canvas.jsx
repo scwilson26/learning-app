@@ -65,6 +65,32 @@ import {
   getAvailableStudyTopics,
   migrateToStudyDeck,
   isInStudyDeck,
+  // Two-phase study system
+  LEITNER_BOXES,
+  ACQUISITION_CONFIG,
+  getNewCards,
+  getNewCardCount,
+  getDueCards,
+  getDueCardCount,
+  getOverdueCardCount,
+  getCardsByBox,
+  getDaysOverdue,
+  startAcquisition,
+  recordAcquisitionAttempt,
+  isCardStuck,
+  recordReviewAttempt,
+  calculateInterval,
+  migrateFlashcardsToNewModel,
+  getStudyStats,
+  recordStudyActivity,
+  checkAndUpdateStreak,
+  saveAcquisitionSession,
+  loadAcquisitionSession,
+  clearAcquisitionSession,
+  saveReviewSession,
+  loadReviewSession,
+  clearReviewSession,
+  // Legacy compatibility (can be removed later)
   getLearningCards,
   getLearningCardCount,
   getReviewDueCards,
@@ -5680,44 +5706,56 @@ export default function Canvas() {
     )
   }
 
-  // Study Screen Hub - Shows study deck with hero card and topic list
+  // Study Screen Hub - Two-Phase Study System (Acquisition + Retention)
   const StudyScreen = ({ onGoToLearn }) => {
-    const [studyView, setStudyViewRaw] = useState('hub') // 'hub' | 'learnNew' | 'review' | 'complete' | 'addTopics'
+    const [studyView, setStudyViewRaw] = useState('hub') // 'hub' | 'acquisition' | 'review' | 'summary' | 'addTopics'
 
     // Wrap setStudyView to log all view changes
     const setStudyView = (newView) => {
-      console.log(`[StudyScreen] View changing: ${studyView} → ${newView}`, new Error().stack)
+      console.log(`[StudyScreen] View changing: ${studyView} → ${newView}`)
       setStudyViewRaw(newView)
     }
-    const [studyDeck, setStudyDeck] = useState([])
 
-    // Review mode state (learned cards)
+    // Hub state
+    const [studyDeck, setStudyDeck] = useState([])
+    const [newCardCount, setNewCardCount] = useState(0)
+    const [dueCardCount, setDueCardCount] = useState(0)
+    const [overdueCount, setOverdueCount] = useState(0)
+    const [boxCounts, setBoxCounts] = useState({})
+    const [studyStats, setStudyStats] = useState({})
+    const [nextReviewTime, setNextReviewTime] = useState(null)
+    const [availableTopics, setAvailableTopics] = useState({})
+    const [generatingTopicId, setGeneratingTopicId] = useState(null)
+
+    // Acquisition mode state (snowball method)
+    const [acquiringCards, setAcquiringCards] = useState([]) // Cards in current rotation
+    const [currentCardIndex, setCurrentCardIndex] = useState(0)
+    const [graduatedCount, setGraduatedCount] = useState(0)
+    const [totalCardsToLearn, setTotalCardsToLearn] = useState(0)
+    const [sessionAttempts, setSessionAttempts] = useState(0)
+
+    // Review mode state (Leitner SRS)
     const [reviewCards, setReviewCards] = useState([])
     const [reviewIndex, setReviewIndex] = useState(0)
-    const [nextReviewTime, setNextReviewTime] = useState(null)
+    const [reviewedCount, setReviewedCount] = useState(0)
+    const [correctCount, setCorrectCount] = useState(0)
+    const [totalToReview, setTotalToReview] = useState(0)
 
-    // Learn New mode state
-    const [learningCards, setLearningCards] = useState([])
-    const [currentBatch, setCurrentBatch] = useState([])
-    const [batchNumber, setBatchNumber] = useState(1)
-    const [batchIndex, setBatchIndex] = useState(0)
-    const [completedInBatch, setCompletedInBatch] = useState(new Set())
-    const [allCompletedCards, setAllCompletedCards] = useState([])
-    const [showBatchComplete, setShowBatchComplete] = useState(false)
-    const [showGraduateScreen, setShowGraduateScreen] = useState(false)
-    const BATCH_SIZE = 5
+    // Session summary state
+    const [sessionType, setSessionType] = useState(null) // 'acquisition' | 'review'
+    const [sessionResults, setSessionResults] = useState({})
 
     // Shared state
     const [isFlipped, setIsFlipped] = useState(false)
     const [showRemoveConfirm, setShowRemoveConfirm] = useState(null)
     const [showSkipConfirm, setShowSkipConfirm] = useState(false)
-    const [availableTopics, setAvailableTopics] = useState({})
-    const [generatingTopicId, setGeneratingTopicId] = useState(null)
 
-    // Load data on mount and run migration
+    // Load data on mount and run migrations
     useEffect(() => {
       console.log('[StudyScreen] Component MOUNTED')
       migrateToStudyDeck()
+      migrateFlashcardsToNewModel()
+      checkAndUpdateStreak()
       refreshData()
       return () => console.log('[StudyScreen] Component UNMOUNTED')
     }, [])
@@ -5725,243 +5763,290 @@ export default function Canvas() {
     // Refresh data periodically to pick up background flashcard generation (only on hub)
     useEffect(() => {
       if (studyView === 'hub') {
-        console.log('[StudyScreen] Starting 3s refresh interval (hub view)')
-        const interval = setInterval(() => {
-          console.log('[StudyScreen] Refresh interval tick')
-          refreshData()
-        }, 3000)
-        return () => {
-          console.log('[StudyScreen] Clearing refresh interval')
-          clearInterval(interval)
-        }
+        const interval = setInterval(refreshData, 3000)
+        return () => clearInterval(interval)
       }
     }, [studyView])
 
     // Refresh all data
     const refreshData = () => {
       const deck = getStudyDeck()
-      const learning = getStudyDeckLearningCards()
-      const review = getStudyDeckReviewDueCards()
-      const nextTime = getNextLearnedReviewTime()
+      const newCount = getNewCardCount()
+      const dueCount = getDueCardCount()
+      const overdue = getOverdueCardCount()
+      const boxes = getCardsByBox()
+      const stats = getStudyStats()
+      const nextTime = getNextReviewTime()
       const available = getAvailableStudyTopics()
 
       setStudyDeck(deck)
-      setLearningCards(learning)
-      setReviewCards(review)
+      setNewCardCount(newCount)
+      setDueCardCount(dueCount)
+      setOverdueCount(overdue)
+      setBoxCounts(boxes)
+      setStudyStats(stats)
       setNextReviewTime(nextTime)
       setAvailableTopics(available)
     }
 
-    // ========== LEARN NEW MODE ==========
+    // ========== ACQUISITION MODE (Snowball Method) ==========
 
-    // Start Learn New session
-    const startLearning = () => {
-      const cards = getStudyDeckLearningCards()
-      if (cards.length > 0) {
-        setLearningCards(cards)
-        // Take first batch
-        const firstBatch = cards.slice(0, BATCH_SIZE)
-        setCurrentBatch(firstBatch)
-        setBatchNumber(1)
-        setBatchIndex(0)
-        setCompletedInBatch(new Set())
-        setAllCompletedCards([])
-        setShowBatchComplete(false)
-        setShowGraduateScreen(false)
-        setIsFlipped(false)
-        setStudyView('learnNew')
-      }
+    // Start Acquisition session
+    const startAcquisitionSession = (topicId = null) => {
+      const cards = getNewCards(topicId)
+      if (cards.length === 0) return
+
+      // Take first batch
+      const batchSize = ACQUISITION_CONFIG.batchSize
+      const firstBatch = cards.slice(0, batchSize)
+
+      // Mark cards as acquiring
+      firstBatch.forEach(card => startAcquisition(card.id))
+
+      // Shuffle the batch
+      const shuffled = [...firstBatch].sort(() => Math.random() - 0.5)
+
+      setAcquiringCards(shuffled)
+      setCurrentCardIndex(0)
+      setGraduatedCount(0)
+      setTotalCardsToLearn(cards.length)
+      setSessionAttempts(0)
+      setIsFlipped(false)
+      setStudyView('acquisition')
     }
 
-    // Handle Learn New: Again button (card stays in batch)
-    const handleLearnAgain = () => {
-      const currentCard = currentBatch[batchIndex]
-      // Update again count
-      updateLearningState(currentCard.id, {
-        status: 'learning',
-        againCount: (currentCard.againCount || 0) + 1
+    // Handle Acquisition: Missed (reset streak, stay in rotation)
+    const handleAcquisitionMissed = () => {
+      const currentCard = acquiringCards[currentCardIndex]
+      setSessionAttempts(prev => prev + 1)
+
+      // Record the attempt (resets streak)
+      const result = recordAcquisitionAttempt(currentCard.id, false)
+
+      // Update card in local state
+      setAcquiringCards(prev => {
+        const newCards = [...prev]
+        newCards[currentCardIndex] = {
+          ...currentCard,
+          acquisitionCorrectStreak: result.correctStreak,
+          acquisitionTotalAttempts: result.totalAttempts
+        }
+        // Move card to end of rotation
+        const [card] = newCards.splice(currentCardIndex, 1)
+        newCards.push(card)
+        return newCards
       })
-      // Move card to end of batch
-      setCurrentBatch(prev => {
-        const newBatch = [...prev]
-        const [card] = newBatch.splice(batchIndex, 1)
-        newBatch.push({ ...card, againCount: (card.againCount || 0) + 1 })
-        return newBatch
-      })
-      // If at end, wrap to start
-      if (batchIndex >= currentBatch.length - 1) {
-        setBatchIndex(0)
+
+      // Stay at same index (next card shifts into position) or wrap
+      if (currentCardIndex >= acquiringCards.length - 1) {
+        setCurrentCardIndex(0)
       }
       setIsFlipped(false)
     }
 
-    // Handle Learn New: Good button (card done for this batch)
-    const handleLearnGood = () => {
-      const currentCard = currentBatch[batchIndex]
-      const newCompleted = new Set(completedInBatch).add(currentCard.id)
-      setCompletedInBatch(newCompleted)
+    // Handle Acquisition: Got it (increment streak, maybe graduate)
+    const handleAcquisitionGotIt = () => {
+      const currentCard = acquiringCards[currentCardIndex]
+      setSessionAttempts(prev => prev + 1)
 
-      // Check if all cards in batch are done
-      const remainingCards = currentBatch.filter(c => !newCompleted.has(c.id))
-      if (remainingCards.length === 0) {
-        // Batch complete!
-        setAllCompletedCards(prev => [...prev, ...currentBatch])
+      // Record the attempt
+      const result = recordAcquisitionAttempt(currentCard.id, true)
 
-        // Check if there are more cards to learn
-        const nextBatchStart = batchNumber * BATCH_SIZE
-        const remainingLearningCards = learningCards.slice(nextBatchStart)
+      if (result.graduated) {
+        // Card graduated! Remove from rotation
+        const newGraduated = graduatedCount + 1
+        setGraduatedCount(newGraduated)
 
-        if (remainingLearningCards.length === 0) {
-          // All cards done - show graduate screen
-          setShowGraduateScreen(true)
+        // Record study activity for streak
+        recordStudyActivity('learn', 1)
+
+        // Sync to Supabase if logged in
+        if (user) {
+          const graduatedCard = { ...currentCard, studyState: 'learned', leitnerBox: 1 }
+          upsertFlashcardRemote(graduatedCard, user.id).catch(console.error)
+        }
+
+        // Remove from rotation
+        const newCards = acquiringCards.filter((_, i) => i !== currentCardIndex)
+
+        if (newCards.length === 0) {
+          // Check if there are more new cards to load
+          const remainingNew = getNewCards()
+          if (remainingNew.length > 0) {
+            // Load next batch, including any "stuck" cards
+            const stuckCards = acquiringCards.filter(c => isCardStuck(c))
+            const nextBatch = remainingNew.slice(0, ACQUISITION_CONFIG.batchSize)
+            nextBatch.forEach(c => startAcquisition(c.id))
+
+            const combined = [...stuckCards, ...nextBatch].slice(0, ACQUISITION_CONFIG.maxCombinedBatchSize)
+            const shuffled = combined.sort(() => Math.random() - 0.5)
+            setAcquiringCards(shuffled)
+            setCurrentCardIndex(0)
+          } else {
+            // Session complete!
+            finishAcquisitionSession(newGraduated)
+          }
         } else {
-          // Show batch complete, offer next batch
-          setShowBatchComplete(true)
+          setAcquiringCards(newCards)
+          if (currentCardIndex >= newCards.length) {
+            setCurrentCardIndex(0)
+          }
         }
       } else {
-        // Move to next card that isn't completed
-        let nextIndex = (batchIndex + 1) % currentBatch.length
-        while (newCompleted.has(currentBatch[nextIndex].id)) {
-          nextIndex = (nextIndex + 1) % currentBatch.length
-        }
-        setBatchIndex(nextIndex)
-        setIsFlipped(false)
-      }
-    }
-
-    // Load next batch
-    const loadNextBatch = () => {
-      const nextBatchStart = batchNumber * BATCH_SIZE
-      const nextBatch = learningCards.slice(nextBatchStart, nextBatchStart + BATCH_SIZE)
-      if (nextBatch.length > 0) {
-        setCurrentBatch(nextBatch)
-        setBatchNumber(prev => prev + 1)
-        setBatchIndex(0)
-        setCompletedInBatch(new Set())
-        setShowBatchComplete(false)
-        setIsFlipped(false)
-      }
-    }
-
-    // Graduate all completed cards
-    const handleGraduate = () => {
-      const idsToGraduate = allCompletedCards.map(c => c.id)
-      graduateFlashcards(idsToGraduate)
-
-      // Sync to Supabase if user is logged in
-      if (user) {
-        const graduatedCards = allCompletedCards.map(c => ({
-          ...c,
-          status: 'learned',
-          easeFactor: 2.5,
-          interval: 1,
-          repetitions: 0,
-          nextReview: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-          graduatedAt: new Date().toISOString()
-        }))
-        graduatedCards.forEach(card => {
-          upsertFlashcardRemote(card, user.id).catch(err => {
-            console.error('[StudyScreen] Failed to sync graduated card:', err)
-          })
+        // Not graduated yet, update card and move to next
+        setAcquiringCards(prev => {
+          const newCards = [...prev]
+          newCards[currentCardIndex] = {
+            ...currentCard,
+            acquisitionCorrectStreak: result.correctStreak,
+            acquisitionTotalAttempts: result.totalAttempts
+          }
+          return newCards
         })
-      }
 
-      setStudyView('complete')
+        // Move to next card
+        const nextIndex = (currentCardIndex + 1) % acquiringCards.length
+        setCurrentCardIndex(nextIndex)
+      }
+      setIsFlipped(false)
+    }
+
+    // Finish acquisition session
+    const finishAcquisitionSession = (totalGraduated) => {
+      clearAcquisitionSession()
+      setSessionType('acquisition')
+      setSessionResults({
+        cardsLearned: totalGraduated,
+        totalAttempts: sessionAttempts,
+        efficiency: sessionAttempts > 0 ? Math.round((totalGraduated / sessionAttempts) * 100) : 0
+      })
+      setStudyView('summary')
       refreshData()
     }
 
-    // ========== REVIEW MODE (Spaced Repetition) ==========
+    // End acquisition early
+    const endAcquisitionEarly = () => {
+      finishAcquisitionSession(graduatedCount)
+    }
+
+    // ========== REVIEW MODE (Leitner + SM-2 Hybrid) ==========
 
     // Start Review session
-    const startReview = () => {
-      const due = getStudyDeckReviewDueCards()
-      if (due.length > 0) {
-        setReviewCards(due)
-        setReviewIndex(0)
-        setIsFlipped(false)
-        setStudyView('review')
+    const startReviewSession = (topicId = null) => {
+      const due = getDueCards(topicId)
+      if (due.length === 0) return
+
+      setReviewCards(due)
+      setReviewIndex(0)
+      setReviewedCount(0)
+      setCorrectCount(0)
+      setTotalToReview(due.length)
+      setIsFlipped(false)
+      setStudyView('review')
+    }
+
+    // Get interval preview for Leitner system
+    const getLeitnerIntervalPreview = (wasCorrect, card) => {
+      const currentBox = card.leitnerBox || 1
+      const currentEase = card.easeFactor || 2.5
+
+      if (wasCorrect) {
+        const newBox = Math.min(currentBox + 1, 6)
+        const interval = calculateInterval(newBox, currentEase)
+        if (interval === 1) return '1 day'
+        if (interval < 7) return `${interval} days`
+        if (interval < 30) return `${Math.round(interval / 7)} wks`
+        return `${Math.round(interval / 30)} mo`
+      } else {
+        return '1 day' // Back to box 1
       }
     }
 
-    // Calculate interval preview for review buttons
-    const getIntervalPreview = (rating, card) => {
-      const { interval } = calculateSM2(
-        rating,
-        card.repetitions || 0,
-        card.easeFactor || 2.5,
-        card.interval || 1
-      )
-      if (interval === 1) return '1 day'
-      if (interval < 7) return `${interval} days`
-      if (interval < 30) return `${Math.round(interval / 7)} weeks`
-      return `${Math.round(interval / 30)} months`
-    }
-
-    // Handle Review rating (Again/Good/Easy = 0/2/3)
-    const handleReviewRate = (rating) => {
+    // Handle Review: Missed (back to Box 1)
+    const handleReviewMissed = () => {
       const currentCard = reviewCards[reviewIndex]
 
-      // Calculate new SM-2 values
-      const { nextReview: newNextReview, interval, easeFactor, repetitions } = calculateSM2(
-        rating,
-        currentCard.repetitions || 0,
-        currentCard.easeFactor || 2.5,
-        currentCard.interval || 1
-      )
+      // Record the review attempt
+      const result = recordReviewAttempt(currentCard.id, false)
+      setReviewedCount(prev => prev + 1)
 
-      // Update flashcard in storage
-      const updatedCard = {
-        ...currentCard,
-        nextReview: newNextReview,
-        interval,
-        easeFactor,
-        repetitions,
-        lastReviewedAt: new Date().toISOString()
-      }
-      updateFlashcard(currentCard.id, {
-        nextReview: newNextReview,
-        interval,
-        easeFactor,
-        repetitions,
-        lastReviewedAt: new Date().toISOString()
-      })
+      // Record study activity
+      recordStudyActivity('review', 1)
 
-      // Sync to Supabase if user is logged in
+      // Sync to Supabase
       if (user) {
-        upsertFlashcardRemote(updatedCard, user.id).catch(err => {
-          console.error('[StudyScreen] Failed to sync flashcard to remote:', err)
-        })
+        const updatedCard = {
+          ...currentCard,
+          leitnerBox: result.newBox,
+          easeFactor: result.easeFactor,
+          nextReviewDate: Date.now() + (result.newInterval * 24 * 60 * 60 * 1000)
+        }
+        upsertFlashcardRemote(updatedCard, user.id).catch(console.error)
       }
 
-      // If rating is 0 (Again), keep card in session at end
-      if (rating === 0) {
-        setReviewCards(prev => {
-          const newCards = [...prev]
-          const [card] = newCards.splice(reviewIndex, 1)
-          newCards.push(card)
-          return newCards
-        })
-        if (reviewIndex >= reviewCards.length - 1) {
-          setReviewIndex(0)
+      // Move to next card
+      moveToNextReviewCard()
+    }
+
+    // Handle Review: Got it (move up one box)
+    const handleReviewGotIt = () => {
+      const currentCard = reviewCards[reviewIndex]
+
+      // Record the review attempt
+      const result = recordReviewAttempt(currentCard.id, true)
+      setReviewedCount(prev => prev + 1)
+      setCorrectCount(prev => prev + 1)
+
+      // Record study activity
+      recordStudyActivity('review', 1)
+
+      // Sync to Supabase
+      if (user) {
+        const updatedCard = {
+          ...currentCard,
+          studyState: result.mastered ? 'mastered' : 'learned',
+          leitnerBox: result.newBox,
+          easeFactor: result.easeFactor,
+          nextReviewDate: Date.now() + (result.newInterval * 24 * 60 * 60 * 1000)
         }
-        setIsFlipped(false)
-        return
+        upsertFlashcardRemote(updatedCard, user.id).catch(console.error)
       }
 
-      // Good/Easy - remove card from pile
-      setReviewCards(prev => prev.filter((_, i) => i !== reviewIndex))
+      // Move to next card
+      moveToNextReviewCard()
+    }
 
-      if (reviewIndex >= reviewCards.length - 1) {
-        if (reviewCards.length <= 1) {
-          setStudyView('complete')
-          refreshData()
-        } else {
-          setReviewIndex(reviewCards.length - 2)
-          setIsFlipped(false)
-        }
+    // Move to next review card or finish
+    const moveToNextReviewCard = () => {
+      const newCards = reviewCards.filter((_, i) => i !== reviewIndex)
+
+      if (newCards.length === 0) {
+        finishReviewSession()
       } else {
+        setReviewCards(newCards)
+        if (reviewIndex >= newCards.length) {
+          setReviewIndex(newCards.length - 1)
+        }
         setIsFlipped(false)
       }
+    }
+
+    // Finish review session
+    const finishReviewSession = () => {
+      clearReviewSession()
+      setSessionType('review')
+      setSessionResults({
+        reviewed: reviewedCount,
+        correct: correctCount,
+        accuracy: reviewedCount > 0 ? Math.round((correctCount / reviewedCount) * 100) : 0
+      })
+      setStudyView('summary')
+      refreshData()
+    }
+
+    // End review early
+    const endReviewEarly = () => {
+      finishReviewSession()
     }
 
     // Handle skip flashcard (review mode)
@@ -5971,24 +6056,11 @@ export default function Canvas() {
 
       if (user) {
         const skippedCard = { ...currentCard, status: 'skipped' }
-        upsertFlashcardRemote(skippedCard, user.id).catch(err => {
-          console.error('[StudyScreen] Failed to sync skipped flashcard:', err)
-        })
+        upsertFlashcardRemote(skippedCard, user.id).catch(console.error)
       }
 
-      const newReviewCards = reviewCards.filter((_, i) => i !== reviewIndex)
       setShowSkipConfirm(false)
-
-      if (newReviewCards.length === 0) {
-        setStudyView('complete')
-        refreshData()
-      } else {
-        setReviewCards(newReviewCards)
-        if (reviewIndex >= newReviewCards.length) {
-          setReviewIndex(newReviewCards.length - 1)
-        }
-        setIsFlipped(false)
-      }
+      moveToNextReviewCard()
     }
 
     // Remove topic from study deck
@@ -6095,13 +6167,57 @@ export default function Canvas() {
       }
     }
 
-    // Review completion screen
-    if (studyView === 'complete') {
+    // Session Summary screen (for both acquisition and review)
+    if (studyView === 'summary') {
+      const isAcquisition = sessionType === 'acquisition'
+      const stats = getStudyStats()
+
       return (
         <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-          <div className="text-6xl mb-4">🎉</div>
-          <h2 className="text-xl font-bold text-gray-800 mb-2">Review Complete!</h2>
-          <p className="text-gray-600 mb-6">Great work on your study session</p>
+          <div className="text-6xl mb-4">{isAcquisition ? '🎓' : '🎉'}</div>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">
+            {isAcquisition ? 'Learning Complete!' : 'Review Complete!'}
+          </h2>
+
+          {/* Session stats */}
+          <div className="w-full max-w-xs bg-gray-50 rounded-xl p-4 mb-4">
+            {isAcquisition ? (
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Cards learned</span>
+                  <span className="font-semibold text-gray-800">{sessionResults.cardsLearned}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Total attempts</span>
+                  <span className="font-semibold text-gray-800">{sessionResults.totalAttempts}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Cards reviewed</span>
+                  <span className="font-semibold text-gray-800">{sessionResults.reviewed}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Correct</span>
+                  <span className="font-semibold text-green-600">{sessionResults.correct}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Accuracy</span>
+                  <span className="font-semibold text-gray-800">{sessionResults.accuracy}%</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Streak display */}
+          {stats.currentStreak > 0 && (
+            <div className="flex items-center gap-2 mb-6 text-amber-600">
+              <span className="text-2xl">🔥</span>
+              <span className="font-semibold">{stats.currentStreak} day streak!</span>
+            </div>
+          )}
+
           <button
             onClick={() => {
               refreshData()
@@ -6115,74 +6231,12 @@ export default function Canvas() {
       )
     }
 
-    // Learn New mode (full screen)
-    if (studyView === 'learnNew') {
-      // Graduate screen
-      if (showGraduateScreen) {
-        return (
-          <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-            <div className="text-6xl mb-4">🎓</div>
-            <h2 className="text-xl font-bold text-gray-800 mb-2">All Cards Practiced!</h2>
-            <p className="text-gray-600 mb-2">{allCompletedCards.length} cards ready to graduate</p>
-            <p className="text-sm text-gray-500 mb-6">
-              Graduate moves cards to spaced repetition review
-            </p>
-            <div className="space-y-3 w-full max-w-xs">
-              <button
-                onClick={handleGraduate}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-xl font-semibold transition-colors"
-              >
-                Graduate to Review
-              </button>
-              <button
-                onClick={() => {
-                  // Reset and practice again
-                  setCurrentBatch(allCompletedCards.slice(0, BATCH_SIZE))
-                  setBatchNumber(1)
-                  setBatchIndex(0)
-                  setCompletedInBatch(new Set())
-                  setAllCompletedCards([])
-                  setShowGraduateScreen(false)
-                  setIsFlipped(false)
-                }}
-                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-medium transition-colors"
-              >
-                Keep Practicing
-              </button>
-            </div>
-          </div>
-        )
-      }
+    // Acquisition mode (snowball learning - 3 correct in a row to graduate)
+    if (studyView === 'acquisition') {
+      const currentCard = acquiringCards[currentCardIndex]
 
-      // Batch complete screen
-      if (showBatchComplete) {
-        const nextBatchStart = batchNumber * BATCH_SIZE
-        const remainingCards = learningCards.slice(nextBatchStart)
-        return (
-          <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-            <div className="text-5xl mb-4">✓</div>
-            <h2 className="text-xl font-bold text-gray-800 mb-2">Batch {batchNumber} Complete!</h2>
-            <p className="text-gray-600 mb-6">{currentBatch.length} cards learned</p>
-            <div className="space-y-3 w-full max-w-xs">
-              <button
-                onClick={loadNextBatch}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-xl font-semibold transition-colors"
-              >
-                Next {Math.min(BATCH_SIZE, remainingCards.length)} Cards
-              </button>
-              <p className="text-xs text-gray-500">
-                {remainingCards.length} cards remaining
-              </p>
-            </div>
-          </div>
-        )
-      }
-
-      // Learning card view
-      const currentCard = currentBatch[batchIndex]
+      // Loading state
       if (!currentCard) {
-        console.warn('[LearnNew] No current card found. batchIndex:', batchIndex, 'currentBatch.length:', currentBatch.length, 'showBatchComplete:', showBatchComplete, 'showGraduateScreen:', showGraduateScreen)
-        // Don't change view - just show loading state while state settles
         return (
           <div className="flex items-center justify-center h-full">
             <p className="text-gray-500">Loading...</p>
@@ -6190,38 +6244,38 @@ export default function Canvas() {
         )
       }
 
+      // Get card's current streak (0-2, since 3 = graduated)
+      const currentStreak = currentCard.acquisitionCorrectStreak || 0
+      const streakNeeded = ACQUISITION_CONFIG.correctStreakToGraduate
+
       return (
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex justify-between items-center p-4">
             <button
-              onClick={() => {
-                setStudyView('hub')
-                refreshData()
-              }}
+              onClick={endAcquisitionEarly}
               className="text-gray-500 hover:text-gray-700 text-sm font-medium"
             >
-              ← Back
+              ← Done
             </button>
             <span className="text-sm font-medium text-gray-500">
-              Batch {batchNumber} • Card {batchIndex + 1}/{currentBatch.length}
+              {graduatedCount} learned • {acquiringCards.length} in rotation
             </span>
           </div>
 
-          {/* Progress dots */}
-          <div className="flex justify-center gap-2 px-4 mb-4">
-            {currentBatch.map((card, i) => (
-              <div
-                key={card.id}
-                className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                  completedInBatch.has(card.id)
-                    ? 'bg-green-500'
-                    : i === batchIndex
-                    ? 'bg-indigo-600'
-                    : 'bg-gray-200'
-                }`}
+          {/* Overall progress bar */}
+          <div className="px-4 mb-2">
+            <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+              <motion.div
+                className="h-full bg-emerald-500"
+                initial={{ width: 0 }}
+                animate={{ width: `${(graduatedCount / Math.max(totalCardsToLearn, 1)) * 100}%` }}
+                transition={{ duration: 0.3 }}
               />
-            ))}
+            </div>
+            <p className="text-xs text-gray-400 text-center mt-1">
+              {graduatedCount} / {totalCardsToLearn} graduated
+            </p>
           </div>
 
           {/* Flashcard */}
@@ -6239,10 +6293,22 @@ export default function Canvas() {
                   style={{ backfaceVisibility: 'hidden' }}
                   onClick={() => setIsFlipped(true)}
                 >
+                  {/* Streak indicator at top */}
+                  <div className="flex justify-center gap-1.5 mb-4">
+                    {[...Array(streakNeeded)].map((_, i) => (
+                      <div
+                        key={i}
+                        className={`w-3 h-3 rounded-full transition-colors ${
+                          i < currentStreak ? 'bg-emerald-500' : 'bg-gray-200'
+                        }`}
+                      />
+                    ))}
+                  </div>
+
                   <div className="flex-1 flex items-center justify-center">
                     <p className="text-lg text-gray-800 text-center leading-relaxed">{currentCard.question}</p>
                   </div>
-                  <p className="text-xs text-gray-400 text-center mt-4">Tap to flip</p>
+                  <p className="text-xs text-gray-400 text-center mt-4">Tap to reveal answer</p>
                 </div>
 
                 {/* Answer side */}
@@ -6250,6 +6316,18 @@ export default function Canvas() {
                   className="absolute inset-0 bg-white rounded-2xl shadow-lg p-6 flex flex-col"
                   style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
                 >
+                  {/* Streak indicator at top */}
+                  <div className="flex justify-center gap-1.5 mb-4">
+                    {[...Array(streakNeeded)].map((_, i) => (
+                      <div
+                        key={i}
+                        className={`w-3 h-3 rounded-full transition-colors ${
+                          i < currentStreak ? 'bg-emerald-500' : 'bg-gray-200'
+                        }`}
+                      />
+                    ))}
+                  </div>
+
                   <div className="flex-1 flex items-center justify-center">
                     <p className="text-lg text-gray-800 text-center leading-relaxed">{currentCard.answer}</p>
                   </div>
@@ -6257,21 +6335,23 @@ export default function Canvas() {
                     From: {currentCard.sourceCardTitle}
                   </p>
 
-                  {/* Learn buttons - Again / Good */}
+                  {/* Buttons: Missed / Got it */}
                   <div className="grid grid-cols-2 gap-3">
                     <button
-                      onClick={handleLearnAgain}
+                      onClick={handleAcquisitionMissed}
                       className="py-4 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold transition-colors"
                     >
-                      Again
-                      <span className="block text-xs font-normal opacity-80">see soon</span>
+                      Missed
+                      <span className="block text-xs font-normal opacity-80">streak resets</span>
                     </button>
                     <button
-                      onClick={handleLearnGood}
-                      className="py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold transition-colors"
+                      onClick={handleAcquisitionGotIt}
+                      className="py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-semibold transition-colors"
                     >
-                      Good
-                      <span className="block text-xs font-normal opacity-80">next card</span>
+                      Got it!
+                      <span className="block text-xs font-normal opacity-80">
+                        {currentStreak + 1 >= streakNeeded ? 'graduates!' : `${currentStreak + 1}/${streakNeeded}`}
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -6282,7 +6362,7 @@ export default function Canvas() {
       )
     }
 
-    // Review mode (full screen) - Spaced Repetition
+    // Review mode (Leitner SRS - 2 button layout)
     if (studyView === 'review') {
       const currentCard = reviewCards[reviewIndex]
       if (!currentCard) {
@@ -6293,34 +6373,41 @@ export default function Canvas() {
         )
       }
 
+      // Get current box info
+      const currentBox = currentCard.leitnerBox || 1
+      const boxInfo = LEITNER_BOXES[currentBox]
+      const daysOverdue = getDaysOverdue(currentCard)
+
       return (
         <div className="flex flex-col h-full">
           {/* Header with progress */}
           <div className="flex justify-between items-center p-4">
             <button
-              onClick={() => {
-                setStudyView('hub')
-                refreshData()
-              }}
+              onClick={endReviewEarly}
               className="text-gray-500 hover:text-gray-700 text-sm font-medium"
             >
-              ← Back
+              ← Done
             </button>
             <span className="text-sm font-medium text-gray-500">
-              {reviewIndex + 1} of {reviewCards.length}
+              {reviewedCount} / {totalToReview} reviewed
             </span>
           </div>
 
           {/* Progress bar */}
-          <div className="px-4 mb-4">
+          <div className="px-4 mb-2">
             <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
               <motion.div
                 className="h-full bg-indigo-600"
                 initial={{ width: 0 }}
-                animate={{ width: `${((reviewIndex + 1) / reviewCards.length) * 100}%` }}
+                animate={{ width: `${(reviewedCount / Math.max(totalToReview, 1)) * 100}%` }}
                 transition={{ duration: 0.3 }}
               />
             </div>
+            {correctCount > 0 && (
+              <p className="text-xs text-gray-400 text-center mt-1">
+                {correctCount} correct ({Math.round((correctCount / reviewedCount) * 100) || 0}%)
+              </p>
+            )}
           </div>
 
           {/* Flashcard */}
@@ -6338,10 +6425,24 @@ export default function Canvas() {
                   style={{ backfaceVisibility: 'hidden' }}
                   onClick={() => setIsFlipped(true)}
                 >
+                  {/* Box indicator */}
+                  <div className="flex items-center justify-center gap-2 mb-3">
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: boxInfo.color }}
+                    />
+                    <span className="text-xs text-gray-500">
+                      Box {currentBox} • {boxInfo.label}
+                      {daysOverdue > 0 && (
+                        <span className="text-amber-600 ml-1">({daysOverdue}d overdue)</span>
+                      )}
+                    </span>
+                  </div>
+
                   <div className="flex-1 flex items-center justify-center">
                     <p className="text-lg text-gray-800 text-center leading-relaxed">{currentCard.question}</p>
                   </div>
-                  <p className="text-xs text-gray-400 text-center mt-4">Tap to flip</p>
+                  <p className="text-xs text-gray-400 text-center mt-4">Tap to reveal answer</p>
                 </div>
 
                 {/* Answer side */}
@@ -6357,6 +6458,15 @@ export default function Canvas() {
                     ✕
                   </button>
 
+                  {/* Box indicator */}
+                  <div className="flex items-center justify-center gap-2 mb-3">
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: boxInfo.color }}
+                    />
+                    <span className="text-xs text-gray-500">Box {currentBox}</span>
+                  </div>
+
                   <div className="flex-1 flex items-center justify-center">
                     <p className="text-lg text-gray-800 text-center leading-relaxed">{currentCard.answer}</p>
                   </div>
@@ -6364,28 +6474,25 @@ export default function Canvas() {
                     From: {currentCard.sourceCardTitle}
                   </p>
 
-                  {/* Review buttons - Again / Good / Easy */}
-                  <div className="grid grid-cols-3 gap-2">
+                  {/* Review buttons - Missed / Got it */}
+                  <div className="grid grid-cols-2 gap-3">
                     <button
-                      onClick={() => handleReviewRate(0)}
-                      className="py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold transition-colors"
+                      onClick={handleReviewMissed}
+                      className="py-4 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold transition-colors"
                     >
-                      Again
-                      <span className="block text-xs font-normal opacity-80">{getIntervalPreview(0, currentCard)}</span>
+                      Missed
+                      <span className="block text-xs font-normal opacity-80">
+                        {getLeitnerIntervalPreview(currentCard, false)}
+                      </span>
                     </button>
                     <button
-                      onClick={() => handleReviewRate(2)}
-                      className="py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold transition-colors"
+                      onClick={handleReviewGotIt}
+                      className="py-4 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl font-semibold transition-colors"
                     >
-                      Good
-                      <span className="block text-xs font-normal opacity-80">{getIntervalPreview(2, currentCard)}</span>
-                    </button>
-                    <button
-                      onClick={() => handleReviewRate(3)}
-                      className="py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-semibold transition-colors"
-                    >
-                      Easy
-                      <span className="block text-xs font-normal opacity-80">{getIntervalPreview(3, currentCard)}</span>
+                      Got it!
+                      <span className="block text-xs font-normal opacity-80">
+                        {getLeitnerIntervalPreview(currentCard, true)}
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -6486,31 +6593,39 @@ export default function Canvas() {
       )
     }
 
-    // Hub view (default) - Two mode hero cards
+    // Hub view (default) - Two-Phase Study System
     return (
       <div className="flex flex-col h-full overflow-auto">
-        {/* Header */}
+        {/* Header with streak */}
         <div className="p-4 border-b border-gray-100">
-          <h1 className="text-lg font-semibold text-gray-800 text-center">Study</h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-lg font-semibold text-gray-800">Study</h1>
+            {studyStats.currentStreak > 0 && (
+              <div className="flex items-center gap-1.5 text-amber-600">
+                <span className="text-lg">🔥</span>
+                <span className="text-sm font-semibold">{studyStats.currentStreak}</span>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="p-4 space-y-4">
-          {/* Learn New Hero Card */}
+          {/* Acquisition Hero Card (Learn New) */}
           <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-5 text-white shadow-lg">
-            {learningCards.length > 0 ? (
+            {newCardCount > 0 ? (
               <>
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <h3 className="font-semibold text-lg">Learn New</h3>
-                    <p className="text-emerald-100 text-sm">Intensive practice</p>
+                    <p className="text-emerald-100 text-sm">3-in-a-row to graduate</p>
                   </div>
                   <div className="text-right">
-                    <span className="text-4xl font-bold">{learningCards.length}</span>
+                    <span className="text-4xl font-bold">{newCardCount}</span>
                     <p className="text-emerald-100 text-xs">cards waiting</p>
                   </div>
                 </div>
                 <button
-                  onClick={startLearning}
+                  onClick={() => startAcquisitionSession()}
                   className="w-full bg-white text-emerald-600 py-3 rounded-xl font-semibold transition-colors hover:bg-emerald-50 shadow-md"
                 >
                   Start Learning
@@ -6521,15 +6636,15 @@ export default function Canvas() {
                 <div className="text-3xl mb-2">✓</div>
                 <h3 className="font-semibold mb-1">No new cards</h3>
                 <p className="text-emerald-100 text-sm">
-                  Add topics or wait for cards to graduate back
+                  Add topics to get started
                 </p>
               </div>
             )}
           </div>
 
-          {/* Review Hero Card */}
+          {/* Review Hero Card (Leitner SRS) */}
           <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-5 text-white shadow-lg">
-            {reviewCards.length > 0 ? (
+            {dueCardCount > 0 ? (
               <>
                 <div className="flex items-center justify-between mb-3">
                   <div>
@@ -6537,12 +6652,14 @@ export default function Canvas() {
                     <p className="text-indigo-100 text-sm">Spaced repetition</p>
                   </div>
                   <div className="text-right">
-                    <span className="text-4xl font-bold">{reviewCards.length}</span>
-                    <p className="text-indigo-100 text-xs">cards due</p>
+                    <span className="text-4xl font-bold">{dueCardCount}</span>
+                    <p className="text-indigo-100 text-xs">
+                      {overdueCount > 0 ? `${overdueCount} overdue` : 'cards due'}
+                    </p>
                   </div>
                 </div>
                 <button
-                  onClick={startReview}
+                  onClick={startReviewSession}
                   className="w-full bg-white text-indigo-600 py-3 rounded-xl font-semibold transition-colors hover:bg-indigo-50 shadow-md"
                 >
                   Start Review
@@ -6554,16 +6671,57 @@ export default function Canvas() {
                 <h3 className="font-semibold mb-1">No reviews due</h3>
                 {nextReviewTime ? (
                   <p className="text-indigo-100 text-sm">
-                    Next review in {formatTimeUntilReview(nextReviewTime)}
+                    Next review {formatTimeUntilReview(nextReviewTime)}
                   </p>
                 ) : (
                   <p className="text-indigo-100 text-sm">
-                    Graduate cards from Learn New to start
+                    Learn cards to start reviews
                   </p>
                 )}
               </div>
             )}
           </div>
+
+          {/* Leitner Box Progress */}
+          {Object.keys(boxCounts).length > 0 && Object.values(boxCounts).some(c => c > 0) && (
+            <div className="bg-white rounded-xl border border-gray-100 p-4">
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                Progress
+              </h3>
+              <div className="flex gap-1.5">
+                {[1, 2, 3, 4, 5, 6].map(box => {
+                  const count = boxCounts[box] || 0
+                  const boxInfo = LEITNER_BOXES[box]
+                  const total = Object.values(boxCounts).reduce((a, b) => a + b, 0)
+                  const percentage = total > 0 ? (count / total) * 100 : 0
+
+                  return (
+                    <div key={box} className="flex-1 text-center">
+                      <div
+                        className="h-16 rounded-lg relative overflow-hidden bg-gray-100"
+                        title={`${boxInfo.label}: ${count} cards`}
+                      >
+                        <motion.div
+                          className="absolute bottom-0 left-0 right-0"
+                          style={{ backgroundColor: boxInfo.color }}
+                          initial={{ height: 0 }}
+                          animate={{ height: `${Math.max(percentage, count > 0 ? 10 : 0)}%` }}
+                          transition={{ duration: 0.5 }}
+                        />
+                        <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-gray-700">
+                          {count}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1">{box}</p>
+                    </div>
+                  )
+                })}
+              </div>
+              <p className="text-xs text-gray-400 text-center mt-2">
+                Box 1 (daily) → Box 6 (mastered)
+              </p>
+            </div>
+          )}
         </div>
 
         {/* My Study Deck Section */}
