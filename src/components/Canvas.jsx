@@ -5778,7 +5778,7 @@ export default function Canvas() {
     // Refresh data periodically to pick up background flashcard generation (only on hub)
     useEffect(() => {
       if (studyView === 'hub') {
-        const interval = setInterval(refreshData, 3000)
+        const interval = setInterval(refreshData, 30000) // Every 30 seconds
         return () => clearInterval(interval)
       }
     }, [studyView])
@@ -6933,7 +6933,7 @@ export default function Canvas() {
                   </div>
                 </div>
                 <button
-                  onClick={startReviewSession}
+                  onClick={() => startReviewSession()}
                   className="w-full bg-white text-indigo-600 py-3 rounded-xl font-semibold transition-colors hover:bg-indigo-50 shadow-md"
                 >
                   Start Review
