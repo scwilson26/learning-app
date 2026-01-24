@@ -1718,6 +1718,34 @@ export function getNewCardCount(topicId = null) {
 }
 
 /**
+ * Get count of all cards available for learning (new + acquiring)
+ * This is what should show on the "Learn New" button
+ * @param {string} topicId - Optional: filter by specific topic
+ * @returns {number}
+ */
+export function getLearningAvailableCount(topicId = null) {
+  const data = getData()
+  const studyDeck = getStudyDeck()
+
+  const allLearning = Object.values(data.flashcards || {})
+    .filter(fc =>
+      (fc.studyState === 'new' || fc.studyState === 'acquiring') &&
+      fc.status !== 'skipped'
+    )
+
+  if (topicId) {
+    return filterByTopic(allLearning, topicId, data).length
+  }
+
+  // Filter by study deck
+  if (studyDeck.length === 0) return 0
+  return allLearning.filter(fc => {
+    const sourceCard = data.cards?.[fc.sourceCardId]
+    return sourceCard && studyDeck.includes(sourceCard.deckId)
+  }).length
+}
+
+/**
  * Get cards due for review (studyState === "learned" or "mastered", nextReviewDate <= now)
  * @param {string} topicId - Optional: filter by specific topic
  * @returns {Array} Sorted by: most overdue first, then lower box number

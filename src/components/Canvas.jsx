@@ -70,6 +70,7 @@ import {
   ACQUISITION_CONFIG,
   getNewCards,
   getNewCardCount,
+  getLearningAvailableCount,
   getDueCards,
   getDueCardCount,
   getOverdueCardCount,
@@ -5771,7 +5772,7 @@ export default function Canvas() {
     // Refresh all data
     const refreshData = () => {
       const deck = getStudyDeck()
-      const newCount = getNewCardCount()
+      const newCount = getLearningAvailableCount() // Includes both 'new' and 'acquiring'
       const dueCount = getDueCardCount()
       const overdue = getOverdueCardCount()
       const boxes = getCardsByBox()
@@ -5817,40 +5818,50 @@ export default function Canvas() {
 
     // Handle Acquisition: Missed (reset streak, stay in rotation)
     const handleAcquisitionMissed = () => {
-      const currentCard = acquiringCards[currentCardIndex]
+      setIsFlipped(false)
+
+      // Capture card ID (not the card object, which can go stale)
+      const cardId = acquiringCards[currentCardIndex]?.id
+      if (!cardId) return
+
+      // Record the attempt in storage (resets streak)
+      const result = recordAcquisitionAttempt(cardId, false)
       setSessionAttempts(prev => prev + 1)
 
-      // Record the attempt (resets streak)
-      const result = recordAcquisitionAttempt(currentCard.id, false)
-
-      // Update card in local state
+      // Update local rotation - find card by ID to handle rapid clicks
       setAcquiringCards(prev => {
+        const cardIndex = prev.findIndex(c => c.id === cardId)
+        if (cardIndex === -1) return prev // Already processed
+
         const newCards = [...prev]
-        newCards[currentCardIndex] = {
-          ...currentCard,
+        newCards[cardIndex] = {
+          ...prev[cardIndex],
           acquisitionCorrectStreak: result.correctStreak,
           acquisitionTotalAttempts: result.totalAttempts
         }
         // Move card to end of rotation
-        const [card] = newCards.splice(currentCardIndex, 1)
+        const [card] = newCards.splice(cardIndex, 1)
         newCards.push(card)
         return newCards
       })
 
-      // Stay at same index (next card shifts into position) or wrap
-      if (currentCardIndex >= acquiringCards.length - 1) {
-        setCurrentCardIndex(0)
-      }
-      setIsFlipped(false)
+      // After moving card to end, next card slides into position
+      // Only wrap to 0 if we were at the last position
+      setCurrentCardIndex(prev => prev >= acquiringCards.length - 1 ? 0 : prev)
     }
 
     // Handle Acquisition: Got it (increment streak, maybe graduate)
     const handleAcquisitionGotIt = () => {
+      setIsFlipped(false)
+
+      // Capture card ID and card object
+      const cardId = acquiringCards[currentCardIndex]?.id
       const currentCard = acquiringCards[currentCardIndex]
-      setSessionAttempts(prev => prev + 1)
+      if (!cardId || !currentCard) return
 
       // Record the attempt
-      const result = recordAcquisitionAttempt(currentCard.id, true)
+      const result = recordAcquisitionAttempt(cardId, true)
+      setSessionAttempts(prev => prev + 1)
 
       if (result.graduated) {
         // Card graduated! Remove from rotation
@@ -5866,38 +5877,44 @@ export default function Canvas() {
           upsertFlashcardRemote(graduatedCard, user.id).catch(console.error)
         }
 
-        // Remove from rotation
-        const newCards = acquiringCards.filter((_, i) => i !== currentCardIndex)
-
-        if (newCards.length === 0) {
-          // Check if there are more new cards to load
-          const remainingNew = getNewCards()
-          if (remainingNew.length > 0) {
-            // Load next batch, including any "stuck" cards
-            const stuckCards = acquiringCards.filter(c => isCardStuck(c))
-            const nextBatch = remainingNew.slice(0, ACQUISITION_CONFIG.batchSize)
-            nextBatch.forEach(c => startAcquisition(c.id))
-
-            const combined = [...stuckCards, ...nextBatch].slice(0, ACQUISITION_CONFIG.maxCombinedBatchSize)
-            const shuffled = combined.sort(() => Math.random() - 0.5)
-            setAcquiringCards(shuffled)
-            setCurrentCardIndex(0)
-          } else {
-            // Session complete!
-            finishAcquisitionSession(newGraduated)
-          }
-        } else {
-          setAcquiringCards(newCards)
-          if (currentCardIndex >= newCards.length) {
-            setCurrentCardIndex(0)
-          }
-        }
-      } else {
-        // Not graduated yet, update card and move to next
+        // Remove graduated card from rotation by ID
         setAcquiringCards(prev => {
+          const newCards = prev.filter(c => c.id !== cardId)
+
+          if (newCards.length === 0) {
+            // Check if there are more new cards to load
+            const remainingNew = getNewCards()
+            if (remainingNew.length > 0) {
+              // Load next batch
+              const nextBatch = remainingNew.slice(0, ACQUISITION_CONFIG.batchSize)
+              nextBatch.forEach(c => startAcquisition(c.id))
+              const shuffled = [...nextBatch].sort(() => Math.random() - 0.5)
+              // Reset index will happen via setCurrentCardIndex below
+              return shuffled
+            } else {
+              // Session complete - will be handled by useEffect or next render
+              finishAcquisitionSession(newGraduated)
+              return []
+            }
+          }
+          return newCards
+        })
+
+        // Adjust index if needed
+        setCurrentCardIndex(prev => {
+          const newLen = acquiringCards.length - 1 // One card removed
+          if (newLen <= 0) return 0
+          return prev >= newLen ? 0 : prev
+        })
+      } else {
+        // Not graduated yet, update card in place and move to next
+        setAcquiringCards(prev => {
+          const cardIndex = prev.findIndex(c => c.id === cardId)
+          if (cardIndex === -1) return prev
+
           const newCards = [...prev]
-          newCards[currentCardIndex] = {
-            ...currentCard,
+          newCards[cardIndex] = {
+            ...prev[cardIndex],
             acquisitionCorrectStreak: result.correctStreak,
             acquisitionTotalAttempts: result.totalAttempts
           }
@@ -5905,10 +5922,8 @@ export default function Canvas() {
         })
 
         // Move to next card
-        const nextIndex = (currentCardIndex + 1) % acquiringCards.length
-        setCurrentCardIndex(nextIndex)
+        setCurrentCardIndex(prev => (prev + 1) % acquiringCards.length)
       }
-      setIsFlipped(false)
     }
 
     // Finish acquisition session
@@ -6018,6 +6033,7 @@ export default function Canvas() {
 
     // Move to next review card or finish
     const moveToNextReviewCard = () => {
+      setIsFlipped(false) // Reset flip FIRST to avoid showing next card's answer
       const newCards = reviewCards.filter((_, i) => i !== reviewIndex)
 
       if (newCards.length === 0) {
@@ -6027,7 +6043,6 @@ export default function Canvas() {
         if (reviewIndex >= newCards.length) {
           setReviewIndex(newCards.length - 1)
         }
-        setIsFlipped(false)
       }
     }
 
@@ -6279,8 +6294,10 @@ export default function Canvas() {
           <div className="flex-1 flex items-center justify-center p-4">
             <div className="w-full max-w-sm mx-auto" style={{ perspective: '1000px' }}>
               <motion.div
+                key={currentCard.id}
                 className="relative w-full h-80"
                 style={{ transformStyle: 'preserve-3d' }}
+                initial={{ rotateY: 0 }}
                 animate={{ rotateY: isFlipped ? -180 : 0 }}
                 transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
               >
@@ -6411,8 +6428,10 @@ export default function Canvas() {
           <div className="flex-1 flex items-center justify-center p-4">
             <div className="w-full max-w-sm mx-auto" style={{ perspective: '1000px' }}>
               <motion.div
+                key={currentCard.id}
                 className="relative w-full h-80"
                 style={{ transformStyle: 'preserve-3d' }}
+                initial={{ rotateY: 0 }}
                 animate={{ rotateY: isFlipped ? -180 : 0 }}
                 transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
               >
