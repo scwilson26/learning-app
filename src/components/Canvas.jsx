@@ -1908,6 +1908,7 @@ function SkeletonCard({ index, rootCategoryId = null }) {
 
 // Simple markdown renderer for **bold** text and paragraph breaks
 // Supports rabbit hole links - tappable terms that match Wikipedia Vital Articles
+// Only links the FIRST occurrence of each term to avoid clutter
 function renderMarkdown(text, currentTopic = '', onRabbitHoleClick = null) {
   if (!text || typeof text !== 'string') return null
 
@@ -1919,6 +1920,9 @@ function renderMarkdown(text, currentTopic = '', onRabbitHoleClick = null) {
   topicMatches.forEach(m => {
     matchMap.set(m.term.toLowerCase(), m)
   })
+
+  // Track which terms have already been linked (first occurrence only)
+  const linkedTerms = new Set()
 
   // Create regex to find matching terms (if any)
   const termRegex = topicMatches.length > 0
@@ -1942,8 +1946,11 @@ function renderMarkdown(text, currentTopic = '', onRabbitHoleClick = null) {
             return (
               <strong key={i} className="font-semibold">
                 {termParts.map((tp, tpi) => {
-                  const match = matchMap.get(tp.toLowerCase())
-                  if (match) {
+                  const termLower = tp.toLowerCase()
+                  const match = matchMap.get(termLower)
+                  // Only link first occurrence of each term
+                  if (match && !linkedTerms.has(termLower)) {
+                    linkedTerms.add(termLower)
                     return (
                       <span
                         key={tpi}
@@ -1970,8 +1977,11 @@ function renderMarkdown(text, currentTopic = '', onRabbitHoleClick = null) {
         const termParts = part.split(termRegex)
         if (termParts.length > 1) {
           return termParts.map((tp, tpi) => {
-            const match = matchMap.get(tp.toLowerCase())
-            if (match) {
+            const termLower = tp.toLowerCase()
+            const match = matchMap.get(termLower)
+            // Only link first occurrence of each term
+            if (match && !linkedTerms.has(termLower)) {
+              linkedTerms.add(termLower)
               return (
                 <span
                   key={`${i}-${tpi}`}
