@@ -1,37 +1,38 @@
 /**
- * Topic Matcher - finds Wikipedia Vital Articles mentions in text
+ * Topic Matcher - finds constellation topic mentions in text
  * Used for "rabbit hole" links that let users explore related topics
  */
 
-import vitalArticles from '../data/vitalArticles.json'
+import constellationData from '../data/constellation.json'
 
 // Build lookup structures once at module load
 const topicSet = new Set()
-const topicToCategory = new Map()
+const topicToCluster = new Map()
 const normalizedToOriginal = new Map()
+const normalizedToId = new Map()
 
 // Prefix index: maps partial names to full topics
-// e.g., "snow white" → { original: "Snow White and the Seven Dwarfs (1937 film)", category: "arts" }
 const prefixToTopic = new Map()
 
-// Populate the lookup structures
-Object.entries(vitalArticles).forEach(([category, topics]) => {
-  topics.forEach(topic => {
-    const normalized = normalizeTopic(topic)
-    topicSet.add(normalized)
-    topicToCategory.set(normalized, category)
-    normalizedToOriginal.set(normalized, topic)
+// Populate the lookup structures from constellation data
+Object.entries(constellationData.topics).forEach(([topicId, topic]) => {
+  const normalized = normalizeTopic(topic.name)
+  topicSet.add(normalized)
+  topicToCluster.set(normalized, topic.cluster)
+  normalizedToOriginal.set(normalized, topic.name)
+  normalizedToId.set(normalized, topicId)
 
-    // Build prefix index for multi-word topics
-    // Extract meaningful prefixes from topics like "Snow White and the Seven Dwarfs (1937 film)"
-    const prefixes = extractPrefixes(topic)
-    prefixes.forEach(prefix => {
-      const normalizedPrefix = prefix.toLowerCase().trim()
-      // Only add if prefix is different from full title and not already mapped
-      if (normalizedPrefix !== normalized && !prefixToTopic.has(normalizedPrefix)) {
-        prefixToTopic.set(normalizedPrefix, { original: topic, category })
-      }
-    })
+  // Build prefix index for multi-word topics
+  const prefixes = extractPrefixes(topic.name)
+  prefixes.forEach(prefix => {
+    const normalizedPrefix = prefix.toLowerCase().trim()
+    if (normalizedPrefix !== normalized && !prefixToTopic.has(normalizedPrefix)) {
+      prefixToTopic.set(normalizedPrefix, {
+        original: topic.name,
+        cluster: topic.cluster,
+        topicId
+      })
+    }
   })
 })
 
@@ -68,8 +69,6 @@ console.log(`[topicMatcher] Built indexes: ${topicSet.size} topics, ${prefixToTo
 
 /**
  * Normalize a topic name for matching
- * - Lowercase
- * - Remove common suffixes for plural handling
  */
 function normalizeTopic(topic) {
   return topic.toLowerCase()
@@ -104,9 +103,9 @@ function normalizeTermForMatching(term) {
 }
 
 /**
- * Check if a term matches a vital article
+ * Check if a term matches a constellation topic
  * @param {string} term - The term to check
- * @returns {Object|null} - { original, category } if match, null otherwise
+ * @returns {Object|null} - { original, cluster, topicId } if match, null otherwise
  */
 export function matchTopic(term) {
   const normalized = normalizeTermForMatching(term)
@@ -115,11 +114,12 @@ export function matchTopic(term) {
   if (topicSet.has(normalized)) {
     return {
       original: normalizedToOriginal.get(normalized),
-      category: topicToCategory.get(normalized)
+      cluster: topicToCluster.get(normalized),
+      topicId: normalizedToId.get(normalized)
     }
   }
 
-  // Prefix match: "Snow White" → "Snow White and the Seven Dwarfs (1937 film)"
+  // Prefix match: "Snow White" → "Snow White and the Seven Dwarfs"
   if (prefixToTopic.has(normalized)) {
     return prefixToTopic.get(normalized)
   }
@@ -132,13 +132,13 @@ export function matchTopic(term) {
  * @param {string} text - The text to scan
  * @param {string} currentTopic - The current topic being viewed (to exclude)
  * @param {number} maxMatches - Maximum matches to return (default 10)
- * @returns {Array} - Array of { term, original, category, index }
+ * @returns {Array} - Array of { term, original, cluster, topicId }
  */
 export function findTopicMatches(text, currentTopic = '', maxMatches = 10) {
   if (!text) return []
 
   const matches = []
-  const foundTopics = new Set() // Avoid duplicate matches
+  const foundTopics = new Set()
   const currentNormalized = normalizeTopic(currentTopic)
 
   // First priority: Check bolded terms (most likely to be important)
@@ -152,20 +152,20 @@ export function findTopicMatches(text, currentTopic = '', maxMatches = 10) {
       matches.push({
         term,
         original: result.original,
-        category: result.category
+        cluster: result.cluster,
+        topicId: result.topicId
       })
     }
   }
 
   // Second priority: Multi-word phrases (2-4 words) that might be topics
-  // This catches things like "Roman Empire", "World War II", etc.
   const words = text.replace(/\*\*/g, '').split(/\s+/)
   for (let len = 4; len >= 2; len--) {
     for (let i = 0; i <= words.length - len; i++) {
       const phrase = words.slice(i, i + len).join(' ')
-        .replace(/[.,;:!?()[\]{}'"]/g, '') // Remove punctuation
+        .replace(/[.,;:!?()[\]{}'"]/g, '')
 
-      if (phrase.length < 4) continue // Skip very short phrases
+      if (phrase.length < 4) continue
 
       const result = matchTopic(phrase)
       if (result && normalizeTermForMatching(phrase) !== currentNormalized && !foundTopics.has(result.original)) {
@@ -173,29 +173,35 @@ export function findTopicMatches(text, currentTopic = '', maxMatches = 10) {
         matches.push({
           term: phrase,
           original: result.original,
-          category: result.category
+          cluster: result.cluster,
+          topicId: result.topicId
         })
       }
     }
   }
 
-  // Limit matches to avoid overwhelming the UI
   return matches.slice(0, maxMatches)
 }
 
 /**
- * Get all topics in a category
- * @param {string} category - The category name
- * @returns {Array} - Array of topic names
+ * Get all topics in a cluster
+ * @param {string} cluster - The cluster name
+ * @returns {Array} - Array of { topicId, name, ... }
  */
-export function getTopicsInCategory(category) {
-  return vitalArticles[category] || []
+export function getTopicsInCluster(cluster) {
+  return Object.entries(constellationData.topics)
+    .filter(([_, topic]) => topic.cluster === cluster)
+    .map(([id, topic]) => ({ topicId: id, ...topic }))
 }
 
 /**
- * Get all category names
- * @returns {Array} - Array of category names
+ * Get all cluster names
+ * @returns {Array} - Array of cluster names
  */
-export function getAllCategories() {
-  return Object.keys(vitalArticles)
+export function getAllClusters() {
+  return Object.keys(constellationData.clusters)
 }
+
+// Backwards compatibility aliases
+export const getTopicsInCategory = getTopicsInCluster
+export const getAllCategories = getAllClusters

@@ -1,0 +1,5757 @@
+{
+  "meta": {
+    "description": "Rememberer constellation with positions",
+    "coordinate_system": "Center at (0,0), range approximately -600 to 600",
+    "version": "1.0"
+  },
+  "clusters": {
+    "people": {
+      "x": -150,
+      "y": -200,
+      "radius": 220,
+      "color": "#E67E22"
+    },
+    "history": {
+      "x": 0,
+      "y": -420,
+      "radius": 180,
+      "color": "#C9A227"
+    },
+    "geography": {
+      "x": 450,
+      "y": 150,
+      "radius": 180,
+      "color": "#F39C12"
+    },
+    "science": {
+      "x": 380,
+      "y": -200,
+      "radius": 200,
+      "color": "#4A90D9"
+    },
+    "biology": {
+      "x": 250,
+      "y": 400,
+      "radius": 170,
+      "color": "#27AE60"
+    },
+    "technology": {
+      "x": 150,
+      "y": 200,
+      "radius": 160,
+      "color": "#95A5A6"
+    },
+    "arts": {
+      "x": -380,
+      "y": -250,
+      "radius": 170,
+      "color": "#9B59B6"
+    },
+    "philosophy_religion": {
+      "x": -450,
+      "y": 0,
+      "radius": 160,
+      "color": "#1ABC9C"
+    },
+    "society": {
+      "x": -350,
+      "y": 300,
+      "radius": 170,
+      "color": "#E74C3C"
+    },
+    "everyday_life": {
+      "x": -100,
+      "y": 450,
+      "radius": 140,
+      "color": "#F1C40F"
+    },
+    "mathematics": {
+      "x": 500,
+      "y": -50,
+      "radius": 120,
+      "color": "#3498DB"
+    }
+  },
+  "topics": {
+    "alexander_the_great": {
+      "name": "Alexander the Great",
+      "cluster": "people",
+      "subcluster": "leaders",
+      "x": -137.2,
+      "y": -313.6,
+      "concepts": [
+        "conquest",
+        "empire",
+        "greece",
+        "military",
+        "persia",
+        "hellenism",
+        "kingship",
+        "ancient_world",
+        "warfare",
+        "legacy"
+      ],
+      "color": "#E67E22"
+    },
+    "augustus": {
+      "name": "Augustus",
+      "cluster": "people",
+      "subcluster": "leaders",
+      "x": -140.2,
+      "y": -296.7,
+      "concepts": [
+        "rome",
+        "emperor",
+        "empire",
+        "politics",
+        "military",
+        "peace",
+        "transformation",
+        "propaganda",
+        "ancient_world",
+        "power"
+      ],
+      "color": "#E67E22"
+    },
+    "julius_caesar": {
+      "name": "Julius Caesar",
+      "cluster": "people",
+      "subcluster": "leaders",
+      "x": -169.3,
+      "y": -289.2,
+      "concepts": [
+        "rome",
+        "military",
+        "dictatorship",
+        "assassination",
+        "conquest",
+        "gaul",
+        "politics",
+        "ambition",
+        "ancient_world",
+        "power"
+      ],
+      "color": "#E67E22"
+    },
+    "charlemagne": {
+      "name": "Charlemagne",
+      "cluster": "people",
+      "subcluster": "leaders",
+      "x": -162.7,
+      "y": -309.9,
+      "concepts": [
+        "empire",
+        "christianity",
+        "europe",
+        "kingship",
+        "education",
+        "medieval",
+        "warfare",
+        "coronation",
+        "franks",
+        "unification"
+      ],
+      "color": "#E67E22"
+    },
+    "cleopatra": {
+      "name": "Cleopatra",
+      "cluster": "people",
+      "subcluster": "leaders",
+      "x": -158.9,
+      "y": -314.6,
+      "concepts": [
+        "egypt",
+        "rome",
+        "power",
+        "politics",
+        "beauty",
+        "dynasty",
+        "ancient_world",
+        "alliance",
+        "tragedy",
+        "queen"
+      ],
+      "color": "#E67E22"
+    },
+    "constantine_the_great": {
+      "name": "Constantine the Great",
+      "cluster": "people",
+      "subcluster": "leaders",
+      "x": -145.2,
+      "y": -324.6,
+      "concepts": [
+        "rome",
+        "christianity",
+        "conversion",
+        "empire",
+        "constantinople",
+        "religion",
+        "transformation",
+        "ancient_world",
+        "power",
+        "church"
+      ],
+      "color": "#E67E22"
+    },
+    "cyrus_the_great": {
+      "name": "Cyrus the Great",
+      "cluster": "people",
+      "subcluster": "leaders",
+      "x": -125.4,
+      "y": -287.4,
+      "concepts": [
+        "persia",
+        "empire",
+        "conquest",
+        "tolerance",
+        "liberation",
+        "ancient_world",
+        "kingship",
+        "human_rights",
+        "babylon",
+        "legacy"
+      ],
+      "color": "#E67E22"
+    },
+    "elizabeth_i": {
+      "name": "Elizabeth I of England",
+      "cluster": "people",
+      "subcluster": "leaders",
+      "x": -151.7,
+      "y": -280.8,
+      "concepts": [
+        "england",
+        "queen",
+        "protestantism",
+        "renaissance",
+        "armada",
+        "shakespeare",
+        "power",
+        "virgin_queen",
+        "golden_age",
+        "politics"
+      ],
+      "color": "#E67E22"
+    },
+    "genghis_khan": {
+      "name": "Genghis Khan",
+      "cluster": "people",
+      "subcluster": "leaders",
+      "x": -186.7,
+      "y": -295.7,
+      "concepts": [
+        "mongolia",
+        "conquest",
+        "empire",
+        "warfare",
+        "asia",
+        "trade",
+        "brutality",
+        "unification",
+        "legacy",
+        "horses"
+      ],
+      "color": "#E67E22"
+    },
+    "abraham_lincoln": {
+      "name": "Abraham Lincoln",
+      "cluster": "people",
+      "subcluster": "leaders",
+      "x": -164.4,
+      "y": -319.2,
+      "concepts": [
+        "america",
+        "slavery",
+        "civil_war",
+        "emancipation",
+        "democracy",
+        "assassination",
+        "leadership",
+        "union",
+        "freedom",
+        "speech"
+      ],
+      "color": "#E67E22"
+    },
+    "mao_zedong": {
+      "name": "Mao Zedong",
+      "cluster": "people",
+      "subcluster": "leaders",
+      "x": -147.2,
+      "y": -346.4,
+      "concepts": [
+        "china",
+        "communism",
+        "revolution",
+        "ideology",
+        "cultural_revolution",
+        "power",
+        "famine",
+        "propaganda",
+        "peasants",
+        "legacy"
+      ],
+      "color": "#E67E22"
+    },
+    "napoleon": {
+      "name": "Napoleon",
+      "cluster": "people",
+      "subcluster": "leaders",
+      "x": -117.6,
+      "y": -330.1,
+      "concepts": [
+        "france",
+        "military",
+        "empire",
+        "conquest",
+        "revolution",
+        "law",
+        "exile",
+        "ambition",
+        "warfare",
+        "europe"
+      ],
+      "color": "#E67E22"
+    },
+    "franklin_d_roosevelt": {
+      "name": "Franklin D. Roosevelt",
+      "cluster": "people",
+      "subcluster": "leaders",
+      "x": -120.8,
+      "y": -261.6,
+      "concepts": [
+        "america",
+        "depression",
+        "world_war_ii",
+        "new_deal",
+        "democracy",
+        "disability",
+        "leadership",
+        "fireside_chats",
+        "four_terms",
+        "recovery"
+      ],
+      "color": "#E67E22"
+    },
+    "george_washington": {
+      "name": "George Washington",
+      "cluster": "people",
+      "subcluster": "leaders",
+      "x": -167.6,
+      "y": -276.8,
+      "concepts": [
+        "america",
+        "revolution",
+        "independence",
+        "president",
+        "military",
+        "founding_father",
+        "leadership",
+        "democracy",
+        "precedent",
+        "legacy"
+      ],
+      "color": "#E67E22"
+    },
+    "winston_churchill": {
+      "name": "Winston Churchill",
+      "cluster": "people",
+      "subcluster": "leaders",
+      "x": -191.9,
+      "y": -314.9,
+      "concepts": [
+        "britain",
+        "world_war_ii",
+        "leadership",
+        "speech",
+        "defiance",
+        "democracy",
+        "military",
+        "writing",
+        "politics",
+        "legacy"
+      ],
+      "color": "#E67E22"
+    },
+    "adolf_hitler": {
+      "name": "Adolf Hitler",
+      "cluster": "people",
+      "subcluster": "leaders",
+      "x": -177.3,
+      "y": -346.1,
+      "concepts": [
+        "germany",
+        "nazism",
+        "world_war_ii",
+        "holocaust",
+        "fascism",
+        "propaganda",
+        "dictatorship",
+        "genocide",
+        "evil",
+        "totalitarianism"
+      ],
+      "color": "#E67E22"
+    },
+    "joseph_stalin": {
+      "name": "Joseph Stalin",
+      "cluster": "people",
+      "subcluster": "leaders",
+      "x": -130.7,
+      "y": -353.6,
+      "concepts": [
+        "soviet_union",
+        "communism",
+        "dictatorship",
+        "purges",
+        "world_war_ii",
+        "industrialization",
+        "terror",
+        "totalitarianism",
+        "cold_war",
+        "gulag"
+      ],
+      "color": "#E67E22"
+    },
+    "vladimir_lenin": {
+      "name": "Vladimir Lenin",
+      "cluster": "people",
+      "subcluster": "leaders",
+      "x": -115.6,
+      "y": -304.8,
+      "concepts": [
+        "russia",
+        "communism",
+        "revolution",
+        "marxism",
+        "bolshevik",
+        "ideology",
+        "soviet_union",
+        "power",
+        "transformation",
+        "legacy"
+      ],
+      "color": "#E67E22"
+    },
+    "qin_shi_huang": {
+      "name": "Qin Shi Huang",
+      "cluster": "people",
+      "subcluster": "leaders",
+      "x": -144.0,
+      "y": -255.3,
+      "concepts": [
+        "china",
+        "unification",
+        "emperor",
+        "terracotta_army",
+        "great_wall",
+        "legalism",
+        "standardization",
+        "tyranny",
+        "burial",
+        "ancient_world"
+      ],
+      "color": "#E67E22"
+    },
+    "mahatma_gandhi": {
+      "name": "Mahatma Gandhi",
+      "cluster": "people",
+      "subcluster": "leaders",
+      "x": -206.6,
+      "y": -277.3,
+      "concepts": [
+        "india",
+        "nonviolence",
+        "independence",
+        "civil_disobedience",
+        "peace",
+        "spirituality",
+        "resistance",
+        "freedom",
+        "legacy",
+        "assassination"
+      ],
+      "color": "#E67E22"
+    },
+    "nelson_mandela": {
+      "name": "Nelson Mandela",
+      "cluster": "people",
+      "subcluster": "leaders",
+      "x": -208.0,
+      "y": -338.4,
+      "concepts": [
+        "south_africa",
+        "apartheid",
+        "prison",
+        "freedom",
+        "reconciliation",
+        "democracy",
+        "resistance",
+        "peace",
+        "leadership",
+        "legacy"
+      ],
+      "color": "#E67E22"
+    },
+    "martin_luther_king_jr": {
+      "name": "Martin Luther King Jr.",
+      "cluster": "people",
+      "subcluster": "leaders",
+      "x": -148.8,
+      "y": -366.3,
+      "concepts": [
+        "america",
+        "civil_rights",
+        "nonviolence",
+        "dream",
+        "speech",
+        "equality",
+        "assassination",
+        "resistance",
+        "christianity",
+        "legacy"
+      ],
+      "color": "#E67E22"
+    },
+    "aristotle": {
+      "name": "Aristotle",
+      "cluster": "people",
+      "subcluster": "philosophers",
+      "x": -50.0,
+      "y": -258.0,
+      "concepts": [
+        "philosophy",
+        "greece",
+        "logic",
+        "science",
+        "ethics",
+        "politics",
+        "biology",
+        "metaphysics",
+        "education",
+        "plato"
+      ],
+      "color": "#E67E22"
+    },
+    "confucius": {
+      "name": "Confucius",
+      "cluster": "people",
+      "subcluster": "philosophers",
+      "x": -52.9,
+      "y": -236.7,
+      "concepts": [
+        "china",
+        "philosophy",
+        "ethics",
+        "education",
+        "harmony",
+        "tradition",
+        "government",
+        "wisdom",
+        "family",
+        "virtue"
+      ],
+      "color": "#E67E22"
+    },
+    "rene_descartes": {
+      "name": "Ren\u00e9 Descartes",
+      "cluster": "people",
+      "subcluster": "philosophers",
+      "x": -70.3,
+      "y": -230.8,
+      "concepts": [
+        "philosophy",
+        "mathematics",
+        "doubt",
+        "reason",
+        "mind",
+        "dualism",
+        "cogito",
+        "france",
+        "geometry",
+        "method"
+      ],
+      "color": "#E67E22"
+    },
+    "immanuel_kant": {
+      "name": "Immanuel Kant",
+      "cluster": "people",
+      "subcluster": "philosophers",
+      "x": -63.6,
+      "y": -255.7,
+      "concepts": [
+        "philosophy",
+        "ethics",
+        "reason",
+        "enlightenment",
+        "germany",
+        "metaphysics",
+        "duty",
+        "knowledge",
+        "morality",
+        "critique"
+      ],
+      "color": "#E67E22"
+    },
+    "karl_marx": {
+      "name": "Karl Marx",
+      "cluster": "people",
+      "subcluster": "philosophers",
+      "x": -65.2,
+      "y": -265.2,
+      "concepts": [
+        "communism",
+        "economics",
+        "class",
+        "capitalism",
+        "revolution",
+        "labor",
+        "ideology",
+        "history",
+        "socialism",
+        "philosophy"
+      ],
+      "color": "#E67E22"
+    },
+    "friedrich_nietzsche": {
+      "name": "Friedrich Nietzsche",
+      "cluster": "people",
+      "subcluster": "philosophers",
+      "x": -47.0,
+      "y": -259.8,
+      "concepts": [
+        "philosophy",
+        "god",
+        "morality",
+        "power",
+        "nihilism",
+        "superman",
+        "tragedy",
+        "germany",
+        "existence",
+        "will"
+      ],
+      "color": "#E67E22"
+    },
+    "plato": {
+      "name": "Plato",
+      "cluster": "people",
+      "subcluster": "philosophers",
+      "x": -34.0,
+      "y": -233.2,
+      "concepts": [
+        "philosophy",
+        "greece",
+        "forms",
+        "republic",
+        "socrates",
+        "knowledge",
+        "justice",
+        "education",
+        "soul",
+        "dialogue"
+      ],
+      "color": "#E67E22"
+    },
+    "socrates": {
+      "name": "Socrates",
+      "cluster": "people",
+      "subcluster": "philosophers",
+      "x": -60.6,
+      "y": -231.3,
+      "concepts": [
+        "philosophy",
+        "greece",
+        "questioning",
+        "ethics",
+        "wisdom",
+        "trial",
+        "death",
+        "dialogue",
+        "knowledge",
+        "virtue"
+      ],
+      "color": "#E67E22"
+    },
+    "voltaire": {
+      "name": "Voltaire",
+      "cluster": "people",
+      "subcluster": "philosophers",
+      "x": -72.3,
+      "y": -238.4,
+      "concepts": [
+        "france",
+        "enlightenment",
+        "satire",
+        "freedom",
+        "religion",
+        "tolerance",
+        "reason",
+        "writing",
+        "criticism",
+        "wit"
+      ],
+      "color": "#E67E22"
+    },
+    "laozi": {
+      "name": "Laozi",
+      "cluster": "people",
+      "subcluster": "philosophers",
+      "x": -87.4,
+      "y": -270.9,
+      "concepts": [
+        "china",
+        "taoism",
+        "philosophy",
+        "nature",
+        "simplicity",
+        "balance",
+        "wisdom",
+        "water",
+        "non_action",
+        "harmony"
+      ],
+      "color": "#E67E22"
+    },
+    "albert_einstein": {
+      "name": "Albert Einstein",
+      "cluster": "people",
+      "subcluster": "scientists",
+      "x": -26.7,
+      "y": -137.5,
+      "concepts": [
+        "physics",
+        "relativity",
+        "light",
+        "energy",
+        "time",
+        "space",
+        "genius",
+        "germany",
+        "nuclear",
+        "thought_experiment"
+      ],
+      "color": "#E67E22"
+    },
+    "isaac_newton": {
+      "name": "Isaac Newton",
+      "cluster": "people",
+      "subcluster": "scientists",
+      "x": -50.1,
+      "y": -120.0,
+      "concepts": [
+        "physics",
+        "gravity",
+        "mathematics",
+        "light",
+        "motion",
+        "calculus",
+        "apple",
+        "england",
+        "laws",
+        "optics"
+      ],
+      "color": "#E67E22"
+    },
+    "charles_darwin": {
+      "name": "Charles Darwin",
+      "cluster": "people",
+      "subcluster": "scientists",
+      "x": -64.8,
+      "y": -130.3,
+      "concepts": [
+        "evolution",
+        "biology",
+        "natural_selection",
+        "species",
+        "galapagos",
+        "adaptation",
+        "england",
+        "origin",
+        "nature",
+        "science"
+      ],
+      "color": "#E67E22"
+    },
+    "galileo_galilei": {
+      "name": "Galileo Galilei",
+      "cluster": "people",
+      "subcluster": "scientists",
+      "x": -81.4,
+      "y": -146.0,
+      "concepts": [
+        "astronomy",
+        "telescope",
+        "physics",
+        "italy",
+        "church",
+        "heliocentrism",
+        "trial",
+        "jupiter",
+        "motion",
+        "science"
+      ],
+      "color": "#E67E22"
+    },
+    "nicolaus_copernicus": {
+      "name": "Nicolaus Copernicus",
+      "cluster": "people",
+      "subcluster": "scientists",
+      "x": -55.8,
+      "y": -153.4,
+      "concepts": [
+        "astronomy",
+        "heliocentrism",
+        "sun",
+        "planets",
+        "revolution",
+        "poland",
+        "mathematics",
+        "church",
+        "paradigm",
+        "cosmos"
+      ],
+      "color": "#E67E22"
+    },
+    "marie_curie": {
+      "name": "Marie Curie",
+      "cluster": "people",
+      "subcluster": "scientists",
+      "x": -48.3,
+      "y": -161.3,
+      "concepts": [
+        "radiation",
+        "chemistry",
+        "physics",
+        "nobel",
+        "polonium",
+        "radium",
+        "woman",
+        "france",
+        "poland",
+        "pioneer"
+      ],
+      "color": "#E67E22"
+    },
+    "nikola_tesla": {
+      "name": "Nikola Tesla",
+      "cluster": "people",
+      "subcluster": "scientists",
+      "x": -14.5,
+      "y": -129.5,
+      "concepts": [
+        "electricity",
+        "invention",
+        "alternating_current",
+        "genius",
+        "wireless",
+        "motors",
+        "edison",
+        "serbia",
+        "america",
+        "visionary"
+      ],
+      "color": "#E67E22"
+    },
+    "thomas_edison": {
+      "name": "Thomas Edison",
+      "cluster": "people",
+      "subcluster": "scientists",
+      "x": -52.2,
+      "y": -117.0,
+      "concepts": [
+        "invention",
+        "electricity",
+        "light_bulb",
+        "phonograph",
+        "america",
+        "business",
+        "patents",
+        "laboratory",
+        "persistence",
+        "innovation"
+      ],
+      "color": "#E67E22"
+    },
+    "archimedes": {
+      "name": "Archimedes",
+      "cluster": "people",
+      "subcluster": "scientists",
+      "x": -84.9,
+      "y": -121.8,
+      "concepts": [
+        "mathematics",
+        "physics",
+        "greece",
+        "eureka",
+        "lever",
+        "buoyancy",
+        "geometry",
+        "invention",
+        "war_machines",
+        "ancient_world"
+      ],
+      "color": "#E67E22"
+    },
+    "euclid": {
+      "name": "Euclid",
+      "cluster": "people",
+      "subcluster": "scientists",
+      "x": -90.3,
+      "y": -162.9,
+      "concepts": [
+        "mathematics",
+        "geometry",
+        "proof",
+        "elements",
+        "greece",
+        "axioms",
+        "logic",
+        "ancient_world",
+        "shapes",
+        "education"
+      ],
+      "color": "#E67E22"
+    },
+    "leonardo_da_vinci": {
+      "name": "Leonardo da Vinci",
+      "cluster": "people",
+      "subcluster": "scientists",
+      "x": -48.4,
+      "y": -160.1,
+      "concepts": [
+        "art",
+        "science",
+        "anatomy",
+        "invention",
+        "renaissance",
+        "italy",
+        "painting",
+        "genius",
+        "observation",
+        "flight"
+      ],
+      "color": "#E67E22"
+    },
+    "alan_turing": {
+      "name": "Alan Turing",
+      "cluster": "people",
+      "subcluster": "scientists",
+      "x": -25.8,
+      "y": -171.5,
+      "concepts": [
+        "computer",
+        "mathematics",
+        "code_breaking",
+        "artificial_intelligence",
+        "england",
+        "logic",
+        "enigma",
+        "world_war_ii",
+        "tragedy",
+        "pioneer"
+      ],
+      "color": "#E67E22"
+    },
+    "william_shakespeare": {
+      "name": "William Shakespeare",
+      "cluster": "people",
+      "subcluster": "artists",
+      "x": -117.7,
+      "y": -96.6,
+      "concepts": [
+        "theatre",
+        "england",
+        "poetry",
+        "tragedy",
+        "comedy",
+        "human_nature",
+        "language",
+        "renaissance",
+        "love",
+        "legacy"
+      ],
+      "color": "#E67E22"
+    },
+    "homer": {
+      "name": "Homer",
+      "cluster": "people",
+      "subcluster": "artists",
+      "x": -148.2,
+      "y": -70.8,
+      "concepts": [
+        "poetry",
+        "greece",
+        "iliad",
+        "odyssey",
+        "epic",
+        "war",
+        "journey",
+        "mythology",
+        "ancient_world",
+        "oral_tradition"
+      ],
+      "color": "#E67E22"
+    },
+    "dante_alighieri": {
+      "name": "Dante Alighieri",
+      "cluster": "people",
+      "subcluster": "artists",
+      "x": -167.4,
+      "y": -70.5,
+      "concepts": [
+        "poetry",
+        "italy",
+        "divine_comedy",
+        "hell",
+        "heaven",
+        "christianity",
+        "medieval",
+        "allegory",
+        "love",
+        "exile"
+      ],
+      "color": "#E67E22"
+    },
+    "leo_tolstoy": {
+      "name": "Leo Tolstoy",
+      "cluster": "people",
+      "subcluster": "artists",
+      "x": -172.4,
+      "y": -84.0,
+      "concepts": [
+        "literature",
+        "russia",
+        "war",
+        "peace",
+        "novel",
+        "philosophy",
+        "morality",
+        "realism",
+        "society",
+        "spirituality"
+      ],
+      "color": "#E67E22"
+    },
+    "johann_sebastian_bach": {
+      "name": "Johann Sebastian Bach",
+      "cluster": "people",
+      "subcluster": "artists",
+      "x": -162.6,
+      "y": -103.3,
+      "concepts": [
+        "music",
+        "composition",
+        "baroque",
+        "germany",
+        "organ",
+        "fugue",
+        "counterpoint",
+        "christianity",
+        "genius",
+        "mathematics"
+      ],
+      "color": "#E67E22"
+    },
+    "ludwig_van_beethoven": {
+      "name": "Ludwig van Beethoven",
+      "cluster": "people",
+      "subcluster": "artists",
+      "x": -143.7,
+      "y": -112.2,
+      "concepts": [
+        "music",
+        "composition",
+        "symphony",
+        "deafness",
+        "germany",
+        "romantic",
+        "genius",
+        "piano",
+        "struggle",
+        "triumph"
+      ],
+      "color": "#E67E22"
+    },
+    "wolfgang_amadeus_mozart": {
+      "name": "Wolfgang Amadeus Mozart",
+      "cluster": "people",
+      "subcluster": "artists",
+      "x": -111.9,
+      "y": -71.5,
+      "concepts": [
+        "music",
+        "composition",
+        "genius",
+        "prodigy",
+        "austria",
+        "opera",
+        "classical",
+        "symphony",
+        "tragedy",
+        "beauty"
+      ],
+      "color": "#E67E22"
+    },
+    "michelangelo": {
+      "name": "Michelangelo",
+      "cluster": "people",
+      "subcluster": "artists",
+      "x": -155.3,
+      "y": -63.3,
+      "concepts": [
+        "art",
+        "sculpture",
+        "painting",
+        "renaissance",
+        "italy",
+        "sistine_chapel",
+        "david",
+        "anatomy",
+        "genius",
+        "beauty"
+      ],
+      "color": "#E67E22"
+    },
+    "pablo_picasso": {
+      "name": "Pablo Picasso",
+      "cluster": "people",
+      "subcluster": "artists",
+      "x": -172.1,
+      "y": -80.0,
+      "concepts": [
+        "art",
+        "painting",
+        "cubism",
+        "spain",
+        "modern_art",
+        "innovation",
+        "prolific",
+        "blue_period",
+        "guernica",
+        "genius"
+      ],
+      "color": "#E67E22"
+    },
+    "vincent_van_gogh": {
+      "name": "Vincent van Gogh",
+      "cluster": "people",
+      "subcluster": "artists",
+      "x": -179.0,
+      "y": -100.0,
+      "concepts": [
+        "art",
+        "painting",
+        "netherlands",
+        "mental_illness",
+        "color",
+        "starry_night",
+        "sunflowers",
+        "post_impressionism",
+        "tragedy",
+        "passion"
+      ],
+      "color": "#E67E22"
+    },
+    "jesus": {
+      "name": "Jesus",
+      "cluster": "people",
+      "subcluster": "religious",
+      "x": -194.4,
+      "y": -150.5,
+      "concepts": [
+        "christianity",
+        "religion",
+        "messiah",
+        "crucifixion",
+        "resurrection",
+        "love",
+        "salvation",
+        "miracles",
+        "teachings",
+        "god"
+      ],
+      "color": "#E67E22"
+    },
+    "muhammad": {
+      "name": "Muhammad",
+      "cluster": "people",
+      "subcluster": "religious",
+      "x": -239.1,
+      "y": -109.1,
+      "concepts": [
+        "islam",
+        "religion",
+        "prophet",
+        "quran",
+        "arabia",
+        "mecca",
+        "medina",
+        "revelation",
+        "submission",
+        "legacy"
+      ],
+      "color": "#E67E22"
+    },
+    "gautama_buddha": {
+      "name": "Gautama Buddha",
+      "cluster": "people",
+      "subcluster": "religious",
+      "x": -280.2,
+      "y": -113.6,
+      "concepts": [
+        "buddhism",
+        "religion",
+        "enlightenment",
+        "suffering",
+        "meditation",
+        "india",
+        "nirvana",
+        "middle_way",
+        "teachings",
+        "peace"
+      ],
+      "color": "#E67E22"
+    },
+    "moses": {
+      "name": "Moses",
+      "cluster": "people",
+      "subcluster": "religious",
+      "x": -277.9,
+      "y": -163.5,
+      "concepts": [
+        "judaism",
+        "religion",
+        "exodus",
+        "commandments",
+        "egypt",
+        "liberation",
+        "law",
+        "prophet",
+        "wilderness",
+        "covenant"
+      ],
+      "color": "#E67E22"
+    },
+    "martin_luther": {
+      "name": "Martin Luther",
+      "cluster": "people",
+      "subcluster": "religious",
+      "x": -224.0,
+      "y": -185.0,
+      "concepts": [
+        "christianity",
+        "reformation",
+        "protestantism",
+        "germany",
+        "bible",
+        "faith",
+        "church",
+        "theses",
+        "revolution",
+        "religion"
+      ],
+      "color": "#E67E22"
+    },
+    "christopher_columbus": {
+      "name": "Christopher Columbus",
+      "cluster": "people",
+      "subcluster": "explorers",
+      "x": -196.3,
+      "y": -255.5,
+      "concepts": [
+        "exploration",
+        "america",
+        "voyage",
+        "spain",
+        "ships",
+        "discovery",
+        "colonialism",
+        "navigation",
+        "controversy",
+        "new_world"
+      ],
+      "color": "#E67E22"
+    },
+    "marco_polo": {
+      "name": "Marco Polo",
+      "cluster": "people",
+      "subcluster": "explorers",
+      "x": -250.0,
+      "y": -216.7,
+      "concepts": [
+        "exploration",
+        "china",
+        "silk_road",
+        "travel",
+        "venice",
+        "trade",
+        "writing",
+        "adventure",
+        "asia",
+        "east"
+      ],
+      "color": "#E67E22"
+    },
+    "neil_armstrong": {
+      "name": "Neil Armstrong",
+      "cluster": "people",
+      "subcluster": "explorers",
+      "x": -287.5,
+      "y": -248.1,
+      "concepts": [
+        "space",
+        "moon",
+        "america",
+        "nasa",
+        "apollo",
+        "first",
+        "exploration",
+        "aviation",
+        "courage",
+        "legacy"
+      ],
+      "color": "#E67E22"
+    },
+    "wright_brothers": {
+      "name": "Wright Brothers",
+      "cluster": "people",
+      "subcluster": "explorers",
+      "x": -246.6,
+      "y": -298.4,
+      "concepts": [
+        "flight",
+        "aviation",
+        "invention",
+        "america",
+        "airplane",
+        "engineering",
+        "pioneers",
+        "kitty_hawk",
+        "bicycle",
+        "persistence"
+      ],
+      "color": "#E67E22"
+    },
+    "history": {
+      "name": "History",
+      "cluster": "history",
+      "subcluster": "concepts",
+      "x": 38.3,
+      "y": -506.5,
+      "concepts": [
+        "past",
+        "time",
+        "events",
+        "change",
+        "memory",
+        "narrative",
+        "civilization",
+        "sources",
+        "interpretation",
+        "legacy"
+      ],
+      "color": "#C9A227"
+    },
+    "prehistory": {
+      "name": "Prehistory",
+      "cluster": "history",
+      "subcluster": "concepts",
+      "x": 3.6,
+      "y": -480.0,
+      "concepts": [
+        "ancient",
+        "stone_age",
+        "humans",
+        "evolution",
+        "tools",
+        "cave_paintings",
+        "migration",
+        "archaeology",
+        "survival",
+        "origins"
+      ],
+      "color": "#C9A227"
+    },
+    "civilization": {
+      "name": "Civilization",
+      "cluster": "history",
+      "subcluster": "concepts",
+      "x": -26.5,
+      "y": -489.2,
+      "concepts": [
+        "society",
+        "cities",
+        "writing",
+        "agriculture",
+        "government",
+        "culture",
+        "technology",
+        "development",
+        "complexity",
+        "organization"
+      ],
+      "color": "#C9A227"
+    },
+    "colonialism": {
+      "name": "Colonialism",
+      "cluster": "history",
+      "subcluster": "concepts",
+      "x": -23.2,
+      "y": -532.6,
+      "concepts": [
+        "empire",
+        "exploitation",
+        "europe",
+        "africa",
+        "asia",
+        "resources",
+        "power",
+        "culture",
+        "resistance",
+        "legacy"
+      ],
+      "color": "#C9A227"
+    },
+    "slavery": {
+      "name": "Slavery",
+      "cluster": "history",
+      "subcluster": "concepts",
+      "x": 6.7,
+      "y": -544.6,
+      "concepts": [
+        "bondage",
+        "africa",
+        "america",
+        "trade",
+        "labor",
+        "abolition",
+        "racism",
+        "suffering",
+        "resistance",
+        "legacy"
+      ],
+      "color": "#C9A227"
+    },
+    "ancient_egypt": {
+      "name": "Ancient Egypt",
+      "cluster": "history",
+      "subcluster": "ancient",
+      "x": 99.3,
+      "y": -424.0,
+      "concepts": [
+        "pyramids",
+        "pharaohs",
+        "nile",
+        "mummies",
+        "hieroglyphics",
+        "astronomy",
+        "medicine",
+        "construction",
+        "religion",
+        "afterlife"
+      ],
+      "color": "#C9A227"
+    },
+    "ancient_greece": {
+      "name": "Ancient Greece",
+      "cluster": "history",
+      "subcluster": "ancient",
+      "x": 100.5,
+      "y": -394.4,
+      "concepts": [
+        "democracy",
+        "philosophy",
+        "olympics",
+        "mythology",
+        "theatre",
+        "architecture",
+        "city_states",
+        "warfare",
+        "art",
+        "science"
+      ],
+      "color": "#C9A227"
+    },
+    "ancient_rome": {
+      "name": "Ancient Rome",
+      "cluster": "history",
+      "subcluster": "ancient",
+      "x": 75.1,
+      "y": -398.7,
+      "concepts": [
+        "empire",
+        "republic",
+        "military",
+        "law",
+        "engineering",
+        "roads",
+        "gladiators",
+        "christianity",
+        "latin",
+        "architecture"
+      ],
+      "color": "#C9A227"
+    },
+    "mesopotamia": {
+      "name": "Mesopotamia",
+      "cluster": "history",
+      "subcluster": "ancient",
+      "x": 76.4,
+      "y": -413.2,
+      "concepts": [
+        "writing",
+        "civilization",
+        "rivers",
+        "agriculture",
+        "cities",
+        "law",
+        "astronomy",
+        "mathematics",
+        "religion",
+        "trade"
+      ],
+      "color": "#C9A227"
+    },
+    "persian_empire": {
+      "name": "Persian Empire",
+      "cluster": "history",
+      "subcluster": "ancient",
+      "x": 74.0,
+      "y": -438.7,
+      "concepts": [
+        "empire",
+        "persia",
+        "tolerance",
+        "roads",
+        "administration",
+        "zoroastrianism",
+        "conquest",
+        "culture",
+        "trade",
+        "ancient_world"
+      ],
+      "color": "#C9A227"
+    },
+    "han_dynasty": {
+      "name": "Han Dynasty",
+      "cluster": "history",
+      "subcluster": "ancient",
+      "x": 92.8,
+      "y": -434.6,
+      "concepts": [
+        "china",
+        "empire",
+        "silk_road",
+        "confucianism",
+        "paper",
+        "trade",
+        "government",
+        "military",
+        "culture",
+        "prosperity"
+      ],
+      "color": "#C9A227"
+    },
+    "maya_civilization": {
+      "name": "Maya Civilization",
+      "cluster": "history",
+      "subcluster": "ancient",
+      "x": 117.8,
+      "y": -412.8,
+      "concepts": [
+        "mesoamerica",
+        "pyramids",
+        "astronomy",
+        "calendar",
+        "writing",
+        "mathematics",
+        "religion",
+        "cities",
+        "sacrifice",
+        "collapse"
+      ],
+      "color": "#C9A227"
+    },
+    "inca_empire": {
+      "name": "Inca Empire",
+      "cluster": "history",
+      "subcluster": "ancient",
+      "x": 90.0,
+      "y": -390.4,
+      "concepts": [
+        "south_america",
+        "empire",
+        "roads",
+        "mountains",
+        "agriculture",
+        "quipu",
+        "sun_worship",
+        "conquest",
+        "machu_picchu",
+        "organization"
+      ],
+      "color": "#C9A227"
+    },
+    "byzantine_empire": {
+      "name": "Byzantine Empire",
+      "cluster": "history",
+      "subcluster": "medieval",
+      "x": 31.5,
+      "y": -329.1,
+      "concepts": [
+        "rome",
+        "christianity",
+        "constantinople",
+        "empire",
+        "art",
+        "law",
+        "trade",
+        "orthodox",
+        "preservation",
+        "warfare"
+      ],
+      "color": "#C9A227"
+    },
+    "islamic_golden_age": {
+      "name": "Islamic Golden Age",
+      "cluster": "history",
+      "subcluster": "medieval",
+      "x": 3.9,
+      "y": -317.0,
+      "concepts": [
+        "islam",
+        "science",
+        "mathematics",
+        "medicine",
+        "astronomy",
+        "translation",
+        "trade",
+        "culture",
+        "scholarship",
+        "invention"
+      ],
+      "color": "#C9A227"
+    },
+    "crusades": {
+      "name": "Crusades",
+      "cluster": "history",
+      "subcluster": "medieval",
+      "x": -10.6,
+      "y": -308.7,
+      "concepts": [
+        "christianity",
+        "islam",
+        "warfare",
+        "jerusalem",
+        "religion",
+        "knights",
+        "medieval",
+        "trade",
+        "violence",
+        "legacy"
+      ],
+      "color": "#C9A227"
+    },
+    "mongol_empire": {
+      "name": "Mongol Empire",
+      "cluster": "history",
+      "subcluster": "medieval",
+      "x": -26.4,
+      "y": -328.7,
+      "concepts": [
+        "conquest",
+        "asia",
+        "genghis_khan",
+        "horses",
+        "warfare",
+        "trade",
+        "empire",
+        "brutality",
+        "silk_road",
+        "unification"
+      ],
+      "color": "#C9A227"
+    },
+    "ottoman_empire": {
+      "name": "Ottoman Empire",
+      "cluster": "history",
+      "subcluster": "medieval",
+      "x": -1.6,
+      "y": -348.0,
+      "concepts": [
+        "turkey",
+        "islam",
+        "empire",
+        "constantinople",
+        "sultan",
+        "expansion",
+        "culture",
+        "military",
+        "trade",
+        "decline"
+      ],
+      "color": "#C9A227"
+    },
+    "black_death": {
+      "name": "Black Death",
+      "cluster": "history",
+      "subcluster": "medieval",
+      "x": 5.1,
+      "y": -355.5,
+      "concepts": [
+        "plague",
+        "death",
+        "disease",
+        "medieval",
+        "europe",
+        "pandemic",
+        "devastation",
+        "rats",
+        "medicine",
+        "transformation"
+      ],
+      "color": "#C9A227"
+    },
+    "renaissance": {
+      "name": "Renaissance",
+      "cluster": "history",
+      "subcluster": "medieval",
+      "x": 26.6,
+      "y": -321.2,
+      "concepts": [
+        "art",
+        "italy",
+        "humanism",
+        "rebirth",
+        "science",
+        "culture",
+        "printing",
+        "education",
+        "innovation",
+        "beauty"
+      ],
+      "color": "#C9A227"
+    },
+    "industrial_revolution": {
+      "name": "Industrial Revolution",
+      "cluster": "history",
+      "subcluster": "modern",
+      "x": -77.0,
+      "y": -424.1,
+      "concepts": [
+        "factories",
+        "machines",
+        "britain",
+        "steam",
+        "coal",
+        "urbanization",
+        "labor",
+        "transformation",
+        "capitalism",
+        "technology"
+      ],
+      "color": "#C9A227"
+    },
+    "french_revolution": {
+      "name": "French Revolution",
+      "cluster": "history",
+      "subcluster": "modern",
+      "x": -79.9,
+      "y": -407.2,
+      "concepts": [
+        "france",
+        "revolution",
+        "liberty",
+        "equality",
+        "guillotine",
+        "monarchy",
+        "terror",
+        "democracy",
+        "rights",
+        "transformation"
+      ],
+      "color": "#C9A227"
+    },
+    "american_revolution": {
+      "name": "American Revolution",
+      "cluster": "history",
+      "subcluster": "modern",
+      "x": -97.7,
+      "y": -399.1,
+      "concepts": [
+        "america",
+        "independence",
+        "britain",
+        "democracy",
+        "freedom",
+        "founding_fathers",
+        "constitution",
+        "revolution",
+        "war",
+        "rights"
+      ],
+      "color": "#C9A227"
+    },
+    "world_war_i": {
+      "name": "World War I",
+      "cluster": "history",
+      "subcluster": "modern",
+      "x": -95.0,
+      "y": -424.2,
+      "concepts": [
+        "war",
+        "europe",
+        "trenches",
+        "death",
+        "technology",
+        "empires",
+        "alliance",
+        "assassination",
+        "devastation",
+        "transformation"
+      ],
+      "color": "#C9A227"
+    },
+    "world_war_ii": {
+      "name": "World War II",
+      "cluster": "history",
+      "subcluster": "modern",
+      "x": -93.4,
+      "y": -433.9,
+      "concepts": [
+        "war",
+        "hitler",
+        "holocaust",
+        "atomic_bomb",
+        "fascism",
+        "alliance",
+        "devastation",
+        "europe",
+        "pacific",
+        "transformation"
+      ],
+      "color": "#C9A227"
+    },
+    "holocaust": {
+      "name": "The Holocaust",
+      "cluster": "history",
+      "subcluster": "modern",
+      "x": -80.6,
+      "y": -436.1,
+      "concepts": [
+        "genocide",
+        "jews",
+        "nazis",
+        "death_camps",
+        "hitler",
+        "evil",
+        "memory",
+        "world_war_ii",
+        "tragedy",
+        "humanity"
+      ],
+      "color": "#C9A227"
+    },
+    "cold_war": {
+      "name": "Cold War",
+      "cluster": "history",
+      "subcluster": "modern",
+      "x": -60.6,
+      "y": -400.4,
+      "concepts": [
+        "soviet_union",
+        "america",
+        "nuclear",
+        "communism",
+        "capitalism",
+        "tension",
+        "space_race",
+        "proxy_wars",
+        "berlin",
+        "ideology"
+      ],
+      "color": "#C9A227"
+    },
+    "earth": {
+      "name": "Earth",
+      "cluster": "geography",
+      "subcluster": "physical",
+      "x": 451.3,
+      "y": 56.2,
+      "concepts": [
+        "planet",
+        "life",
+        "water",
+        "land",
+        "atmosphere",
+        "geology",
+        "climate",
+        "ecosystems",
+        "home",
+        "solar_system"
+      ],
+      "color": "#F39C12"
+    },
+    "pacific_ocean": {
+      "name": "Pacific Ocean",
+      "cluster": "geography",
+      "subcluster": "physical",
+      "x": 467.6,
+      "y": 86.0,
+      "concepts": [
+        "ocean",
+        "vast",
+        "islands",
+        "ring_of_fire",
+        "trade",
+        "exploration",
+        "depth",
+        "life",
+        "climate",
+        "currents"
+      ],
+      "color": "#F39C12"
+    },
+    "atlantic_ocean": {
+      "name": "Atlantic Ocean",
+      "cluster": "geography",
+      "subcluster": "physical",
+      "x": 438.6,
+      "y": 75.6,
+      "concepts": [
+        "ocean",
+        "trade",
+        "slavery",
+        "exploration",
+        "currents",
+        "titanic",
+        "europe",
+        "america",
+        "history",
+        "storms"
+      ],
+      "color": "#F39C12"
+    },
+    "nile": {
+      "name": "Nile",
+      "cluster": "geography",
+      "subcluster": "physical",
+      "x": 433.3,
+      "y": 67.8,
+      "concepts": [
+        "river",
+        "egypt",
+        "civilization",
+        "flooding",
+        "agriculture",
+        "africa",
+        "life",
+        "ancient",
+        "longest",
+        "delta"
+      ],
+      "color": "#F39C12"
+    },
+    "amazon_river": {
+      "name": "Amazon River",
+      "cluster": "geography",
+      "subcluster": "physical",
+      "x": 433.4,
+      "y": 49.9,
+      "concepts": [
+        "river",
+        "rainforest",
+        "biodiversity",
+        "brazil",
+        "flow",
+        "tributaries",
+        "life",
+        "exploration",
+        "indigenous",
+        "ecosystem"
+      ],
+      "color": "#F39C12"
+    },
+    "mount_everest": {
+      "name": "Mount Everest",
+      "cluster": "geography",
+      "subcluster": "physical",
+      "x": 457.8,
+      "y": 58.0,
+      "concepts": [
+        "mountain",
+        "highest",
+        "climbing",
+        "himalayas",
+        "challenge",
+        "death",
+        "achievement",
+        "nepal",
+        "tibet",
+        "altitude"
+      ],
+      "color": "#F39C12"
+    },
+    "himalayas": {
+      "name": "Himalayas",
+      "cluster": "geography",
+      "subcluster": "physical",
+      "x": 459.5,
+      "y": 62.3,
+      "concepts": [
+        "mountains",
+        "asia",
+        "everest",
+        "tectonics",
+        "rivers",
+        "spirituality",
+        "climate",
+        "barrier",
+        "snow",
+        "biodiversity"
+      ],
+      "color": "#F39C12"
+    },
+    "sahara": {
+      "name": "Sahara",
+      "cluster": "geography",
+      "subcluster": "physical",
+      "x": 447.0,
+      "y": 87.9,
+      "concepts": [
+        "desert",
+        "africa",
+        "hot",
+        "vast",
+        "sand",
+        "oasis",
+        "nomads",
+        "trade",
+        "expansion",
+        "climate"
+      ],
+      "color": "#F39C12"
+    },
+    "amazon_rainforest": {
+      "name": "Amazon Rainforest",
+      "cluster": "geography",
+      "subcluster": "physical",
+      "x": 420.0,
+      "y": 77.5,
+      "concepts": [
+        "rainforest",
+        "biodiversity",
+        "brazil",
+        "lungs",
+        "deforestation",
+        "indigenous",
+        "rivers",
+        "climate",
+        "species",
+        "ecosystem"
+      ],
+      "color": "#F39C12"
+    },
+    "great_barrier_reef": {
+      "name": "Great Barrier Reef",
+      "cluster": "geography",
+      "subcluster": "physical",
+      "x": 431.8,
+      "y": 56.7,
+      "concepts": [
+        "coral",
+        "ocean",
+        "australia",
+        "biodiversity",
+        "ecosystem",
+        "bleaching",
+        "tourism",
+        "marine_life",
+        "climate",
+        "wonder"
+      ],
+      "color": "#F39C12"
+    },
+    "africa": {
+      "name": "Africa",
+      "cluster": "geography",
+      "subcluster": "continents",
+      "x": 554.8,
+      "y": 148.8,
+      "concepts": [
+        "continent",
+        "diversity",
+        "wildlife",
+        "sahara",
+        "nile",
+        "origins",
+        "colonialism",
+        "culture",
+        "resources",
+        "development"
+      ],
+      "color": "#F39C12"
+    },
+    "asia": {
+      "name": "Asia",
+      "cluster": "geography",
+      "subcluster": "continents",
+      "x": 537.0,
+      "y": 162.9,
+      "concepts": [
+        "continent",
+        "population",
+        "diversity",
+        "china",
+        "india",
+        "culture",
+        "history",
+        "economy",
+        "religion",
+        "development"
+      ],
+      "color": "#F39C12"
+    },
+    "europe": {
+      "name": "Europe",
+      "cluster": "geography",
+      "subcluster": "continents",
+      "x": 527.6,
+      "y": 168.7,
+      "concepts": [
+        "continent",
+        "history",
+        "culture",
+        "union",
+        "christianity",
+        "colonialism",
+        "democracy",
+        "art",
+        "wars",
+        "diversity"
+      ],
+      "color": "#F39C12"
+    },
+    "north_america": {
+      "name": "North America",
+      "cluster": "geography",
+      "subcluster": "continents",
+      "x": 523.4,
+      "y": 142.2,
+      "concepts": [
+        "continent",
+        "america",
+        "canada",
+        "mexico",
+        "diversity",
+        "colonization",
+        "democracy",
+        "economy",
+        "culture",
+        "power"
+      ],
+      "color": "#F39C12"
+    },
+    "south_america": {
+      "name": "South America",
+      "cluster": "geography",
+      "subcluster": "continents",
+      "x": 543.2,
+      "y": 151.3,
+      "concepts": [
+        "continent",
+        "amazon",
+        "andes",
+        "diversity",
+        "colonization",
+        "culture",
+        "resources",
+        "rainforest",
+        "civilization",
+        "development"
+      ],
+      "color": "#F39C12"
+    },
+    "oceania": {
+      "name": "Oceania",
+      "cluster": "geography",
+      "subcluster": "continents",
+      "x": 553.0,
+      "y": 138.1,
+      "concepts": [
+        "australia",
+        "pacific",
+        "islands",
+        "indigenous",
+        "isolation",
+        "diversity",
+        "coral_reef",
+        "culture",
+        "colonization",
+        "nature"
+      ],
+      "color": "#F39C12"
+    },
+    "antarctica": {
+      "name": "Antarctica",
+      "cluster": "geography",
+      "subcluster": "continents",
+      "x": 550.0,
+      "y": 155.6,
+      "concepts": [
+        "ice",
+        "cold",
+        "research",
+        "isolation",
+        "penguins",
+        "climate",
+        "exploration",
+        "treaty",
+        "pristine",
+        "extreme"
+      ],
+      "color": "#F39C12"
+    },
+    "united_states": {
+      "name": "United States",
+      "cluster": "geography",
+      "subcluster": "countries",
+      "x": 477.1,
+      "y": 245.8,
+      "concepts": [
+        "america",
+        "democracy",
+        "power",
+        "diversity",
+        "economy",
+        "military",
+        "culture",
+        "innovation",
+        "freedom",
+        "superpower"
+      ],
+      "color": "#F39C12"
+    },
+    "china": {
+      "name": "China",
+      "cluster": "geography",
+      "subcluster": "countries",
+      "x": 456.6,
+      "y": 255.4,
+      "concepts": [
+        "population",
+        "history",
+        "economy",
+        "communism",
+        "culture",
+        "great_wall",
+        "manufacturing",
+        "power",
+        "ancient",
+        "modernization"
+      ],
+      "color": "#F39C12"
+    },
+    "india": {
+      "name": "India",
+      "cluster": "geography",
+      "subcluster": "countries",
+      "x": 451.3,
+      "y": 251.7,
+      "concepts": [
+        "population",
+        "diversity",
+        "hinduism",
+        "democracy",
+        "culture",
+        "history",
+        "economy",
+        "caste",
+        "gandhi",
+        "development"
+      ],
+      "color": "#F39C12"
+    },
+    "russia": {
+      "name": "Russia",
+      "cluster": "geography",
+      "subcluster": "countries",
+      "x": 439.4,
+      "y": 234.5,
+      "concepts": [
+        "vast",
+        "cold",
+        "power",
+        "soviet",
+        "resources",
+        "military",
+        "culture",
+        "history",
+        "orthodox",
+        "politics"
+      ],
+      "color": "#F39C12"
+    },
+    "brazil": {
+      "name": "Brazil",
+      "cluster": "geography",
+      "subcluster": "countries",
+      "x": 444.3,
+      "y": 227.7,
+      "concepts": [
+        "amazon",
+        "carnival",
+        "football",
+        "diversity",
+        "resources",
+        "portuguese",
+        "rainforest",
+        "economy",
+        "culture",
+        "development"
+      ],
+      "color": "#F39C12"
+    },
+    "japan": {
+      "name": "Japan",
+      "cluster": "geography",
+      "subcluster": "countries",
+      "x": 466.4,
+      "y": 214.5,
+      "concepts": [
+        "islands",
+        "technology",
+        "culture",
+        "samurai",
+        "anime",
+        "economy",
+        "tradition",
+        "innovation",
+        "earthquake",
+        "modernization"
+      ],
+      "color": "#F39C12"
+    },
+    "egypt": {
+      "name": "Egypt",
+      "cluster": "geography",
+      "subcluster": "countries",
+      "x": 473.6,
+      "y": 261.2,
+      "concepts": [
+        "pyramids",
+        "nile",
+        "ancient",
+        "arab",
+        "desert",
+        "civilization",
+        "history",
+        "pharaohs",
+        "islam",
+        "culture"
+      ],
+      "color": "#F39C12"
+    },
+    "united_kingdom": {
+      "name": "United Kingdom",
+      "cluster": "geography",
+      "subcluster": "countries",
+      "x": 456.6,
+      "y": 276.2,
+      "concepts": [
+        "monarchy",
+        "empire",
+        "democracy",
+        "island",
+        "history",
+        "culture",
+        "language",
+        "colonialism",
+        "industry",
+        "influence"
+      ],
+      "color": "#F39C12"
+    },
+    "france": {
+      "name": "France",
+      "cluster": "geography",
+      "subcluster": "countries",
+      "x": 437.1,
+      "y": 244.4,
+      "concepts": [
+        "culture",
+        "revolution",
+        "art",
+        "wine",
+        "cuisine",
+        "history",
+        "fashion",
+        "philosophy",
+        "romance",
+        "europe"
+      ],
+      "color": "#F39C12"
+    },
+    "germany": {
+      "name": "Germany",
+      "cluster": "geography",
+      "subcluster": "countries",
+      "x": 427.1,
+      "y": 219.9,
+      "concepts": [
+        "economy",
+        "history",
+        "war",
+        "engineering",
+        "philosophy",
+        "music",
+        "reunification",
+        "europe",
+        "industry",
+        "culture"
+      ],
+      "color": "#F39C12"
+    },
+    "new_york_city": {
+      "name": "New York City",
+      "cluster": "geography",
+      "subcluster": "cities",
+      "x": 395.1,
+      "y": 154.5,
+      "concepts": [
+        "metropolis",
+        "finance",
+        "culture",
+        "diversity",
+        "immigration",
+        "skyline",
+        "america",
+        "broadway",
+        "influence",
+        "energy"
+      ],
+      "color": "#F39C12"
+    },
+    "london": {
+      "name": "London",
+      "cluster": "geography",
+      "subcluster": "cities",
+      "x": 363.1,
+      "y": 190.1,
+      "concepts": [
+        "capital",
+        "history",
+        "finance",
+        "culture",
+        "empire",
+        "monarchy",
+        "diversity",
+        "theatre",
+        "influence",
+        "river"
+      ],
+      "color": "#F39C12"
+    },
+    "tokyo": {
+      "name": "Tokyo",
+      "cluster": "geography",
+      "subcluster": "cities",
+      "x": 331.0,
+      "y": 153.2,
+      "concepts": [
+        "metropolis",
+        "japan",
+        "technology",
+        "culture",
+        "population",
+        "tradition",
+        "modernity",
+        "anime",
+        "earthquake",
+        "efficiency"
+      ],
+      "color": "#F39C12"
+    },
+    "rome": {
+      "name": "Rome",
+      "cluster": "geography",
+      "subcluster": "cities",
+      "x": 355.9,
+      "y": 116.7,
+      "concepts": [
+        "history",
+        "empire",
+        "vatican",
+        "art",
+        "architecture",
+        "christianity",
+        "ancient",
+        "culture",
+        "tourism",
+        "legacy"
+      ],
+      "color": "#F39C12"
+    },
+    "physics": {
+      "name": "Physics",
+      "cluster": "science",
+      "subcluster": "physics",
+      "x": 410.8,
+      "y": -303.5,
+      "concepts": [
+        "matter",
+        "energy",
+        "forces",
+        "motion",
+        "laws",
+        "universe",
+        "mathematics",
+        "experiment",
+        "theory",
+        "fundamental"
+      ],
+      "color": "#4A90D9"
+    },
+    "matter": {
+      "name": "Matter",
+      "cluster": "science",
+      "subcluster": "physics",
+      "x": 387.8,
+      "y": -276.0,
+      "concepts": [
+        "atoms",
+        "molecules",
+        "states",
+        "mass",
+        "substance",
+        "physics",
+        "chemistry",
+        "particles",
+        "solid",
+        "liquid"
+      ],
+      "color": "#4A90D9"
+    },
+    "energy": {
+      "name": "Energy",
+      "cluster": "science",
+      "subcluster": "physics",
+      "x": 378.7,
+      "y": -291.7,
+      "concepts": [
+        "power",
+        "transformation",
+        "conservation",
+        "forms",
+        "physics",
+        "work",
+        "heat",
+        "light",
+        "motion",
+        "fundamental"
+      ],
+      "color": "#4A90D9"
+    },
+    "gravity": {
+      "name": "Gravity",
+      "cluster": "science",
+      "subcluster": "physics",
+      "x": 349.4,
+      "y": -292.6,
+      "concepts": [
+        "force",
+        "attraction",
+        "newton",
+        "einstein",
+        "mass",
+        "falling",
+        "planets",
+        "orbits",
+        "weight",
+        "universal"
+      ],
+      "color": "#4A90D9"
+    },
+    "light": {
+      "name": "Light",
+      "cluster": "science",
+      "subcluster": "physics",
+      "x": 368.1,
+      "y": -310.8,
+      "concepts": [
+        "electromagnetic",
+        "waves",
+        "particles",
+        "speed",
+        "color",
+        "vision",
+        "photons",
+        "optics",
+        "energy",
+        "spectrum"
+      ],
+      "color": "#4A90D9"
+    },
+    "electricity": {
+      "name": "Electricity",
+      "cluster": "technology",
+      "subcluster": "energy",
+      "x": 180.0,
+      "y": 274.6,
+      "concepts": [
+        "power",
+        "current",
+        "energy",
+        "technology",
+        "light",
+        "circuit",
+        "generation",
+        "essential",
+        "revolution",
+        "grid"
+      ],
+      "color": "#95A5A6"
+    },
+    "quantum_mechanics": {
+      "name": "Quantum Mechanics",
+      "cluster": "science",
+      "subcluster": "physics",
+      "x": 402.9,
+      "y": -285.2,
+      "concepts": [
+        "particles",
+        "waves",
+        "uncertainty",
+        "probability",
+        "atoms",
+        "physics",
+        "weird",
+        "superposition",
+        "observation",
+        "fundamental"
+      ],
+      "color": "#4A90D9"
+    },
+    "relativity": {
+      "name": "Relativity",
+      "cluster": "science",
+      "subcluster": "physics",
+      "x": 383.9,
+      "y": -284.9,
+      "concepts": [
+        "einstein",
+        "time",
+        "space",
+        "light",
+        "gravity",
+        "mass",
+        "energy",
+        "physics",
+        "dilation",
+        "fundamental"
+      ],
+      "color": "#4A90D9"
+    },
+    "chemistry": {
+      "name": "Chemistry",
+      "cluster": "science",
+      "subcluster": "chemistry",
+      "x": 505.1,
+      "y": -196.5,
+      "concepts": [
+        "elements",
+        "reactions",
+        "molecules",
+        "atoms",
+        "bonds",
+        "substances",
+        "laboratory",
+        "matter",
+        "periodic_table",
+        "transformation"
+      ],
+      "color": "#4A90D9"
+    },
+    "atom": {
+      "name": "Atom",
+      "cluster": "science",
+      "subcluster": "chemistry",
+      "x": 493.1,
+      "y": -184.1,
+      "concepts": [
+        "nucleus",
+        "electrons",
+        "protons",
+        "neutrons",
+        "small",
+        "fundamental",
+        "chemistry",
+        "physics",
+        "elements",
+        "matter"
+      ],
+      "color": "#4A90D9"
+    },
+    "molecule": {
+      "name": "Molecule",
+      "cluster": "science",
+      "subcluster": "chemistry",
+      "x": 478.9,
+      "y": -196.3,
+      "concepts": [
+        "atoms",
+        "bonds",
+        "compounds",
+        "chemistry",
+        "structure",
+        "water",
+        "organic",
+        "reactions",
+        "substances",
+        "formation"
+      ],
+      "color": "#4A90D9"
+    },
+    "periodic_table": {
+      "name": "Periodic Table",
+      "cluster": "science",
+      "subcluster": "chemistry",
+      "x": 473.3,
+      "y": -196.5,
+      "concepts": [
+        "elements",
+        "chemistry",
+        "organization",
+        "properties",
+        "mendeleev",
+        "atoms",
+        "patterns",
+        "metals",
+        "fundamental",
+        "science"
+      ],
+      "color": "#4A90D9"
+    },
+    "water": {
+      "name": "Water (Life)",
+      "cluster": "everyday_life",
+      "subcluster": "sustenance",
+      "x": -103.4,
+      "y": 350.4,
+      "concepts": [
+        "essential",
+        "life",
+        "drinking",
+        "resource",
+        "scarcity",
+        "cycle",
+        "ocean",
+        "fresh",
+        "survival",
+        "universal"
+      ],
+      "color": "#F1C40F"
+    },
+    "carbon": {
+      "name": "Carbon",
+      "cluster": "science",
+      "subcluster": "chemistry",
+      "x": 483.8,
+      "y": -218.1,
+      "concepts": [
+        "element",
+        "organic",
+        "life",
+        "bonds",
+        "diamond",
+        "graphite",
+        "chemistry",
+        "fossil_fuels",
+        "cycle",
+        "versatile"
+      ],
+      "color": "#4A90D9"
+    },
+    "oxygen": {
+      "name": "Oxygen",
+      "cluster": "science",
+      "subcluster": "chemistry",
+      "x": 510.2,
+      "y": -184.5,
+      "concepts": [
+        "element",
+        "breathing",
+        "atmosphere",
+        "life",
+        "combustion",
+        "water",
+        "chemistry",
+        "essential",
+        "gas",
+        "ozone"
+      ],
+      "color": "#4A90D9"
+    },
+    "astronomy": {
+      "name": "Astronomy",
+      "cluster": "science",
+      "subcluster": "astronomy",
+      "x": 405.9,
+      "y": -103.2,
+      "concepts": [
+        "stars",
+        "planets",
+        "universe",
+        "observation",
+        "telescope",
+        "cosmos",
+        "space",
+        "science",
+        "ancient",
+        "discovery"
+      ],
+      "color": "#4A90D9"
+    },
+    "universe": {
+      "name": "Universe",
+      "cluster": "science",
+      "subcluster": "astronomy",
+      "x": 380.5,
+      "y": -88.7,
+      "concepts": [
+        "cosmos",
+        "vast",
+        "galaxies",
+        "big_bang",
+        "expansion",
+        "space",
+        "time",
+        "matter",
+        "mystery",
+        "everything"
+      ],
+      "color": "#4A90D9"
+    },
+    "galaxy": {
+      "name": "Galaxy",
+      "cluster": "science",
+      "subcluster": "astronomy",
+      "x": 374.0,
+      "y": -84.9,
+      "concepts": [
+        "stars",
+        "milky_way",
+        "vast",
+        "billions",
+        "spiral",
+        "universe",
+        "space",
+        "black_hole",
+        "formation",
+        "cosmos"
+      ],
+      "color": "#4A90D9"
+    },
+    "sun": {
+      "name": "Sun",
+      "cluster": "science",
+      "subcluster": "astronomy",
+      "x": 363.8,
+      "y": -104.6,
+      "concepts": [
+        "star",
+        "light",
+        "heat",
+        "energy",
+        "solar_system",
+        "fusion",
+        "worship",
+        "essential",
+        "life",
+        "center"
+      ],
+      "color": "#4A90D9"
+    },
+    "moon": {
+      "name": "Moon",
+      "cluster": "science",
+      "subcluster": "astronomy",
+      "x": 378.7,
+      "y": -108.7,
+      "concepts": [
+        "satellite",
+        "tides",
+        "phases",
+        "earth",
+        "landing",
+        "night",
+        "craters",
+        "apollo",
+        "orbit",
+        "mystery"
+      ],
+      "color": "#4A90D9"
+    },
+    "solar_system": {
+      "name": "Solar System",
+      "cluster": "science",
+      "subcluster": "astronomy",
+      "x": 378.1,
+      "y": -107.9,
+      "concepts": [
+        "sun",
+        "planets",
+        "orbits",
+        "space",
+        "exploration",
+        "formation",
+        "asteroids",
+        "moons",
+        "earth",
+        "neighborhood"
+      ],
+      "color": "#4A90D9"
+    },
+    "planet": {
+      "name": "Planet",
+      "cluster": "science",
+      "subcluster": "astronomy",
+      "x": 404.3,
+      "y": -80.2,
+      "concepts": [
+        "orbits",
+        "solar_system",
+        "earth",
+        "spherical",
+        "gravity",
+        "space",
+        "exploration",
+        "worlds",
+        "formation",
+        "classification"
+      ],
+      "color": "#4A90D9"
+    },
+    "black_hole": {
+      "name": "Black Hole",
+      "cluster": "science",
+      "subcluster": "astronomy",
+      "x": 383.5,
+      "y": -71.4,
+      "concepts": [
+        "gravity",
+        "singularity",
+        "space",
+        "time",
+        "event_horizon",
+        "mystery",
+        "galaxies",
+        "collapse",
+        "physics",
+        "extreme"
+      ],
+      "color": "#4A90D9"
+    },
+    "big_bang": {
+      "name": "Big Bang",
+      "cluster": "science",
+      "subcluster": "astronomy",
+      "x": 353.6,
+      "y": -92.6,
+      "concepts": [
+        "origin",
+        "universe",
+        "explosion",
+        "expansion",
+        "time",
+        "creation",
+        "cosmology",
+        "theory",
+        "beginning",
+        "fundamental"
+      ],
+      "color": "#4A90D9"
+    },
+    "geology": {
+      "name": "Geology",
+      "cluster": "science",
+      "subcluster": "earth_science",
+      "x": 325.6,
+      "y": -200.5,
+      "concepts": [
+        "rocks",
+        "earth",
+        "minerals",
+        "formation",
+        "time",
+        "plates",
+        "erosion",
+        "fossils",
+        "volcanoes",
+        "science"
+      ],
+      "color": "#4A90D9"
+    },
+    "plate_tectonics": {
+      "name": "Plate Tectonics",
+      "cluster": "science",
+      "subcluster": "earth_science",
+      "x": 304.7,
+      "y": -170.3,
+      "concepts": [
+        "continents",
+        "movement",
+        "earthquakes",
+        "volcanoes",
+        "earth",
+        "crust",
+        "drift",
+        "boundaries",
+        "mountains",
+        "geology"
+      ],
+      "color": "#4A90D9"
+    },
+    "volcano": {
+      "name": "Volcano",
+      "cluster": "science",
+      "subcluster": "earth_science",
+      "x": 260.9,
+      "y": -170.5,
+      "concepts": [
+        "eruption",
+        "lava",
+        "magma",
+        "destruction",
+        "mountains",
+        "ring_of_fire",
+        "earth",
+        "geology",
+        "danger",
+        "creation"
+      ],
+      "color": "#4A90D9"
+    },
+    "earthquake": {
+      "name": "Earthquake",
+      "cluster": "science",
+      "subcluster": "earth_science",
+      "x": 240.2,
+      "y": -203.1,
+      "concepts": [
+        "seismic",
+        "destruction",
+        "plates",
+        "fault",
+        "shaking",
+        "tsunami",
+        "earth",
+        "geology",
+        "disaster",
+        "unpredictable"
+      ],
+      "color": "#4A90D9"
+    },
+    "climate": {
+      "name": "Climate",
+      "cluster": "science",
+      "subcluster": "earth_science",
+      "x": 255.1,
+      "y": -234.4,
+      "concepts": [
+        "weather",
+        "patterns",
+        "temperature",
+        "atmosphere",
+        "change",
+        "zones",
+        "global",
+        "seasons",
+        "long_term",
+        "earth"
+      ],
+      "color": "#4A90D9"
+    },
+    "climate_change": {
+      "name": "Climate Change",
+      "cluster": "science",
+      "subcluster": "earth_science",
+      "x": 294.1,
+      "y": -241.7,
+      "concepts": [
+        "global_warming",
+        "carbon",
+        "crisis",
+        "human",
+        "temperature",
+        "ice",
+        "sea_level",
+        "future",
+        "action",
+        "science"
+      ],
+      "color": "#4A90D9"
+    },
+    "biology": {
+      "name": "Biology",
+      "cluster": "biology",
+      "subcluster": "fundamentals",
+      "x": 262.7,
+      "y": 313.8,
+      "concepts": [
+        "life",
+        "organisms",
+        "cells",
+        "evolution",
+        "genetics",
+        "ecology",
+        "science",
+        "diversity",
+        "systems",
+        "study"
+      ],
+      "color": "#27AE60"
+    },
+    "life": {
+      "name": "Life",
+      "cluster": "biology",
+      "subcluster": "fundamentals",
+      "x": 260.9,
+      "y": 321.5,
+      "concepts": [
+        "existence",
+        "biology",
+        "organisms",
+        "cells",
+        "reproduction",
+        "evolution",
+        "death",
+        "meaning",
+        "origin",
+        "diversity"
+      ],
+      "color": "#27AE60"
+    },
+    "cell": {
+      "name": "Cell",
+      "cluster": "biology",
+      "subcluster": "fundamentals",
+      "x": 243.7,
+      "y": 324.6,
+      "concepts": [
+        "biology",
+        "unit",
+        "membrane",
+        "nucleus",
+        "organelles",
+        "division",
+        "microscopic",
+        "life",
+        "function",
+        "building_block"
+      ],
+      "color": "#27AE60"
+    },
+    "dna": {
+      "name": "DNA",
+      "cluster": "biology",
+      "subcluster": "fundamentals",
+      "x": 242.1,
+      "y": 317.7,
+      "concepts": [
+        "genetics",
+        "heredity",
+        "code",
+        "double_helix",
+        "genes",
+        "blueprint",
+        "evolution",
+        "life",
+        "molecule",
+        "information"
+      ],
+      "color": "#27AE60"
+    },
+    "gene": {
+      "name": "Gene",
+      "cluster": "biology",
+      "subcluster": "fundamentals",
+      "x": 239.8,
+      "y": 302.0,
+      "concepts": [
+        "dna",
+        "heredity",
+        "traits",
+        "genetics",
+        "expression",
+        "mutation",
+        "inheritance",
+        "biology",
+        "code",
+        "variation"
+      ],
+      "color": "#27AE60"
+    },
+    "evolution": {
+      "name": "Evolution",
+      "cluster": "biology",
+      "subcluster": "fundamentals",
+      "x": 262.5,
+      "y": 300.0,
+      "concepts": [
+        "darwin",
+        "natural_selection",
+        "species",
+        "adaptation",
+        "change",
+        "time",
+        "biology",
+        "diversity",
+        "survival",
+        "theory"
+      ],
+      "color": "#27AE60"
+    },
+    "natural_selection": {
+      "name": "Natural Selection",
+      "cluster": "biology",
+      "subcluster": "fundamentals",
+      "x": 276.3,
+      "y": 327.2,
+      "concepts": [
+        "evolution",
+        "darwin",
+        "survival",
+        "adaptation",
+        "fitness",
+        "competition",
+        "variation",
+        "reproduction",
+        "biology",
+        "mechanism"
+      ],
+      "color": "#27AE60"
+    },
+    "human_body": {
+      "name": "Human Body",
+      "cluster": "biology",
+      "subcluster": "anatomy",
+      "x": 371.8,
+      "y": 405.9,
+      "concepts": [
+        "anatomy",
+        "organs",
+        "systems",
+        "health",
+        "biology",
+        "medicine",
+        "function",
+        "complex",
+        "cells",
+        "amazing"
+      ],
+      "color": "#27AE60"
+    },
+    "brain": {
+      "name": "Brain",
+      "cluster": "biology",
+      "subcluster": "anatomy",
+      "x": 335.3,
+      "y": 430.7,
+      "concepts": [
+        "mind",
+        "neurons",
+        "thought",
+        "consciousness",
+        "organ",
+        "intelligence",
+        "memory",
+        "complex",
+        "control",
+        "mystery"
+      ],
+      "color": "#27AE60"
+    },
+    "heart": {
+      "name": "Heart",
+      "cluster": "biology",
+      "subcluster": "anatomy",
+      "x": 299.3,
+      "y": 403.6,
+      "concepts": [
+        "organ",
+        "blood",
+        "pump",
+        "circulation",
+        "muscle",
+        "beat",
+        "life",
+        "love",
+        "medicine",
+        "essential"
+      ],
+      "color": "#27AE60"
+    },
+    "blood": {
+      "name": "Blood",
+      "cluster": "biology",
+      "subcluster": "anatomy",
+      "x": 338.6,
+      "y": 365.9,
+      "concepts": [
+        "cells",
+        "circulation",
+        "oxygen",
+        "heart",
+        "red",
+        "white",
+        "plasma",
+        "life",
+        "medicine",
+        "donation"
+      ],
+      "color": "#27AE60"
+    },
+    "animal": {
+      "name": "Animal",
+      "cluster": "biology",
+      "subcluster": "organisms",
+      "x": 262.5,
+      "y": 478.2,
+      "concepts": [
+        "organism",
+        "diversity",
+        "movement",
+        "senses",
+        "instinct",
+        "wildlife",
+        "biology",
+        "evolution",
+        "ecosystem",
+        "kingdom"
+      ],
+      "color": "#27AE60"
+    },
+    "mammal": {
+      "name": "Mammal",
+      "cluster": "biology",
+      "subcluster": "organisms",
+      "x": 251.0,
+      "y": 490.2,
+      "concepts": [
+        "warm_blooded",
+        "milk",
+        "fur",
+        "animals",
+        "evolution",
+        "diversity",
+        "humans",
+        "intelligence",
+        "birth",
+        "care"
+      ],
+      "color": "#27AE60"
+    },
+    "bird": {
+      "name": "Bird",
+      "cluster": "biology",
+      "subcluster": "organisms",
+      "x": 237.0,
+      "y": 493.2,
+      "concepts": [
+        "flight",
+        "feathers",
+        "wings",
+        "eggs",
+        "migration",
+        "song",
+        "diversity",
+        "dinosaurs",
+        "beak",
+        "evolution"
+      ],
+      "color": "#27AE60"
+    },
+    "fish": {
+      "name": "Fish",
+      "cluster": "biology",
+      "subcluster": "organisms",
+      "x": 235.8,
+      "y": 478.0,
+      "concepts": [
+        "water",
+        "gills",
+        "scales",
+        "swimming",
+        "ocean",
+        "diversity",
+        "evolution",
+        "food",
+        "ancient",
+        "vertebrate"
+      ],
+      "color": "#27AE60"
+    },
+    "insect": {
+      "name": "Insect",
+      "cluster": "biology",
+      "subcluster": "organisms",
+      "x": 244.8,
+      "y": 473.5,
+      "concepts": [
+        "arthropod",
+        "exoskeleton",
+        "wings",
+        "diversity",
+        "small",
+        "pollination",
+        "metamorphosis",
+        "ecosystem",
+        "abundant",
+        "evolution"
+      ],
+      "color": "#27AE60"
+    },
+    "dinosaur": {
+      "name": "Dinosaur",
+      "cluster": "biology",
+      "subcluster": "organisms",
+      "x": 252.6,
+      "y": 484.8,
+      "concepts": [
+        "extinct",
+        "prehistoric",
+        "reptiles",
+        "massive",
+        "fossils",
+        "evolution",
+        "birds",
+        "asteroid",
+        "diversity",
+        "mystery"
+      ],
+      "color": "#27AE60"
+    },
+    "plant": {
+      "name": "Plant",
+      "cluster": "biology",
+      "subcluster": "organisms",
+      "x": 275.5,
+      "y": 502.9,
+      "concepts": [
+        "photosynthesis",
+        "green",
+        "oxygen",
+        "roots",
+        "leaves",
+        "flowers",
+        "ecosystem",
+        "life",
+        "food",
+        "diversity"
+      ],
+      "color": "#27AE60"
+    },
+    "tree": {
+      "name": "Tree",
+      "cluster": "biology",
+      "subcluster": "organisms",
+      "x": 248.8,
+      "y": 506.2,
+      "concepts": [
+        "plant",
+        "wood",
+        "forest",
+        "oxygen",
+        "tall",
+        "roots",
+        "ecosystem",
+        "life",
+        "shelter",
+        "ancient"
+      ],
+      "color": "#27AE60"
+    },
+    "bacteria": {
+      "name": "Bacteria",
+      "cluster": "biology",
+      "subcluster": "organisms",
+      "x": 236.3,
+      "y": 501.5,
+      "concepts": [
+        "microorganism",
+        "single_cell",
+        "disease",
+        "beneficial",
+        "ancient",
+        "everywhere",
+        "evolution",
+        "small",
+        "reproduction",
+        "diversity"
+      ],
+      "color": "#27AE60"
+    },
+    "virus": {
+      "name": "Virus",
+      "cluster": "biology",
+      "subcluster": "organisms",
+      "x": 219.9,
+      "y": 473.2,
+      "concepts": [
+        "infection",
+        "disease",
+        "not_alive",
+        "small",
+        "pandemic",
+        "mutation",
+        "host",
+        "spread",
+        "immune",
+        "microscopic"
+      ],
+      "color": "#27AE60"
+    },
+    "medicine": {
+      "name": "Medicine",
+      "cluster": "biology",
+      "subcluster": "health",
+      "x": 200.4,
+      "y": 400.7,
+      "concepts": [
+        "health",
+        "disease",
+        "treatment",
+        "doctors",
+        "drugs",
+        "surgery",
+        "science",
+        "healing",
+        "prevention",
+        "care"
+      ],
+      "color": "#27AE60"
+    },
+    "disease": {
+      "name": "Disease",
+      "cluster": "biology",
+      "subcluster": "health",
+      "x": 177.5,
+      "y": 427.5,
+      "concepts": [
+        "illness",
+        "health",
+        "medicine",
+        "treatment",
+        "cause",
+        "symptoms",
+        "prevention",
+        "suffering",
+        "cure",
+        "epidemic"
+      ],
+      "color": "#27AE60"
+    },
+    "cancer": {
+      "name": "Cancer",
+      "cluster": "biology",
+      "subcluster": "health",
+      "x": 143.1,
+      "y": 416.8,
+      "concepts": [
+        "disease",
+        "cells",
+        "growth",
+        "treatment",
+        "death",
+        "research",
+        "types",
+        "medicine",
+        "mutation",
+        "fight"
+      ],
+      "color": "#27AE60"
+    },
+    "vaccine": {
+      "name": "Vaccine",
+      "cluster": "biology",
+      "subcluster": "health",
+      "x": 134.2,
+      "y": 380.6,
+      "concepts": [
+        "immunity",
+        "disease",
+        "prevention",
+        "medicine",
+        "injection",
+        "antibodies",
+        "virus",
+        "public_health",
+        "science",
+        "protection"
+      ],
+      "color": "#27AE60"
+    },
+    "pandemic": {
+      "name": "Pandemic",
+      "cluster": "biology",
+      "subcluster": "health",
+      "x": 173.0,
+      "y": 371.7,
+      "concepts": [
+        "disease",
+        "global",
+        "spread",
+        "virus",
+        "death",
+        "crisis",
+        "lockdown",
+        "medicine",
+        "history",
+        "fear"
+      ],
+      "color": "#27AE60"
+    },
+    "technology": {
+      "name": "Technology",
+      "cluster": "technology",
+      "subcluster": "concepts",
+      "x": 150.0,
+      "y": 120.0,
+      "concepts": [
+        "tools",
+        "innovation",
+        "progress",
+        "invention",
+        "science",
+        "human",
+        "change",
+        "application",
+        "development",
+        "future"
+      ],
+      "color": "#95A5A6"
+    },
+    "computer": {
+      "name": "Computer",
+      "cluster": "technology",
+      "subcluster": "computing",
+      "x": 246.5,
+      "y": 159.6,
+      "concepts": [
+        "machine",
+        "calculation",
+        "digital",
+        "software",
+        "hardware",
+        "processing",
+        "technology",
+        "revolution",
+        "internet",
+        "data"
+      ],
+      "color": "#95A5A6"
+    },
+    "internet": {
+      "name": "Internet",
+      "cluster": "technology",
+      "subcluster": "computing",
+      "x": 226.1,
+      "y": 185.0,
+      "concepts": [
+        "network",
+        "global",
+        "connection",
+        "information",
+        "communication",
+        "technology",
+        "revolution",
+        "web",
+        "access",
+        "society"
+      ],
+      "color": "#95A5A6"
+    },
+    "artificial_intelligence": {
+      "name": "Artificial Intelligence",
+      "cluster": "technology",
+      "subcluster": "computing",
+      "x": 193.6,
+      "y": 180.4,
+      "concepts": [
+        "machine_learning",
+        "computer",
+        "intelligence",
+        "future",
+        "automation",
+        "data",
+        "technology",
+        "human",
+        "ethics",
+        "revolution"
+      ],
+      "color": "#95A5A6"
+    },
+    "software": {
+      "name": "Software",
+      "cluster": "technology",
+      "subcluster": "computing",
+      "x": 188.7,
+      "y": 145.6,
+      "concepts": [
+        "programs",
+        "code",
+        "computer",
+        "application",
+        "development",
+        "technology",
+        "digital",
+        "tools",
+        "operating_system",
+        "apps"
+      ],
+      "color": "#95A5A6"
+    },
+    "algorithm": {
+      "name": "Algorithm",
+      "cluster": "technology",
+      "subcluster": "computing",
+      "x": 224.6,
+      "y": 128.9,
+      "concepts": [
+        "steps",
+        "computer",
+        "mathematics",
+        "problem_solving",
+        "code",
+        "logic",
+        "efficiency",
+        "data",
+        "instructions",
+        "process"
+      ],
+      "color": "#95A5A6"
+    },
+    "engineering": {
+      "name": "Engineering",
+      "cluster": "technology",
+      "subcluster": "engineering",
+      "x": 219.3,
+      "y": 240.0,
+      "concepts": [
+        "design",
+        "building",
+        "problem_solving",
+        "technology",
+        "science",
+        "mathematics",
+        "innovation",
+        "construction",
+        "systems",
+        "application"
+      ],
+      "color": "#95A5A6"
+    },
+    "nuclear_power": {
+      "name": "Nuclear Power",
+      "cluster": "technology",
+      "subcluster": "energy",
+      "x": 138.2,
+      "y": 307.3,
+      "concepts": [
+        "energy",
+        "fission",
+        "reactor",
+        "radioactive",
+        "power",
+        "danger",
+        "clean",
+        "controversy",
+        "physics",
+        "future"
+      ],
+      "color": "#95A5A6"
+    },
+    "renewable_energy": {
+      "name": "Renewable Energy",
+      "cluster": "technology",
+      "subcluster": "energy",
+      "x": 137.6,
+      "y": 252.2,
+      "concepts": [
+        "solar",
+        "wind",
+        "sustainable",
+        "future",
+        "environment",
+        "clean",
+        "technology",
+        "climate",
+        "transition",
+        "power"
+      ],
+      "color": "#95A5A6"
+    },
+    "automobile": {
+      "name": "Automobile",
+      "cluster": "technology",
+      "subcluster": "transportation",
+      "x": 116.8,
+      "y": 243.6,
+      "concepts": [
+        "car",
+        "transportation",
+        "engine",
+        "travel",
+        "industry",
+        "freedom",
+        "pollution",
+        "technology",
+        "revolution",
+        "roads"
+      ],
+      "color": "#95A5A6"
+    },
+    "airplane": {
+      "name": "Airplane",
+      "cluster": "technology",
+      "subcluster": "transportation",
+      "x": 69.7,
+      "y": 264.3,
+      "concepts": [
+        "flight",
+        "aviation",
+        "travel",
+        "wright_brothers",
+        "transportation",
+        "technology",
+        "speed",
+        "global",
+        "engineering",
+        "freedom"
+      ],
+      "color": "#95A5A6"
+    },
+    "rocket": {
+      "name": "Rocket",
+      "cluster": "technology",
+      "subcluster": "transportation",
+      "x": 59.4,
+      "y": 215.5,
+      "concepts": [
+        "space",
+        "propulsion",
+        "exploration",
+        "technology",
+        "fuel",
+        "launch",
+        "nasa",
+        "moon",
+        "engineering",
+        "power"
+      ],
+      "color": "#95A5A6"
+    },
+    "printing_press": {
+      "name": "Printing Press",
+      "cluster": "technology",
+      "subcluster": "inventions",
+      "x": 110.2,
+      "y": 166.0,
+      "concepts": [
+        "gutenberg",
+        "books",
+        "revolution",
+        "knowledge",
+        "communication",
+        "technology",
+        "spread",
+        "literacy",
+        "transformation",
+        "invention"
+      ],
+      "color": "#95A5A6"
+    },
+    "telephone": {
+      "name": "Telephone",
+      "cluster": "technology",
+      "subcluster": "inventions",
+      "x": 78.6,
+      "y": 195.5,
+      "concepts": [
+        "communication",
+        "bell",
+        "voice",
+        "connection",
+        "technology",
+        "invention",
+        "revolution",
+        "distance",
+        "conversation",
+        "progress"
+      ],
+      "color": "#95A5A6"
+    },
+    "wheel": {
+      "name": "Wheel",
+      "cluster": "technology",
+      "subcluster": "inventions",
+      "x": 45.5,
+      "y": 157.9,
+      "concepts": [
+        "invention",
+        "transportation",
+        "rotation",
+        "fundamental",
+        "ancient",
+        "technology",
+        "progress",
+        "simple",
+        "revolution",
+        "movement"
+      ],
+      "color": "#95A5A6"
+    },
+    "steam_engine": {
+      "name": "Steam Engine",
+      "cluster": "technology",
+      "subcluster": "inventions",
+      "x": 85.8,
+      "y": 132.3,
+      "concepts": [
+        "industrial_revolution",
+        "power",
+        "trains",
+        "factories",
+        "technology",
+        "transformation",
+        "coal",
+        "invention",
+        "energy",
+        "progress"
+      ],
+      "color": "#95A5A6"
+    },
+    "art": {
+      "name": "Art",
+      "cluster": "arts",
+      "subcluster": "visual",
+      "x": -351.3,
+      "y": -340.6,
+      "concepts": [
+        "creativity",
+        "expression",
+        "beauty",
+        "culture",
+        "human",
+        "emotion",
+        "visual",
+        "meaning",
+        "history",
+        "diverse"
+      ],
+      "color": "#9B59B6"
+    },
+    "painting": {
+      "name": "Painting",
+      "cluster": "arts",
+      "subcluster": "visual",
+      "x": -363.8,
+      "y": -302.5,
+      "concepts": [
+        "art",
+        "canvas",
+        "color",
+        "brush",
+        "expression",
+        "visual",
+        "masters",
+        "technique",
+        "beauty",
+        "creativity"
+      ],
+      "color": "#9B59B6"
+    },
+    "sculpture": {
+      "name": "Sculpture",
+      "cluster": "arts",
+      "subcluster": "visual",
+      "x": -404.8,
+      "y": -317.9,
+      "concepts": [
+        "art",
+        "three_dimensional",
+        "stone",
+        "bronze",
+        "form",
+        "beauty",
+        "ancient",
+        "expression",
+        "monument",
+        "creation"
+      ],
+      "color": "#9B59B6"
+    },
+    "photography": {
+      "name": "Photography",
+      "cluster": "arts",
+      "subcluster": "visual",
+      "x": -408.6,
+      "y": -359.5,
+      "concepts": [
+        "image",
+        "camera",
+        "light",
+        "capture",
+        "art",
+        "technology",
+        "memory",
+        "documentary",
+        "moment",
+        "visual"
+      ],
+      "color": "#9B59B6"
+    },
+    "architecture": {
+      "name": "Architecture",
+      "cluster": "arts",
+      "subcluster": "visual",
+      "x": -373.6,
+      "y": -369.9,
+      "concepts": [
+        "buildings",
+        "design",
+        "space",
+        "structure",
+        "engineering",
+        "art",
+        "culture",
+        "function",
+        "beauty",
+        "cities"
+      ],
+      "color": "#9B59B6"
+    },
+    "music": {
+      "name": "Music",
+      "cluster": "arts",
+      "subcluster": "performing",
+      "x": -282.6,
+      "y": -244.9,
+      "concepts": [
+        "sound",
+        "rhythm",
+        "melody",
+        "emotion",
+        "universal",
+        "culture",
+        "expression",
+        "performance",
+        "instruments",
+        "art"
+      ],
+      "color": "#9B59B6"
+    },
+    "classical_music": {
+      "name": "Classical Music",
+      "cluster": "arts",
+      "subcluster": "performing",
+      "x": -289.8,
+      "y": -237.8,
+      "concepts": [
+        "orchestra",
+        "symphony",
+        "composers",
+        "tradition",
+        "complexity",
+        "beauty",
+        "europe",
+        "history",
+        "instruments",
+        "culture"
+      ],
+      "color": "#9B59B6"
+    },
+    "jazz": {
+      "name": "Jazz",
+      "cluster": "arts",
+      "subcluster": "performing",
+      "x": -297.1,
+      "y": -234.1,
+      "concepts": [
+        "improvisation",
+        "america",
+        "african_american",
+        "rhythm",
+        "blues",
+        "freedom",
+        "expression",
+        "innovation",
+        "culture",
+        "swing"
+      ],
+      "color": "#9B59B6"
+    },
+    "rock_music": {
+      "name": "Rock Music",
+      "cluster": "arts",
+      "subcluster": "performing",
+      "x": -303.1,
+      "y": -256.8,
+      "concepts": [
+        "guitar",
+        "rebellion",
+        "youth",
+        "culture",
+        "energy",
+        "bands",
+        "popular",
+        "electric",
+        "revolution",
+        "expression"
+      ],
+      "color": "#9B59B6"
+    },
+    "theatre": {
+      "name": "Theatre",
+      "cluster": "arts",
+      "subcluster": "performing",
+      "x": -301.7,
+      "y": -271.4,
+      "concepts": [
+        "performance",
+        "drama",
+        "stage",
+        "actors",
+        "audience",
+        "storytelling",
+        "ancient",
+        "culture",
+        "art",
+        "live"
+      ],
+      "color": "#9B59B6"
+    },
+    "dance": {
+      "name": "Dance",
+      "cluster": "arts",
+      "subcluster": "performing",
+      "x": -279.9,
+      "y": -264.9,
+      "concepts": [
+        "movement",
+        "rhythm",
+        "expression",
+        "body",
+        "culture",
+        "music",
+        "art",
+        "performance",
+        "universal",
+        "tradition"
+      ],
+      "color": "#9B59B6"
+    },
+    "film": {
+      "name": "Film",
+      "cluster": "arts",
+      "subcluster": "performing",
+      "x": -273.0,
+      "y": -237.7,
+      "concepts": [
+        "movies",
+        "cinema",
+        "storytelling",
+        "visual",
+        "entertainment",
+        "art",
+        "technology",
+        "culture",
+        "hollywood",
+        "director"
+      ],
+      "color": "#9B59B6"
+    },
+    "opera": {
+      "name": "Opera",
+      "cluster": "arts",
+      "subcluster": "performing",
+      "x": -295.7,
+      "y": -231.3,
+      "concepts": [
+        "music",
+        "drama",
+        "singing",
+        "theatre",
+        "italy",
+        "classical",
+        "emotion",
+        "grandeur",
+        "art",
+        "performance"
+      ],
+      "color": "#9B59B6"
+    },
+    "literature": {
+      "name": "Literature",
+      "cluster": "arts",
+      "subcluster": "literary",
+      "x": -348.2,
+      "y": -164.9,
+      "concepts": [
+        "writing",
+        "books",
+        "stories",
+        "poetry",
+        "culture",
+        "expression",
+        "language",
+        "art",
+        "imagination",
+        "human"
+      ],
+      "color": "#9B59B6"
+    },
+    "poetry": {
+      "name": "Poetry",
+      "cluster": "arts",
+      "subcluster": "literary",
+      "x": -385.3,
+      "y": -127.0,
+      "concepts": [
+        "verse",
+        "rhythm",
+        "language",
+        "emotion",
+        "beauty",
+        "expression",
+        "ancient",
+        "art",
+        "metaphor",
+        "condensed"
+      ],
+      "color": "#9B59B6"
+    },
+    "novel": {
+      "name": "Novel",
+      "cluster": "arts",
+      "subcluster": "literary",
+      "x": -419.8,
+      "y": -158.7,
+      "concepts": [
+        "fiction",
+        "story",
+        "characters",
+        "narrative",
+        "long",
+        "literature",
+        "imagination",
+        "modern",
+        "prose",
+        "art"
+      ],
+      "color": "#9B59B6"
+    },
+    "mythology": {
+      "name": "Mythology",
+      "cluster": "arts",
+      "subcluster": "literary",
+      "x": -377.9,
+      "y": -203.4,
+      "concepts": [
+        "gods",
+        "stories",
+        "ancient",
+        "culture",
+        "religion",
+        "heroes",
+        "explanation",
+        "tradition",
+        "symbols",
+        "universal"
+      ],
+      "color": "#9B59B6"
+    },
+    "renaissance_art": {
+      "name": "Renaissance Art",
+      "cluster": "arts",
+      "subcluster": "movements",
+      "x": -432.0,
+      "y": -247.3,
+      "concepts": [
+        "rebirth",
+        "italy",
+        "humanism",
+        "perspective",
+        "beauty",
+        "masters",
+        "painting",
+        "sculpture",
+        "innovation",
+        "culture"
+      ],
+      "color": "#9B59B6"
+    },
+    "impressionism": {
+      "name": "Impressionism",
+      "cluster": "arts",
+      "subcluster": "movements",
+      "x": -488.3,
+      "y": -217.1,
+      "concepts": [
+        "light",
+        "color",
+        "france",
+        "painting",
+        "modern",
+        "nature",
+        "moment",
+        "brush_strokes",
+        "revolution",
+        "art"
+      ],
+      "color": "#9B59B6"
+    },
+    "modern_art": {
+      "name": "Modern Art",
+      "cluster": "arts",
+      "subcluster": "movements",
+      "x": -487.1,
+      "y": -281.2,
+      "concepts": [
+        "innovation",
+        "abstract",
+        "revolution",
+        "twentieth_century",
+        "expression",
+        "breaking_rules",
+        "diverse",
+        "challenging",
+        "culture",
+        "new"
+      ],
+      "color": "#9B59B6"
+    },
+    "philosophy": {
+      "name": "Philosophy",
+      "cluster": "philosophy_religion",
+      "subcluster": "philosophy",
+      "x": -418.2,
+      "y": -79.5,
+      "concepts": [
+        "wisdom",
+        "thinking",
+        "questions",
+        "existence",
+        "knowledge",
+        "ethics",
+        "logic",
+        "meaning",
+        "ancient",
+        "fundamental"
+      ],
+      "color": "#1ABC9C"
+    },
+    "ethics": {
+      "name": "Ethics",
+      "cluster": "philosophy_religion",
+      "subcluster": "philosophy",
+      "x": -431.7,
+      "y": -50.2,
+      "concepts": [
+        "morality",
+        "right_wrong",
+        "philosophy",
+        "values",
+        "behavior",
+        "principles",
+        "decisions",
+        "virtue",
+        "duty",
+        "consequences"
+      ],
+      "color": "#1ABC9C"
+    },
+    "logic": {
+      "name": "Logic",
+      "cluster": "philosophy_religion",
+      "subcluster": "philosophy",
+      "x": -465.2,
+      "y": -46.8,
+      "concepts": [
+        "reasoning",
+        "arguments",
+        "validity",
+        "mathematics",
+        "philosophy",
+        "thinking",
+        "rules",
+        "proof",
+        "truth",
+        "structure"
+      ],
+      "color": "#1ABC9C"
+    },
+    "metaphysics": {
+      "name": "Metaphysics",
+      "cluster": "philosophy_religion",
+      "subcluster": "philosophy",
+      "x": -476.5,
+      "y": -83.5,
+      "concepts": [
+        "reality",
+        "existence",
+        "being",
+        "philosophy",
+        "fundamental",
+        "abstract",
+        "questions",
+        "nature",
+        "universe",
+        "deep"
+      ],
+      "color": "#1ABC9C"
+    },
+    "epistemology": {
+      "name": "Epistemology",
+      "cluster": "philosophy_religion",
+      "subcluster": "philosophy",
+      "x": -460.4,
+      "y": -106.8,
+      "concepts": [
+        "knowledge",
+        "truth",
+        "belief",
+        "philosophy",
+        "justification",
+        "certainty",
+        "doubt",
+        "understanding",
+        "perception",
+        "inquiry"
+      ],
+      "color": "#1ABC9C"
+    },
+    "consciousness": {
+      "name": "Consciousness",
+      "cluster": "philosophy_religion",
+      "subcluster": "philosophy",
+      "x": -433.7,
+      "y": -109.2,
+      "concepts": [
+        "awareness",
+        "mind",
+        "experience",
+        "mystery",
+        "philosophy",
+        "brain",
+        "self",
+        "subjective",
+        "existence",
+        "hard_problem"
+      ],
+      "color": "#1ABC9C"
+    },
+    "religion": {
+      "name": "Religion",
+      "cluster": "philosophy_religion",
+      "subcluster": "religion",
+      "x": -377.9,
+      "y": 45.6,
+      "concepts": [
+        "belief",
+        "god",
+        "spirituality",
+        "ritual",
+        "community",
+        "meaning",
+        "sacred",
+        "tradition",
+        "faith",
+        "diverse"
+      ],
+      "color": "#1ABC9C"
+    },
+    "christianity": {
+      "name": "Christianity",
+      "cluster": "philosophy_religion",
+      "subcluster": "religion",
+      "x": -382.1,
+      "y": 50.3,
+      "concepts": [
+        "jesus",
+        "god",
+        "bible",
+        "church",
+        "salvation",
+        "love",
+        "faith",
+        "resurrection",
+        "global",
+        "history"
+      ],
+      "color": "#1ABC9C"
+    },
+    "islam": {
+      "name": "Islam",
+      "cluster": "philosophy_religion",
+      "subcluster": "religion",
+      "x": -379.4,
+      "y": 51.5,
+      "concepts": [
+        "muhammad",
+        "allah",
+        "quran",
+        "submission",
+        "prayer",
+        "mecca",
+        "global",
+        "monotheism",
+        "community",
+        "faith"
+      ],
+      "color": "#1ABC9C"
+    },
+    "hinduism": {
+      "name": "Hinduism",
+      "cluster": "philosophy_religion",
+      "subcluster": "religion",
+      "x": -396.9,
+      "y": 47.2,
+      "concepts": [
+        "india",
+        "gods",
+        "karma",
+        "reincarnation",
+        "dharma",
+        "ancient",
+        "diverse",
+        "ritual",
+        "caste",
+        "spirituality"
+      ],
+      "color": "#1ABC9C"
+    },
+    "buddhism": {
+      "name": "Buddhism",
+      "cluster": "philosophy_religion",
+      "subcluster": "religion",
+      "x": -379.5,
+      "y": 35.9,
+      "concepts": [
+        "buddha",
+        "enlightenment",
+        "suffering",
+        "meditation",
+        "nirvana",
+        "asia",
+        "peace",
+        "mindfulness",
+        "path",
+        "compassion"
+      ],
+      "color": "#1ABC9C"
+    },
+    "judaism": {
+      "name": "Judaism",
+      "cluster": "philosophy_religion",
+      "subcluster": "religion",
+      "x": -368.7,
+      "y": 26.8,
+      "concepts": [
+        "god",
+        "torah",
+        "covenant",
+        "israel",
+        "ancient",
+        "law",
+        "tradition",
+        "monotheism",
+        "history",
+        "identity"
+      ],
+      "color": "#1ABC9C"
+    },
+    "god": {
+      "name": "God",
+      "cluster": "philosophy_religion",
+      "subcluster": "religion",
+      "x": -356.5,
+      "y": 44.1,
+      "concepts": [
+        "divine",
+        "creator",
+        "belief",
+        "religion",
+        "worship",
+        "omnipotent",
+        "faith",
+        "existence",
+        "meaning",
+        "debate"
+      ],
+      "color": "#1ABC9C"
+    },
+    "soul": {
+      "name": "Soul",
+      "cluster": "philosophy_religion",
+      "subcluster": "religion",
+      "x": -377.3,
+      "y": 53.7,
+      "concepts": [
+        "spirit",
+        "immortal",
+        "religion",
+        "philosophy",
+        "consciousness",
+        "afterlife",
+        "identity",
+        "belief",
+        "essence",
+        "body"
+      ],
+      "color": "#1ABC9C"
+    },
+    "prayer": {
+      "name": "Prayer",
+      "cluster": "philosophy_religion",
+      "subcluster": "religion",
+      "x": -401.7,
+      "y": 53.0,
+      "concepts": [
+        "communication",
+        "god",
+        "religion",
+        "ritual",
+        "faith",
+        "meditation",
+        "request",
+        "gratitude",
+        "practice",
+        "spiritual"
+      ],
+      "color": "#1ABC9C"
+    },
+    "greek_mythology": {
+      "name": "Greek Mythology",
+      "cluster": "philosophy_religion",
+      "subcluster": "mythology",
+      "x": -484.1,
+      "y": 39.0,
+      "concepts": [
+        "gods",
+        "heroes",
+        "greece",
+        "stories",
+        "zeus",
+        "olympus",
+        "monsters",
+        "ancient",
+        "influence",
+        "culture"
+      ],
+      "color": "#1ABC9C"
+    },
+    "roman_mythology": {
+      "name": "Roman Mythology",
+      "cluster": "philosophy_religion",
+      "subcluster": "mythology",
+      "x": -516.9,
+      "y": 74.5,
+      "concepts": [
+        "gods",
+        "rome",
+        "greek_influence",
+        "jupiter",
+        "stories",
+        "ancient",
+        "religion",
+        "culture",
+        "mars",
+        "founding"
+      ],
+      "color": "#1ABC9C"
+    },
+    "norse_mythology": {
+      "name": "Norse Mythology",
+      "cluster": "philosophy_religion",
+      "subcluster": "mythology",
+      "x": -548.0,
+      "y": 42.6,
+      "concepts": [
+        "gods",
+        "vikings",
+        "odin",
+        "thor",
+        "ragnarok",
+        "scandinavia",
+        "warriors",
+        "stories",
+        "ancient",
+        "influence"
+      ],
+      "color": "#1ABC9C"
+    },
+    "egyptian_mythology": {
+      "name": "Egyptian Mythology",
+      "cluster": "philosophy_religion",
+      "subcluster": "mythology",
+      "x": -523.5,
+      "y": 12.3,
+      "concepts": [
+        "gods",
+        "egypt",
+        "afterlife",
+        "ra",
+        "osiris",
+        "pyramids",
+        "ancient",
+        "pharaohs",
+        "mummies",
+        "religion"
+      ],
+      "color": "#1ABC9C"
+    },
+    "society": {
+      "name": "Society",
+      "cluster": "society",
+      "subcluster": "concepts",
+      "x": -315.9,
+      "y": 209.8,
+      "concepts": [
+        "people",
+        "organization",
+        "culture",
+        "rules",
+        "community",
+        "interaction",
+        "structure",
+        "civilization",
+        "norms",
+        "collective"
+      ],
+      "color": "#E74C3C"
+    },
+    "culture": {
+      "name": "Culture",
+      "cluster": "society",
+      "subcluster": "concepts",
+      "x": -379.6,
+      "y": 211.9,
+      "concepts": [
+        "traditions",
+        "values",
+        "art",
+        "society",
+        "identity",
+        "shared",
+        "language",
+        "customs",
+        "diverse",
+        "human"
+      ],
+      "color": "#E74C3C"
+    },
+    "democracy": {
+      "name": "Democracy",
+      "cluster": "society",
+      "subcluster": "politics",
+      "x": -250.0,
+      "y": 243.2,
+      "concepts": [
+        "government",
+        "voting",
+        "people",
+        "freedom",
+        "representation",
+        "rights",
+        "elections",
+        "participation",
+        "equality",
+        "power"
+      ],
+      "color": "#E74C3C"
+    },
+    "government": {
+      "name": "Government",
+      "cluster": "society",
+      "subcluster": "politics",
+      "x": -266.5,
+      "y": 283.7,
+      "concepts": [
+        "state",
+        "power",
+        "authority",
+        "law",
+        "politics",
+        "administration",
+        "control",
+        "public",
+        "institutions",
+        "society"
+      ],
+      "color": "#E74C3C"
+    },
+    "law": {
+      "name": "Law",
+      "cluster": "society",
+      "subcluster": "politics",
+      "x": -299.3,
+      "y": 273.7,
+      "concepts": [
+        "rules",
+        "justice",
+        "society",
+        "courts",
+        "enforcement",
+        "rights",
+        "order",
+        "punishment",
+        "government",
+        "civilization"
+      ],
+      "color": "#E74C3C"
+    },
+    "communism": {
+      "name": "Communism",
+      "cluster": "society",
+      "subcluster": "politics",
+      "x": -313.0,
+      "y": 251.8,
+      "concepts": [
+        "marx",
+        "ideology",
+        "equality",
+        "state",
+        "revolution",
+        "soviet_union",
+        "china",
+        "class",
+        "collective",
+        "property"
+      ],
+      "color": "#E74C3C"
+    },
+    "capitalism": {
+      "name": "Capitalism",
+      "cluster": "society",
+      "subcluster": "politics",
+      "x": -301.1,
+      "y": 223.1,
+      "concepts": [
+        "market",
+        "private_property",
+        "profit",
+        "economy",
+        "competition",
+        "freedom",
+        "wealth",
+        "inequality",
+        "business",
+        "growth"
+      ],
+      "color": "#E74C3C"
+    },
+    "fascism": {
+      "name": "Fascism",
+      "cluster": "society",
+      "subcluster": "politics",
+      "x": -272.4,
+      "y": 214.4,
+      "concepts": [
+        "authoritarianism",
+        "nationalism",
+        "dictatorship",
+        "hitler",
+        "mussolini",
+        "ideology",
+        "violence",
+        "control",
+        "propaganda",
+        "evil"
+      ],
+      "color": "#E74C3C"
+    },
+    "economics": {
+      "name": "Economics",
+      "cluster": "society",
+      "subcluster": "economics",
+      "x": -226.8,
+      "y": 315.3,
+      "concepts": [
+        "money",
+        "trade",
+        "resources",
+        "scarcity",
+        "markets",
+        "growth",
+        "wealth",
+        "production",
+        "consumption",
+        "society"
+      ],
+      "color": "#E74C3C"
+    },
+    "money": {
+      "name": "Money (Daily)",
+      "cluster": "everyday_life",
+      "subcluster": "daily",
+      "x": -201.2,
+      "y": 444.9,
+      "concepts": [
+        "currency",
+        "exchange",
+        "work",
+        "value",
+        "necessity",
+        "savings",
+        "spending",
+        "economics",
+        "daily",
+        "essential"
+      ],
+      "color": "#F1C40F"
+    },
+    "trade": {
+      "name": "Trade",
+      "cluster": "society",
+      "subcluster": "economics",
+      "x": -305.7,
+      "y": 324.7,
+      "concepts": [
+        "exchange",
+        "goods",
+        "economics",
+        "global",
+        "history",
+        "routes",
+        "merchants",
+        "wealth",
+        "connection",
+        "markets"
+      ],
+      "color": "#E74C3C"
+    },
+    "poverty": {
+      "name": "Poverty",
+      "cluster": "society",
+      "subcluster": "economics",
+      "x": -267.3,
+      "y": 279.8,
+      "concepts": [
+        "lack",
+        "suffering",
+        "inequality",
+        "economics",
+        "society",
+        "development",
+        "aid",
+        "causes",
+        "global",
+        "struggle"
+      ],
+      "color": "#E74C3C"
+    },
+    "education": {
+      "name": "Education",
+      "cluster": "society",
+      "subcluster": "social",
+      "x": -279.6,
+      "y": 377.6,
+      "concepts": [
+        "learning",
+        "school",
+        "knowledge",
+        "children",
+        "society",
+        "future",
+        "literacy",
+        "development",
+        "opportunity",
+        "universal"
+      ],
+      "color": "#E74C3C"
+    },
+    "family": {
+      "name": "Family",
+      "cluster": "society",
+      "subcluster": "social",
+      "x": -303.3,
+      "y": 404.6,
+      "concepts": [
+        "parents",
+        "children",
+        "love",
+        "unit",
+        "society",
+        "support",
+        "relationships",
+        "home",
+        "tradition",
+        "universal"
+      ],
+      "color": "#E74C3C"
+    },
+    "marriage": {
+      "name": "Marriage",
+      "cluster": "society",
+      "subcluster": "social",
+      "x": -340.8,
+      "y": 405.5,
+      "concepts": [
+        "union",
+        "love",
+        "commitment",
+        "family",
+        "tradition",
+        "ceremony",
+        "society",
+        "partnership",
+        "legal",
+        "cultural"
+      ],
+      "color": "#E74C3C"
+    },
+    "language": {
+      "name": "Language",
+      "cluster": "society",
+      "subcluster": "social",
+      "x": -344.4,
+      "y": 354.3,
+      "concepts": [
+        "communication",
+        "words",
+        "meaning",
+        "culture",
+        "human",
+        "diverse",
+        "learning",
+        "expression",
+        "identity",
+        "universal"
+      ],
+      "color": "#E74C3C"
+    },
+    "writing": {
+      "name": "Writing",
+      "cluster": "society",
+      "subcluster": "social",
+      "x": -305.5,
+      "y": 349.4,
+      "concepts": [
+        "communication",
+        "language",
+        "history",
+        "recording",
+        "civilization",
+        "literacy",
+        "expression",
+        "invention",
+        "preservation",
+        "power"
+      ],
+      "color": "#E74C3C"
+    },
+    "human_rights": {
+      "name": "Human Rights",
+      "cluster": "society",
+      "subcluster": "justice",
+      "x": -359.0,
+      "y": 378.0,
+      "concepts": [
+        "dignity",
+        "universal",
+        "freedom",
+        "equality",
+        "justice",
+        "protection",
+        "law",
+        "society",
+        "struggle",
+        "fundamental"
+      ],
+      "color": "#E74C3C"
+    },
+    "freedom": {
+      "name": "Freedom",
+      "cluster": "society",
+      "subcluster": "justice",
+      "x": -399.9,
+      "y": 408.9,
+      "concepts": [
+        "liberty",
+        "rights",
+        "choice",
+        "independence",
+        "democracy",
+        "value",
+        "struggle",
+        "expression",
+        "fundamental",
+        "human"
+      ],
+      "color": "#E74C3C"
+    },
+    "equality": {
+      "name": "Equality",
+      "cluster": "society",
+      "subcluster": "justice",
+      "x": -409.9,
+      "y": 343.0,
+      "concepts": [
+        "rights",
+        "fairness",
+        "opportunity",
+        "society",
+        "struggle",
+        "discrimination",
+        "justice",
+        "human",
+        "ideal",
+        "progress"
+      ],
+      "color": "#E74C3C"
+    },
+    "war": {
+      "name": "War",
+      "cluster": "society",
+      "subcluster": "conflict",
+      "x": -395.7,
+      "y": 313.2,
+      "concepts": [
+        "conflict",
+        "violence",
+        "death",
+        "military",
+        "nations",
+        "destruction",
+        "history",
+        "power",
+        "politics",
+        "humanity"
+      ],
+      "color": "#E74C3C"
+    },
+    "peace": {
+      "name": "Peace",
+      "cluster": "society",
+      "subcluster": "conflict",
+      "x": -453.2,
+      "y": 350.9,
+      "concepts": [
+        "harmony",
+        "absence_war",
+        "cooperation",
+        "diplomacy",
+        "goal",
+        "society",
+        "stability",
+        "hope",
+        "effort",
+        "ideal"
+      ],
+      "color": "#E74C3C"
+    },
+    "terrorism": {
+      "name": "Terrorism",
+      "cluster": "society",
+      "subcluster": "conflict",
+      "x": -453.2,
+      "y": 291.3,
+      "concepts": [
+        "violence",
+        "fear",
+        "political",
+        "attacks",
+        "ideology",
+        "security",
+        "global",
+        "extremism",
+        "innocent",
+        "modern"
+      ],
+      "color": "#E74C3C"
+    },
+    "united_nations": {
+      "name": "United Nations",
+      "cluster": "society",
+      "subcluster": "organizations",
+      "x": -383.2,
+      "y": 246.3,
+      "concepts": [
+        "international",
+        "peace",
+        "cooperation",
+        "global",
+        "diplomacy",
+        "rights",
+        "organization",
+        "security",
+        "development",
+        "nations"
+      ],
+      "color": "#E74C3C"
+    },
+    "european_union": {
+      "name": "European Union",
+      "cluster": "society",
+      "subcluster": "organizations",
+      "x": -456.7,
+      "y": 241.2,
+      "concepts": [
+        "europe",
+        "integration",
+        "cooperation",
+        "trade",
+        "peace",
+        "politics",
+        "union",
+        "currency",
+        "membership",
+        "organization"
+      ],
+      "color": "#E74C3C"
+    },
+    "food": {
+      "name": "Food",
+      "cluster": "everyday_life",
+      "subcluster": "sustenance",
+      "x": -70.7,
+      "y": 377.7,
+      "concepts": [
+        "nutrition",
+        "eating",
+        "culture",
+        "survival",
+        "cooking",
+        "agriculture",
+        "diverse",
+        "pleasure",
+        "essential",
+        "health"
+      ],
+      "color": "#F1C40F"
+    },
+    "agriculture": {
+      "name": "Agriculture",
+      "cluster": "everyday_life",
+      "subcluster": "sustenance",
+      "x": -101.3,
+      "y": 410.7,
+      "concepts": [
+        "farming",
+        "food",
+        "civilization",
+        "land",
+        "crops",
+        "animals",
+        "revolution",
+        "technology",
+        "essential",
+        "history"
+      ],
+      "color": "#F1C40F"
+    },
+    "cooking": {
+      "name": "Cooking",
+      "cluster": "everyday_life",
+      "subcluster": "sustenance",
+      "x": -124.3,
+      "y": 375.6,
+      "concepts": [
+        "food",
+        "preparation",
+        "heat",
+        "culture",
+        "skill",
+        "recipes",
+        "tradition",
+        "creativity",
+        "nutrition",
+        "universal"
+      ],
+      "color": "#F1C40F"
+    },
+    "health": {
+      "name": "Health",
+      "cluster": "everyday_life",
+      "subcluster": "wellbeing",
+      "x": -5.9,
+      "y": 446.7,
+      "concepts": [
+        "wellbeing",
+        "body",
+        "mind",
+        "medicine",
+        "lifestyle",
+        "disease",
+        "prevention",
+        "care",
+        "essential",
+        "quality"
+      ],
+      "color": "#F1C40F"
+    },
+    "sleep": {
+      "name": "Sleep",
+      "cluster": "everyday_life",
+      "subcluster": "wellbeing",
+      "x": -37.8,
+      "y": 471.0,
+      "concepts": [
+        "rest",
+        "essential",
+        "dreams",
+        "health",
+        "cycle",
+        "brain",
+        "recovery",
+        "night",
+        "universal",
+        "biology"
+      ],
+      "color": "#F1C40F"
+    },
+    "exercise": {
+      "name": "Exercise",
+      "cluster": "everyday_life",
+      "subcluster": "wellbeing",
+      "x": -45.0,
+      "y": 425.1,
+      "concepts": [
+        "physical",
+        "health",
+        "fitness",
+        "movement",
+        "strength",
+        "wellbeing",
+        "sports",
+        "habit",
+        "body",
+        "energy"
+      ],
+      "color": "#F1C40F"
+    },
+    "sport": {
+      "name": "Sport",
+      "cluster": "everyday_life",
+      "subcluster": "recreation",
+      "x": -75.1,
+      "y": 517.9,
+      "concepts": [
+        "competition",
+        "physical",
+        "games",
+        "entertainment",
+        "health",
+        "culture",
+        "teams",
+        "athletes",
+        "rules",
+        "universal"
+      ],
+      "color": "#F1C40F"
+    },
+    "olympic_games": {
+      "name": "Olympic Games",
+      "cluster": "everyday_life",
+      "subcluster": "recreation",
+      "x": -93.1,
+      "y": 549.5,
+      "concepts": [
+        "competition",
+        "global",
+        "sports",
+        "athletes",
+        "greece",
+        "tradition",
+        "excellence",
+        "peace",
+        "unity",
+        "ceremony"
+      ],
+      "color": "#F1C40F"
+    },
+    "football": {
+      "name": "Football",
+      "cluster": "everyday_life",
+      "subcluster": "recreation",
+      "x": -124.0,
+      "y": 538.1,
+      "concepts": [
+        "sport",
+        "global",
+        "teams",
+        "world_cup",
+        "passion",
+        "competition",
+        "ball",
+        "culture",
+        "popular",
+        "entertainment"
+      ],
+      "color": "#F1C40F"
+    },
+    "chess": {
+      "name": "Chess",
+      "cluster": "everyday_life",
+      "subcluster": "recreation",
+      "x": -121.8,
+      "y": 497.6,
+      "concepts": [
+        "game",
+        "strategy",
+        "intelligence",
+        "ancient",
+        "competition",
+        "board",
+        "thinking",
+        "mastery",
+        "universal",
+        "culture"
+      ],
+      "color": "#F1C40F"
+    },
+    "video_game": {
+      "name": "Video Game",
+      "cluster": "everyday_life",
+      "subcluster": "recreation",
+      "x": -89.4,
+      "y": 492.1,
+      "concepts": [
+        "entertainment",
+        "digital",
+        "interactive",
+        "technology",
+        "culture",
+        "youth",
+        "industry",
+        "play",
+        "virtual",
+        "modern"
+      ],
+      "color": "#F1C40F"
+    },
+    "clothing": {
+      "name": "Clothing",
+      "cluster": "everyday_life",
+      "subcluster": "daily",
+      "x": -143.2,
+      "y": 454.7,
+      "concepts": [
+        "fashion",
+        "protection",
+        "culture",
+        "identity",
+        "fabric",
+        "style",
+        "necessity",
+        "expression",
+        "history",
+        "universal"
+      ],
+      "color": "#F1C40F"
+    },
+    "house": {
+      "name": "House",
+      "cluster": "everyday_life",
+      "subcluster": "daily",
+      "x": -170.5,
+      "y": 479.6,
+      "concepts": [
+        "home",
+        "shelter",
+        "living",
+        "family",
+        "architecture",
+        "property",
+        "comfort",
+        "privacy",
+        "essential",
+        "space"
+      ],
+      "color": "#F1C40F"
+    },
+    "work": {
+      "name": "Work",
+      "cluster": "everyday_life",
+      "subcluster": "daily",
+      "x": -174.1,
+      "y": 426.1,
+      "concepts": [
+        "employment",
+        "labor",
+        "income",
+        "career",
+        "productivity",
+        "society",
+        "purpose",
+        "daily",
+        "essential",
+        "livelihood"
+      ],
+      "color": "#F1C40F"
+    },
+    "mathematics": {
+      "name": "Mathematics",
+      "cluster": "mathematics",
+      "subcluster": "fundamentals",
+      "x": 526.3,
+      "y": -112.0,
+      "concepts": [
+        "numbers",
+        "logic",
+        "patterns",
+        "proof",
+        "abstract",
+        "universal",
+        "language",
+        "science",
+        "precision",
+        "beauty"
+      ],
+      "color": "#3498DB"
+    },
+    "number": {
+      "name": "Number",
+      "cluster": "mathematics",
+      "subcluster": "fundamentals",
+      "x": 506.2,
+      "y": -88.9,
+      "concepts": [
+        "quantity",
+        "counting",
+        "mathematics",
+        "abstract",
+        "fundamental",
+        "operations",
+        "infinite",
+        "zero",
+        "concept",
+        "universal"
+      ],
+      "color": "#3498DB"
+    },
+    "zero": {
+      "name": "Zero",
+      "cluster": "mathematics",
+      "subcluster": "fundamentals",
+      "x": 481.6,
+      "y": -91.9,
+      "concepts": [
+        "nothing",
+        "number",
+        "invention",
+        "mathematics",
+        "placeholder",
+        "india",
+        "revolutionary",
+        "concept",
+        "essential",
+        "abstract"
+      ],
+      "color": "#3498DB"
+    },
+    "infinity": {
+      "name": "Infinity",
+      "cluster": "mathematics",
+      "subcluster": "fundamentals",
+      "x": 478.5,
+      "y": -128.4,
+      "concepts": [
+        "endless",
+        "mathematics",
+        "concept",
+        "abstract",
+        "philosophy",
+        "paradox",
+        "unbounded",
+        "mind_bending",
+        "number",
+        "mystery"
+      ],
+      "color": "#3498DB"
+    },
+    "pi": {
+      "name": "Pi",
+      "cluster": "mathematics",
+      "subcluster": "fundamentals",
+      "x": 507.4,
+      "y": -132.8,
+      "concepts": [
+        "circle",
+        "mathematics",
+        "constant",
+        "irrational",
+        "geometry",
+        "universal",
+        "infinite_digits",
+        "ratio",
+        "famous",
+        "mystery"
+      ],
+      "color": "#3498DB"
+    },
+    "algebra": {
+      "name": "Algebra",
+      "cluster": "mathematics",
+      "subcluster": "branches",
+      "x": 571.3,
+      "y": -23.3,
+      "concepts": [
+        "equations",
+        "variables",
+        "mathematics",
+        "symbols",
+        "solving",
+        "abstract",
+        "patterns",
+        "operations",
+        "foundation",
+        "powerful"
+      ],
+      "color": "#3498DB"
+    },
+    "geometry": {
+      "name": "Geometry",
+      "cluster": "mathematics",
+      "subcluster": "branches",
+      "x": 559.4,
+      "y": 1.0,
+      "concepts": [
+        "shapes",
+        "space",
+        "mathematics",
+        "measurement",
+        "proof",
+        "euclid",
+        "angles",
+        "visual",
+        "ancient",
+        "fundamental"
+      ],
+      "color": "#3498DB"
+    },
+    "calculus": {
+      "name": "Calculus",
+      "cluster": "mathematics",
+      "subcluster": "branches",
+      "x": 537.0,
+      "y": -6.6,
+      "concepts": [
+        "change",
+        "rates",
+        "mathematics",
+        "newton",
+        "leibniz",
+        "derivatives",
+        "integrals",
+        "motion",
+        "powerful",
+        "science"
+      ],
+      "color": "#3498DB"
+    },
+    "statistics": {
+      "name": "Statistics",
+      "cluster": "mathematics",
+      "subcluster": "branches",
+      "x": 533.3,
+      "y": -39.8,
+      "concepts": [
+        "data",
+        "probability",
+        "analysis",
+        "mathematics",
+        "patterns",
+        "inference",
+        "uncertainty",
+        "science",
+        "decision",
+        "numbers"
+      ],
+      "color": "#3498DB"
+    },
+    "probability": {
+      "name": "Probability",
+      "cluster": "mathematics",
+      "subcluster": "branches",
+      "x": 561.5,
+      "y": -46.7,
+      "concepts": [
+        "chance",
+        "mathematics",
+        "uncertainty",
+        "statistics",
+        "prediction",
+        "gambling",
+        "risk",
+        "outcomes",
+        "likelihood",
+        "randomness"
+      ],
+      "color": "#3498DB"
+    },
+    "equation": {
+      "name": "Equation",
+      "cluster": "mathematics",
+      "subcluster": "concepts",
+      "x": 473.2,
+      "y": -14.9,
+      "concepts": [
+        "mathematics",
+        "equality",
+        "solving",
+        "algebra",
+        "symbols",
+        "relationship",
+        "balance",
+        "unknown",
+        "expression",
+        "fundamental"
+      ],
+      "color": "#3498DB"
+    },
+    "proof": {
+      "name": "Proof",
+      "cluster": "mathematics",
+      "subcluster": "concepts",
+      "x": 439.8,
+      "y": -2.2,
+      "concepts": [
+        "mathematics",
+        "logic",
+        "truth",
+        "demonstration",
+        "rigorous",
+        "certainty",
+        "reasoning",
+        "theorem",
+        "verification",
+        "foundation"
+      ],
+      "color": "#3498DB"
+    },
+    "theorem": {
+      "name": "Theorem",
+      "cluster": "mathematics",
+      "subcluster": "concepts",
+      "x": 438.3,
+      "y": -41.6,
+      "concepts": [
+        "mathematics",
+        "proof",
+        "statement",
+        "truth",
+        "logic",
+        "discovery",
+        "famous",
+        "fundamental",
+        "pythagorean",
+        "building_block"
+      ],
+      "color": "#3498DB"
+    }
+  }
+}

@@ -103,8 +103,11 @@ import {
   updateLearningState,
   startLearningCard,
   getStudyDeckLearningCards,
-  getStudyDeckReviewDueCards
+  getStudyDeckReviewDueCards,
+  getCharacter,
 } from '../services/storage'
+import CharacterSelect from './CharacterSelect'
+import Void from './Void'
 
 // Configuration - card counts can be adjusted here or per-deck
 const DEFAULT_OVERVIEW_CARDS = 5
@@ -198,14 +201,39 @@ const HOME_DECKS = [
   }
 ]
 
+// Categories matching constellation.json clusters
 const CATEGORIES = [
   {
-    id: 'arts',
-    name: 'Arts',
-    gradient: 'from-pink-500 to-rose-600',
-    bgColor: 'bg-pink-50',
-    borderColor: 'border-pink-300',
-    children: ['architecture', 'literature', 'music', 'visual-arts', 'film-tv', 'performing-arts', 'photography', 'fashion-design']
+    id: 'people',
+    name: 'People',
+    gradient: 'from-orange-500 to-amber-600',
+    bgColor: 'bg-orange-50',
+    borderColor: 'border-orange-300',
+    color: '#E67E22',
+  },
+  {
+    id: 'history',
+    name: 'History',
+    gradient: 'from-amber-600 to-yellow-700',
+    bgColor: 'bg-amber-50',
+    borderColor: 'border-amber-300',
+    color: '#C9A227',
+  },
+  {
+    id: 'geography',
+    name: 'Geography',
+    gradient: 'from-yellow-500 to-orange-500',
+    bgColor: 'bg-yellow-50',
+    borderColor: 'border-yellow-300',
+    color: '#F39C12',
+  },
+  {
+    id: 'science',
+    name: 'Science',
+    gradient: 'from-blue-500 to-indigo-600',
+    bgColor: 'bg-blue-50',
+    borderColor: 'border-blue-300',
+    color: '#4A90D9',
   },
   {
     id: 'biology',
@@ -213,86 +241,55 @@ const CATEGORIES = [
     gradient: 'from-emerald-500 to-green-600',
     bgColor: 'bg-emerald-50',
     borderColor: 'border-emerald-300',
-    children: ['animals', 'plants', 'ecology', 'genetics', 'microbes', 'marine-life']
-  },
-  {
-    id: 'health',
-    name: 'Health',
-    gradient: 'from-teal-500 to-cyan-600',
-    bgColor: 'bg-teal-50',
-    borderColor: 'border-teal-300',
-  },
-  {
-    id: 'everyday',
-    name: 'Everyday Life',
-    gradient: 'from-amber-500 to-orange-600',
-    bgColor: 'bg-amber-50',
-    borderColor: 'border-amber-300',
-    children: ['food-drink', 'sports-games', 'hobbies', 'holidays', 'fashion-clothing', 'home-living', 'travel-transport']
-  },
-  {
-    id: 'geography',
-    name: 'Geography',
-    gradient: 'from-cyan-500 to-blue-600',
-    bgColor: 'bg-cyan-50',
-    borderColor: 'border-cyan-300',
-    children: ['countries', 'cities', 'mountains-volcanoes', 'rivers-lakes', 'oceans-seas', 'islands', 'deserts-forests', 'landmarks-wonders']
-  },
-  {
-    id: 'history',
-    name: 'History',
-    gradient: 'from-yellow-600 to-amber-700',
-    bgColor: 'bg-yellow-50',
-    borderColor: 'border-yellow-400',
-    children: ['ancient', 'medieval', 'renaissance', 'modern', 'world-wars', 'empires', 'revolutions', 'exploration']
-  },
-  {
-    id: 'mathematics',
-    name: 'Mathematics',
-    gradient: 'from-indigo-500 to-purple-600',
-    bgColor: 'bg-indigo-50',
-    borderColor: 'border-indigo-300',
-    children: ['numbers-arithmetic', 'algebra', 'geometry', 'statistics-probability', 'famous-problems', 'mathematicians']
-  },
-  {
-    id: 'people',
-    name: 'People',
-    gradient: 'from-sky-500 to-blue-600',
-    bgColor: 'bg-sky-50',
-    borderColor: 'border-sky-300',
-    children: ['leaders-politicians', 'scientists-inventors', 'artists-writers', 'musicians-performers', 'explorers-adventurers', 'philosophers-thinkers', 'athletes', 'villains-outlaws']
-  },
-  {
-    id: 'philosophy',
-    name: 'Philosophy & Religion',
-    gradient: 'from-violet-500 to-purple-700',
-    bgColor: 'bg-violet-50',
-    borderColor: 'border-violet-300',
-    children: ['world-religions', 'mythology', 'ethics-morality', 'logic-reasoning', 'eastern-philosophy', 'western-philosophy', 'spirituality-mysticism']
-  },
-  {
-    id: 'physics',
-    name: 'Physical Sciences',
-    gradient: 'from-blue-500 to-indigo-700',
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-300',
-    children: ['physics', 'chemistry', 'astronomy-space', 'earth-science', 'energy-forces', 'elements-materials']
-  },
-  {
-    id: 'society',
-    name: 'Society',
-    gradient: 'from-slate-500 to-gray-700',
-    bgColor: 'bg-slate-50',
-    borderColor: 'border-slate-300',
-    children: ['politics-government', 'economics-money', 'law-justice', 'education', 'media-communication', 'social-movements', 'war-military', 'culture-customs']
+    color: '#27AE60',
   },
   {
     id: 'technology',
     name: 'Technology',
-    gradient: 'from-green-500 to-emerald-700',
-    bgColor: 'bg-green-50',
-    borderColor: 'border-green-300',
-    children: ['computers-internet', 'engineering', 'inventions', 'transportation', 'weapons-defense', 'communication-tech', 'energy-power', 'future-tech-ai']
+    gradient: 'from-gray-500 to-slate-600',
+    bgColor: 'bg-gray-50',
+    borderColor: 'border-gray-300',
+    color: '#95A5A6',
+  },
+  {
+    id: 'arts',
+    name: 'Arts',
+    gradient: 'from-purple-500 to-violet-600',
+    bgColor: 'bg-purple-50',
+    borderColor: 'border-purple-300',
+    color: '#9B59B6',
+  },
+  {
+    id: 'philosophy_religion',
+    name: 'Philosophy & Religion',
+    gradient: 'from-teal-500 to-cyan-600',
+    bgColor: 'bg-teal-50',
+    borderColor: 'border-teal-300',
+    color: '#1ABC9C',
+  },
+  {
+    id: 'society',
+    name: 'Society',
+    gradient: 'from-red-500 to-rose-600',
+    bgColor: 'bg-red-50',
+    borderColor: 'border-red-300',
+    color: '#E74C3C',
+  },
+  {
+    id: 'everyday_life',
+    name: 'Everyday Life',
+    gradient: 'from-yellow-400 to-amber-500',
+    bgColor: 'bg-yellow-50',
+    borderColor: 'border-yellow-300',
+    color: '#F1C40F',
+  },
+  {
+    id: 'mathematics',
+    name: 'Mathematics',
+    gradient: 'from-sky-500 to-blue-600',
+    bgColor: 'bg-sky-50',
+    borderColor: 'border-sky-300',
+    color: '#3498DB',
   },
 ]
 
@@ -3273,6 +3270,12 @@ function SearchBar({ onNavigate }) {
 }
 
 export default function Canvas() {
+  // Character selection state - show on first launch
+  const [showCharacterSelect, setShowCharacterSelect] = useState(() => {
+    // Check if character has been selected
+    return !getCharacter()
+  })
+
   // Auth state
   const [user, setUser] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
@@ -3281,8 +3284,12 @@ export default function Canvas() {
   // Bottom nav state - 'learn' | 'cards' | 'study' | 'settings'
   const [activeTab, setActiveTab] = useState('learn')
 
-  // Learn tab view state - 'hub' | 'browse'
-  const [learnView, setLearnView] = useState('hub')
+  // Learn tab view state - 'void' | 'hub' | 'browse' | 'topic'
+  // Default to void (constellation view) if character is set
+  const [learnView, setLearnView] = useState(() => {
+    return getCharacter() ? 'void' : 'hub'
+  })
+  const [selectedVoidTopic, setSelectedVoidTopic] = useState(null) // { id, name, ... }
 
   // Toast message for "Coming Soon" etc
   const [toastMessage, setToastMessage] = useState(null)
@@ -4896,7 +4903,14 @@ export default function Canvas() {
   }
 
   const goBack = () => {
-    setStack(prev => prev.slice(0, -1))
+    setStack(prev => {
+      const newStack = prev.slice(0, -1)
+      // If stack is now empty and we have a character, go back to Void
+      if (newStack.length === 0 && getCharacter()) {
+        setLearnView('void')
+      }
+      return newStack
+    })
   }
 
 
@@ -7150,9 +7164,14 @@ export default function Canvas() {
         <button
           onClick={() => {
             setActiveTab('learn')
-            // Always reset to hub view and root categories
-            setLearnView('hub')
-            setStack(['my-decks'])
+            // Go to Void if character is set, otherwise hub
+            if (getCharacter()) {
+              setLearnView('void')
+              setStack([])
+            } else {
+              setLearnView('hub')
+              setStack(['my-decks'])
+            }
           }}
           className={`flex flex-col items-center justify-center flex-1 py-2 transition-colors ${
             activeTab === 'learn' ? 'text-indigo-600' : 'text-gray-400'
@@ -7239,6 +7258,18 @@ export default function Canvas() {
   // Check if we have sub-decks to explore
   const hasSubDecks = childDecks.length > 0 || (currentSections?.sections?.length > 0)
 
+  // Character selection - show on first launch
+  if (showCharacterSelect) {
+    return (
+      <CharacterSelect
+        onComplete={() => {
+          setShowCharacterSelect(false)
+          setLearnView('void')
+        }}
+      />
+    )
+  }
+
   // Show auth screen if requested
   if (showAuth) {
     return <Auth onSkip={() => setShowAuth(false)} />
@@ -7249,6 +7280,24 @@ export default function Canvas() {
     return (
       <div className="w-screen min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 overflow-auto pb-24">
         <StudyScreen onGoToLearn={() => setActiveTab('learn')} />
+        <BottomNav />
+      </div>
+    )
+  }
+
+  // The Void - constellation view (new home screen)
+  if (activeTab === 'learn' && learnView === 'void') {
+    return (
+      <div className="w-screen h-screen">
+        <Void
+          onSelectTopic={(topicId, topic) => {
+            // Navigate to topic view via browse
+            // Stack is [cluster, topicId] since topics are children of clusters
+            setStack([topic.cluster, topicId])
+            setLearnView('browse')
+          }}
+          onBack={() => setLearnView('hub')}
+        />
         <BottomNav />
       </div>
     )

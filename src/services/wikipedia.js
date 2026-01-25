@@ -4,7 +4,17 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk'
-import vitalArticles from '../data/vitalArticles.json'
+import constellationData from '../data/constellation.json'
+
+// Build a cluster-to-topics lookup from constellation data
+const vitalArticles = {}
+Object.entries(constellationData.topics).forEach(([id, topic]) => {
+  const cluster = topic.cluster
+  if (!vitalArticles[cluster]) {
+    vitalArticles[cluster] = []
+  }
+  vitalArticles[cluster].push(topic.name)
+})
 
 const anthropic = new Anthropic({
   apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY,

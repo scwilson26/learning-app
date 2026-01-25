@@ -3,7 +3,27 @@
  * Structured for future cloud sync - all data in one clean object
  */
 
-import vitalArticlesTree from '../data/vitalArticlesTree.json'
+import constellationData from '../data/constellation.json'
+
+// For backwards compatibility during transition, extract what we need
+const vitalArticlesTree = {
+  id: 'root',
+  title: 'All Knowledge',
+  children: Object.entries(constellationData.clusters).map(([id, cluster]) => ({
+    id,
+    title: id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+    ...cluster,
+    children: Object.entries(constellationData.topics)
+      .filter(([_, topic]) => topic.cluster === id)
+      .map(([topicId, topic]) => ({
+        id: topicId,
+        title: topic.name,
+        isLeaf: true,
+        wikiTitle: topic.name,
+        ...topic
+      }))
+  }))
+}
 import Fuse from 'fuse.js'
 
 const STORAGE_KEY = 'learning_app_data'
@@ -463,18 +483,19 @@ export function countClaimedDescendants(nodeId) {
 }
 
 // Category gradients for tree nodes (matches CATEGORIES in Canvas.jsx)
+// Keys match cluster IDs from constellation.json
 const CATEGORY_STYLES = {
-  arts: { gradient: 'from-pink-500 to-rose-600', borderColor: 'border-pink-300' },
-  biology: { gradient: 'from-emerald-500 to-teal-600', borderColor: 'border-emerald-300' },
-  everyday: { gradient: 'from-orange-500 to-amber-600', borderColor: 'border-orange-300' },
-  geography: { gradient: 'from-cyan-500 to-blue-600', borderColor: 'border-cyan-300' },
+  people: { gradient: 'from-orange-500 to-amber-600', borderColor: 'border-orange-300' },
   history: { gradient: 'from-amber-600 to-yellow-700', borderColor: 'border-amber-300' },
-  mathematics: { gradient: 'from-violet-500 to-purple-600', borderColor: 'border-violet-300' },
-  people: { gradient: 'from-rose-500 to-pink-600', borderColor: 'border-rose-300' },
-  philosophy: { gradient: 'from-indigo-500 to-blue-600', borderColor: 'border-indigo-300' },
-  physics: { gradient: 'from-blue-500 to-indigo-600', borderColor: 'border-blue-300' },
-  society: { gradient: 'from-slate-500 to-gray-600', borderColor: 'border-slate-300' },
-  technology: { gradient: 'from-gray-600 to-slate-700', borderColor: 'border-gray-300' },
+  geography: { gradient: 'from-yellow-500 to-orange-500', borderColor: 'border-yellow-300' },
+  science: { gradient: 'from-blue-500 to-indigo-600', borderColor: 'border-blue-300' },
+  biology: { gradient: 'from-emerald-500 to-green-600', borderColor: 'border-emerald-300' },
+  technology: { gradient: 'from-gray-500 to-slate-600', borderColor: 'border-gray-300' },
+  arts: { gradient: 'from-purple-500 to-violet-600', borderColor: 'border-purple-300' },
+  philosophy_religion: { gradient: 'from-teal-500 to-cyan-600', borderColor: 'border-teal-300' },
+  society: { gradient: 'from-red-500 to-rose-600', borderColor: 'border-red-300' },
+  everyday_life: { gradient: 'from-yellow-400 to-amber-500', borderColor: 'border-yellow-300' },
+  mathematics: { gradient: 'from-sky-500 to-blue-600', borderColor: 'border-sky-300' },
 }
 
 /**
@@ -525,12 +546,14 @@ function scoreTopicInterestForWander(node) {
   const id = node.id?.toLowerCase() || ''
   const title = node.title?.toLowerCase() || ''
 
-  // Category bonuses (from the tree id prefix)
-  if (id.startsWith('people-')) score += 3           // People are inherently interesting
-  if (id.startsWith('history-')) score += 2          // Historical events/eras
-  if (id.startsWith('arts-')) score += 1             // Arts & culture
-  if (id.startsWith('technology-')) score += 1      // Tech topics
-  if (id.startsWith('biology-')) score += 1          // Life sciences
+  // Category bonuses (from constellation cluster prefix)
+  if (id.startsWith('people')) score += 3           // People are inherently interesting
+  if (id.startsWith('history')) score += 2          // Historical events/eras
+  if (id.startsWith('arts')) score += 1             // Arts & culture
+  if (id.startsWith('technology')) score += 1       // Tech topics
+  if (id.startsWith('biology')) score += 1          // Life sciences
+  if (id.startsWith('science')) score += 1          // Physical sciences
+  if (id.startsWith('society')) score += 1          // Society topics
 
   // Title-based bonuses
   if (title.includes('war') || title.includes('battle')) score += 2
@@ -640,33 +663,21 @@ function generateSingleRandomPath(minDepth, maxDepth) {
 
 /**
  * Generate a random path through the vital articles tree
- * Picks from multiple candidates and chooses the most interesting one
+ * Completely random selection - no scoring or weighting
  * @param {number} minDepth - Minimum depth to reach before stopping (default 3)
  * @param {number} maxDepth - Maximum depth to reach (default 5)
  * @returns {Object} { path: [...ids], steps: [{id, name}...], destination: nodeInfo }
  */
 export function getRandomTreePath(minDepth = 3, maxDepth = 5) {
-  // Generate 20 random candidates
-  const candidates = []
-  for (let i = 0; i < 20; i++) {
-    const candidate = generateSingleRandomPath(minDepth, maxDepth)
-    if (candidate) {
-      candidates.push(candidate)
+  // Try up to 10 times to get a valid path (some paths may hit categories without articles)
+  for (let i = 0; i < 10; i++) {
+    const result = generateSingleRandomPath(minDepth, maxDepth)
+    if (result) {
+      const { interestScore, ...path } = result
+      return path
     }
   }
-
-  if (candidates.length === 0) return null
-
-  // Sort by interest score (highest first)
-  candidates.sort((a, b) => b.interestScore - a.interestScore)
-
-  // Pick randomly from top 5 to add some variety
-  const topCandidates = candidates.slice(0, Math.min(5, candidates.length))
-  const selected = topCandidates[Math.floor(Math.random() * topCandidates.length)]
-
-  // Remove the interestScore from the returned object (internal detail)
-  const { interestScore, ...result } = selected
-  return result
+  return null
 }
 
 // Default data structure
@@ -675,6 +686,16 @@ const DEFAULT_DATA = {
     archetype: null,  // Will be set by personality quiz: 'lorekeeper', 'pattern-seeker', etc.
     userId: null,     // For future cloud sync
     createdAt: null,
+  },
+  // The Void - character and progression
+  character: null,  // 'chronicler' | 'naturalist' | 'architect' | 'philosopher' | 'wanderer'
+  voidProgress: {
+    unlockedTopics: [],      // Topic IDs the user can see/explore
+    exploredTopics: [],      // Topic IDs the user has entered
+    topicProgress: {},       // topicId -> { claimedCards, cardIds, firstVisited }
+    unlockedWormholes: [],   // Wormhole IDs discovered
+    starsRevealed: 0,        // Total stars revealed (for ranks)
+    fragmentsCaptured: 0,    // Total fragments captured
   },
   cards: {},  // cardId -> card data (title, content, claimed status, etc.)
   decks: {},  // deckId -> deck metadata (generated card IDs, timestamps)
@@ -717,6 +738,100 @@ export function saveData(data) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
   } catch (error) {
     console.error('Error saving to localStorage:', error)
+  }
+}
+
+// ============================================================
+// THE VOID - Character & Progression
+// ============================================================
+
+/**
+ * Get the user's selected character origin
+ * @returns {string|null} Character origin ID or null if not selected
+ */
+export function getCharacter() {
+  const data = getData()
+  return data.character || null
+}
+
+/**
+ * Set the user's character origin and initialize starting topics
+ * @param {string} originId - The character origin ID
+ * @param {string[]} startingTopics - Array of topic IDs to unlock
+ */
+export function setCharacter(originId, startingTopics) {
+  const data = getData()
+  data.character = originId
+
+  // Initialize void progress if needed
+  if (!data.voidProgress) {
+    data.voidProgress = {
+      unlockedTopics: [],
+      exploredTopics: [],
+      topicProgress: {},
+      unlockedWormholes: [],
+      starsRevealed: 0,
+      fragmentsCaptured: 0,
+    }
+  }
+
+  // Set starting topics as unlocked
+  data.voidProgress.unlockedTopics = [...new Set([
+    ...data.voidProgress.unlockedTopics,
+    ...startingTopics
+  ])]
+  data.voidProgress.starsRevealed = data.voidProgress.unlockedTopics.length
+
+  // Set created timestamp if not already set
+  if (!data.userProfile.createdAt) {
+    data.userProfile.createdAt = new Date().toISOString()
+  }
+
+  saveData(data)
+  console.log(`[Void] Character set: ${originId}, unlocked ${startingTopics.length} starting stars`)
+}
+
+/**
+ * Get void progress data
+ * @returns {Object} The void progress object
+ */
+export function getVoidProgress() {
+  const data = getData()
+  return data.voidProgress || {
+    unlockedTopics: [],
+    exploredTopics: [],
+    topicProgress: {},
+    unlockedWormholes: [],
+    starsRevealed: 0,
+    fragmentsCaptured: 0,
+  }
+}
+
+/**
+ * Check if a topic is unlocked
+ * @param {string} topicId - The topic ID to check
+ * @returns {boolean} Whether the topic is unlocked
+ */
+export function isTopicUnlocked(topicId) {
+  const progress = getVoidProgress()
+  return progress.unlockedTopics.includes(topicId)
+}
+
+/**
+ * Unlock a topic (reveal a new star)
+ * @param {string} topicId - The topic ID to unlock
+ */
+export function unlockTopic(topicId) {
+  const data = getData()
+  if (!data.voidProgress) {
+    data.voidProgress = getVoidProgress()
+  }
+
+  if (!data.voidProgress.unlockedTopics.includes(topicId)) {
+    data.voidProgress.unlockedTopics.push(topicId)
+    data.voidProgress.starsRevealed = data.voidProgress.unlockedTopics.length
+    saveData(data)
+    console.log(`[Void] Star revealed: ${topicId}`)
   }
 }
 
