@@ -33,6 +33,12 @@ function loadWormholes(constellationData) {
         return null;
       }
 
+      // Skip same-cluster wormholes - wormholes must connect different clusters
+      if (fromTopic.cluster === toTopic.cluster) {
+        console.warn(`[Wormholes] Skipping same-cluster wormhole: ${w.from} -> ${w.to} (both in ${fromTopic.cluster})`);
+        return null;
+      }
+
       return {
         id: [w.from, w.to].sort().join('|'),
         endpoints: [
