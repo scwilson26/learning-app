@@ -3281,6 +3281,9 @@ export default function Canvas() {
   // Bottom nav state - 'learn' | 'cards' | 'study' | 'settings'
   const [activeTab, setActiveTab] = useState('learn')
 
+  // Learn tab view state - 'hub' | 'browse'
+  const [learnView, setLearnView] = useState('hub')
+
   // Toast message for "Coming Soon" etc
   const [toastMessage, setToastMessage] = useState(null)
 
@@ -7147,7 +7150,8 @@ export default function Canvas() {
         <button
           onClick={() => {
             setActiveTab('learn')
-            // Always reset to root categories view
+            // Always reset to hub view and root categories
+            setLearnView('hub')
             setStack(['my-decks'])
           }}
           className={`flex flex-col items-center justify-center flex-1 py-2 transition-colors ${
@@ -7250,6 +7254,163 @@ export default function Canvas() {
     )
   }
 
+  // Learn Hub screen - main entry point for Learn tab
+  if (activeTab === 'learn' && learnView === 'hub') {
+    return (
+      <div className="w-screen min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 overflow-auto pb-24">
+        {/* Top navigation bar */}
+        <div className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200">
+          <div className="flex items-center justify-between px-3 py-2">
+            <div className="flex items-center gap-2">
+              {user ? (
+                <button
+                  onClick={() => signOut()}
+                  className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
+                >
+                  <span className="w-7 h-7 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
+                    {user.email?.charAt(0).toUpperCase()}
+                  </span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => setShowAuth(true)}
+                  className="text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
+                >
+                  Sign In
+                </button>
+              )}
+            </div>
+            <h1 className="text-lg font-semibold text-gray-800">Learn</h1>
+            <div className="w-16" /> {/* Spacer for balance */}
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="pt-14 px-4">
+          {/* Browse button */}
+          <div className="mt-6">
+            <button
+              onClick={() => setLearnView('browse')}
+              className="w-full bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow"
+            >
+              <div className="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center">
+                <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+              </div>
+              <div className="flex-1 text-left">
+                <h3 className="text-lg font-semibold text-gray-800">Browse</h3>
+                <p className="text-sm text-gray-500">Explore topics by category</p>
+              </div>
+              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Upload Notes button */}
+          <div className="mt-4">
+            <button
+              onClick={() => setLearnView('upload')}
+              className="w-full bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow"
+            >
+              <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center">
+                <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+              </div>
+              <div className="flex-1 text-left">
+                <h3 className="text-lg font-semibold text-gray-800">Upload Notes</h3>
+                <p className="text-sm text-gray-500">Turn your notes into flashcards</p>
+              </div>
+              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <BottomNav />
+      </div>
+    )
+  }
+
+  // Upload Notes screen
+  if (activeTab === 'learn' && learnView === 'upload') {
+    return (
+      <div className="w-screen min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 overflow-auto pb-24">
+        {/* Top navigation bar */}
+        <div className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200">
+          <div className="flex items-center justify-between px-3 py-2">
+            <button
+              onClick={() => setLearnView('hub')}
+              className="flex items-center gap-1 text-gray-600 hover:text-gray-800 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              <span className="text-sm font-medium">Back</span>
+            </button>
+            <h1 className="text-lg font-semibold text-gray-800">Upload Notes</h1>
+            <div className="w-16" /> {/* Spacer for balance */}
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="pt-14 px-4">
+          <div className="mt-6">
+            {/* Upload area */}
+            <div className="bg-white rounded-2xl p-8 shadow-sm border-2 border-dashed border-gray-300 text-center">
+              <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">Upload your study notes</h3>
+              <p className="text-sm text-gray-500 mb-6">
+                Upload PDFs, images, or paste text from your notes.
+                <br />
+                We'll turn them into flashcards for you.
+              </p>
+              <button
+                className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors"
+                onClick={() => {
+                  // TODO: Implement file upload
+                  alert('Coming soon!')
+                }}
+              >
+                Choose File
+              </button>
+              <p className="text-xs text-gray-400 mt-4">
+                Supported: PDF, PNG, JPG, or paste text
+              </p>
+            </div>
+
+            {/* Or paste text */}
+            <div className="mt-6">
+              <div className="text-center text-sm text-gray-400 mb-4">or</div>
+              <textarea
+                placeholder="Paste your notes here..."
+                className="w-full h-40 p-4 bg-white rounded-2xl border border-gray-200 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-800"
+              />
+              <button
+                className="w-full mt-4 bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-semibold transition-colors"
+                onClick={() => {
+                  // TODO: Process pasted text
+                  alert('Coming soon!')
+                }}
+              >
+                Process Notes
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <BottomNav />
+      </div>
+    )
+  }
+
   // Learn screen (default) - show all category decks with Continue Exploring
   if (stack.length === 0 || (stack.length === 1 && stack[0] === 'my-decks')) {
     return (
@@ -7289,7 +7450,15 @@ export default function Canvas() {
                 Reset
               </button>
             </div>
-            <span className="font-semibold text-gray-800">Learn</span>
+            <button
+              onClick={() => setLearnView('hub')}
+              className="font-semibold text-gray-800 flex items-center gap-1 hover:text-indigo-600 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Browse
+            </button>
             <div className="bg-gray-100 rounded-full px-3 py-1">
               <span className="text-gray-500 text-xs">Cards: </span>
               <span className="text-gray-800 font-bold text-sm">{claimedCards.size}</span>
