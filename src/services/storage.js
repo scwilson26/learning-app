@@ -947,6 +947,36 @@ export function getDiscoveredWormholes() {
 }
 
 /**
+ * Get shown story fragment IDs
+ * @returns {string[]} Array of fragment IDs that have been shown
+ */
+export function getShownFragments() {
+  const progress = getVoidProgress()
+  return progress.shownFragments || []
+}
+
+/**
+ * Mark a story fragment as shown
+ * @param {string} fragmentId - The fragment ID
+ */
+export function markFragmentShown(fragmentId) {
+  const data = getData()
+  if (!data.voidProgress) {
+    data.voidProgress = getVoidProgress()
+  }
+
+  if (!data.voidProgress.shownFragments) {
+    data.voidProgress.shownFragments = []
+  }
+
+  if (!data.voidProgress.shownFragments.includes(fragmentId)) {
+    data.voidProgress.shownFragments.push(fragmentId)
+    saveData(data)
+    console.log(`[Void] Story fragment shown: ${fragmentId}`)
+  }
+}
+
+/**
  * Get cached cards for a deck
  * @param {string} deckId - The deck ID
  * @returns {Array|null} Array of card objects or null if not cached

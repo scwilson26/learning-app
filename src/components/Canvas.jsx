@@ -108,11 +108,15 @@ import {
   recordFragmentCapture,
   saveDiscoveredWormhole,
   getVoidProgress,
+  getShownFragments,
+  markFragmentShown,
 } from '../services/storage'
 import CharacterSelect from './CharacterSelect'
 import Void from './Void'
 import WormholeDiscovery from './WormholeDiscovery'
+import StoryFragment from './StoryFragment'
 import { initWormholes } from '../systems/wormholes'
+import { checkForStoryFragment } from '../systems/progression'
 import constellationData from '../data/constellation.json'
 
 // Initialize wormhole system once at module load
@@ -3420,6 +3424,9 @@ export default function Canvas() {
   // Wormhole discovery state
   const [discoveredWormhole, setDiscoveredWormhole] = useState(null) // Wormhole object to show in discovery modal
 
+  // Story fragment state (narrative milestones)
+  const [currentStoryFragment, setCurrentStoryFragment] = useState(null)
+
   // Rabbit hole preview state (shown when tapping a linked topic in card content)
   const [rabbitHolePreview, setRabbitHolePreview] = useState(null) // { topic, category, preview, isLoading } or null
 
@@ -3460,9 +3467,15 @@ export default function Canvas() {
     if (currentTopicId && getCharacter()) {
       const captureResult = recordFragmentCapture(currentTopicId, cardId)
 
-      // Show notification for newly revealed stars
+      // Show notification based on what happened
       if (captureResult.newlyUnlockedTopics.length > 0) {
-        setToastMessage(`...${captureResult.newlyUnlockedTopics.length} new signals detected`)
+        // New stars revealed - more exciting message
+        setToastMessage(`...${captureResult.newlyUnlockedTopics.length === 1 ? 'signal' : captureResult.newlyUnlockedTopics.length + ' signals'} detected`)
+        setTimeout(() => setToastMessage(null), 2500)
+      } else {
+        // Just a normal capture
+        setToastMessage('...captured')
+        setTimeout(() => setToastMessage(null), 1500)
       }
 
       // Check for wormhole discovery at 4 fragments
@@ -3479,7 +3492,13 @@ export default function Canvas() {
           setTimeout(() => {
             setDiscoveredWormhole(wormhole)
           }, 500)
+        } else {
+          // No wormhole, check for story fragment
+          checkForStoryFragmentTrigger()
         }
+      } else {
+        // Not at wormhole threshold, check for story fragment anyway
+        checkForStoryFragmentTrigger()
       }
     }
 
@@ -3526,6 +3545,9 @@ export default function Canvas() {
       // Navigate to the destination topic
       setStack([destCluster, destTopicId])
       setLearnView('browse')
+
+      // Check for story fragments after wormhole event
+      checkForStoryFragmentTrigger()
     }
   }
 
@@ -3538,6 +3560,32 @@ export default function Canvas() {
 
     // Close the modal
     setDiscoveredWormhole(null)
+
+    // Check for story fragments after wormhole event
+    checkForStoryFragmentTrigger()
+  }
+
+  // Check if any story fragments should be triggered
+  const checkForStoryFragmentTrigger = () => {
+    const voidProgress = getVoidProgress()
+    const shownFragments = getShownFragments()
+    const fragment = checkForStoryFragment(voidProgress, shownFragments)
+
+    if (fragment) {
+      console.log('[Void] Story fragment triggered:', fragment.id)
+      // Small delay for dramatic effect
+      setTimeout(() => {
+        setCurrentStoryFragment(fragment)
+      }, 600)
+    }
+  }
+
+  // Handle story fragment dismissal
+  const handleStoryFragmentDismiss = () => {
+    if (currentStoryFragment) {
+      markFragmentShown(currentStoryFragment.id)
+      setCurrentStoryFragment(null)
+    }
   }
 
   // Handle rabbit hole click - when user taps a linked topic in card content
@@ -5643,7 +5691,7 @@ export default function Canvas() {
     ? allCurrentCards.findIndex(c => c.id === (typeof expandedCard === 'object' ? expandedCard.id : expandedCard))
     : -1
 
-  // Toast message component (for "Coming Soon" etc)
+  // Toast message component (space-themed cryptic messages)
   const ToastMessage = () => (
     <AnimatePresence>
       {toastMessage && (
@@ -5651,7 +5699,7 @@ export default function Canvas() {
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 50 }}
-          className="fixed bottom-28 left-1/2 -translate-x-1/2 z-50 px-6 py-3 bg-gray-900 text-white rounded-full shadow-lg text-sm"
+          className="fixed bottom-28 left-1/2 -translate-x-1/2 z-50 px-6 py-3 bg-black/90 border border-gray-700 text-gray-300 rounded-lg shadow-lg text-sm font-mono"
         >
           {toastMessage}
         </motion.div>
@@ -7302,7 +7350,7 @@ export default function Canvas() {
         {/* Settings - placeholder */}
         <button
           onClick={() => {
-            setToastMessage('Coming Soon!')
+            setToastMessage('...uncharted territory')
             setTimeout(() => setToastMessage(null), 2000)
           }}
           className="flex flex-col items-center justify-center flex-1 py-2 text-gray-300"
@@ -8526,6 +8574,16 @@ export default function Canvas() {
             wormhole={discoveredWormhole}
             onInvestigate={handleWormholeInvestigate}
             onLater={handleWormholeLater}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Story fragment modal (narrative milestones) */}
+      <AnimatePresence>
+        {currentStoryFragment && (
+          <StoryFragment
+            fragment={currentStoryFragment}
+            onDismiss={handleStoryFragmentDismiss}
           />
         )}
       </AnimatePresence>

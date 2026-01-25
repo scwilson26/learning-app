@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import constellationData from '../data/constellation.json'
 import { getVoidProgress } from '../services/storage'
 import { initWormholes } from '../systems/wormholes'
+import { getPlayerStats } from '../systems/progression'
 
 // Initialize wormhole system
 const wormholeSystem = initWormholes(constellationData)
@@ -40,6 +41,11 @@ export default function Void({ onSelectTopic, onBack }) {
   // Calculate visible wormholes
   const visibleWormholes = useMemo(() => {
     return wormholeSystem.visible(voidProgress)
+  }, [voidProgress])
+
+  // Get player stats and rank
+  const stats = useMemo(() => {
+    return getPlayerStats(voidProgress)
   }, [voidProgress])
 
   // Center on first load (center of coordinate system)
@@ -324,11 +330,19 @@ export default function Void({ onSelectTopic, onBack }) {
             </button>
           )}
 
-          {/* Stats */}
-          <div className="text-right">
-            <p className="text-gray-600 font-mono text-xs">
-              {visibleStars.length} stars mapped
+          {/* Stats and Rank */}
+          <div className="text-right space-y-1">
+            <p className="text-gray-400 font-mono text-sm">
+              {stats.rank.name}
             </p>
+            <p className="text-gray-600 font-mono text-xs">
+              {stats.starsRevealed} stars · {stats.fragmentsCaptured} fragments
+            </p>
+            {stats.wormholesFound > 0 && (
+              <p className="text-gray-600 font-mono text-xs">
+                {stats.wormholesFound} wormhole{stats.wormholesFound !== 1 ? 's' : ''}
+              </p>
+            )}
           </div>
         </div>
       </div>
