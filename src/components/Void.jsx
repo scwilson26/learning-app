@@ -2,6 +2,10 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import constellationData from '../data/constellation.json'
 import { getVoidProgress } from '../services/storage'
+import { initWormholes } from '../systems/wormholes'
+
+// Initialize wormhole system
+const wormholeSystem = initWormholes(constellationData)
 
 /**
  * The Void - Constellation home screen
@@ -32,6 +36,11 @@ export default function Void({ onSelectTopic, onBack }) {
         ...topic
       }))
   }, [unlockedTopics])
+
+  // Calculate visible wormholes
+  const visibleWormholes = useMemo(() => {
+    return wormholeSystem.visible(voidProgress)
+  }, [voidProgress])
 
   // Center on first load (center of coordinate system)
   useEffect(() => {
@@ -210,6 +219,95 @@ export default function Void({ onSelectTopic, onBack }) {
               }}
             />
           ))}
+
+        {/* Wormhole connections */}
+        <svg
+          className="absolute pointer-events-none"
+          style={{
+            left: -600,
+            top: -600,
+            width: 1200,
+            height: 1200,
+            overflow: 'visible',
+          }}
+        >
+          {visibleWormholes.map((wormhole) => {
+            const from = wormhole.endpoints[0]
+            const to = wormhole.endpoints[1]
+            return (
+              <g key={wormhole.id}>
+                {/* Gradient definition for this wormhole */}
+                <defs>
+                  <linearGradient
+                    id={`wormhole-gradient-${wormhole.id}`}
+                    x1={from.x + 600}
+                    y1={from.y + 600}
+                    x2={to.x + 600}
+                    y2={to.y + 600}
+                    gradientUnits="userSpaceOnUse"
+                  >
+                    <stop offset="0%" stopColor={getClusterColor(from.cluster)} stopOpacity="0.4" />
+                    <stop offset="50%" stopColor="#ffffff" stopOpacity="0.2" />
+                    <stop offset="100%" stopColor={getClusterColor(to.cluster)} stopOpacity="0.4" />
+                  </linearGradient>
+                </defs>
+                {/* Connecting line */}
+                <line
+                  x1={from.x + 600}
+                  y1={from.y + 600}
+                  x2={to.x + 600}
+                  y2={to.y + 600}
+                  stroke={`url(#wormhole-gradient-${wormhole.id})`}
+                  strokeWidth="2"
+                  strokeDasharray="8 4"
+                  opacity="0.6"
+                />
+              </g>
+            )
+          })}
+        </svg>
+
+        {/* Wormhole portals */}
+        {visibleWormholes.map((wormhole) => {
+          const from = wormhole.endpoints[0]
+          const to = wormhole.endpoints[1]
+          return (
+            <div key={`portal-${wormhole.id}`}>
+              {/* Portal at "from" endpoint */}
+              <button
+                className="star-button absolute rounded-full transition-all duration-300
+                           hover:scale-125 focus:outline-none"
+                style={{
+                  left: from.x - 6,
+                  top: from.y - 6,
+                  width: 12,
+                  height: 12,
+                  background: `radial-gradient(circle, ${getClusterColor(from.cluster)} 0%, transparent 70%)`,
+                  boxShadow: `0 0 15px ${getClusterColor(from.cluster)}, 0 0 30px ${getClusterColor(from.cluster)}60`,
+                  border: `1px solid ${getClusterColor(from.cluster)}80`,
+                }}
+                onClick={() => onSelectTopic(to.topicId, constellationData.topics[to.topicId])}
+                title={`${wormhole.name} → ${to.name}`}
+              />
+              {/* Portal at "to" endpoint */}
+              <button
+                className="star-button absolute rounded-full transition-all duration-300
+                           hover:scale-125 focus:outline-none"
+                style={{
+                  left: to.x - 6,
+                  top: to.y - 6,
+                  width: 12,
+                  height: 12,
+                  background: `radial-gradient(circle, ${getClusterColor(to.cluster)} 0%, transparent 70%)`,
+                  boxShadow: `0 0 15px ${getClusterColor(to.cluster)}, 0 0 30px ${getClusterColor(to.cluster)}60`,
+                  border: `1px solid ${getClusterColor(to.cluster)}80`,
+                }}
+                onClick={() => onSelectTopic(from.topicId, constellationData.topics[from.topicId])}
+                title={`${wormhole.name} → ${from.name}`}
+              />
+            </div>
+          )
+        })}
       </div>
 
       {/* UI Overlay */}
@@ -263,4 +361,22 @@ export default function Void({ onSelectTopic, onBack }) {
       )}
     </div>
   )
+}
+
+// Helper to get cluster colors
+function getClusterColor(cluster) {
+  const colors = {
+    people: '#E67E22',
+    history: '#C9A227',
+    geography: '#F39C12',
+    science: '#4A90D9',
+    biology: '#27AE60',
+    technology: '#95A5A6',
+    arts: '#9B59B6',
+    philosophy_religion: '#1ABC9C',
+    society: '#E74C3C',
+    everyday_life: '#F1C40F',
+    mathematics: '#3498DB',
+  }
+  return colors[cluster] || '#ffffff'
 }

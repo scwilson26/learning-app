@@ -820,6 +820,7 @@ export function isTopicUnlocked(topicId) {
 /**
  * Unlock a topic (reveal a new star)
  * @param {string} topicId - The topic ID to unlock
+ * @returns {boolean} Whether the topic was newly unlocked
  */
 export function unlockTopic(topicId) {
   const data = getData()
@@ -832,7 +833,117 @@ export function unlockTopic(topicId) {
     data.voidProgress.starsRevealed = data.voidProgress.unlockedTopics.length
     saveData(data)
     console.log(`[Void] Star revealed: ${topicId}`)
+    return true
   }
+  return false
+}
+
+/**
+ * Record a captured fragment and check for unlocks
+ * @param {string} topicId - The topic where the fragment was captured
+ * @param {string} cardId - The card/fragment ID
+ * @returns {Object} { newCount, newlyUnlockedTopics, wormholesTriggered }
+ */
+export function recordFragmentCapture(topicId, cardId) {
+  const data = getData()
+  if (!data.voidProgress) {
+    data.voidProgress = getVoidProgress()
+  }
+
+  // Initialize topic progress if needed
+  if (!data.voidProgress.topicProgress[topicId]) {
+    data.voidProgress.topicProgress[topicId] = {
+      capturedCards: [],
+      firstVisited: new Date().toISOString(),
+    }
+  }
+
+  const topicProgress = data.voidProgress.topicProgress[topicId]
+
+  // Add card if not already captured
+  if (!topicProgress.capturedCards.includes(cardId)) {
+    topicProgress.capturedCards.push(cardId)
+    data.voidProgress.fragmentsCaptured = (data.voidProgress.fragmentsCaptured || 0) + 1
+  }
+
+  const newCount = topicProgress.capturedCards.length
+  saveData(data)
+
+  const result = {
+    newCount,
+    newlyUnlockedTopics: [],
+    wormholesTriggered: false,
+  }
+
+  // At 2 fragments: reveal nearby stars (siblings in same cluster)
+  if (newCount === 2) {
+    const topic = constellationData.topics[topicId]
+    if (topic) {
+      const siblings = Object.entries(constellationData.topics)
+        .filter(([id, t]) => t.cluster === topic.cluster && id !== topicId)
+        .map(([id]) => id)
+
+      // Unlock up to 3 random siblings
+      const shuffled = siblings.sort(() => Math.random() - 0.5)
+      const toUnlock = shuffled.slice(0, 3)
+
+      toUnlock.forEach(siblingId => {
+        if (unlockTopic(siblingId)) {
+          result.newlyUnlockedTopics.push(siblingId)
+        }
+      })
+    }
+  }
+
+  // At 4 fragments: trigger wormhole check
+  if (newCount === 4) {
+    result.wormholesTriggered = true
+  }
+
+  console.log(`[Void] Fragment captured in ${topicId}: ${newCount} total`, result)
+  return result
+}
+
+/**
+ * Get the number of captured fragments for a topic
+ * @param {string} topicId - The topic ID
+ * @returns {number} Number of captured fragments
+ */
+export function getTopicFragmentCount(topicId) {
+  const progress = getVoidProgress()
+  return progress.topicProgress[topicId]?.capturedCards?.length || 0
+}
+
+/**
+ * Save a discovered wormhole
+ * @param {string} wormholeId - The wormhole ID (e.g., "ancient_egypt|mathematics")
+ */
+export function saveDiscoveredWormhole(wormholeId) {
+  const data = getData()
+  if (!data.voidProgress) {
+    data.voidProgress = getVoidProgress()
+  }
+
+  if (!data.voidProgress.unlockedWormholes) {
+    data.voidProgress.unlockedWormholes = []
+  }
+
+  if (!data.voidProgress.unlockedWormholes.includes(wormholeId)) {
+    data.voidProgress.unlockedWormholes.push(wormholeId)
+    saveData(data)
+    console.log(`[Void] Wormhole discovered: ${wormholeId}`)
+    return true
+  }
+  return false
+}
+
+/**
+ * Get all discovered wormhole IDs
+ * @returns {string[]} Array of wormhole IDs
+ */
+export function getDiscoveredWormholes() {
+  const progress = getVoidProgress()
+  return progress.unlockedWormholes || []
 }
 
 /**

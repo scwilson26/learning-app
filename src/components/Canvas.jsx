@@ -105,9 +105,18 @@ import {
   getStudyDeckLearningCards,
   getStudyDeckReviewDueCards,
   getCharacter,
+  recordFragmentCapture,
+  saveDiscoveredWormhole,
+  getVoidProgress,
 } from '../services/storage'
 import CharacterSelect from './CharacterSelect'
 import Void from './Void'
+import WormholeDiscovery from './WormholeDiscovery'
+import { initWormholes } from '../systems/wormholes'
+import constellationData from '../data/constellation.json'
+
+// Initialize wormhole system once at module load
+const wormholeSystem = initWormholes(constellationData)
 
 // Configuration - card counts can be adjusted here or per-deck
 const DEFAULT_OVERVIEW_CARDS = 5
@@ -674,7 +683,7 @@ function MiniCollectionCard({ card, rootCategoryId, style = {}, size = 'small', 
         {card.title}
       </span>
 
-      {/* Claimed checkmark */}
+      {/* Captured checkmark */}
       <div
         className={`absolute top-0.5 right-0.5 ${config.check} rounded-full flex items-center justify-center`}
         style={{ background: theme.accent }}
@@ -1372,7 +1381,7 @@ function PreviewCardModal({
             {/* Themed decorations */}
             {renderExpandedCardDecorations(rootCategoryId, theme)}
 
-            {/* Claimed badge - top right (next to close button) */}
+            {/* Captured badge - top right (next to close button) */}
             {claimed && (
               <div className="absolute top-3 right-12 w-8 h-8 rounded-full flex items-center justify-center shadow-md z-20" style={{ background: isThemed ? theme.accent : '#facc15' }}>
                 <span className="text-white text-sm font-bold">✓</span>
@@ -1456,7 +1465,7 @@ function PreviewCardModal({
               </div>
             )}
 
-            {/* Claimed badge - bottom right corner */}
+            {/* Captured badge - bottom right corner */}
             {claimed && (
               <div
                 className="absolute bottom-3 right-4 flex items-center gap-1 px-2 py-1 rounded-full z-10"
@@ -1466,14 +1475,14 @@ function PreviewCardModal({
                 }}
               >
                 <span className={`text-xs font-bold ${rootCategoryId === 'technology' ? 'text-slate-900' : (rootCategoryId === 'philosophy' ? 'text-indigo-900' : 'text-white')}`}>✓</span>
-                <span className={`text-[10px] font-semibold ${rootCategoryId === 'technology' ? 'text-slate-900' : (rootCategoryId === 'philosophy' ? 'text-indigo-900' : 'text-white')}`}>Claimed</span>
+                <span className={`text-[10px] font-semibold ${rootCategoryId === 'technology' ? 'text-slate-900' : (rootCategoryId === 'philosophy' ? 'text-indigo-900' : 'text-white')}`}>Captured</span>
               </div>
             )}
 
             {/* Action buttons - hide if already on this page and claimed */}
             {!(isCurrentPage && claimed) && (
               <div className="mt-3 pt-3 relative z-10 space-y-2" style={{ borderTop: `1px solid ${theme.divider}` }} onClick={e => e.stopPropagation()}>
-                {/* Claim and Explore buttons side by side */}
+                {/* Capture and Explore buttons side by side */}
                 <div className="flex gap-2">
                   <button
                     onClick={onClaim}
@@ -1485,7 +1494,7 @@ function PreviewCardModal({
                       boxShadow: claimed ? 'none' : theme.buttonPrimaryShadow
                     }}
                   >
-                    {claimed ? 'Claimed' : 'Claim'}
+                    {claimed ? 'Captured' : 'Capture'}
                   </button>
                   <button
                     onClick={() => {
@@ -1721,7 +1730,7 @@ function WanderCard({
             >
               {renderExpandedCardDecorations(rootCategoryId, theme)}
 
-              {/* Claimed badge - top right (next to close button) */}
+              {/* Captured badge - top right (next to close button) */}
               {previewData?.claimed && (
                 <div className="absolute top-3 right-12 w-8 h-8 rounded-full flex items-center justify-center shadow-md z-20" style={{ background: isThemed ? theme.accent : '#facc15' }}>
                   <span className="text-white text-sm font-bold">✓</span>
@@ -1790,7 +1799,7 @@ function WanderCard({
                 </div>
               )}
 
-              {/* Claimed badge - bottom right corner */}
+              {/* Captured badge - bottom right corner */}
               {previewData.claimed && (
                 <div
                   className="absolute bottom-3 right-4 flex items-center gap-1 px-2 py-1 rounded-full z-10"
@@ -1800,7 +1809,7 @@ function WanderCard({
                   }}
                 >
                   <span className={`text-xs font-bold ${rootCategoryId === 'technology' ? 'text-slate-900' : (rootCategoryId === 'philosophy' ? 'text-indigo-900' : 'text-white')}`}>✓</span>
-                  <span className={`text-[10px] font-semibold ${rootCategoryId === 'technology' ? 'text-slate-900' : (rootCategoryId === 'philosophy' ? 'text-indigo-900' : 'text-white')}`}>Claimed</span>
+                  <span className={`text-[10px] font-semibold ${rootCategoryId === 'technology' ? 'text-slate-900' : (rootCategoryId === 'philosophy' ? 'text-indigo-900' : 'text-white')}`}>Captured</span>
                 </div>
               )}
 
@@ -1817,7 +1826,7 @@ function WanderCard({
                       boxShadow: previewData.claimed ? 'none' : theme.buttonPrimaryShadow
                     }}
                   >
-                    {previewData.claimed ? 'Claimed' : 'Claim'}
+                    {previewData.claimed ? 'Captured' : 'Capture'}
                   </button>
                   <button
                     onClick={() => {
@@ -2379,7 +2388,7 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
             {/* Themed decorative elements */}
             {renderExpandedCardDecorations(rootCategoryId, theme)}
 
-            {/* Claimed badge - top right (next to close button) */}
+            {/* Captured badge - top right (next to close button) */}
             {claimed && (
               <div className="absolute top-3 right-12 w-8 h-8 rounded-full flex items-center justify-center shadow-md z-20" style={{ background: isThemed ? theme.accent : '#facc15' }}>
                 <span className="text-white text-sm font-bold">✓</span>
@@ -2468,7 +2477,7 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
               </div>
             )}
 
-            {/* Claimed badge - bottom right corner */}
+            {/* Captured badge - bottom right corner */}
             {claimed && (
               <div
                 className="absolute bottom-3 right-4 flex items-center gap-1 px-2 py-1 rounded-full z-10"
@@ -2478,7 +2487,7 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
                 }}
               >
                 <span className={`text-xs font-bold ${rootCategoryId === 'technology' ? 'text-slate-900' : (rootCategoryId === 'philosophy' ? 'text-indigo-900' : 'text-white')}`}>✓</span>
-                <span className={`text-[10px] font-semibold ${rootCategoryId === 'technology' ? 'text-slate-900' : (rootCategoryId === 'philosophy' ? 'text-indigo-900' : 'text-white')}`}>Claimed</span>
+                <span className={`text-[10px] font-semibold ${rootCategoryId === 'technology' ? 'text-slate-900' : (rootCategoryId === 'philosophy' ? 'text-indigo-900' : 'text-white')}`}>Captured</span>
               </div>
             )}
 
@@ -2496,7 +2505,7 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
                     boxShadow: isLoading || !content ? 'none' : theme.buttonPrimaryShadow
                   }}
                 >
-                  {isLoading ? 'Loading...' : 'Claim'}
+                  {isLoading ? 'Loading...' : 'Capture'}
                 </button>
               ) : (
                 <button
@@ -2725,7 +2734,7 @@ function CoverCard({ title, preview, claimed, onRead, rootCategoryId }) {
       {/* Decorations */}
       {renderOverviewCardDecorations(rootCategoryId, theme)}
 
-      {/* Claimed badge - top right */}
+      {/* Captured badge - top right */}
       {claimed && (
         <div
           className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center z-20"
@@ -2801,9 +2810,21 @@ function DeckSpread({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
     >
-      {/* Deck title - only show for articles, categories show in card */}
+      {/* Star title and fragment progress - only show for articles */}
       {isArticle && (
-        <span className="text-sm font-semibold text-gray-700">{deck.name}</span>
+        <div className="text-center">
+          <span className="text-sm font-semibold text-gray-700">{deck.name}</span>
+          {hasTierData && (() => {
+            const allCards = [...(tierCards.core || []), ...(tierCards.deep_dive || [])]
+            const totalFragments = allCards.length
+            const capturedFragments = allCards.filter(card => claimedCards.has(card.id)).length
+            return (
+              <p className="text-xs text-gray-500 mt-1 font-mono">
+                {capturedFragments}/{totalFragments} fragments captured
+              </p>
+            )
+          })()}
+        </div>
       )}
 
       {/* Cover/Preview card - shows at top if claimed */}
@@ -3396,6 +3417,9 @@ export default function Canvas() {
   const [previewCards, setPreviewCards] = useState({}) // deckId -> { preview, claimed }
   const [loadedOutlines, setLoadedOutlines] = useState({}) // deckId -> outline object
 
+  // Wormhole discovery state
+  const [discoveredWormhole, setDiscoveredWormhole] = useState(null) // Wormhole object to show in discovery modal
+
   // Rabbit hole preview state (shown when tapping a linked topic in card content)
   const [rabbitHolePreview, setRabbitHolePreview] = useState(null) // { topic, category, preview, isLoading } or null
 
@@ -3431,6 +3455,34 @@ export default function Canvas() {
     setClaimedCards(prev => new Set([...prev, cardId]))
     // Don't close the modal, let user see the claimed state
 
+    // Record fragment capture for The Void progression
+    const currentTopicId = stack[stack.length - 1]
+    if (currentTopicId && getCharacter()) {
+      const captureResult = recordFragmentCapture(currentTopicId, cardId)
+
+      // Show notification for newly revealed stars
+      if (captureResult.newlyUnlockedTopics.length > 0) {
+        setToastMessage(`...${captureResult.newlyUnlockedTopics.length} new signals detected`)
+      }
+
+      // Check for wormhole discovery at 4 fragments
+      if (captureResult.wormholesTriggered) {
+        const voidProgress = getVoidProgress()
+        const newWormholes = wormholeSystem.checkNew(currentTopicId, 4, voidProgress)
+
+        if (newWormholes.length > 0) {
+          // Show the first discovered wormhole
+          const wormhole = newWormholes[0]
+          console.log('[Void] Wormhole discovered:', wormhole.name)
+
+          // Small delay before showing discovery (let the capture settle)
+          setTimeout(() => {
+            setDiscoveredWormhole(wormhole)
+          }, 500)
+        }
+      }
+    }
+
     // Generate flashcards in background (Option C from spec)
     const cardContent = generatedContent[cardId] || getCardContent(cardId)
     console.log(`[handleClaim] Card ${cardId} claimed. Has content: ${!!cardContent}`)
@@ -3454,6 +3506,38 @@ export default function Canvas() {
     } else {
       console.log(`[handleClaim] No content yet for ${cardId}, will generate when content loads`)
     }
+  }
+
+  // Handle wormhole discovery - user chooses to investigate
+  const handleWormholeInvestigate = () => {
+    if (!discoveredWormhole) return
+
+    // Save the discovered wormhole
+    saveDiscoveredWormhole(discoveredWormhole.id)
+
+    // Navigate to the destination topic
+    const destTopicId = discoveredWormhole.to?.topicId
+    const destCluster = discoveredWormhole.to?.cluster
+
+    if (destTopicId && destCluster) {
+      // Close the modal
+      setDiscoveredWormhole(null)
+
+      // Navigate to the destination topic
+      setStack([destCluster, destTopicId])
+      setLearnView('browse')
+    }
+  }
+
+  // Handle wormhole discovery - user chooses later
+  const handleWormholeLater = () => {
+    if (!discoveredWormhole) return
+
+    // Save the wormhole (it's discovered, just not investigated yet)
+    saveDiscoveredWormhole(discoveredWormhole.id)
+
+    // Close the modal
+    setDiscoveredWormhole(null)
   }
 
   // Handle rabbit hole click - when user taps a linked topic in card content
@@ -8431,6 +8515,17 @@ export default function Canvas() {
             }}
             onRabbitHoleClick={handleRabbitHoleClick}
             rootCategoryId={showPreviewCard?.navigatePath?.[0] || wanderPathSteps[0]?.id}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Wormhole discovery modal */}
+      <AnimatePresence>
+        {discoveredWormhole && (
+          <WormholeDiscovery
+            wormhole={discoveredWormhole}
+            onInvestigate={handleWormholeInvestigate}
+            onLater={handleWormholeLater}
           />
         )}
       </AnimatePresence>
