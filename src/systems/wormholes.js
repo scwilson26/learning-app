@@ -1,54 +1,50 @@
 /**
  * REMEMBERER - Wormhole Detection System
- * 
- * Wormholes connect topics from DIFFERENT clusters that share 2+ concepts.
+ *
+ * Wormholes are predefined cross-cluster connections in constellation.json.
  * When a user claims 4 cards in a topic, its wormholes are revealed.
  */
 
 // ============================================================
-// CORE DETECTION
+// CORE LOADING
 // ============================================================
 
 /**
- * Detect all wormholes in the constellation
- * @param {Object} topics - The topics object from constellation data
- * @param {number} minShared - Minimum shared concepts (default 2)
- * @returns {Array} Array of wormhole objects
+ * Load predefined wormholes from constellation data
+ * @param {Object} constellationData - Full constellation data with topics and wormholes
+ * @returns {Array} Array of wormhole objects in normalized format
  */
-function detectAllWormholes(topics, minShared = 2) {
-  const wormholes = [];
-  const topicIds = Object.keys(topics);
-  
-  for (let i = 0; i < topicIds.length; i++) {
-    for (let j = i + 1; j < topicIds.length; j++) {
-      const id1 = topicIds[i];
-      const id2 = topicIds[j];
-      const t1 = topics[id1];
-      const t2 = topics[id2];
-      
-      // Skip same cluster — not a wormhole
-      if (t1.cluster === t2.cluster) continue;
-      
-      // Find shared concepts
-      const shared = t1.concepts.filter(c => t2.concepts.includes(c));
-      
-      if (shared.length >= minShared) {
-        wormholes.push({
-          id: [id1, id2].sort().join('|'),
-          endpoints: [
-            { topicId: id1, name: t1.name, cluster: t1.cluster, x: t1.x, y: t1.y },
-            { topicId: id2, name: t2.name, cluster: t2.cluster, x: t2.x, y: t2.y }
-          ],
-          sharedConcepts: shared,
-          strength: shared.length,
-          name: generateWormholeName(t1, t2, shared)
-        });
-      }
-    }
+function loadWormholes(constellationData) {
+  const { topics, wormholes: rawWormholes } = constellationData;
+
+  if (!rawWormholes || !Array.isArray(rawWormholes)) {
+    console.warn('[Wormholes] No predefined wormholes found in constellation data');
+    return [];
   }
-  
-  wormholes.sort((a, b) => b.strength - a.strength);
-  return wormholes;
+
+  return rawWormholes
+    .map(w => {
+      const fromTopic = topics[w.from];
+      const toTopic = topics[w.to];
+
+      // Skip if either topic doesn't exist
+      if (!fromTopic || !toTopic) {
+        console.warn(`[Wormholes] Skipping invalid wormhole: ${w.from} -> ${w.to}`);
+        return null;
+      }
+
+      return {
+        id: [w.from, w.to].sort().join('|'),
+        endpoints: [
+          { topicId: w.from, name: fromTopic.name, cluster: fromTopic.cluster, x: fromTopic.x, y: fromTopic.y },
+          { topicId: w.to, name: toTopic.name, cluster: toTopic.cluster, x: toTopic.x, y: toTopic.y }
+        ],
+        sharedConcepts: w.shared_concepts || [],
+        strength: w.strength || w.shared_concepts?.length || 1,
+        name: generateWormholeName(fromTopic, toTopic, w.shared_concepts || [])
+      };
+    })
+    .filter(Boolean);
 }
 
 /**
@@ -112,35 +108,51 @@ const CONCEPT_TEMPLATES = {
   legacy: 'What Remains',
   genius: 'Minds Alike',
   invention: 'Sparks of Innovation',
+  brutality: 'The Weight of Power',
+  asia: 'Eastern Threads',
+  entertainment: 'The Show Must Go On',
+  communism: 'The Red Thread',
+  ideology: 'Ideas That Shaped the World',
+  education: 'The Path of Learning',
+  harmony: 'Balance and Order',
+  virtue: 'The Good Life',
+  italy: 'The Italian Connection',
+  rebirth: 'Born Again',
 };
 
 function generateWormholeName(topic1, topic2, sharedConcepts) {
   // Check for special hand-crafted names
-  const key = [topic1.name.toLowerCase().replace(/ /g, '_'), 
+  const key = [topic1.name.toLowerCase().replace(/ /g, '_'),
                topic2.name.toLowerCase().replace(/ /g, '_')].sort().join('|');
-  
+
   // Try variations
   for (const [specialKey, name] of Object.entries(SPECIAL_NAMES)) {
     if (key.includes(specialKey.split('|')[0]) && key.includes(specialKey.split('|')[1])) {
       return name;
     }
   }
-  
+
   // Use concept-based template
-  const priority = ['transformation', 'revolution', 'war', 'conquest', 'death', 
+  const priority = ['transformation', 'revolution', 'war', 'conquest', 'death',
                     'freedom', 'beauty', 'philosophy', 'religion', 'science',
                     'mathematics', 'art', 'power', 'empire', 'trade', 'culture',
-                    'nature', 'life', 'ancient', 'legacy', 'genius', 'invention'];
-  
+                    'nature', 'life', 'ancient', 'legacy', 'genius', 'invention',
+                    'brutality', 'asia', 'entertainment', 'communism', 'ideology',
+                    'education', 'harmony', 'virtue', 'italy', 'rebirth'];
+
   for (const concept of priority) {
     if (sharedConcepts.includes(concept) && CONCEPT_TEMPLATES[concept]) {
       return CONCEPT_TEMPLATES[concept];
     }
   }
-  
+
   // Fallback: use first shared concept
-  const c = sharedConcepts[0];
-  return `The ${c.charAt(0).toUpperCase() + c.slice(1)} Connection`;
+  if (sharedConcepts.length > 0) {
+    const c = sharedConcepts[0];
+    return `The ${c.charAt(0).toUpperCase() + c.slice(1)} Connection`;
+  }
+
+  return 'A Strange Connection';
 }
 
 
@@ -158,13 +170,13 @@ function isWormholeUnlocked(wormhole, userProgress) {
   if (userProgress.unlockedWormholes?.includes(wormhole.id)) {
     return true;
   }
-  
+
   // Check card count at either endpoint
   for (const endpoint of wormhole.endpoints) {
     const cards = userProgress.topicProgress?.[endpoint.topicId]?.claimedCards || 0;
     if (cards >= CARDS_TO_UNLOCK) return true;
   }
-  
+
   return false;
 }
 
@@ -175,7 +187,7 @@ function isWormholeUnlocked(wormhole, userProgress) {
 function checkNewWormholes(topicId, newCardCount, allWormholes, userProgress) {
   // Only trigger on the threshold
   if (newCardCount !== CARDS_TO_UNLOCK) return [];
-  
+
   const connected = getWormholesForTopic(topicId, allWormholes);
   return connected.filter(w => !userProgress.unlockedWormholes?.includes(w.id));
 }
@@ -198,13 +210,17 @@ function getVisibleWormholes(allWormholes, userProgress) {
 function getWormholePortalPosition(wormhole, fromTopicId, clusters) {
   const from = wormhole.endpoints.find(e => e.topicId === fromTopicId);
   const to = wormhole.endpoints.find(e => e.topicId !== fromTopicId);
-  
+
   const fromCluster = clusters[from.cluster];
   const toCluster = clusters[to.cluster];
-  
+
+  if (!fromCluster || !toCluster) {
+    return { x: from.x, y: from.y, angle: 0 };
+  }
+
   // Angle toward destination cluster
   const angle = Math.atan2(toCluster.y - fromCluster.y, toCluster.x - fromCluster.x);
-  
+
   // Place at cluster edge + offset
   return {
     x: fromCluster.x + Math.cos(angle) * (fromCluster.radius + 30),
@@ -223,11 +239,11 @@ function getWormholePortalPosition(wormhole, fromTopicId, clusters) {
  * Call once at app startup
  */
 function initWormholes(constellationData) {
-  const { topics, clusters } = constellationData;
-  const all = detectAllWormholes(topics);
-  
-  console.log(`[Wormholes] Found ${all.length} cross-cluster connections`);
-  
+  const { clusters } = constellationData;
+  const all = loadWormholes(constellationData);
+
+  console.log(`[Wormholes] Loaded ${all.length} predefined wormholes`);
+
   return {
     all,
     forTopic: (id) => getWormholesForTopic(id, all),
@@ -235,12 +251,12 @@ function initWormholes(constellationData) {
     checkNew: (topicId, cards, progress) => checkNewWormholes(topicId, cards, all, progress),
     isUnlocked: (w, progress) => isWormholeUnlocked(w, progress),
     portalPosition: (w, fromId) => getWormholePortalPosition(w, fromId, clusters),
-    
+
     stats: () => ({
       total: all.length,
-      strong: all.filter(w => w.strength >= 4).length,
-      medium: all.filter(w => w.strength === 3).length,
-      weak: all.filter(w => w.strength === 2).length,
+      strong: all.filter(w => w.strength >= 6).length,
+      medium: all.filter(w => w.strength >= 4 && w.strength < 6).length,
+      weak: all.filter(w => w.strength < 4).length,
     })
   };
 }
@@ -251,7 +267,7 @@ function initWormholes(constellationData) {
 // ============================================================
 
 export {
-  detectAllWormholes,
+  loadWormholes,
   getWormholesForTopic,
   generateWormholeName,
   isWormholeUnlocked,

@@ -48,6 +48,27 @@ export default function Void({ onSelectTopic, onBack }) {
     return getPlayerStats(voidProgress)
   }, [voidProgress])
 
+  // Calculate mapped stars per cluster (for label visibility)
+  // A star is "mapped" when user has captured at least 1 fragment from it
+  const mappedPerCluster = useMemo(() => {
+    const counts = {}
+    const topicProgress = voidProgress.topicProgress || {}
+
+    for (const [topicId, progress] of Object.entries(topicProgress)) {
+      // capturedCards is an array of card IDs
+      const capturedCount = progress.capturedCards?.length || 0
+      if (capturedCount > 0) {
+        const topic = constellationData.topics[topicId]
+        if (topic) {
+          const cluster = topic.cluster
+          counts[cluster] = (counts[cluster] || 0) + 1
+        }
+      }
+    }
+
+    return counts
+  }, [voidProgress])
+
   // Center on first load (center of coordinate system)
   useEffect(() => {
     if (containerRef.current) {
@@ -173,22 +194,29 @@ export default function Void({ onSelectTopic, onBack }) {
           />
         ))}
 
-        {/* Cluster labels */}
-        {Object.entries(constellationData.clusters).map(([name, cluster]) => (
-          <div
-            key={`label-${name}`}
-            className="absolute text-gray-600 text-xs font-mono uppercase tracking-wider pointer-events-none"
-            style={{
-              left: cluster.x,
-              top: cluster.y - cluster.radius - 20,
-              transform: 'translateX(-50%)',
-              opacity: scale > 0.4 ? 0.4 : 0,
-              transition: 'opacity 0.3s',
-            }}
-          >
-            {name.replace(/_/g, ' ')}
-          </div>
-        ))}
+        {/* Cluster labels - only visible after mapping 3+ stars in that cluster */}
+        {Object.entries(constellationData.clusters).map(([name, cluster]) => {
+          const mapped = mappedPerCluster[name] || 0
+          const isRevealed = mapped >= 3
+
+          if (!isRevealed) return null
+
+          return (
+            <div
+              key={`label-${name}`}
+              className="absolute text-gray-600 text-xs font-mono uppercase tracking-wider pointer-events-none"
+              style={{
+                left: cluster.x,
+                top: cluster.y - cluster.radius - 20,
+                transform: 'translateX(-50%)',
+                opacity: scale > 0.4 ? 0.4 : 0,
+                transition: 'opacity 0.3s',
+              }}
+            >
+              {name.replace(/_/g, ' ')}
+            </div>
+          )
+        })}
 
         {/* Stars */}
         {visibleStars.map((star) => (
