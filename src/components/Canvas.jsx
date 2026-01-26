@@ -3743,7 +3743,10 @@ export default function Canvas() {
       updateDeckLastInteracted(deckId)
     }
 
-    // 3. Close ALL modals (harmless if not open)
+    // 3. Switch to browse view (important when coming from Learn Hub)
+    setLearnView('browse')
+
+    // 4. Close ALL modals (harmless if not open)
     setShowPreviewCard(null)
     setRabbitHolePreview(null)
     setWanderPathSteps([])
@@ -7363,13 +7366,12 @@ export default function Canvas() {
           <span className="text-xs mt-1 font-medium">Study</span>
         </button>
 
-        {/* Settings - placeholder */}
+        {/* Settings */}
         <button
-          onClick={() => {
-            setToastMessage('...uncharted territory')
-            setTimeout(() => setToastMessage(null), 2000)
-          }}
-          className="flex flex-col items-center justify-center flex-1 py-2 text-gray-300"
+          onClick={() => setActiveTab('settings')}
+          className={`flex flex-col items-center justify-center flex-1 py-2 transition-colors ${
+            activeTab === 'settings' ? 'text-indigo-600' : 'text-gray-400'
+          }`}
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -7429,6 +7431,120 @@ export default function Canvas() {
     return (
       <div className="w-screen min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 overflow-auto pb-24">
         <StudyScreen onGoToLearn={() => setActiveTab('learn')} />
+        <BottomNav />
+      </div>
+    )
+  }
+
+  // Settings screen
+  if (activeTab === 'settings') {
+    return (
+      <div className="w-screen min-h-screen bg-gradient-to-b from-gray-900 to-gray-950 overflow-auto pb-24">
+        {/* Top navigation bar */}
+        <div className="fixed top-0 left-0 right-0 z-40 bg-gray-900/80 backdrop-blur-sm border-b border-gray-800">
+          <div className="flex items-center justify-center px-3 py-3">
+            <h1 className="text-lg font-semibold text-gray-100">Settings</h1>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="pt-16 px-4">
+          {/* Account Section */}
+          <div className="mt-4">
+            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-1">Account</h2>
+            <div className="bg-gray-800/50 rounded-2xl border border-gray-700/50 overflow-hidden">
+              {user ? (
+                <>
+                  <div className="px-4 py-4 border-b border-gray-700/50">
+                    <p className="text-gray-200">{user.email}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      signOut()
+                      setActiveTab('learn')
+                    }}
+                    className="w-full px-4 py-4 text-left text-red-400 hover:bg-gray-700/30 transition-colors"
+                  >
+                    Sign Out
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => setShowAuth(true)}
+                  className="w-full px-4 py-4 text-left text-indigo-400 hover:bg-gray-700/30 transition-colors"
+                >
+                  Sign In
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Data Section */}
+          <div className="mt-6">
+            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-1">Data</h2>
+            <div className="bg-gray-800/50 rounded-2xl border border-gray-700/50 overflow-hidden">
+              <button
+                onClick={() => setShowResetConfirm(true)}
+                className="w-full px-4 py-4 text-left text-red-400 hover:bg-gray-700/30 transition-colors"
+              >
+                Reset Progress
+              </button>
+            </div>
+          </div>
+
+          {/* About Section */}
+          <div className="mt-6">
+            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-1">About</h2>
+            <div className="bg-gray-800/50 rounded-2xl border border-gray-700/50 overflow-hidden">
+              <div className="px-4 py-4">
+                <p className="text-gray-400">Spaced v0.1.0</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Reset confirmation modal */}
+        <AnimatePresence>
+          {showResetConfirm && (
+            <motion.div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowResetConfirm(false)}
+            >
+              <motion.div
+                className="bg-gray-800 rounded-2xl p-6 max-w-sm w-full shadow-xl border border-gray-700"
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={e => e.stopPropagation()}
+              >
+                <h3 className="text-xl font-bold text-gray-100 mb-2">Reset Progress?</h3>
+                <p className="text-gray-400 mb-6">This will clear all your cards, flashcards, and progress. This cannot be undone.</p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowResetConfirm(false)}
+                    className="flex-1 py-3 rounded-xl font-semibold text-gray-300 bg-gray-700 hover:bg-gray-600 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      localStorage.clear()
+                      setShowResetConfirm(false)
+                      window.location.reload()
+                    }}
+                    className="flex-1 py-3 rounded-xl font-semibold text-white bg-red-600 hover:bg-red-500 transition-colors"
+                  >
+                    Reset
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <BottomNav />
       </div>
     )
