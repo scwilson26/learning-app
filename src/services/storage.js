@@ -839,6 +839,117 @@ export function unlockTopic(topicId) {
 }
 
 /**
+ * Mark a topic as discovered (user opened/viewed it)
+ * This is Phase 4: Browse ↔ Void Sync
+ * When user opens a topic in Browse, it becomes "discovered" in The Void
+ *
+ * @param {string} topicId - The topic ID that was opened
+ * @returns {boolean} Whether the topic was newly discovered
+ */
+export function markTopicDiscovered(topicId) {
+  const data = getData()
+  if (!data.voidProgress) {
+    data.voidProgress = getVoidProgress()
+  }
+
+  // Add to exploredTopics if not already there
+  if (!data.voidProgress.exploredTopics) {
+    data.voidProgress.exploredTopics = []
+  }
+
+  if (!data.voidProgress.exploredTopics.includes(topicId)) {
+    data.voidProgress.exploredTopics.push(topicId)
+
+    // Also initialize topicProgress with firstVisited if not exists
+    if (!data.voidProgress.topicProgress[topicId]) {
+      data.voidProgress.topicProgress[topicId] = {
+        capturedCards: [],
+        firstVisited: new Date().toISOString(),
+      }
+    } else if (!data.voidProgress.topicProgress[topicId].firstVisited) {
+      data.voidProgress.topicProgress[topicId].firstVisited = new Date().toISOString()
+    }
+
+    saveData(data)
+    console.log(`[Void] Topic discovered: ${topicId}`)
+    return true
+  }
+  return false
+}
+
+// ============================================================
+// PHASE 5: FADING NOTIFICATIONS
+// ============================================================
+
+/**
+ * Get list of topics that have already shown fading notification
+ * @returns {string[]} Array of topic IDs
+ */
+export function getFadingNotifiedTopics() {
+  const data = getData()
+  return data.voidProgress?.fadingNotified || []
+}
+
+/**
+ * Mark a topic as having shown its fading notification
+ * Prevents repeated "something dims" messages for the same topic
+ * @param {string} topicId - The topic ID
+ */
+export function markFadingNotified(topicId) {
+  const data = getData()
+  if (!data.voidProgress) {
+    data.voidProgress = getVoidProgress()
+  }
+  if (!data.voidProgress.fadingNotified) {
+    data.voidProgress.fadingNotified = []
+  }
+
+  if (!data.voidProgress.fadingNotified.includes(topicId)) {
+    data.voidProgress.fadingNotified.push(topicId)
+    saveData(data)
+    return true
+  }
+  return false
+}
+
+/**
+ * Clear fading notification for a topic (when it's no longer fading)
+ * This allows the notification to show again if it fades again later
+ * @param {string} topicId - The topic ID
+ */
+export function clearFadingNotified(topicId) {
+  const data = getData()
+  if (data.voidProgress?.fadingNotified) {
+    const index = data.voidProgress.fadingNotified.indexOf(topicId)
+    if (index > -1) {
+      data.voidProgress.fadingNotified.splice(index, 1)
+      saveData(data)
+    }
+  }
+}
+
+/**
+ * Get the last time user saw the void (for "return after absence" detection)
+ * @returns {number|null} Timestamp or null
+ */
+export function getLastVoidVisit() {
+  const data = getData()
+  return data.voidProgress?.lastVisit || null
+}
+
+/**
+ * Record that user is visiting the void now
+ */
+export function recordVoidVisit() {
+  const data = getData()
+  if (!data.voidProgress) {
+    data.voidProgress = getVoidProgress()
+  }
+  data.voidProgress.lastVisit = Date.now()
+  saveData(data)
+}
+
+/**
  * Record a captured fragment and check for unlocks
  * @param {string} topicId - The topic where the fragment was captured
  * @param {string} cardId - The card/fragment ID

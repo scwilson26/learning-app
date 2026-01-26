@@ -2,8 +2,11 @@
  * REMEMBERER - Wormhole Detection System
  *
  * Wormholes are predefined cross-cluster connections in constellation.json.
- * When a user claims 4 cards in a topic, its wormholes are revealed.
+ * Wormholes are revealed when BOTH connected topics are MASTERED.
+ * Mastery = 4 core fragments + >80% retention + no critical overdue cards.
  */
+
+import { getTopicState, STAR_STATES } from './starStates'
 
 // ============================================================
 // CORE LOADING
@@ -166,36 +169,47 @@ function generateWormholeName(topic1, topic2, sharedConcepts) {
 // USER PROGRESS
 // ============================================================
 
-const CARDS_TO_UNLOCK = 4;
-
 /**
  * Check if a wormhole is unlocked for a user
+ * NEW (Phase 3): Requires BOTH endpoints to be MASTERED
  */
 function isWormholeUnlocked(wormhole, userProgress) {
-  // Already explicitly unlocked
+  // Already explicitly unlocked (legacy support)
   if (userProgress.unlockedWormholes?.includes(wormhole.id)) {
     return true;
   }
 
-  // Check card count at either endpoint
-  for (const endpoint of wormhole.endpoints) {
-    const cards = userProgress.topicProgress?.[endpoint.topicId]?.claimedCards || 0;
-    if (cards >= CARDS_TO_UNLOCK) return true;
-  }
+  // Check if BOTH endpoints are mastered
+  const endpoint1State = getTopicState(wormhole.endpoints[0].topicId)
+  const endpoint2State = getTopicState(wormhole.endpoints[1].topicId)
 
-  return false;
+  return endpoint1State === STAR_STATES.mastered && endpoint2State === STAR_STATES.mastered
 }
 
 /**
- * Check for newly unlocked wormholes when a card is claimed
- * @returns {Array} Newly unlocked wormholes (for animation trigger)
+ * Check for newly unlocked wormholes when a topic reaches mastery
+ * Called after study session completion or when star state changes
+ * @returns {Array} Newly unlocked wormholes (for discovery animation)
  */
-function checkNewWormholes(topicId, newCardCount, allWormholes, userProgress) {
-  // Only trigger on the threshold
-  if (newCardCount !== CARDS_TO_UNLOCK) return [];
+function checkNewWormholes(topicId, allWormholes, userProgress) {
+  // Only check if this topic just became mastered
+  const topicState = getTopicState(topicId)
+  if (topicState !== STAR_STATES.mastered) return []
 
-  const connected = getWormholesForTopic(topicId, allWormholes);
-  return connected.filter(w => !userProgress.unlockedWormholes?.includes(w.id));
+  // Get all wormholes connected to this topic
+  const connected = getWormholesForTopic(topicId, allWormholes)
+
+  // Return wormholes where the OTHER endpoint is also mastered
+  // and the wormhole isn't already in unlockedWormholes
+  return connected.filter(w => {
+    if (userProgress.unlockedWormholes?.includes(w.id)) return false
+
+    // Find the other endpoint
+    const otherEndpoint = w.endpoints.find(e => e.topicId !== topicId)
+    const otherState = getTopicState(otherEndpoint.topicId)
+
+    return otherState === STAR_STATES.mastered
+  })
 }
 
 /**
@@ -254,7 +268,7 @@ function initWormholes(constellationData) {
     all,
     forTopic: (id) => getWormholesForTopic(id, all),
     visible: (progress) => getVisibleWormholes(all, progress),
-    checkNew: (topicId, cards, progress) => checkNewWormholes(topicId, cards, all, progress),
+    checkNew: (topicId, progress) => checkNewWormholes(topicId, all, progress),
     isUnlocked: (w, progress) => isWormholeUnlocked(w, progress),
     portalPosition: (w, fromId) => getWormholePortalPosition(w, fromId, clusters),
 

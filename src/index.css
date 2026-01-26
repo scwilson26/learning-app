@@ -14,3 +14,149 @@
     transform: translateX(200%);
   }
 }
+
+/* Star pulse animation for mastered stars */
+@keyframes star-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.85;
+  }
+}
+
+.animate-star-pulse {
+  animation: star-pulse 2s ease-in-out infinite;
+}
+
+/* Star flicker animation for fading stars */
+@keyframes star-flicker {
+  0%, 100% {
+    opacity: 0.4;
+  }
+  25% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  75% {
+    opacity: 0.3;
+  }
+}
+
+.animate-star-flicker {
+  animation: star-flicker 1.5s ease-in-out infinite;
+}
+
+/* Echo drift animation for ghost markers at fading stars (Phase 8) */
+@keyframes echo-drift {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.15;
+  }
+  25% {
+    transform: translate(2px, -1px) scale(1.05);
+    opacity: 0.2;
+  }
+  50% {
+    transform: translate(-1px, 2px) scale(0.95);
+    opacity: 0.1;
+  }
+  75% {
+    transform: translate(1px, 1px) scale(1.02);
+    opacity: 0.18;
+  }
+}
+
+.animate-echo-drift {
+  animation: echo-drift 4s ease-in-out infinite;
+}
+
+/* Echo fade animation - slower, more ethereal */
+@keyframes echo-fade {
+  0%, 100% {
+    opacity: 0.12;
+  }
+  50% {
+    opacity: 0.06;
+  }
+}
+
+.animate-echo-fade {
+  animation: echo-fade 3s ease-in-out infinite;
+}
+
+/* Center glow animation - slow pulse for 500+ stars (Phase 10) */
+@keyframes center-glow-slow {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.15;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.25;
+  }
+}
+
+.animate-center-glow-slow {
+  animation: center-glow-slow 8s ease-in-out infinite;
+}
+
+/* Center glow animation - medium pulse for 750+ stars (Phase 10) */
+@keyframes center-glow-medium {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.25;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.4;
+  }
+}
+
+.animate-center-glow-medium {
+  animation: center-glow-medium 5s ease-in-out infinite;
+}
+
+/* Center glow animation - fast pulse for 900+ stars (Phase 10) */
+@keyframes center-glow-fast {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.6;
+  }
+}
+
+.animate-center-glow-fast {
+  animation: center-glow-fast 3s ease-in-out infinite;
+}
+
+/* Center glow animation - intense for 1000 stars (Phase 10) */
+@keyframes center-glow-intense {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  25% {
+    transform: scale(1.1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.8;
+  }
+  75% {
+    transform: scale(1.1);
+    opacity: 0.7;
+  }
+}
+
+.animate-center-glow-intense {
+  animation: center-glow-intense 2s ease-in-out infinite;
+}
