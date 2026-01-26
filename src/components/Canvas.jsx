@@ -930,7 +930,7 @@ function TierSection({ tier, tierName, cards, claimedCards, onReadCard, completi
       <div className="flex flex-col items-center gap-3">
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold text-gray-400">{tierName}</span>
-          <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Locked</span>
+          <span className="text-xs text-gray-400 bg-gray-800 px-2 py-0.5 rounded-full">Locked</span>
         </div>
         <p className="text-xs text-gray-400 mb-2">Complete the previous tier to unlock!</p>
         <div className="flex gap-2 flex-wrap justify-center opacity-50">
@@ -950,15 +950,15 @@ function TierSection({ tier, tierName, cards, claimedCards, onReadCard, completi
     return (
       <div className="flex flex-col items-center gap-3">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-gray-700">{tierName}</span>
+          <span className="text-sm font-semibold text-gray-300">{tierName}</span>
           <span className={`text-xs px-2 py-0.5 rounded-full ${
             isComplete
-              ? 'bg-green-100 text-green-700'
-              : 'bg-gray-100 text-gray-500'
+              ? 'bg-emerald-500/20 text-emerald-400'
+              : 'bg-gray-800 text-gray-400'
           }`}>
             {claimed}/{expectedCount}
           </span>
-          {isComplete && <span className="text-green-500">✓</span>}
+          {isComplete && <span className="text-emerald-400">✓</span>}
         </div>
         <div className="flex gap-2 flex-wrap justify-center">
           {/* Render all 5 slots - loaded cards or face-down placeholders */}
@@ -1061,7 +1061,7 @@ function TierCompleteCelebration({
       exit={{ opacity: 0 }}
     >
       <motion.div
-        className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl relative max-h-[90vh] overflow-y-auto"
+        className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-lg w-full shadow-2xl relative max-h-[90vh] overflow-y-auto"
         initial={{ scale: 0.8, y: 50 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.8, y: 50 }}
@@ -1069,19 +1069,19 @@ function TierCompleteCelebration({
         {/* Close button */}
         <button
           onClick={onContinue}
-          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors z-10"
+          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-gray-800 hover:bg-gray-700 transition-colors z-10"
           aria-label="Close"
         >
-          <span className="text-lg font-light text-gray-500">×</span>
+          <span className="text-lg font-light text-gray-400">×</span>
         </button>
 
         {/* Section 1: Celebration (subtle) */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1.5 rounded-full text-sm font-medium mb-3">
+          <div className="inline-flex items-center gap-2 bg-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded-full text-sm font-medium mb-3">
             <span>✓</span>
             <span>{tierName} Complete</span>
           </div>
-          <p className="text-gray-600 text-sm">
+          <p className="text-gray-400 text-sm">
             {isFullyMastered
               ? `You've fully mastered ${topicName}!`
               : `You understand ${topicName}`
@@ -1107,15 +1107,15 @@ function TierCompleteCelebration({
         {/* Section 3: Related Topics (rabbit hole) */}
         {siblingTopics && siblingTopics.length > 0 && (
           <div className="mb-6">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">Related Topics</h3>
+            <h3 className="text-sm font-semibold text-gray-300 mb-3">Related Topics</h3>
             <div className="flex gap-2 overflow-x-auto pb-2">
               {siblingTopics.slice(0, 3).map((topic) => (
                 <button
                   key={topic.id}
                   onClick={() => onSelectTopic(topic)}
-                  className="flex-shrink-0 px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-200 transition-colors text-left min-w-[140px]"
+                  className="flex-shrink-0 px-4 py-3 bg-white/[0.03] hover:bg-white/[0.06] rounded-xl border border-white/10 transition-colors text-left min-w-[140px]"
                 >
-                  <span className="text-sm font-medium text-gray-800 line-clamp-2">{topic.name}</span>
+                  <span className="text-sm font-medium text-white line-clamp-2">{topic.name}</span>
                 </button>
               ))}
             </div>
@@ -1123,17 +1123,17 @@ function TierCompleteCelebration({
         )}
 
         {/* Section 4: Other paths (subtle, bottom) */}
-        <div className="flex gap-3 pt-4 border-t border-gray-100">
+        <div className="flex gap-3 pt-4 border-t border-white/10">
           <button
             onClick={onWander}
-            className="flex-1 py-2.5 rounded-lg text-sm font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 transition-colors flex items-center justify-center gap-2"
+            className="flex-1 py-2.5 rounded-lg text-sm font-medium text-purple-400 bg-purple-500/20 hover:bg-purple-500/30 transition-colors flex items-center justify-center gap-2"
           >
             <span>🌀</span>
             <span>Wander</span>
           </button>
           <button
             onClick={onHome}
-            className="flex-1 py-2.5 rounded-lg text-sm font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors flex items-center justify-center gap-2"
+            className="flex-1 py-2.5 rounded-lg text-sm font-medium text-gray-400 bg-white/[0.03] hover:bg-white/[0.06] transition-colors flex items-center justify-center gap-2"
           >
             <span>🏠</span>
             <span>Home</span>
@@ -2562,7 +2562,7 @@ function DeckHeader({ stackDecks, onGoBack }) {
       {/* Back button */}
       <button
         onClick={onGoBack}
-        className="flex items-center gap-1 text-blue-600 font-medium text-sm px-2 py-1 rounded-lg hover:bg-blue-50 active:bg-blue-100 transition-colors shrink-0"
+        className="flex items-center gap-1 text-gray-400 hover:text-white font-medium text-sm px-2 py-1 rounded-lg hover:bg-white/[0.03] active:bg-white/[0.06] transition-colors shrink-0"
       >
         <span>‹</span>
         <span>{parentDeck ? parentDeck.name : 'Back'}</span>
@@ -2570,7 +2570,7 @@ function DeckHeader({ stackDecks, onGoBack }) {
 
       {/* Current location */}
       <div className="flex-1 min-w-0">
-        <h1 className="text-base font-semibold text-gray-800 truncate">
+        <h1 className="text-base font-semibold text-white truncate">
           {currentDeck.name}
         </h1>
       </div>
@@ -2633,13 +2633,13 @@ function SectionHeader({ section, isExpanded, onToggle, deckCount }) {
   return (
     <motion.button
       onClick={onToggle}
-      className="w-full flex items-center justify-between px-4 py-3 bg-white/50 hover:bg-white/80 rounded-xl border border-gray-200 transition-colors group"
+      className="w-full flex items-center justify-between px-4 py-3 bg-white/[0.03] hover:bg-white/[0.06] rounded-xl border border-white/10 transition-colors group"
       whileHover={{ scale: 1.01 }}
       whileTap={{ scale: 0.99 }}
     >
       <div className="flex items-center gap-3">
-        <span className="font-semibold text-gray-800">{section.name}</span>
-        <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{deckCount} topics</span>
+        <span className="font-semibold text-white">{section.name}</span>
+        <span className="text-xs text-gray-400 bg-gray-800 px-2 py-0.5 rounded-full">{deckCount} topics</span>
       </div>
       <motion.span
         className="text-gray-400 text-xl"
@@ -2871,7 +2871,7 @@ function DeckSpread({
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
               >
-                <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 text-left max-h-96 overflow-y-auto">
+                <div className="mt-4 p-4 bg-gray-900 rounded-lg border border-gray-700 text-left max-h-96 overflow-y-auto">
                   {outline.topic_type && (
                     <div className="mb-3 text-xs text-gray-400 uppercase tracking-wide">
                       {outline.topic_type}
@@ -2880,7 +2880,7 @@ function DeckSpread({
 
                   {/* Show full outline - prefer raw_outline, fallback to structured data */}
                   {outline.raw_outline ? (
-                    <pre className="text-xs text-gray-700 whitespace-pre-wrap font-sans leading-relaxed">
+                    <pre className="text-xs text-gray-300 whitespace-pre-wrap font-sans leading-relaxed">
                       {outline.raw_outline
                         .replace(/\[CORE_COUNT:\s*\d+\]\n?/gi, '')
                         .replace(/\[DEEP_COUNT:\s*\d+\]\n?/gi, '')
@@ -2891,12 +2891,12 @@ function DeckSpread({
                     <>
                       {outline.core && outline.core.length > 0 && (
                         <div className="mb-4">
-                          <div className="text-xs font-semibold text-gray-600 mb-2">Core ({outline.core.length} cards)</div>
+                          <div className="text-xs font-semibold text-gray-400 mb-2">Core ({outline.core.length} cards)</div>
                           {outline.core.map((card, i) => (
                             <div key={i} className="mb-3">
-                              <div className="text-xs font-medium text-gray-700">{card.title}</div>
+                              <div className="text-xs font-medium text-gray-300">{card.title}</div>
                               {card.content && (
-                                <pre className="text-xs text-gray-600 whitespace-pre-wrap font-sans mt-1 ml-2">
+                                <pre className="text-xs text-gray-400 whitespace-pre-wrap font-sans mt-1 ml-2">
                                   {card.content}
                                 </pre>
                               )}
@@ -2907,12 +2907,12 @@ function DeckSpread({
 
                       {outline.deep_dive && outline.deep_dive.length > 0 && (
                         <div>
-                          <div className="text-xs font-semibold text-gray-600 mb-2">Deep Dive ({outline.deep_dive.length} cards)</div>
+                          <div className="text-xs font-semibold text-gray-400 mb-2">Deep Dive ({outline.deep_dive.length} cards)</div>
                           {outline.deep_dive.map((card, i) => (
                             <div key={i} className="mb-3">
-                              <div className="text-xs font-medium text-gray-700">{card.title}</div>
+                              <div className="text-xs font-medium text-gray-300">{card.title}</div>
                               {card.content && (
-                                <pre className="text-xs text-gray-600 whitespace-pre-wrap font-sans mt-1 ml-2">
+                                <pre className="text-xs text-gray-400 whitespace-pre-wrap font-sans mt-1 ml-2">
                                   {card.content}
                                 </pre>
                               )}
@@ -2959,7 +2959,7 @@ function DeckSpread({
 
           {/* Fake progress bar that fills over ~8 seconds */}
           <div className="w-64">
-            <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
               <motion.div
                 className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full"
                 initial={{ width: '0%' }}
@@ -2967,7 +2967,7 @@ function DeckSpread({
                 transition={{ duration: 8, ease: 'easeOut' }}
               />
             </div>
-            <p className="text-xs text-gray-400 text-center mt-2">
+            <p className="text-xs text-gray-500 text-center mt-2">
               This takes about 5-8 seconds
             </p>
           </div>
@@ -3131,7 +3131,7 @@ function SearchBar({ onNavigate }) {
     const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
     const parts = text.split(regex)
     return parts.map((part, i) =>
-      regex.test(part) ? <mark key={i} className="bg-yellow-200 rounded px-0.5">{part}</mark> : part
+      regex.test(part) ? <mark key={i} className="bg-indigo-500/30 text-white rounded px-0.5">{part}</mark> : part
     )
   }
 
@@ -3168,7 +3168,7 @@ function SearchBar({ onNavigate }) {
     <div className="relative w-full max-w-xl mx-auto">
       {/* Search input */}
       <div className="relative">
-        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg">🔍</span>
+        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-lg">🔍</span>
         <input
           ref={inputRef}
           type="text"
@@ -3180,15 +3180,14 @@ function SearchBar({ onNavigate }) {
           placeholder={`Search ${topicCount.toLocaleString()} topics...`}
           className="
             w-full pl-12 pr-4 py-3
-            text-base
-            bg-white
-            border-2 border-gray-200
+            text-base text-white
+            bg-gray-900
+            border border-gray-700
             rounded-full
-            shadow-sm
             outline-none
             transition-all duration-200
-            focus:border-indigo-400 focus:shadow-md
-            placeholder:text-gray-400
+            focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500
+            placeholder:text-gray-500
           "
         />
       </div>
@@ -3203,17 +3202,16 @@ function SearchBar({ onNavigate }) {
             transition={{ duration: 0.15 }}
             className="
               absolute top-full left-0 right-0
-              mt-2 bg-white
+              mt-2 bg-gray-900
               rounded-xl
-              shadow-xl
-              border border-gray-200
+              border border-gray-700
               max-h-96 overflow-y-auto
               z-50
             "
           >
             {/* Results count header */}
-            <div className="px-4 py-2 border-b border-gray-100 bg-gray-50 rounded-t-xl">
-              <span className="text-sm text-gray-500">
+            <div className="px-4 py-2 border-b border-gray-800 bg-gray-900 rounded-t-xl">
+              <span className="text-sm text-gray-400">
                 Found {results.length} result{results.length !== 1 ? 's' : ''}
               </span>
             </div>
@@ -3225,12 +3223,12 @@ function SearchBar({ onNavigate }) {
                 onClick={() => handleResultClick(result)}
                 className={`
                   px-4 py-3 cursor-pointer
-                  border-b border-gray-50 last:border-b-0
+                  border-b border-gray-800 last:border-b-0
                   transition-colors duration-100
-                  ${index === selectedIndex ? 'bg-indigo-50' : 'hover:bg-gray-50'}
+                  ${index === selectedIndex ? 'bg-gray-800' : 'hover:bg-gray-800/50'}
                 `}
               >
-                <div className="font-semibold text-gray-800 mb-1">
+                <div className="font-semibold text-white mb-1">
                   {highlightMatch(result.title, query)}
                 </div>
                 {result.path.length > 0 && (
@@ -3253,16 +3251,15 @@ function SearchBar({ onNavigate }) {
             exit={{ opacity: 0, y: -10 }}
             className="
               absolute top-full left-0 right-0
-              mt-2 bg-white
+              mt-2 bg-gray-900
               rounded-xl
-              shadow-md
-              border border-gray-200
+              border border-gray-700
               px-4 py-3
               text-center
               z-50
             "
           >
-            <p className="text-gray-500 text-sm">Type one more character to search...</p>
+            <p className="text-gray-400 text-sm">Type one more character to search...</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -3276,18 +3273,17 @@ function SearchBar({ onNavigate }) {
             exit={{ opacity: 0, y: -10 }}
             className="
               absolute top-full left-0 right-0
-              mt-2 bg-white
+              mt-2 bg-gray-900
               rounded-xl
-              shadow-xl
-              border border-gray-200
+              border border-gray-700
               px-4 py-6
               text-center
               z-50
             "
           >
-            <span className="text-3xl mb-2 block">🔍</span>
-            <p className="text-gray-500">No topics found for "{query}"</p>
-            <p className="text-sm text-gray-400 mt-1">Try a different search term</p>
+            <span className="text-3xl mb-2 block opacity-50">🔍</span>
+            <p className="text-gray-400">No topics found for "{query}"</p>
+            <p className="text-sm text-gray-600 mt-1">Try a different search term</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -5747,36 +5743,36 @@ export default function Canvas() {
       >
         {/* Question side (front) */}
         <div
-          className="absolute inset-0 bg-white rounded-2xl shadow-lg p-6 flex flex-col"
+          className="absolute inset-0 bg-gray-900 border border-gray-700 rounded-2xl shadow-lg p-6 flex flex-col"
           style={{ backfaceVisibility: 'hidden' }}
           onClick={onFlip}
         >
           <div className="flex-1 flex items-center justify-center">
-            <p className="text-lg text-gray-800 text-center leading-relaxed">{flashcard.question}</p>
+            <p className="text-lg text-white text-center leading-relaxed">{flashcard.question}</p>
           </div>
-          <p className="text-xs text-gray-400 text-center mt-4">Tap to flip</p>
+          <p className="text-xs text-gray-500 text-center mt-4">Tap to flip</p>
         </div>
 
         {/* Answer side (back) */}
         <div
-          className="absolute inset-0 bg-white rounded-2xl shadow-lg p-6 flex flex-col"
+          className="absolute inset-0 bg-gray-900 border border-gray-700 rounded-2xl shadow-lg p-6 flex flex-col"
           style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
           onClick={onFlip}
         >
           {/* Skip button */}
           <button
             onClick={(e) => { e.stopPropagation(); onSkip(); }}
-            className="absolute top-3 right-3 text-gray-400 hover:text-red-500 text-sm"
+            className="absolute top-3 right-3 text-gray-500 hover:text-red-400 text-sm"
           >
             ✕
           </button>
 
           <div className="flex-1 flex items-center justify-center">
-            <p className="text-lg text-gray-800 text-center leading-relaxed">{flashcard.answer}</p>
+            <p className="text-lg text-white text-center leading-relaxed">{flashcard.answer}</p>
           </div>
 
           {/* Source topic */}
-          <p className="text-xs text-gray-400 text-center mb-4">
+          <p className="text-xs text-gray-500 text-center mb-4">
             From: {flashcard.sourceCardTitle}
           </p>
 
@@ -5817,8 +5813,8 @@ export default function Canvas() {
           disabled={!hasPrev}
           className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
             hasPrev
-              ? 'text-gray-600 hover:bg-gray-100'
-              : 'text-gray-300 cursor-not-allowed'
+              ? 'text-gray-400 hover:bg-gray-800'
+              : 'text-gray-600 cursor-not-allowed'
           }`}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -5831,8 +5827,8 @@ export default function Canvas() {
           disabled={!hasNext}
           className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
             hasNext
-              ? 'text-gray-600 hover:bg-gray-100'
-              : 'text-gray-300 cursor-not-allowed'
+              ? 'text-gray-400 hover:bg-gray-800'
+              : 'text-gray-600 cursor-not-allowed'
           }`}
         >
           Next
@@ -5853,14 +5849,14 @@ export default function Canvas() {
         <motion.div
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl"
+          className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-sm w-full shadow-xl"
         >
-          <h3 className="text-lg font-bold text-gray-800 mb-2">{title}</h3>
-          <p className="text-gray-600 mb-6">{message}</p>
+          <h3 className="text-lg font-bold text-white mb-2">{title}</h3>
+          <p className="text-gray-400 mb-6">{message}</p>
           <div className="flex gap-3">
             <button
               onClick={onCancel}
-              className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors"
+              className="flex-1 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl font-medium transition-colors"
             >
               Cancel
             </button>
@@ -6430,36 +6426,36 @@ export default function Canvas() {
       return (
         <div className="flex flex-col items-center justify-center h-full p-6 text-center">
           <div className="text-6xl mb-4">{isAcquisition ? '🎓' : '🎉'}</div>
-          <h2 className="text-xl font-bold text-gray-800 mb-2">
+          <h2 className="text-xl font-bold text-white mb-2">
             {isAcquisition ? 'Learning Complete!' : 'Review Complete!'}
           </h2>
 
           {/* Session stats */}
-          <div className="w-full max-w-xs bg-gray-50 rounded-xl p-4 mb-4">
+          <div className="w-full max-w-xs bg-white/[0.03] border border-white/10 rounded-xl p-4 mb-4">
             {isAcquisition ? (
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Cards learned</span>
-                  <span className="font-semibold text-gray-800">{sessionResults.cardsLearned}</span>
+                  <span className="text-gray-400">Cards learned</span>
+                  <span className="font-semibold text-white">{sessionResults.cardsLearned}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Total attempts</span>
-                  <span className="font-semibold text-gray-800">{sessionResults.totalAttempts}</span>
+                  <span className="text-gray-400">Total attempts</span>
+                  <span className="font-semibold text-white">{sessionResults.totalAttempts}</span>
                 </div>
               </div>
             ) : (
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Cards reviewed</span>
-                  <span className="font-semibold text-gray-800">{sessionResults.reviewed}</span>
+                  <span className="text-gray-400">Cards reviewed</span>
+                  <span className="font-semibold text-white">{sessionResults.reviewed}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Correct</span>
-                  <span className="font-semibold text-green-600">{sessionResults.correct}</span>
+                  <span className="text-gray-400">Correct</span>
+                  <span className="font-semibold text-green-400">{sessionResults.correct}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Accuracy</span>
-                  <span className="font-semibold text-gray-800">{sessionResults.accuracy}%</span>
+                  <span className="text-gray-400">Accuracy</span>
+                  <span className="font-semibold text-white">{sessionResults.accuracy}%</span>
                 </div>
               </div>
             )}
@@ -6467,7 +6463,7 @@ export default function Canvas() {
 
           {/* Streak display */}
           {stats.currentStreak > 0 && (
-            <div className="flex items-center gap-2 mb-6 text-amber-600">
+            <div className="flex items-center gap-2 mb-6 text-amber-500">
               <span className="text-2xl">🔥</span>
               <span className="font-semibold">{stats.currentStreak} day streak!</span>
             </div>
@@ -6478,7 +6474,7 @@ export default function Canvas() {
               refreshData()
               setStudyView('hub')
             }}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors"
+            className="bg-white text-gray-900 hover:bg-gray-100 px-6 py-3 rounded-xl font-semibold transition-colors"
           >
             Back to Study
           </button>
@@ -6510,18 +6506,18 @@ export default function Canvas() {
           <div className="flex justify-between items-center p-4">
             <button
               onClick={endAcquisitionEarly}
-              className="text-gray-500 hover:text-gray-700 text-sm font-medium"
+              className="text-gray-400 hover:text-white text-sm font-medium"
             >
               ← Done
             </button>
-            <span className="text-sm font-medium text-gray-500">
+            <span className="text-sm font-medium text-gray-400">
               {graduatedCount} learned • {acquiringCards.length} in rotation
             </span>
           </div>
 
           {/* Overall progress bar */}
           <div className="px-4 mb-2">
-            <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+            <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
               <motion.div
                 className="h-full bg-emerald-500"
                 initial={{ width: 0 }}
@@ -6529,7 +6525,7 @@ export default function Canvas() {
                 transition={{ duration: 0.3 }}
               />
             </div>
-            <p className="text-xs text-gray-400 text-center mt-1">
+            <p className="text-xs text-gray-500 text-center mt-1">
               {graduatedCount} / {totalCardsToLearn} graduated
             </p>
           </div>
@@ -6543,7 +6539,7 @@ export default function Canvas() {
                   setIsFlipped(false)
                   setCurrentCardIndex(prev => prev === 0 ? acquiringCards.length - 1 : prev - 1)
                 }}
-                className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                className="p-2 text-gray-500 hover:text-white transition-colors"
                 aria-label="Previous card"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -6562,7 +6558,7 @@ export default function Canvas() {
               >
                 {/* Question side */}
                 <div
-                  className="absolute inset-0 bg-white rounded-2xl shadow-lg p-6 flex flex-col"
+                  className="absolute inset-0 bg-gray-900 border border-gray-700 rounded-2xl shadow-lg p-6 flex flex-col"
                   style={{ backfaceVisibility: 'hidden' }}
                   onClick={() => setIsFlipped(true)}
                 >
@@ -6572,28 +6568,28 @@ export default function Canvas() {
                       <div
                         key={i}
                         className={`w-3 h-3 rounded-full transition-colors ${
-                          i < currentStreak ? 'bg-emerald-500' : 'bg-gray-200'
+                          i < currentStreak ? 'bg-emerald-500' : 'bg-gray-700'
                         }`}
                       />
                     ))}
                   </div>
 
                   <div className="flex-1 flex items-center justify-center">
-                    <p className="text-lg text-gray-800 text-center leading-relaxed">{currentCard.question}</p>
+                    <p className="text-lg text-white text-center leading-relaxed">{currentCard.question}</p>
                   </div>
-                  <p className="text-xs text-gray-400 text-center mt-4">Tap to reveal answer</p>
+                  <p className="text-xs text-gray-500 text-center mt-4">Tap to reveal answer</p>
                 </div>
 
                 {/* Answer side */}
                 <div
-                  className="absolute inset-0 bg-white rounded-2xl shadow-lg p-6 flex flex-col cursor-pointer"
+                  className="absolute inset-0 bg-gray-900 border border-gray-700 rounded-2xl shadow-lg p-6 flex flex-col cursor-pointer"
                   style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
                   onClick={() => setIsFlipped(false)}
                 >
                   {/* Edit button */}
                   <button
                     onClick={(e) => { e.stopPropagation(); openEditModal(currentCard); }}
-                    className="absolute top-3 right-3 text-gray-400 hover:text-indigo-500 p-1"
+                    className="absolute top-3 right-3 text-gray-500 hover:text-indigo-400 p-1"
                     title="Edit flashcard"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -6607,16 +6603,16 @@ export default function Canvas() {
                       <div
                         key={i}
                         className={`w-3 h-3 rounded-full transition-colors ${
-                          i < currentStreak ? 'bg-emerald-500' : 'bg-gray-200'
+                          i < currentStreak ? 'bg-emerald-500' : 'bg-gray-700'
                         }`}
                       />
                     ))}
                   </div>
 
                   <div className="flex-1 flex items-center justify-center">
-                    <p className="text-lg text-gray-800 text-center leading-relaxed whitespace-pre-line">{currentCard.answer}</p>
+                    <p className="text-lg text-white text-center leading-relaxed whitespace-pre-line">{currentCard.answer}</p>
                   </div>
-                  <p className="text-xs text-gray-400 text-center mb-4">
+                  <p className="text-xs text-gray-500 text-center mb-4">
                     From: {currentCard.sourceCardTitle}
                   </p>
 
@@ -6649,7 +6645,7 @@ export default function Canvas() {
                   setIsFlipped(false)
                   setCurrentCardIndex(prev => prev === acquiringCards.length - 1 ? 0 : prev + 1)
                 }}
-                className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                className="p-2 text-gray-500 hover:text-white transition-colors"
                 aria-label="Next card"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -6662,30 +6658,30 @@ export default function Canvas() {
 
         {/* Edit Flashcard Modal */}
         {editingCard && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl max-h-[90vh] overflow-auto"
+              className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-md w-full shadow-xl max-h-[90vh] overflow-auto"
             >
-              <h3 className="text-lg font-bold text-gray-800 mb-4">Edit Flashcard</h3>
+              <h3 className="text-lg font-bold text-white mb-4">Edit Flashcard</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Question</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">Question</label>
                   <textarea
                     value={editQuestion}
                     onChange={(e) => setEditQuestion(e.target.value)}
-                    className="w-full p-3 border border-gray-200 rounded-xl text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full p-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     rows={3}
                     placeholder="Enter question..."
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Answer</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">Answer</label>
                   <textarea
                     value={editAnswer}
                     onChange={(e) => setEditAnswer(e.target.value)}
-                    className="w-full p-3 border border-gray-200 rounded-xl text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full p-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     rows={4}
                     placeholder="Enter answer..."
                   />
@@ -6694,14 +6690,14 @@ export default function Canvas() {
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={handleCancelEdit}
-                  className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors"
+                  className="flex-1 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl font-medium transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSaveEdit}
                   disabled={!editQuestion.trim() || !editAnswer.trim()}
-                  className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white rounded-xl font-medium transition-colors"
+                  className="flex-1 py-3 bg-white hover:bg-gray-100 disabled:bg-gray-700 disabled:text-gray-500 text-gray-900 rounded-xl font-medium transition-colors"
                 >
                   Save
                 </button>
@@ -6736,18 +6732,18 @@ export default function Canvas() {
           <div className="flex justify-between items-center p-4">
             <button
               onClick={endReviewEarly}
-              className="text-gray-500 hover:text-gray-700 text-sm font-medium"
+              className="text-gray-400 hover:text-white text-sm font-medium"
             >
               ← Done
             </button>
-            <span className="text-sm font-medium text-gray-500">
+            <span className="text-sm font-medium text-gray-400">
               {reviewedCount} / {totalToReview} reviewed
             </span>
           </div>
 
           {/* Progress bar */}
           <div className="px-4 mb-2">
-            <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+            <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
               <motion.div
                 className="h-full bg-indigo-600"
                 initial={{ width: 0 }}
@@ -6790,7 +6786,7 @@ export default function Canvas() {
               >
                 {/* Question side */}
                 <div
-                  className="absolute inset-0 bg-white rounded-2xl shadow-lg p-6 flex flex-col"
+                  className="absolute inset-0 bg-gray-900 border border-gray-700 rounded-2xl shadow-lg p-6 flex flex-col"
                   style={{ backfaceVisibility: 'hidden' }}
                   onClick={() => setIsFlipped(true)}
                 >
@@ -6803,27 +6799,27 @@ export default function Canvas() {
                     <span className="text-xs text-gray-500">
                       Box {currentBox} • {boxInfo.label}
                       {daysOverdue > 0 && (
-                        <span className="text-amber-600 ml-1">({daysOverdue}d overdue)</span>
+                        <span className="text-amber-400 ml-1">({daysOverdue}d overdue)</span>
                       )}
                     </span>
                   </div>
 
                   <div className="flex-1 flex items-center justify-center">
-                    <p className="text-lg text-gray-800 text-center leading-relaxed">{currentCard.question}</p>
+                    <p className="text-lg text-white text-center leading-relaxed">{currentCard.question}</p>
                   </div>
-                  <p className="text-xs text-gray-400 text-center mt-4">Tap to reveal answer</p>
+                  <p className="text-xs text-gray-500 text-center mt-4">Tap to reveal answer</p>
                 </div>
 
                 {/* Answer side */}
                 <div
-                  className="absolute inset-0 bg-white rounded-2xl shadow-lg p-6 flex flex-col cursor-pointer"
+                  className="absolute inset-0 bg-gray-900 border border-gray-700 rounded-2xl shadow-lg p-6 flex flex-col cursor-pointer"
                   style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
                   onClick={() => setIsFlipped(false)}
                 >
                   {/* Edit button */}
                   <button
                     onClick={(e) => { e.stopPropagation(); openEditModal(currentCard); }}
-                    className="absolute top-3 left-3 text-gray-400 hover:text-indigo-500 p-1"
+                    className="absolute top-3 left-3 text-gray-500 hover:text-indigo-400 p-1"
                     title="Edit flashcard"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -6834,7 +6830,7 @@ export default function Canvas() {
                   {/* Skip button */}
                   <button
                     onClick={(e) => { e.stopPropagation(); setShowSkipConfirm(true); }}
-                    className="absolute top-3 right-3 text-gray-400 hover:text-red-500 text-sm"
+                    className="absolute top-3 right-3 text-gray-500 hover:text-red-400 text-sm"
                   >
                     ✕
                   </button>
@@ -6849,9 +6845,9 @@ export default function Canvas() {
                   </div>
 
                   <div className="flex-1 flex items-center justify-center">
-                    <p className="text-lg text-gray-800 text-center leading-relaxed whitespace-pre-line">{currentCard.answer}</p>
+                    <p className="text-lg text-white text-center leading-relaxed whitespace-pre-line">{currentCard.answer}</p>
                   </div>
-                  <p className="text-xs text-gray-400 text-center mb-4">
+                  <p className="text-xs text-gray-500 text-center mb-4">
                     From: {currentCard.sourceCardTitle}
                   </p>
 
@@ -6908,30 +6904,30 @@ export default function Canvas() {
 
         {/* Edit Flashcard Modal */}
         {editingCard && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl max-h-[90vh] overflow-auto"
+              className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-md w-full shadow-xl max-h-[90vh] overflow-auto"
             >
-              <h3 className="text-lg font-bold text-gray-800 mb-4">Edit Flashcard</h3>
+              <h3 className="text-lg font-bold text-white mb-4">Edit Flashcard</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Question</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">Question</label>
                   <textarea
                     value={editQuestion}
                     onChange={(e) => setEditQuestion(e.target.value)}
-                    className="w-full p-3 border border-gray-200 rounded-xl text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full p-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     rows={3}
                     placeholder="Enter question..."
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Answer</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">Answer</label>
                   <textarea
                     value={editAnswer}
                     onChange={(e) => setEditAnswer(e.target.value)}
-                    className="w-full p-3 border border-gray-200 rounded-xl text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full p-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     rows={4}
                     placeholder="Enter answer..."
                   />
@@ -6940,14 +6936,14 @@ export default function Canvas() {
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={handleCancelEdit}
-                  className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors"
+                  className="flex-1 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl font-medium transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSaveEdit}
                   disabled={!editQuestion.trim() || !editAnswer.trim()}
-                  className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white rounded-xl font-medium transition-colors"
+                  className="flex-1 py-3 bg-white hover:bg-gray-100 disabled:bg-gray-700 disabled:text-gray-500 text-gray-900 rounded-xl font-medium transition-colors"
                 >
                   Save
                 </button>
@@ -6964,17 +6960,17 @@ export default function Canvas() {
       return (
         <div className="flex flex-col h-full overflow-auto">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-100">
+          <div className="flex items-center justify-between p-4 border-b border-gray-800">
             <button
               onClick={() => setStudyView('hub')}
-              className="flex items-center gap-1 text-gray-600 hover:text-gray-800 transition-colors"
+              className="flex items-center gap-1 text-gray-400 hover:text-white transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
               <span className="text-sm font-medium">Back</span>
             </button>
-            <span className="text-sm font-semibold text-gray-700">Add Topics</span>
+            <span className="text-sm font-semibold text-white">Add Topics</span>
             <div className="w-16" />
           </div>
 
@@ -6983,13 +6979,13 @@ export default function Canvas() {
             {Object.keys(availableTopics).length === 0 ? (
               <div className="text-center py-12">
                 <div className="text-4xl mb-3">📚</div>
-                <h3 className="font-semibold text-gray-800 mb-1">No topics available</h3>
+                <h3 className="font-semibold text-white mb-1">No topics available</h3>
                 <p className="text-sm text-gray-500 mb-4">
                   Claim cards while learning to add topics here
                 </p>
                 <button
                   onClick={onGoToLearn}
-                  className="text-indigo-600 hover:text-indigo-700 font-medium text-sm"
+                  className="text-indigo-400 hover:text-indigo-300 font-medium text-sm"
                 >
                   Go to Learn →
                 </button>
@@ -7000,30 +6996,30 @@ export default function Canvas() {
                 const categoryName = categoryNode?.title || categoryId
 
                 return (
-                  <div key={categoryId} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-                    <div className="px-4 py-3 bg-gray-50 border-b border-gray-100">
-                      <h4 className="font-semibold text-gray-700">{categoryName}</h4>
+                  <div key={categoryId} className="bg-white/[0.03] rounded-xl border border-white/10 overflow-hidden">
+                    <div className="px-4 py-3 bg-white/[0.03] border-b border-white/10">
+                      <h4 className="font-semibold text-white">{categoryName}</h4>
                     </div>
-                    <div className="divide-y divide-gray-50">
+                    <div className="divide-y divide-white/5">
                       {topics.map(topic => (
                         <div
                           key={topic.id}
                           className="px-4 py-3 flex items-center justify-between"
                         >
                           <div className="flex-1 mr-3">
-                            <p className="text-gray-800 font-medium truncate">{topic.name}</p>
+                            <p className="text-white font-medium truncate">{topic.name}</p>
                             <p className="text-xs text-gray-500">
                               {topic.flashcardCount} flashcards • {topic.claimedCount} cards
                             </p>
                           </div>
                           {topic.inStudyDeck ? (
-                            <span className="px-3 py-1.5 rounded-lg text-sm font-medium bg-green-100 text-green-700">
+                            <span className="px-3 py-1.5 rounded-lg text-sm font-medium bg-emerald-500/20 text-emerald-400">
                               Added
                             </span>
                           ) : (
                             <button
                               onClick={() => handleAddTopic(topic.id)}
-                              className="px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-100 text-indigo-600 hover:bg-indigo-200 transition-colors"
+                              className="px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30 transition-colors"
                             >
                               + Add
                             </button>
@@ -7044,9 +7040,9 @@ export default function Canvas() {
     return (
       <div className="flex flex-col h-full overflow-auto">
         {/* Header with streak */}
-        <div className="p-4 border-b border-gray-100">
+        <div className="p-4 border-b border-gray-800">
           <div className="flex items-center justify-between">
-            <h1 className="text-lg font-semibold text-gray-800">Study</h1>
+            <h1 className="text-lg font-semibold text-white">Study</h1>
             {studyStats.currentStreak > 0 && (
               <div className="flex items-center gap-1.5 text-amber-600">
                 <span className="text-lg">🔥</span>
@@ -7131,8 +7127,8 @@ export default function Canvas() {
 
           {/* Leitner Box Progress */}
           {Object.keys(boxCounts).length > 0 && Object.values(boxCounts).some(c => c > 0) && (
-            <div className="bg-white rounded-xl border border-gray-100 p-4">
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+            <div className="bg-white/[0.03] rounded-xl border border-white/10 p-4">
+              <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-3">
                 Progress
               </h3>
               <div className="flex gap-1.5">
@@ -7145,7 +7141,7 @@ export default function Canvas() {
                   return (
                     <div key={box} className="flex-1 text-center">
                       <div
-                        className="h-16 rounded-lg relative overflow-hidden bg-gray-100"
+                        className="h-16 rounded-lg relative overflow-hidden bg-gray-800"
                         title={`${boxInfo.label}: ${count} cards`}
                       >
                         <motion.div
@@ -7155,16 +7151,16 @@ export default function Canvas() {
                           animate={{ height: `${Math.max(percentage, count > 0 ? 10 : 0)}%` }}
                           transition={{ duration: 0.5 }}
                         />
-                        <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-gray-700">
+                        <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-white">
                           {count}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-400 mt-1">{box}</p>
+                      <p className="text-xs text-gray-500 mt-1">{box}</p>
                     </div>
                   )
                 })}
               </div>
-              <p className="text-xs text-gray-400 text-center mt-2">
+              <p className="text-xs text-gray-500 text-center mt-2">
                 Box 1 (daily) → Box 6 (mastered)
               </p>
             </div>
@@ -7174,10 +7170,10 @@ export default function Canvas() {
         {/* My Study Deck Section */}
         <div className="flex-1 p-4 pt-0">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+            <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wide">
               My Study Deck
             </h3>
-            <span className="text-xs text-gray-400">{studyDeck.length} topics</span>
+            <span className="text-xs text-gray-500">{studyDeck.length} topics</span>
           </div>
 
           {studyDeck.length > 0 ? (
@@ -7188,10 +7184,10 @@ export default function Canvas() {
                 return (
                   <div
                     key={topicId}
-                    className="bg-white rounded-xl border border-gray-100 p-4 flex items-center justify-between"
+                    className="bg-white/[0.03] rounded-xl border border-white/10 p-4 flex items-center justify-between"
                   >
                     <div className="flex-1 mr-3">
-                      <p className="font-medium text-gray-800 truncate">{info.name}</p>
+                      <p className="font-medium text-white truncate">{info.name}</p>
                       <p className="text-xs text-gray-500">
                         {isGenerating ? 'Generating...' : `${info.flashcardCount} flashcards`}
                       </p>
@@ -7200,20 +7196,20 @@ export default function Canvas() {
                       {info.flashcardCount === 0 && !isGenerating && (
                         <button
                           onClick={() => handleGenerateForTopic(topicId)}
-                          className="px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-100 text-indigo-600 hover:bg-indigo-200 transition-colors"
+                          className="px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30 transition-colors"
                         >
                           Generate
                         </button>
                       )}
                       {isGenerating && (
-                        <svg className="animate-spin h-5 w-5 text-indigo-600" viewBox="0 0 24 24">
+                        <svg className="animate-spin h-5 w-5 text-indigo-400" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                         </svg>
                       )}
                       <button
                         onClick={() => setShowRemoveConfirm(topicId)}
-                        className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                        className="text-gray-600 hover:text-red-400 transition-colors p-1"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -7225,7 +7221,7 @@ export default function Canvas() {
               })}
             </div>
           ) : (
-            <div className="bg-gray-50 rounded-xl p-6 text-center mb-4">
+            <div className="bg-white/[0.03] rounded-xl border border-white/10 p-6 text-center mb-4">
               <p className="text-gray-500 text-sm">
                 No topics in your study deck yet
               </p>
@@ -7235,7 +7231,7 @@ export default function Canvas() {
           {/* Add Topics Button */}
           <button
             onClick={() => setStudyView('addTopics')}
-            className="w-full bg-indigo-100 hover:bg-indigo-200 text-indigo-600 py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+            className="w-full bg-white/[0.03] border border-white/10 hover:bg-white/[0.06] hover:border-white/20 text-gray-300 py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -7259,28 +7255,28 @@ export default function Canvas() {
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl max-h-[90vh] overflow-auto"
+              className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-md w-full shadow-xl max-h-[90vh] overflow-auto"
             >
-              <h3 className="text-lg font-bold text-gray-800 mb-4">Edit Flashcard</h3>
+              <h3 className="text-lg font-bold text-white mb-4">Edit Flashcard</h3>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Question</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">Question</label>
                   <textarea
                     value={editQuestion}
                     onChange={(e) => setEditQuestion(e.target.value)}
-                    className="w-full p-3 border border-gray-200 rounded-xl text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full p-3 bg-gray-800 border border-gray-700 rounded-xl text-white resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-gray-500"
                     rows={3}
                     placeholder="Enter question..."
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Answer</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">Answer</label>
                   <textarea
                     value={editAnswer}
                     onChange={(e) => setEditAnswer(e.target.value)}
-                    className="w-full p-3 border border-gray-200 rounded-xl text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full p-3 bg-gray-800 border border-gray-700 rounded-xl text-white resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-gray-500"
                     rows={4}
                     placeholder="Enter answer..."
                   />
@@ -7290,14 +7286,14 @@ export default function Canvas() {
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={handleCancelEdit}
-                  className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors"
+                  className="flex-1 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl font-medium transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSaveEdit}
                   disabled={!editQuestion.trim() || !editAnswer.trim()}
-                  className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white rounded-xl font-medium transition-colors"
+                  className="flex-1 py-3 bg-white hover:bg-gray-100 disabled:bg-gray-700 disabled:text-gray-500 text-gray-900 rounded-xl font-medium transition-colors"
                 >
                   Save
                 </button>
@@ -7315,7 +7311,7 @@ export default function Canvas() {
       className="fixed bottom-0 left-0 right-0 z-40"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
-      <div className="bg-white border-t border-gray-200 flex items-end justify-around px-2 h-16 relative">
+      <div className="bg-gray-950 border-t border-gray-800 flex items-end justify-around px-2 h-16 relative">
         {/* Learn */}
         <button
           onClick={() => {
@@ -7325,7 +7321,7 @@ export default function Canvas() {
             setStack([])
           }}
           className={`flex flex-col items-center justify-center flex-1 py-2 transition-colors ${
-            activeTab === 'learn' ? 'text-indigo-600' : 'text-gray-400'
+            activeTab === 'learn' ? 'text-white' : 'text-gray-500'
           }`}
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -7341,7 +7337,7 @@ export default function Canvas() {
             setStack(['collections'])
           }}
           className={`flex flex-col items-center justify-center flex-1 py-2 transition-colors ${
-            activeTab === 'cards' ? 'text-indigo-600' : 'text-gray-400'
+            activeTab === 'cards' ? 'text-white' : 'text-gray-500'
           }`}
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -7357,7 +7353,7 @@ export default function Canvas() {
         <button
           onClick={() => setActiveTab('study')}
           className={`flex flex-col items-center justify-center flex-1 py-2 transition-colors ${
-            activeTab === 'study' ? 'text-indigo-600' : 'text-gray-400'
+            activeTab === 'study' ? 'text-white' : 'text-gray-500'
           }`}
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -7370,7 +7366,7 @@ export default function Canvas() {
         <button
           onClick={() => setActiveTab('settings')}
           className={`flex flex-col items-center justify-center flex-1 py-2 transition-colors ${
-            activeTab === 'settings' ? 'text-indigo-600' : 'text-gray-400'
+            activeTab === 'settings' ? 'text-white' : 'text-gray-500'
           }`}
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -7429,7 +7425,7 @@ export default function Canvas() {
   // Study screen - spaced repetition flashcard review
   if (activeTab === 'study') {
     return (
-      <div className="w-screen min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 overflow-auto pb-24">
+      <div className="w-screen min-h-screen bg-gray-950 overflow-auto pb-24">
         <StudyScreen onGoToLearn={() => setActiveTab('learn')} />
         <BottomNav />
       </div>
@@ -7439,11 +7435,11 @@ export default function Canvas() {
   // Settings screen
   if (activeTab === 'settings') {
     return (
-      <div className="w-screen min-h-screen bg-gradient-to-b from-gray-900 to-gray-950 overflow-auto pb-24">
+      <div className="w-screen min-h-screen bg-gray-950 overflow-auto pb-24">
         {/* Top navigation bar */}
-        <div className="fixed top-0 left-0 right-0 z-40 bg-gray-900/80 backdrop-blur-sm border-b border-gray-800">
+        <div className="fixed top-0 left-0 right-0 z-40 bg-gray-950/95 backdrop-blur-sm border-b border-gray-800">
           <div className="flex items-center justify-center px-3 py-3">
-            <h1 className="text-lg font-semibold text-gray-100">Settings</h1>
+            <h1 className="text-lg font-semibold text-white">Settings</h1>
           </div>
         </div>
 
@@ -7452,18 +7448,18 @@ export default function Canvas() {
           {/* Account Section */}
           <div className="mt-4">
             <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-1">Account</h2>
-            <div className="bg-gray-800/50 rounded-2xl border border-gray-700/50 overflow-hidden">
+            <div className="bg-white/[0.03] rounded-2xl border border-white/10 overflow-hidden">
               {user ? (
                 <>
-                  <div className="px-4 py-4 border-b border-gray-700/50">
-                    <p className="text-gray-200">{user.email}</p>
+                  <div className="px-4 py-4 border-b border-white/10">
+                    <p className="text-white">{user.email}</p>
                   </div>
                   <button
                     onClick={() => {
                       signOut()
                       setActiveTab('learn')
                     }}
-                    className="w-full px-4 py-4 text-left text-red-400 hover:bg-gray-700/30 transition-colors"
+                    className="w-full px-4 py-4 text-left text-red-400 hover:bg-white/[0.03] transition-colors"
                   >
                     Sign Out
                   </button>
@@ -7471,7 +7467,7 @@ export default function Canvas() {
               ) : (
                 <button
                   onClick={() => setShowAuth(true)}
-                  className="w-full px-4 py-4 text-left text-indigo-400 hover:bg-gray-700/30 transition-colors"
+                  className="w-full px-4 py-4 text-left text-indigo-400 hover:bg-white/[0.03] transition-colors"
                 >
                   Sign In
                 </button>
@@ -7482,10 +7478,10 @@ export default function Canvas() {
           {/* Data Section */}
           <div className="mt-6">
             <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-1">Data</h2>
-            <div className="bg-gray-800/50 rounded-2xl border border-gray-700/50 overflow-hidden">
+            <div className="bg-white/[0.03] rounded-2xl border border-white/10 overflow-hidden">
               <button
                 onClick={() => setShowResetConfirm(true)}
-                className="w-full px-4 py-4 text-left text-red-400 hover:bg-gray-700/30 transition-colors"
+                className="w-full px-4 py-4 text-left text-red-400 hover:bg-white/[0.03] transition-colors"
               >
                 Reset Progress
               </button>
@@ -7495,7 +7491,7 @@ export default function Canvas() {
           {/* About Section */}
           <div className="mt-6">
             <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-1">About</h2>
-            <div className="bg-gray-800/50 rounded-2xl border border-gray-700/50 overflow-hidden">
+            <div className="bg-white/[0.03] rounded-2xl border border-white/10 overflow-hidden">
               <div className="px-4 py-4">
                 <p className="text-gray-400">Spaced v0.1.0</p>
               </div>
@@ -7514,18 +7510,18 @@ export default function Canvas() {
               onClick={() => setShowResetConfirm(false)}
             >
               <motion.div
-                className="bg-gray-800 rounded-2xl p-6 max-w-sm w-full shadow-xl border border-gray-700"
+                className="bg-gray-900 rounded-2xl p-6 max-w-sm w-full shadow-xl border border-gray-700"
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
                 onClick={e => e.stopPropagation()}
               >
-                <h3 className="text-xl font-bold text-gray-100 mb-2">Reset Progress?</h3>
+                <h3 className="text-xl font-bold text-white mb-2">Reset Progress?</h3>
                 <p className="text-gray-400 mb-6">This will clear all your cards, flashcards, and progress. This cannot be undone.</p>
                 <div className="flex gap-3">
                   <button
                     onClick={() => setShowResetConfirm(false)}
-                    className="flex-1 py-3 rounded-xl font-semibold text-gray-300 bg-gray-700 hover:bg-gray-600 transition-colors"
+                    className="flex-1 py-3 rounded-xl font-semibold text-gray-300 bg-gray-800 hover:bg-gray-700 transition-colors"
                   >
                     Cancel
                   </button>
@@ -7573,15 +7569,15 @@ export default function Canvas() {
   // Learn Hub screen - main entry point for Learn tab
   if (activeTab === 'learn' && learnView === 'hub') {
     return (
-      <div className="w-screen min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 overflow-auto pb-24">
+      <div className="w-screen min-h-screen bg-gray-950 overflow-auto pb-24">
         {/* Top navigation bar */}
-        <div className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200">
+        <div className="fixed top-0 left-0 right-0 z-40 bg-gray-950 border-b border-gray-800">
           <div className="flex items-center justify-between px-3 py-2">
             <div className="flex items-center gap-2">
               {user ? (
                 <button
                   onClick={() => signOut()}
-                  className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
+                  className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
                 >
                   <span className="w-7 h-7 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
                     {user.email?.charAt(0).toUpperCase()}
@@ -7590,13 +7586,13 @@ export default function Canvas() {
               ) : (
                 <button
                   onClick={() => setShowAuth(true)}
-                  className="text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
+                  className="text-sm text-gray-400 hover:text-white font-medium transition-colors"
                 >
                   Sign In
                 </button>
               )}
             </div>
-            <h1 className="text-lg font-semibold text-gray-800">Learn</h1>
+            <h1 className="text-lg font-semibold text-white">Learn</h1>
             <div className="w-16" /> {/* Spacer for balance */}
           </div>
         </div>
@@ -7607,18 +7603,18 @@ export default function Canvas() {
           <div className="mt-6">
             <button
               onClick={() => setLearnView('browse')}
-              className="w-full bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow"
+              className="w-full bg-white/[0.03] rounded-2xl p-6 border border-white/10 flex items-center gap-4 hover:bg-white/[0.06] hover:border-white/20 transition-all"
             >
-              <div className="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center">
-                <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-12 h-12 rounded-xl bg-indigo-500/20 flex items-center justify-center">
+                <svg className="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
               </div>
               <div className="flex-1 text-left">
-                <h3 className="text-lg font-semibold text-gray-800">Browse</h3>
+                <h3 className="text-lg font-semibold text-white">Browse</h3>
                 <p className="text-sm text-gray-500">Explore topics by category</p>
               </div>
-              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </button>
@@ -7628,18 +7624,18 @@ export default function Canvas() {
           <div className="mt-4">
             <button
               onClick={() => setLearnView('upload')}
-              className="w-full bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow"
+              className="w-full bg-white/[0.03] rounded-2xl p-6 border border-white/10 flex items-center gap-4 hover:bg-white/[0.06] hover:border-white/20 transition-all"
             >
-              <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center">
-                <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                <svg className="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                 </svg>
               </div>
               <div className="flex-1 text-left">
-                <h3 className="text-lg font-semibold text-gray-800">Upload Notes</h3>
+                <h3 className="text-lg font-semibold text-white">Upload Notes</h3>
                 <p className="text-sm text-gray-500">Turn your notes into flashcards</p>
               </div>
-              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </button>
@@ -7741,20 +7737,20 @@ export default function Canvas() {
   // Upload Notes screen
   if (activeTab === 'learn' && learnView === 'upload') {
     return (
-      <div className="w-screen min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 overflow-auto pb-24">
+      <div className="w-screen min-h-screen bg-gray-950 overflow-auto pb-24">
         {/* Top navigation bar */}
-        <div className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200">
+        <div className="fixed top-0 left-0 right-0 z-40 bg-gray-950 border-b border-gray-800">
           <div className="flex items-center justify-between px-3 py-2">
             <button
               onClick={() => setLearnView('hub')}
-              className="flex items-center gap-1 text-gray-600 hover:text-gray-800 transition-colors"
+              className="flex items-center gap-1 text-gray-400 hover:text-white transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
               <span className="text-sm font-medium">Back</span>
             </button>
-            <h1 className="text-lg font-semibold text-gray-800">Upload Notes</h1>
+            <h1 className="text-lg font-semibold text-white">Upload Notes</h1>
             <div className="w-16" /> {/* Spacer for balance */}
           </div>
         </div>
@@ -7763,20 +7759,20 @@ export default function Canvas() {
         <div className="pt-14 px-4">
           <div className="mt-6">
             {/* Upload area */}
-            <div className="bg-white rounded-2xl p-8 shadow-sm border-2 border-dashed border-gray-300 text-center">
-              <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-white/[0.03] rounded-2xl p-8 border-2 border-dashed border-gray-700 text-center">
+              <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">Upload your study notes</h3>
+              <h3 className="text-lg font-semibold text-white mb-2">Upload your study notes</h3>
               <p className="text-sm text-gray-500 mb-6">
                 Upload PDFs, images, or paste text from your notes.
                 <br />
                 We'll turn them into flashcards for you.
               </p>
               <button
-                className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors"
+                className="bg-white text-gray-900 px-6 py-3 rounded-xl font-semibold hover:bg-gray-100 transition-colors"
                 onClick={() => {
                   // TODO: Implement file upload
                   alert('Coming soon!')
@@ -7784,20 +7780,20 @@ export default function Canvas() {
               >
                 Choose File
               </button>
-              <p className="text-xs text-gray-400 mt-4">
+              <p className="text-xs text-gray-600 mt-4">
                 Supported: PDF, PNG, JPG, or paste text
               </p>
             </div>
 
             {/* Or paste text */}
             <div className="mt-6">
-              <div className="text-center text-sm text-gray-400 mb-4">or</div>
+              <div className="text-center text-sm text-gray-600 mb-4">or</div>
               <textarea
                 placeholder="Paste your notes here..."
-                className="w-full h-40 p-4 bg-white rounded-2xl border border-gray-200 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-800"
+                className="w-full h-40 p-4 bg-gray-900 rounded-2xl border border-gray-800 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 text-white placeholder-gray-600"
               />
               <button
-                className="w-full mt-4 bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-semibold transition-colors"
+                className="w-full mt-4 bg-transparent border border-gray-700 hover:border-gray-600 text-gray-300 px-6 py-3 rounded-xl font-semibold transition-colors"
                 onClick={() => {
                   // TODO: Process pasted text
                   alert('Coming soon!')
@@ -7817,16 +7813,16 @@ export default function Canvas() {
   // Learn screen (default) - show all category decks with Continue Exploring
   if (stack.length === 0 || (stack.length === 1 && stack[0] === 'my-decks')) {
     return (
-      <div className="w-screen min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 overflow-auto">
+      <div className="w-screen min-h-screen bg-gray-950 overflow-auto">
         {/* Top navigation bar */}
-        <div className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200">
+        <div className="fixed top-0 left-0 right-0 z-40 bg-gray-950 border-b border-gray-800">
           <div className="flex items-center justify-between px-3 py-2">
             {/* User button / Sign In + Reset */}
             <div className="flex items-center gap-2">
               {user ? (
                 <button
                   onClick={() => signOut()}
-                  className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
+                  className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
                 >
                   <span className="w-7 h-7 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
                     {user.email?.charAt(0).toUpperCase()}
@@ -7836,7 +7832,7 @@ export default function Canvas() {
               ) : (
                 <button
                   onClick={() => setShowAuth(true)}
-                  className="text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
+                  className="text-sm text-gray-400 hover:text-white font-medium transition-colors"
                 >
                   Sign In
                 </button>
@@ -7848,29 +7844,29 @@ export default function Canvas() {
                     window.location.reload()
                   }
                 }}
-                className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+                className="text-xs text-gray-600 hover:text-red-400 transition-colors"
               >
                 Reset
               </button>
             </div>
             <button
               onClick={() => setLearnView('hub')}
-              className="font-semibold text-gray-800 flex items-center gap-1 hover:text-indigo-600 transition-colors"
+              className="font-semibold text-white flex items-center gap-1 hover:text-gray-300 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
               Browse
             </button>
-            <div className="bg-gray-100 rounded-full px-3 py-1">
+            <div className="bg-gray-800 rounded-full px-3 py-1">
               <span className="text-gray-500 text-xs">Cards: </span>
-              <span className="text-gray-800 font-bold text-sm">{claimedCards.size}</span>
+              <span className="text-white font-bold text-sm">{claimedCards.size}</span>
             </div>
           </div>
         </div>
 
         {/* Search bar */}
-        <div className="fixed top-12 left-0 right-0 z-30 pt-2 pb-2 px-4 bg-gradient-to-b from-gray-100 via-gray-100 to-transparent">
+        <div className="fixed top-12 left-0 right-0 z-30 pt-2 pb-2 px-4 bg-gradient-to-b from-gray-950 via-gray-950 to-transparent">
           <SearchBar onNavigate={handleSearchNavigate} />
         </div>
 
@@ -7878,20 +7874,20 @@ export default function Canvas() {
         <AnimatePresence>
           {(isSyncing || syncStatus) && (
             <motion.div
-              className="fixed top-24 left-1/2 transform -translate-x-1/2 z-20 bg-white rounded-full px-4 py-2 shadow-lg border border-gray-200 text-sm flex items-center gap-2"
+              className="fixed top-24 left-1/2 transform -translate-x-1/2 z-20 bg-gray-900 rounded-full px-4 py-2 border border-gray-700 text-sm flex items-center gap-2"
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
             >
               {isSyncing ? (
                 <>
-                  <span className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                  <span className="text-gray-600">Syncing...</span>
+                  <span className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-gray-300">Syncing...</span>
                 </>
               ) : syncStatus && (
                 <>
-                  <span className="text-green-500">✓</span>
-                  <span className="text-gray-600">
+                  <span className="text-green-400">✓</span>
+                  <span className="text-gray-300">
                     Synced {syncStatus.uploaded > 0 ? `${syncStatus.uploaded} cards` : 'up to date'}
                   </span>
                 </>
@@ -7913,7 +7909,7 @@ export default function Canvas() {
 
                 {/* Categories header - only show if there are in-progress decks */}
                 {inProgressDecks.length > 0 && (
-                  <h2 className="text-lg font-semibold text-slate-700 mb-3">Categories</h2>
+                  <h2 className="text-lg font-semibold text-gray-400 mb-3">Categories</h2>
                 )}
               </>
             )
@@ -8067,13 +8063,13 @@ export default function Canvas() {
       const isComplete = topic.claimedCount >= topic.expectedTotal
 
       return (
-        <div className="w-screen min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 overflow-auto pb-20">
+        <div className="w-screen min-h-screen bg-gray-950 overflow-auto pb-20">
           {/* Header with back button */}
-          <div className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-sm border-b border-slate-700">
+          <div className="sticky top-0 z-40 bg-gray-950/95 backdrop-blur-sm border-b border-gray-800">
             <div className="px-4 py-3 flex items-center gap-3">
               <button
                 onClick={() => setSelectedCollectionTopic(null)}
-                className="text-slate-400 hover:text-white transition-colors"
+                className="text-gray-400 hover:text-white transition-colors"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -8082,14 +8078,14 @@ export default function Canvas() {
               <div className="flex-1 min-w-0">
                 <h1 className="text-lg font-semibold text-white truncate">{topic.name}</h1>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-slate-400">{topic.claimedCount}/{topic.expectedTotal}</span>
-                  {isComplete && <span className="text-green-400 text-sm">✓ Complete</span>}
+                  <span className="text-sm text-gray-400">{topic.claimedCount}/{topic.expectedTotal}</span>
+                  {isComplete && <span className="text-emerald-400 text-sm">✓ Complete</span>}
                 </div>
               </div>
             </div>
             {/* Progress bar */}
             <div className="px-4 pb-3">
-              <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
+              <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-300"
                   style={{
@@ -8152,44 +8148,44 @@ export default function Canvas() {
     }
 
     return (
-      <div className="w-screen min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 overflow-auto pb-20">
+      <div className="w-screen min-h-screen bg-gray-950 overflow-auto pb-20">
         {/* Header */}
-        <div className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-sm border-b border-slate-700">
+        <div className="sticky top-0 z-40 bg-gray-950/95 backdrop-blur-sm border-b border-gray-800">
           <div className="px-4 py-4">
             <h1 className="text-lg font-semibold text-white text-center mb-3">Collection</h1>
 
             {/* Stats */}
-            <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+            <div className="bg-white/[0.03] rounded-xl p-4 border border-white/10">
               {/* Total count */}
               <div className="text-center mb-3">
                 <span className="text-4xl font-bold text-white">{totalCards}</span>
-                <span className="text-slate-400 ml-2">Cards</span>
-                <span className="text-slate-500 mx-2">·</span>
-                <span className="text-slate-400">{totalTopics} Topics</span>
+                <span className="text-gray-400 ml-2">Cards</span>
+                <span className="text-gray-600 mx-2">·</span>
+                <span className="text-gray-400">{totalTopics} Topics</span>
               </div>
 
               {/* Rarity breakdown */}
               <div className="flex justify-center gap-4 text-sm">
                 <div className="flex items-center gap-1.5">
                   <span className="w-3 h-3 rounded-full bg-gray-400 border border-gray-300" />
-                  <span className="text-slate-300">{rarityCount.common}</span>
+                  <span className="text-gray-300">{rarityCount.common}</span>
                 </div>
                 {rarityCount.rare > 0 && (
                   <div className="flex items-center gap-1.5">
                     <span className="w-3 h-3 rounded-full bg-blue-500 border border-blue-400" />
-                    <span className="text-slate-300">{rarityCount.rare}</span>
+                    <span className="text-gray-300">{rarityCount.rare}</span>
                   </div>
                 )}
                 {rarityCount.epic > 0 && (
                   <div className="flex items-center gap-1.5">
                     <span className="w-3 h-3 rounded-full bg-purple-500 border border-purple-400" />
-                    <span className="text-slate-300">{rarityCount.epic}</span>
+                    <span className="text-gray-300">{rarityCount.epic}</span>
                   </div>
                 )}
                 {rarityCount.legendary > 0 && (
                   <div className="flex items-center gap-1.5">
                     <span className="w-3 h-3 rounded-full bg-yellow-500 border border-yellow-400" />
-                    <span className="text-slate-300">{rarityCount.legendary}</span>
+                    <span className="text-gray-300">{rarityCount.legendary}</span>
                   </div>
                 )}
               </div>
@@ -8202,14 +8198,14 @@ export default function Canvas() {
           {categoriesWithTopics.length === 0 ? (
             <div className="text-center py-16">
               <div className="text-5xl mb-4">🏆</div>
-              <p className="text-slate-300 text-lg mb-2">Your collection is empty</p>
-              <p className="text-slate-500 text-sm">Start exploring to collect cards!</p>
+              <p className="text-gray-300 text-lg mb-2">Your collection is empty</p>
+              <p className="text-gray-500 text-sm">Start exploring to collect cards!</p>
               <button
                 onClick={() => {
                   setActiveTab('learn')
                   setStack([])
                 }}
-                className="mt-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors"
+                className="mt-4 px-4 py-2 bg-white text-gray-900 hover:bg-gray-100 rounded-lg text-sm font-medium transition-colors"
               >
                 Start Exploring
               </button>
@@ -8223,17 +8219,17 @@ export default function Canvas() {
                 return (
                   <motion.div
                     key={category.id}
-                    className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden"
+                    className="bg-white/[0.03] rounded-xl border border-white/10 overflow-hidden"
                     layout
                   >
                     {/* Drawer header */}
                     <button
                       onClick={() => setExpandedCollectionCategory(isExpanded ? null : category.id)}
-                      className="w-full p-4 flex items-center justify-between hover:bg-slate-700/50 transition-colors"
+                      className="w-full p-4 flex items-center justify-between hover:bg-white/[0.06] transition-colors"
                     >
                       <div className="flex items-center gap-3">
                         <span className="font-medium text-white">{category.name}</span>
-                        <span className="text-slate-400 text-sm">
+                        <span className="text-gray-400 text-sm">
                           ({category.topicCount} {category.topicCount === 1 ? 'topic' : 'topics'}, {category.totalCards} cards)
                         </span>
                       </div>
@@ -8245,20 +8241,20 @@ export default function Canvas() {
                             {previewTopics.map((topic) => (
                               <span
                                 key={topic.id}
-                                className="px-2 py-0.5 bg-slate-700 text-slate-300 text-xs rounded-full truncate max-w-[80px]"
+                                className="px-2 py-0.5 bg-gray-800 text-gray-300 text-xs rounded-full truncate max-w-[80px]"
                               >
                                 {topic.name}
                               </span>
                             ))}
                             {category.topicCount > 3 && (
-                              <span className="text-xs text-slate-500">+{category.topicCount - 3}</span>
+                              <span className="text-xs text-gray-500">+{category.topicCount - 3}</span>
                             )}
                           </div>
                         )}
 
                         {/* Chevron */}
                         <svg
-                          className={`w-5 h-5 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                          className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -8278,7 +8274,7 @@ export default function Canvas() {
                           transition={{ duration: 0.2 }}
                           className="overflow-hidden"
                         >
-                          <div className="px-4 pb-4 pt-2 border-t border-slate-700 space-y-2">
+                          <div className="px-4 pb-4 pt-2 border-t border-white/10 space-y-2">
                             {category.topics.map((topic) => {
                               const progressPercent = Math.round((topic.claimedCount / topic.expectedTotal) * 100)
                               const isComplete = topic.claimedCount >= topic.expectedTotal
@@ -8288,23 +8284,23 @@ export default function Canvas() {
                                 <button
                                   key={topic.id}
                                   onClick={() => setSelectedCollectionTopic(topic)}
-                                  className="w-full p-3 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors text-left"
+                                  className="w-full p-3 bg-white/[0.03] hover:bg-white/[0.06] rounded-lg transition-colors text-left"
                                 >
                                   <div className="flex items-center justify-between mb-2">
                                     <span className="text-white font-medium truncate pr-2">{topic.name}</span>
                                     <div className="flex items-center gap-2 flex-shrink-0">
-                                      <span className="text-slate-400 text-sm">
+                                      <span className="text-gray-400 text-sm">
                                         {topic.claimedCount}/{topic.expectedTotal}
                                       </span>
                                       {isComplete ? (
-                                        <span className="text-green-400">✓</span>
+                                        <span className="text-emerald-400">✓</span>
                                       ) : (
-                                        <span className="text-slate-500">→</span>
+                                        <span className="text-gray-500">→</span>
                                       )}
                                     </div>
                                   </div>
                                   {/* Progress bar */}
-                                  <div className="w-full h-1.5 bg-slate-600 rounded-full overflow-hidden">
+                                  <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
                                     <div
                                       className="h-full rounded-full transition-all duration-300"
                                       style={{
@@ -8345,21 +8341,21 @@ export default function Canvas() {
     const totalCards = deckList.reduce((sum, deck) => sum + deck.cards.length, 0)
 
     return (
-      <div className="w-screen min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 overflow-auto">
+      <div className="w-screen min-h-screen bg-gray-950 overflow-auto">
         {/* Top navigation bar */}
-        <div className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200">
+        <div className="fixed top-0 left-0 right-0 z-40 bg-gray-950/95 backdrop-blur-sm border-b border-gray-800">
           <div className="flex items-center justify-between px-3 py-2">
             <button
               onClick={() => setStack(['collections'])}
-              className="flex items-center gap-2 text-amber-600 hover:text-amber-800 transition-colors"
+              className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
             >
               <span className="text-lg">‹</span>
               <span className="text-sm font-medium">Collection</span>
             </button>
-            <span className="font-semibold text-gray-800">{category?.name || 'Category'}</span>
-            <div className="bg-gray-100 rounded-full px-3 py-1">
+            <span className="font-semibold text-white">{category?.name || 'Category'}</span>
+            <div className="bg-white/[0.03] border border-white/10 rounded-full px-3 py-1">
               <span className="text-gray-500 text-xs">Cards: </span>
-              <span className="text-gray-800 font-bold text-sm">{totalCards}</span>
+              <span className="text-white font-bold text-sm">{totalCards}</span>
             </div>
           </div>
         </div>
@@ -8403,21 +8399,21 @@ export default function Canvas() {
     const deckCards = deck?.cards || []
 
     return (
-      <div className="w-screen min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 overflow-auto">
+      <div className="w-screen min-h-screen bg-gray-950 overflow-auto">
         {/* Top navigation bar */}
-        <div className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200">
+        <div className="fixed top-0 left-0 right-0 z-40 bg-gray-950/95 backdrop-blur-sm border-b border-gray-800">
           <div className="flex items-center justify-between px-3 py-2">
             <button
               onClick={() => setStack(['collections', categoryId])}
-              className="flex items-center gap-2 text-amber-600 hover:text-amber-800 transition-colors"
+              className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
             >
               <span className="text-lg">‹</span>
               <span className="text-sm font-medium">{category?.name || 'Category'}</span>
             </button>
-            <span className="font-semibold text-gray-800 text-center flex-1 mx-2 truncate">{toTitleCase(deck?.name || 'Deck')}</span>
-            <div className="bg-gray-100 rounded-full px-3 py-1 shrink-0">
+            <span className="font-semibold text-white text-center flex-1 mx-2 truncate">{toTitleCase(deck?.name || 'Deck')}</span>
+            <div className="bg-white/[0.03] border border-white/10 rounded-full px-3 py-1 shrink-0">
               <span className="text-gray-500 text-xs">Cards: </span>
-              <span className="text-gray-800 font-bold text-sm">{deckCards.length}</span>
+              <span className="text-white font-bold text-sm">{deckCards.length}</span>
             </div>
           </div>
         </div>
@@ -8454,7 +8450,7 @@ export default function Canvas() {
           {deckCards.length > 0 && (
             <div className="fixed bottom-6 left-0 right-0 flex justify-center z-30">
               {deckCards.length >= 16 ? (
-                <div className="px-6 py-3 rounded-full bg-green-100 text-green-700 font-semibold text-sm border border-green-200 flex items-center gap-2">
+                <div className="px-6 py-3 rounded-full bg-emerald-500/20 text-emerald-400 font-semibold text-sm border border-emerald-500/30 flex items-center gap-2">
                   <span>✓</span>
                   <span>Completed all cards</span>
                 </div>
@@ -8500,9 +8496,9 @@ export default function Canvas() {
 
   // Inside the stack - show parent decks underneath and current spread on top
   return (
-    <div className="w-screen min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 overflow-auto">
+    <div className="w-screen min-h-screen bg-gray-950 overflow-auto">
       {/* Top navigation bar - simplified */}
-      <div className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200">
+      <div className="fixed top-0 left-0 right-0 z-40 bg-gray-950/95 backdrop-blur-sm border-b border-gray-800">
         <div className="flex items-center justify-between px-3 py-2">
           <DeckHeader
             stackDecks={stackDecks}
@@ -8510,9 +8506,9 @@ export default function Canvas() {
           />
 
           {/* Card counter */}
-          <div className="bg-gray-100 rounded-full px-3 py-1 shrink-0">
+          <div className="bg-white/[0.03] border border-white/10 rounded-full px-3 py-1 shrink-0">
             <span className="text-gray-500 text-xs">Cards: </span>
-            <span className="text-gray-800 font-bold text-sm">{claimedCards.size}</span>
+            <span className="text-white font-bold text-sm">{claimedCards.size}</span>
           </div>
         </div>
       </div>
@@ -8843,18 +8839,18 @@ export default function Canvas() {
             onClick={() => setShowResetConfirm(false)}
           >
             <motion.div
-              className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl"
+              className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-sm w-full shadow-xl"
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={e => e.stopPropagation()}
             >
-              <h3 className="text-xl font-bold text-gray-800 mb-2">Reset Progress?</h3>
-              <p className="text-gray-600 mb-6">This will clear all your claimed cards and progress. This cannot be undone.</p>
+              <h3 className="text-xl font-bold text-white mb-2">Reset Progress?</h3>
+              <p className="text-gray-400 mb-6">This will clear all your claimed cards and progress. This cannot be undone.</p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowResetConfirm(false)}
-                  className="flex-1 py-3 rounded-xl font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+                  className="flex-1 py-3 rounded-xl font-semibold text-gray-300 bg-gray-800 hover:bg-gray-700 transition-colors"
                 >
                   Cancel
                 </button>

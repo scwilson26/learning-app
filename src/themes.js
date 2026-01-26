@@ -42,15 +42,16 @@ const CATEGORY_ACCENTS = {
 // COMMON CARD STYLING
 // ============================================================================
 // Shared across ALL cards regardless of category.
+// Space theme: dark backgrounds with subtle borders
 
 const COMMON_CARD = {
-  bg: '#FAFAFA',
-  bgAlt: '#FFFFFF',
-  textPrimary: '#1a1a1a',
-  textSecondary: '#6b7280',
-  border: '#e5e7eb',
-  shadow: '0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06)',
-  shadowHover: '0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06)',
+  bg: 'rgba(255, 255, 255, 0.03)',
+  bgAlt: 'rgba(255, 255, 255, 0.05)',
+  textPrimary: '#ffffff',
+  textSecondary: '#9ca3af',
+  border: 'rgba(255, 255, 255, 0.1)',
+  shadow: '0 1px 3px rgba(0, 0, 0, 0.3)',
+  shadowHover: '0 4px 12px rgba(0, 0, 0, 0.4)',
   radius: '12px',
   accentWidth: '5px',
 }
@@ -59,18 +60,19 @@ const COMMON_CARD = {
 // BUTTON STYLING
 // ============================================================================
 // Consistent button colors used across preview cards, modals, etc.
+// Space theme: white primary, subtle secondary
 
 const BUTTON_STYLES = {
-  // Primary action buttons (Claim, Explore)
+  // Primary action buttons (Claim, Explore) - white like login
   primary: {
     text: '#ffffff',
-    shadowAlpha: 0.15,
+    shadowAlpha: 0.3,
   },
-  // Secondary/neutral buttons (Back)
+  // Secondary/neutral buttons (Back) - subtle border
   secondary: {
-    bg: '#ffffff',
-    text: '#6b7280',
-    border: '#e5e7eb',
+    bg: 'transparent',
+    text: '#9ca3af',
+    border: 'rgba(255, 255, 255, 0.1)',
   },
   // Special buttons (Wander)
   wander: {
@@ -80,8 +82,8 @@ const BUTTON_STYLES = {
   },
   // Disabled state
   disabled: {
-    bg: '#e5e7eb',
-    text: '#9ca3af',
+    bg: 'rgba(255, 255, 255, 0.05)',
+    text: '#6b7280',
   },
 }
 
