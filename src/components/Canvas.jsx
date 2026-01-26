@@ -3287,6 +3287,9 @@ export default function Canvas() {
   // Toast message for "Coming Soon" etc
   const [toastMessage, setToastMessage] = useState(null)
 
+  // Settings state
+  const [showResetConfirm, setShowResetConfirm] = useState(false)
+
   // Sync state
   const [isSyncing, setIsSyncing] = useState(false)
   const [syncStatus, setSyncStatus] = useState(null) // { uploaded, downloaded } or null
@@ -3398,9 +3401,6 @@ export default function Canvas() {
   // Section-based Level 2 data (from Wikipedia)
   const [sectionData, setSectionData] = useState({}) // categoryId -> { sections: [...] }
   const [loadingSections, setLoadingSections] = useState(null) // categoryId currently loading sections
-
-  // Reset confirmation
-  const [showResetConfirm, setShowResetConfirm] = useState(false)
 
   // Handle full reset
   const handleReset = () => {
@@ -3594,6 +3594,9 @@ export default function Canvas() {
 
     // 2. Navigate using the path
     if (navigatePath) {
+      // Switch to Learn tab and browse view to show the content
+      setActiveTab('learn')
+      setLearnView('browse')
       setStack(navigatePath)
       updateDeckLastInteracted(deckId)
     }
@@ -3603,6 +3606,7 @@ export default function Canvas() {
     setRabbitHolePreview(null)
     setWanderPathSteps([])
     setExpandedCard(null)
+    setIsWandering(false)
   }
 
   // Rabbit hole explore - uses shared handler
@@ -7196,13 +7200,12 @@ export default function Canvas() {
           <span className="text-xs mt-1 font-medium">Study</span>
         </button>
 
-        {/* Settings - placeholder */}
+        {/* Settings */}
         <button
-          onClick={() => {
-            setToastMessage('Coming Soon!')
-            setTimeout(() => setToastMessage(null), 2000)
-          }}
-          className="flex flex-col items-center justify-center flex-1 py-2 text-gray-300"
+          onClick={() => setActiveTab('settings')}
+          className={`flex flex-col items-center justify-center flex-1 py-2 transition-colors ${
+            activeTab === 'settings' ? 'text-indigo-600' : 'text-gray-400'
+          }`}
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -7244,12 +7247,197 @@ export default function Canvas() {
     return <Auth onSkip={() => setShowAuth(false)} />
   }
 
+  // Settings screen
+  if (activeTab === 'settings') {
+    return (
+      <div className="w-screen min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 overflow-auto pb-24">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 px-4 py-4">
+          <h1 className="text-xl font-bold text-gray-800">Settings</h1>
+        </div>
+
+        <div className="p-4 space-y-4">
+          {/* Account Section */}
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-100">
+              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Account</h2>
+            </div>
+            <div className="p-4">
+              {user ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-500">Signed in as</p>
+                      <p className="text-gray-800 font-medium">{user.email}</p>
+                    </div>
+                    <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
+                      <span className="text-indigo-600 font-semibold">
+                        {user.email?.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      await signOut()
+                      setUser(null)
+                      setToastMessage('Signed out')
+                      setTimeout(() => setToastMessage(null), 2000)
+                    }}
+                    className="w-full py-2.5 px-4 rounded-lg border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-gray-500 text-sm">Sign in to sync your progress across devices</p>
+                  <button
+                    onClick={() => setShowAuth(true)}
+                    className="w-full py-2.5 px-4 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors"
+                  >
+                    Sign In
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Reset Progress Section */}
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-100">
+              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Data</h2>
+            </div>
+            <div className="p-4">
+              <button
+                onClick={() => setShowResetConfirm(true)}
+                className="w-full py-2.5 px-4 rounded-lg border border-red-200 text-red-600 text-sm font-medium hover:bg-red-50 transition-colors"
+              >
+                Reset All Progress
+              </button>
+              <p className="text-xs text-gray-400 mt-2 text-center">
+                This will delete all your cards, flashcards, and study progress
+              </p>
+            </div>
+          </div>
+
+          {/* About Section */}
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-100">
+              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">About</h2>
+            </div>
+            <div className="p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Version</span>
+                <span className="text-gray-400 font-mono text-sm">1.0.0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Reset Confirmation Modal - uses the global one at bottom of file */}
+        <AnimatePresence>
+          {showResetConfirm && (
+            <motion.div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowResetConfirm(false)}
+            >
+              <motion.div
+                className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl"
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={e => e.stopPropagation()}
+              >
+                <h3 className="text-xl font-bold text-gray-800 mb-2">Reset Progress?</h3>
+                <p className="text-gray-600 mb-6">This will clear all your claimed cards and progress. This cannot be undone.</p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowResetConfirm(false)}
+                    className="flex-1 py-3 rounded-xl font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleReset}
+                    className="flex-1 py-3 rounded-xl font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors"
+                  >
+                    Reset
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <BottomNav />
+      </div>
+    )
+  }
+
   // Study screen - spaced repetition flashcard review
   if (activeTab === 'study') {
     return (
       <div className="w-screen min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 overflow-auto pb-24">
         <StudyScreen onGoToLearn={() => setActiveTab('learn')} />
         <BottomNav />
+        <ToastMessage />
+        <WanderMessage />
+
+        {/* Wander card overlay */}
+        <AnimatePresence>
+          {(isWandering || (showPreviewCard && showPreviewCard.navigatePath && wanderPathSteps.length > 0)) && (
+            <WanderCard
+              pathSteps={wanderPathSteps}
+              currentStep={wanderCurrentStep}
+              isComplete={wanderComplete}
+              previewData={showPreviewCard ? {
+                title: showPreviewCard.title,
+                preview: showPreviewCard.preview,
+                isLoading: showPreviewCard.isLoading,
+                claimed: showPreviewCard.claimed,
+                cardId: showPreviewCard.cardId
+              } : null}
+              onClaim={() => {
+                claimPreviewCard(showPreviewCard.deckId)
+                setClaimedCards(getClaimedCardIds())
+                setShowPreviewCard(prev => ({ ...prev, claimed: true }))
+              }}
+              onExplore={() => sharedExploreHandler(showPreviewCard.deckId, showPreviewCard.navigatePath)}
+              onWander={() => {
+                setShowPreviewCard(null)
+                setWanderPathSteps([])
+                handleWander()
+              }}
+              onBack={() => {
+                setShowPreviewCard(null)
+                setWanderPathSteps([])
+                setIsWandering(false)
+              }}
+              onRabbitHoleClick={handleRabbitHoleClick}
+              rootCategoryId={showPreviewCard?.navigatePath?.[0] || wanderPathSteps[0]?.id}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Preview card modal for non-wander */}
+        <AnimatePresence>
+          {showPreviewCard && wanderPathSteps.length === 0 && (
+            <PreviewCardModal
+              isOpen={true}
+              topic={{ id: showPreviewCard.deckId, name: showPreviewCard.title }}
+              previewContent={showPreviewCard.preview}
+              isLoading={showPreviewCard.isLoading}
+              isClaimed={showPreviewCard.claimed}
+              onClose={() => setShowPreviewCard(null)}
+              onDealMeIn={() => sharedExploreHandler(showPreviewCard.deckId, showPreviewCard.navigatePath)}
+              onRabbitHoleClick={handleRabbitHoleClick}
+              rootCategoryId={showPreviewCard?.navigatePath?.[0]}
+            />
+          )}
+        </AnimatePresence>
       </div>
     )
   }
@@ -7331,6 +7519,73 @@ export default function Canvas() {
         </div>
 
         <BottomNav />
+        <ToastMessage />
+        <WanderMessage />
+
+        {/* Wander card overlay */}
+        <AnimatePresence>
+          {(isWandering || (showPreviewCard && showPreviewCard.navigatePath && wanderPathSteps.length > 0)) && (
+            <WanderCard
+              pathSteps={wanderPathSteps}
+              currentStep={wanderCurrentStep}
+              isComplete={wanderComplete}
+              previewData={showPreviewCard ? {
+                title: showPreviewCard.title,
+                preview: showPreviewCard.preview,
+                isLoading: showPreviewCard.isLoading,
+                claimed: showPreviewCard.claimed,
+                cardId: showPreviewCard.cardId
+              } : null}
+              onClaim={() => {
+                claimPreviewCard(showPreviewCard.deckId)
+                setClaimedCards(getClaimedCardIds())
+                setShowPreviewCard(prev => ({ ...prev, claimed: true }))
+              }}
+              onExplore={() => sharedExploreHandler(showPreviewCard.deckId, showPreviewCard.navigatePath)}
+              onWander={() => {
+                setShowPreviewCard(null)
+                setWanderPathSteps([])
+                handleWander()
+              }}
+              onBack={() => {
+                setShowPreviewCard(null)
+                setWanderPathSteps([])
+                setIsWandering(false)
+              }}
+              onRabbitHoleClick={handleRabbitHoleClick}
+              rootCategoryId={showPreviewCard?.navigatePath?.[0] || wanderPathSteps[0]?.id}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Preview card modal for non-wander */}
+        <AnimatePresence>
+          {showPreviewCard && wanderPathSteps.length === 0 && (
+            <PreviewCardModal
+              topic={showPreviewCard.title}
+              preview={showPreviewCard.preview}
+              isLoading={showPreviewCard.isLoading}
+              claimed={showPreviewCard.claimed}
+              cardId={showPreviewCard.cardId}
+              rootCategoryId={showPreviewCard.rootCategoryId}
+              isCurrentPage={false}
+              onClaim={() => {
+                claimPreviewCard(showPreviewCard.deckId)
+                setClaimedCards(getClaimedCardIds())
+                setShowPreviewCard(prev => ({ ...prev, claimed: true }))
+              }}
+              onDealMeIn={() => sharedExploreHandler(showPreviewCard.deckId, showPreviewCard.navigatePath || showPreviewCard.fullStack)}
+              onWander={() => {
+                setShowPreviewCard(null)
+                handleWander()
+              }}
+              onBack={() => {
+                setShowPreviewCard(null)
+              }}
+              onRabbitHoleClick={handleRabbitHoleClick}
+            />
+          )}
+        </AnimatePresence>
       </div>
     )
   }
@@ -7536,7 +7791,7 @@ export default function Canvas() {
 
         {/* Wander card overlay - shows path animation then preview */}
         <AnimatePresence>
-          {(isWandering || (showPreviewCard && showPreviewCard.navigatePath)) && wanderPathSteps.length > 0 && (
+          {(isWandering || (showPreviewCard && showPreviewCard.navigatePath && wanderPathSteps.length > 0)) && (
             <WanderCard
               pathSteps={wanderPathSteps}
               currentStep={wanderCurrentStep}
@@ -7906,6 +8161,59 @@ export default function Canvas() {
         <BottomNav />
         <ToastMessage />
         <WanderMessage />
+
+        {/* Wander card overlay */}
+        <AnimatePresence>
+          {(isWandering || (showPreviewCard && showPreviewCard.navigatePath && wanderPathSteps.length > 0)) && (
+            <WanderCard
+              pathSteps={wanderPathSteps}
+              currentStep={wanderCurrentStep}
+              isComplete={wanderComplete}
+              previewData={showPreviewCard ? {
+                title: showPreviewCard.title,
+                preview: showPreviewCard.preview,
+                isLoading: showPreviewCard.isLoading,
+                claimed: showPreviewCard.claimed,
+                cardId: showPreviewCard.cardId
+              } : null}
+              onClaim={() => {
+                claimPreviewCard(showPreviewCard.deckId)
+                setClaimedCards(getClaimedCardIds())
+                setShowPreviewCard(prev => ({ ...prev, claimed: true }))
+              }}
+              onExplore={() => sharedExploreHandler(showPreviewCard.deckId, showPreviewCard.navigatePath)}
+              onWander={() => {
+                setShowPreviewCard(null)
+                setWanderPathSteps([])
+                handleWander()
+              }}
+              onBack={() => {
+                setShowPreviewCard(null)
+                setWanderPathSteps([])
+                setIsWandering(false)
+              }}
+              onRabbitHoleClick={handleRabbitHoleClick}
+              rootCategoryId={showPreviewCard?.navigatePath?.[0] || wanderPathSteps[0]?.id}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Preview card modal for non-wander */}
+        <AnimatePresence>
+          {showPreviewCard && wanderPathSteps.length === 0 && (
+            <PreviewCardModal
+              isOpen={true}
+              topic={{ id: showPreviewCard.deckId, name: showPreviewCard.title }}
+              previewContent={showPreviewCard.preview}
+              isLoading={showPreviewCard.isLoading}
+              isClaimed={showPreviewCard.claimed}
+              onClose={() => setShowPreviewCard(null)}
+              onDealMeIn={() => sharedExploreHandler(showPreviewCard.deckId, showPreviewCard.navigatePath)}
+              onRabbitHoleClick={handleRabbitHoleClick}
+              rootCategoryId={showPreviewCard?.navigatePath?.[0]}
+            />
+          )}
+        </AnimatePresence>
       </div>
     )
   }
@@ -8352,7 +8660,7 @@ export default function Canvas() {
 
       {/* Wander card overlay - shows path animation then preview (for WANDER only) */}
       <AnimatePresence>
-        {(isWandering || (showPreviewCard && showPreviewCard.navigatePath)) && wanderPathSteps.length > 0 && (
+        {(isWandering || (showPreviewCard && showPreviewCard.navigatePath && wanderPathSteps.length > 0)) && (
           <WanderCard
             pathSteps={wanderPathSteps}
             currentStep={wanderCurrentStep}
