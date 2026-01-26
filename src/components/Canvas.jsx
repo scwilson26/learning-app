@@ -3483,16 +3483,9 @@ export default function Canvas() {
     if (currentTopicId && getCharacter()) {
       const captureResult = recordFragmentCapture(currentTopicId, cardId)
 
-      // Show notification based on what happened
-      if (captureResult.newlyUnlockedTopics.length > 0) {
-        // New stars revealed - more exciting message
-        setToastMessage(`...${captureResult.newlyUnlockedTopics.length === 1 ? 'signal' : captureResult.newlyUnlockedTopics.length + ' signals'} detected`)
-        setTimeout(() => setToastMessage(null), 2500)
-      } else {
-        // Just a normal capture
-        setToastMessage('...captured')
-        setTimeout(() => setToastMessage(null), 1500)
-      }
+      // Show captured notification
+      setToastMessage('...captured')
+      setTimeout(() => setToastMessage(null), 1500)
 
       // Check for wormhole discovery (requires BOTH topics mastered)
       // Note: Mastery needs 4 fragments + >80% SRS retention, so this check
@@ -7324,14 +7317,9 @@ export default function Canvas() {
         <button
           onClick={() => {
             setActiveTab('learn')
-            // Go to Void if character is set, otherwise hub
-            if (getCharacter()) {
-              setLearnView('void')
-              setStack([])
-            } else {
-              setLearnView('hub')
-              setStack(['my-decks'])
-            }
+            // Always show hub first - user clicks The Void card to enter constellation
+            setLearnView('hub')
+            setStack([])
           }}
           className={`flex flex-col items-center justify-center flex-1 py-2 transition-colors ${
             activeTab === 'learn' ? 'text-indigo-600' : 'text-gray-400'
@@ -7570,6 +7558,64 @@ export default function Canvas() {
             </button>
           </div>
         </div>
+
+        {/* Wander card overlay - shows path animation then preview (for Learn Hub) */}
+        <AnimatePresence>
+          {(isWandering || (showPreviewCard && showPreviewCard.navigatePath)) && wanderPathSteps.length > 0 && (
+            <WanderCard
+              pathSteps={wanderPathSteps}
+              currentStep={wanderCurrentStep}
+              isComplete={wanderComplete}
+              previewData={showPreviewCard ? {
+                title: showPreviewCard.title,
+                preview: showPreviewCard.preview,
+                isLoading: showPreviewCard.isLoading,
+                claimed: showPreviewCard.claimed,
+                cardId: showPreviewCard.cardId
+              } : null}
+              onClaim={() => {
+                claimPreviewCard(showPreviewCard.deckId)
+                setClaimedCards(getClaimedCardIds())
+                setShowPreviewCard(prev => ({ ...prev, claimed: true }))
+              }}
+              onExplore={() => sharedExploreHandler(showPreviewCard.deckId, showPreviewCard.navigatePath)}
+              onWander={() => {
+                setShowPreviewCard(null)
+                setWanderPathSteps([])
+                handleWander()
+              }}
+              onBack={() => {
+                setShowPreviewCard(null)
+                setWanderPathSteps([])
+                setIsWandering(false)
+              }}
+              onRabbitHoleClick={handleRabbitHoleClick}
+              rootCategoryId={showPreviewCard?.navigatePath?.[0] || wanderPathSteps[0]?.id}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Rabbit hole preview - bottom sheet (for Learn Hub) */}
+        <AnimatePresence>
+          {rabbitHolePreview && (
+            <RabbitHoleSheet
+              topic={rabbitHolePreview.topic}
+              preview={rabbitHolePreview.preview}
+              isLoading={rabbitHolePreview.isLoading}
+              claimed={rabbitHolePreview.claimed}
+              cardId={rabbitHolePreview.cardId}
+              onClaim={() => {
+                claimPreviewCard(rabbitHolePreview.treeNodeId)
+                setClaimedCards(getClaimedCardIds())
+                setRabbitHolePreview(prev => ({ ...prev, claimed: true }))
+              }}
+              onExplore={handleExploreRabbitHole}
+              onClose={() => setRabbitHolePreview(null)}
+              onRabbitHoleClick={handleRabbitHoleClick}
+              rootCategoryId={rabbitHolePreview.category}
+            />
+          )}
+        </AnimatePresence>
 
         <BottomNav />
       </div>
@@ -7836,6 +7882,28 @@ export default function Canvas() {
                 setShowPreviewCard(null)
               }}
               onRabbitHoleClick={handleRabbitHoleClick}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Rabbit hole preview - bottom sheet (for Browse view) */}
+        <AnimatePresence>
+          {rabbitHolePreview && (
+            <RabbitHoleSheet
+              topic={rabbitHolePreview.topic}
+              preview={rabbitHolePreview.preview}
+              isLoading={rabbitHolePreview.isLoading}
+              claimed={rabbitHolePreview.claimed}
+              cardId={rabbitHolePreview.cardId}
+              onClaim={() => {
+                claimPreviewCard(rabbitHolePreview.treeNodeId)
+                setClaimedCards(getClaimedCardIds())
+                setRabbitHolePreview(prev => ({ ...prev, claimed: true }))
+              }}
+              onExplore={handleExploreRabbitHole}
+              onClose={() => setRabbitHolePreview(null)}
+              onRabbitHoleClick={handleRabbitHoleClick}
+              rootCategoryId={rabbitHolePreview.category}
             />
           )}
         </AnimatePresence>
