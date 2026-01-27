@@ -2683,3 +2683,106 @@ export function migrateToStudyDeck() {
   saveData(data)
   console.log(`[migrateToStudyDeck] Migrated ${topicsWithFlashcards.size} topics to study deck`)
 }
+
+// ============================================================================
+// USER DECKS - Custom decks created from uploaded notes
+// ============================================================================
+
+/**
+ * Get all user-created decks
+ * @returns {Array} Array of user deck objects, sorted by creation date (newest first)
+ */
+export function getUserDecks() {
+  const data = getData()
+  const decks = data.userDecks || {}
+  return Object.values(decks).sort((a, b) =>
+    new Date(b.createdAt) - new Date(a.createdAt)
+  )
+}
+
+/**
+ * Get a single user deck by ID
+ * @param {string} deckId - The deck ID
+ * @returns {Object|null} The deck object or null if not found
+ */
+export function getUserDeck(deckId) {
+  const data = getData()
+  return data.userDecks?.[deckId] || null
+}
+
+/**
+ * Save a new user deck
+ * @param {Object} deck - The deck object
+ * @param {string} deck.id - Unique ID
+ * @param {string} deck.name - Display name
+ * @param {string} deck.sourceType - 'pdf' | 'image' | 'text'
+ * @param {string} deck.sourceContent - Original extracted content
+ * @param {Object} deck.outline - Generated outline { core: [], deep_dive: [], popup_terms: [] }
+ * @param {Object} deck.cards - Generated cards { core: [], deep_dive: [] }
+ */
+export function saveUserDeck(deck) {
+  const data = getData()
+  if (!data.userDecks) data.userDecks = {}
+
+  data.userDecks[deck.id] = {
+    ...deck,
+    createdAt: deck.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }
+
+  saveData(data)
+  console.log(`[saveUserDeck] Saved deck: ${deck.name} (${deck.id})`)
+}
+
+/**
+ * Update an existing user deck
+ * @param {string} deckId - The deck ID
+ * @param {Object} updates - Fields to update
+ */
+export function updateUserDeck(deckId, updates) {
+  const data = getData()
+  if (!data.userDecks?.[deckId]) {
+    console.warn(`[updateUserDeck] Deck not found: ${deckId}`)
+    return
+  }
+
+  data.userDecks[deckId] = {
+    ...data.userDecks[deckId],
+    ...updates,
+    updatedAt: new Date().toISOString()
+  }
+
+  saveData(data)
+}
+
+/**
+ * Delete a user deck
+ * @param {string} deckId - The deck ID
+ */
+export function deleteUserDeck(deckId) {
+  const data = getData()
+  if (data.userDecks?.[deckId]) {
+    delete data.userDecks[deckId]
+    saveData(data)
+    console.log(`[deleteUserDeck] Deleted deck: ${deckId}`)
+  }
+}
+
+/**
+ * Get card count for a user deck
+ * @param {string} deckId - The deck ID
+ * @returns {Object} { total, claimed }
+ */
+export function getUserDeckCardCount(deckId) {
+  const deck = getUserDeck(deckId)
+  if (!deck?.cards) return { total: 0, claimed: 0 }
+
+  const data = getData()
+  const allCards = [...(deck.cards.core || []), ...(deck.cards.deep_dive || [])]
+  const claimedCount = allCards.filter(card => data.cards?.[card.id]?.claimed).length
+
+  return {
+    total: allCards.length,
+    claimed: claimedCount
+  }
+}

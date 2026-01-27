@@ -1503,3 +1503,339 @@ Start your response with [ and end with ]
     throw new Error('Failed to generate flashcards')
   }
 }
+
+// ============================================================================
+// USER NOTES: Generate learning content from uploaded notes
+// ============================================================================
+
+/**
+ * Extract text content from an image using Claude Vision
+ * @param {string} base64Data - Base64 encoded image data
+ * @param {string} mediaType - MIME type (e.g., 'image/png', 'image/jpeg')
+ * @returns {Promise<string>} Extracted text content
+ */
+export async function extractTextFromImage(base64Data, mediaType) {
+  console.log(`[extractTextFromImage] Processing image (${mediaType})`);
+
+  try {
+    const message = await anthropic.messages.create({
+      model: MODELS.CONTENT,
+      max_tokens: 4000,
+      messages: [{
+        role: 'user',
+        content: [
+          {
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: mediaType,
+              data: base64Data
+            }
+          },
+          {
+            type: 'text',
+            text: `Extract ALL text content from this image. This appears to be study notes or educational material.
+
+RULES:
+- Extract every piece of text you can see
+- Preserve the structure (headings, bullet points, numbered lists)
+- If there are diagrams with labels, include the labels
+- If there are tables, preserve the table structure
+- If handwritten, do your best to transcribe accurately
+- Don't add any commentary - just extract the text
+
+Output the extracted text:`
+          }
+        ]
+      }]
+    });
+
+    const extractedText = message.content[0].text.trim();
+    console.log(`[extractTextFromImage] Extracted ${extractedText.length} characters`);
+    return extractedText;
+  } catch (error) {
+    console.error('[extractTextFromImage] Error:', error);
+    throw new Error('Failed to extract text from image');
+  }
+}
+
+/**
+ * Extract text content from a PDF using Claude
+ * @param {string} base64Data - Base64 encoded PDF data
+ * @returns {Promise<string>} Extracted text content
+ */
+export async function extractTextFromPDF(base64Data) {
+  console.log(`[extractTextFromPDF] Processing PDF`);
+
+  try {
+    const message = await anthropic.messages.create({
+      model: MODELS.CONTENT,
+      max_tokens: 4000,
+      messages: [{
+        role: 'user',
+        content: [
+          {
+            type: 'document',
+            source: {
+              type: 'base64',
+              media_type: 'application/pdf',
+              data: base64Data
+            }
+          },
+          {
+            type: 'text',
+            text: `Extract ALL text content from this PDF. This appears to be study notes or educational material.
+
+RULES:
+- Extract every piece of text
+- Preserve the structure (headings, bullet points, numbered lists)
+- If there are tables, preserve the table structure
+- Don't add any commentary - just extract the text
+
+Output the extracted text:`
+          }
+        ]
+      }]
+    });
+
+    const extractedText = message.content[0].text.trim();
+    console.log(`[extractTextFromPDF] Extracted ${extractedText.length} characters`);
+    return extractedText;
+  } catch (error) {
+    console.error('[extractTextFromPDF] Error:', error);
+    throw new Error('Failed to extract text from PDF');
+  }
+}
+
+/**
+ * Generate a title/name for uploaded notes based on content
+ * @param {string} content - The extracted text content
+ * @returns {Promise<string>} A short descriptive title
+ */
+export async function generateNotesTitle(content) {
+  console.log(`[generateNotesTitle] Generating title from content`);
+
+  try {
+    const message = await anthropic.messages.create({
+      model: MODELS.FAST,
+      max_tokens: 50,
+      messages: [{
+        role: 'user',
+        content: `Based on these study notes, generate a short title (2-5 words) that describes the main topic.
+
+NOTES:
+"""
+${content.substring(0, 2000)}
+"""
+
+Output ONLY the title, nothing else. Examples: "Cell Biology", "French Revolution", "JavaScript Basics", "Organic Chemistry"`
+      }]
+    });
+
+    const title = message.content[0].text.trim();
+    console.log(`[generateNotesTitle] Generated title: "${title}"`);
+    return title;
+  } catch (error) {
+    console.error('[generateNotesTitle] Error:', error);
+    return 'My Notes'; // Fallback
+  }
+}
+
+/**
+ * Generate an outline from user's notes content
+ * Similar to generateTopicOutline but uses the user's content as source material
+ * @param {string} content - The extracted text from user's notes
+ * @param {string} title - The title/topic name
+ * @param {Function} onSection - Optional streaming callback for sections
+ * @param {Function} onCounts - Optional callback for section counts
+ * @returns {Promise<{outline: Object, rawOutline: string}>}
+ */
+export async function generateOutlineFromNotes(content, title, onSection = null, onCounts = null) {
+  console.log(`[NOTES OUTLINE] Generating outline from notes: "${title}" (${content.length} chars)${onSection ? ' [STREAMING]' : ''}`);
+
+  const prompt = `You are creating learning cards from a student's notes about "${title}".
+
+THE STUDENT'S NOTES:
+"""
+${content}
+"""
+
+Your job: Transform these notes into a structured teaching outline. Extract the key concepts and organize them logically.
+
+IMPORTANT - START WITH COUNTS:
+Before writing the outline, output exactly these two lines first:
+[CORE_COUNT: X]
+[DEEP_COUNT: X]
+where X is the number of sections you plan to write for each. Then write the outline.
+
+FORMAT:
+- Roman numerals (I, II, III) for main sections
+- Letters (A, B, C) for subsections within each section
+- Full sentences that explain, not fragments
+- Mark each main section as [CORE] or [DEEP DIVE]
+
+SECTION GUIDANCE:
+- CORE sections: The essential concepts from the notes (usually 3-6 sections)
+- DEEP DIVE sections: Additional details, examples, or connections (usually 1-3 sections)
+- Base the content on what's IN THE NOTES - don't invent new information
+- You can reorganize and clarify, but stay faithful to the source material
+
+Within each section:
+- 2-3 subsections
+- 2-3 bullet points per subsection
+
+WRITING STYLE:
+- Write in complete sentences
+- Explain WHY things matter, not just WHAT they are
+- Keep the student's key facts and examples
+- Make it clear and teachable
+
+EXAMPLE FORMAT:
+
+I. What is [concept]? [CORE]
+   A. Definition
+      - Clear explanation of the main concept from the notes.
+      - Why it matters or where it applies.
+   B. Key characteristics
+      - First important characteristic.
+      - Second important characteristic.
+
+II. How does it work? [CORE]
+   A. The process
+      - Step one of how it works.
+      - Step two and what happens.
+   B. Examples
+      - Specific example from the notes.
+      - Another example or application.
+
+[Continue for all sections...]
+
+POPUP TERMS:
+- Term1: Brief definition
+- Term2: Brief definition
+
+END OF FORMAT
+
+OUTPUT:
+Return the full outline with [CORE] and [DEEP DIVE] labels. End with POPUP TERMS section listing 3-6 key terms a learner might need defined.`;
+
+  try {
+    if (onSection) {
+      // Streaming mode - same logic as generateTopicOutline
+      let buffer = '';
+      let totalSectionCount = 0;
+      const tierSectionCount = { core: 0, deep_dive: 0 };
+      const streamedCards = { core: [], deep_dive: [] };
+      let countsParsed = false;
+
+      const sectionHeaderRegex = /^(?:#{1,3}\s*)?([IVXLC]+)\.\s+(.+?)(?:\s+\[(CORE|DEEP DIVE)\])?\s*$/im;
+      const coreCountRegex = /\[CORE_COUNT:\s*(\d+)\]/i;
+      const deepCountRegex = /\[DEEP_COUNT:\s*(\d+)\]/i;
+
+      const stream = await anthropic.messages.create({
+        model: MODELS.CONTENT,
+        max_tokens: 6000,
+        messages: [{ role: 'user', content: prompt }],
+        stream: true
+      });
+
+      for await (const event of stream) {
+        if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+          buffer += event.delta.text;
+
+          // Try to parse counts early
+          if (!countsParsed && onCounts) {
+            const coreMatch = buffer.match(coreCountRegex);
+            const deepMatch = buffer.match(deepCountRegex);
+            if (coreMatch && deepMatch) {
+              const coreCount = parseInt(coreMatch[1], 10);
+              const deepCount = parseInt(deepMatch[1], 10);
+              console.log(`[NOTES OUTLINE STREAM] Counts detected: core=${coreCount}, deep_dive=${deepCount}`);
+              onCounts(coreCount, deepCount);
+              countsParsed = true;
+            }
+          }
+
+          // Check for complete sections
+          const lines = buffer.split('\n');
+          let sectionStartIdx = -1;
+          let nextSectionIdx = -1;
+
+          for (let i = 0; i < lines.length; i++) {
+            if (sectionHeaderRegex.test(lines[i].trim())) {
+              if (sectionStartIdx === -1) {
+                sectionStartIdx = i;
+              } else {
+                nextSectionIdx = i;
+                break;
+              }
+            }
+          }
+
+          if (sectionStartIdx !== -1 && nextSectionIdx !== -1) {
+            const sectionLines = lines.slice(sectionStartIdx, nextSectionIdx);
+            const sectionText = sectionLines.join('\n');
+
+            const parsed = parseSingleSection(sectionText);
+            if (parsed) {
+              const tier = parsed.tier === 'deep_dive' ? 'deep_dive' : 'core';
+              tierSectionCount[tier]++;
+              totalSectionCount++;
+              streamedCards[tier].push(parsed.card);
+
+              console.log(`[NOTES OUTLINE STREAM] Section ${totalSectionCount} ready: "${parsed.card.title}" [${tier}]`);
+              onSection(parsed.card, tier, tierSectionCount[tier]);
+            }
+
+            buffer = lines.slice(nextSectionIdx).join('\n');
+          }
+        }
+      }
+
+      // Parse remaining section
+      if (buffer.trim()) {
+        const popupIdx = buffer.indexOf('POPUP TERMS');
+        let remainingSection = popupIdx !== -1 ? buffer.substring(0, popupIdx) : buffer;
+
+        if (remainingSection.trim()) {
+          const parsed = parseSingleSection(remainingSection);
+          if (parsed) {
+            const tier = parsed.tier === 'deep_dive' ? 'deep_dive' : 'core';
+            tierSectionCount[tier]++;
+            totalSectionCount++;
+            streamedCards[tier].push(parsed.card);
+            console.log(`[NOTES OUTLINE STREAM] Final section ${totalSectionCount} ready: "${parsed.card.title}" [${tier}]`);
+            onSection(parsed.card, tier, tierSectionCount[tier]);
+          }
+        }
+      }
+
+      const popupTerms = parsePopupTerms(buffer);
+
+      const outline = {
+        core: streamedCards.core,
+        deep_dive: streamedCards.deep_dive,
+        popup_terms: popupTerms
+      };
+
+      console.log(`[NOTES OUTLINE] ✅ Streamed outline: ${totalSectionCount} sections (Core=${outline.core.length}, DeepDive=${outline.deep_dive.length})`);
+      return { outline, rawOutline: buffer };
+    }
+
+    // Non-streaming fallback
+    const message = await anthropic.messages.create({
+      model: MODELS.CONTENT,
+      max_tokens: 6000,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    const responseText = message.content[0].text.trim();
+    const outline = parseOutlineText(responseText);
+
+    console.log(`[NOTES OUTLINE] ✅ Generated outline (Core=${outline.core.length}, DeepDive=${outline.deep_dive.length})`);
+    return { outline, rawOutline: responseText };
+  } catch (error) {
+    console.error('[NOTES OUTLINE] Error:', error);
+    throw new Error('Failed to generate outline from notes');
+  }
+}

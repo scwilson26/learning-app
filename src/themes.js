@@ -34,6 +34,9 @@ const CATEGORY_ACCENTS = {
   health: '#4A90B8',          // Ocean blue
   society: '#8B4A8B',         // Deep magenta
 
+  // User-created content
+  'user-notes': '#059669',    // Emerald green (matches My Notes UI)
+
   // Fallback
   default: '#6B6B6B',         // Stone gray
 }

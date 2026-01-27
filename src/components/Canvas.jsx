@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getCategoryTheme, hasCustomTheme, isDarkTheme } from '../themes'
 import { findTopicMatches, matchTopic } from '../utils/topicMatcher'
-import { generateSubDecks, generateSingleCardContent, generateTierCards, generateTopicPreview, generateTopicOutline, generateFlashcardsFromCard, classifyTopic } from '../services/claude'
+import { generateSubDecks, generateSingleCardContent, generateTierCards, generateTopicPreview, generateTopicOutline, generateFlashcardsFromCard, classifyTopic, extractTextFromImage, extractTextFromPDF, generateNotesTitle, generateOutlineFromNotes } from '../services/claude'
 import { supabase, onAuthStateChange, signOut, syncCards, getCanonicalCardsForTopic, upsertCanonicalCard, getPreviewCardRemote, savePreviewCardRemote, getOutline, saveOutline, syncFlashcards, upsertFlashcardRemote, upsertFlashcardsRemote } from '../services/supabase'
 import Auth from './Auth'
 import {
@@ -103,7 +103,14 @@ import {
   updateLearningState,
   startLearningCard,
   getStudyDeckLearningCards,
-  getStudyDeckReviewDueCards
+  getStudyDeckReviewDueCards,
+  // User decks (uploaded notes)
+  getUserDecks,
+  getUserDeck,
+  saveUserDeck,
+  updateUserDeck,
+  deleteUserDeck,
+  getUserDeckCardCount
 } from '../services/storage'
 
 // Configuration - card counts can be adjusted here or per-deck
@@ -433,6 +440,24 @@ function getDeckLevel(id) {
 
 // Get deck data by ID (checks hardcoded data first, then tree, then dynamic storage)
 function getDeck(id) {
+  // Check for user-created decks (from uploaded notes)
+  if (id && id.startsWith('user-deck:')) {
+    const deckId = id.replace('user-deck:', '')
+    const userDeck = getUserDeck(deckId)
+    if (userDeck) {
+      return {
+        id: id,
+        name: userDeck.name,
+        isUserDeck: true,
+        userDeckId: deckId,
+        cards: userDeck.cards,
+        outline: userDeck.outline,
+        level: 1, // Treat as top-level for styling
+        source: 'user-notes'
+      }
+    }
+  }
+
   // Check hardcoded categories first (Level 1)
   const category = CATEGORIES.find(c => c.id === id)
   if (category) return { ...category, level: 1 }
@@ -476,7 +501,7 @@ function Deck({ deck, onOpen, claimed, rootCategoryId = null }) {
     <motion.div
       className="relative cursor-pointer group"
       onClick={() => onOpen(deck)}
-      whileHover={{ y: -4, boxShadow: theme.shadowHover }}
+      whileHover={{ y: -4 }}
       whileTap={{ scale: 0.98 }}
       style={{ paddingRight: 6, paddingBottom: 6 }}
     >
@@ -502,13 +527,14 @@ function Deck({ deck, onOpen, claimed, rootCategoryId = null }) {
 
       {/* Top card - clean design with left accent stripe */}
       <div className="relative w-28 h-36">
-        <div
+        <motion.div
           className="absolute inset-0 rounded-xl overflow-hidden"
           style={{
             background: theme.cardBg,
             border: `1px solid ${theme.border}`,
             boxShadow: claimed ? theme.shadowHover : theme.shadow,
           }}
+          whileHover={{ boxShadow: theme.shadowHover }}
         >
           {/* Left accent stripe - always full color for navigation decks */}
           <div
@@ -518,7 +544,7 @@ function Deck({ deck, onOpen, claimed, rootCategoryId = null }) {
               background: theme.accent,
             }}
           />
-        </div>
+        </motion.div>
         <div className="absolute inset-0 flex flex-col items-center justify-center pl-1">
           <span className="text-xs font-semibold text-center px-2 leading-tight whitespace-pre-line" style={{ color: theme.textPrimary }}>{deck.name}</span>
           {claimed && (
@@ -3398,9 +3424,17 @@ export default function Canvas() {
   // Track in-flight outline generation promises (to avoid duplicate requests)
   const outlinePromisesRef = useRef({}) // deckId -> Promise<outline>
 
+  // Track when loading started (for stuck loading detection on visibility change)
+  const loadingStartTimeRef = useRef(null)
+
   // Section-based Level 2 data (from Wikipedia)
   const [sectionData, setSectionData] = useState({}) // categoryId -> { sections: [...] }
   const [loadingSections, setLoadingSections] = useState(null) // categoryId currently loading sections
+
+  // My Notes state (uploaded notes processing)
+  const [notesProcessing, setNotesProcessing] = useState(null) // { phase: 'extracting' | 'generating' | 'complete', progress: string }
+  const [pastedNotesText, setPastedNotesText] = useState('')
+  const fileInputRef = useRef(null)
 
   // Handle full reset
   const handleReset = () => {
@@ -3645,6 +3679,142 @@ export default function Canvas() {
     } catch (error) {
       console.error(`[generateFlashcardsInBackground] Failed for ${cardId}:`, error)
     }
+  }
+
+  // Process uploaded notes (file or pasted text)
+  const processUploadedNotes = async (content, sourceType, fileName = null) => {
+    try {
+      console.log(`[processUploadedNotes] Starting processing (${sourceType}, ${content.length} chars)`)
+      setNotesProcessing({ phase: 'generating', progress: 'Analyzing your notes...' })
+
+      // Generate a title from the content
+      const title = fileName
+        ? fileName.replace(/\.[^/.]+$/, '') // Remove file extension
+        : await generateNotesTitle(content)
+
+      setNotesProcessing({ phase: 'generating', progress: `Creating outline for "${title}"...` })
+
+      // Generate outline from the notes
+      const { outline } = await generateOutlineFromNotes(content, title)
+
+      if (!outline || (outline.core.length === 0 && outline.deep_dive.length === 0)) {
+        throw new Error('Could not generate cards from these notes')
+      }
+
+      setNotesProcessing({ phase: 'generating', progress: 'Building cards...' })
+
+      // Create card objects with IDs
+      const timestamp = Date.now()
+      const deckId = `user-deck-${timestamp}`
+
+      const createCards = (items, tier) => items.map((item, index) => ({
+        id: `${deckId}-${tier}-${index}`,
+        title: item.title,
+        content: item.content,
+        concept: item.concept,
+        tier,
+        tierIndex: index,
+        number: tier === 'core' ? index + 1 : outline.core.length + index + 1
+      }))
+
+      const cards = {
+        core: createCards(outline.core, 'core'),
+        deep_dive: createCards(outline.deep_dive, 'deep_dive')
+      }
+
+      // Save the user deck
+      const deck = {
+        id: deckId,
+        name: title,
+        sourceType,
+        sourceContent: content.substring(0, 10000), // Limit stored content
+        outline,
+        cards,
+        createdAt: new Date().toISOString()
+      }
+
+      saveUserDeck(deck)
+
+      setNotesProcessing({ phase: 'complete', progress: `Created ${cards.core.length + cards.deep_dive.length} cards!` })
+      setPastedNotesText('')
+
+      // Clear processing state after a moment
+      setTimeout(() => {
+        setNotesProcessing(null)
+      }, 2000)
+
+      console.log(`[processUploadedNotes] ✅ Created deck "${title}" with ${cards.core.length + cards.deep_dive.length} cards`)
+
+    } catch (error) {
+      console.error('[processUploadedNotes] Error:', error)
+      setNotesProcessing({ phase: 'error', progress: error.message || 'Failed to process notes' })
+      setTimeout(() => setNotesProcessing(null), 3000)
+    }
+  }
+
+  // Handle file upload
+  const handleFileUpload = async (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    console.log(`[handleFileUpload] Processing file: ${file.name} (${file.type})`)
+    setNotesProcessing({ phase: 'extracting', progress: 'Reading file...' })
+
+    try {
+      const reader = new FileReader()
+
+      reader.onload = async (e) => {
+        const base64Data = e.target.result.split(',')[1] // Remove data:...;base64, prefix
+
+        let extractedText = ''
+
+        if (file.type === 'application/pdf') {
+          setNotesProcessing({ phase: 'extracting', progress: 'Extracting text from PDF...' })
+          extractedText = await extractTextFromPDF(base64Data)
+        } else if (file.type.startsWith('image/')) {
+          setNotesProcessing({ phase: 'extracting', progress: 'Reading image content...' })
+          extractedText = await extractTextFromImage(base64Data, file.type)
+        } else if (file.type === 'text/plain') {
+          // Plain text file
+          extractedText = atob(base64Data)
+        } else {
+          throw new Error(`Unsupported file type: ${file.type}`)
+        }
+
+        if (!extractedText || extractedText.length < 50) {
+          throw new Error('Could not extract enough text from this file')
+        }
+
+        await processUploadedNotes(extractedText, file.type.startsWith('image/') ? 'image' : 'pdf', file.name)
+      }
+
+      reader.onerror = () => {
+        throw new Error('Failed to read file')
+      }
+
+      reader.readAsDataURL(file)
+
+    } catch (error) {
+      console.error('[handleFileUpload] Error:', error)
+      setNotesProcessing({ phase: 'error', progress: error.message || 'Failed to process file' })
+      setTimeout(() => setNotesProcessing(null), 3000)
+    }
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  // Handle pasted text processing
+  const handleProcessPastedNotes = async () => {
+    if (!pastedNotesText || pastedNotesText.trim().length < 50) {
+      setNotesProcessing({ phase: 'error', progress: 'Please paste more text (at least 50 characters)' })
+      setTimeout(() => setNotesProcessing(null), 2000)
+      return
+    }
+
+    await processUploadedNotes(pastedNotesText.trim(), 'text')
   }
 
   // Save generated content when a card is first flipped
@@ -4060,6 +4230,7 @@ export default function Canvas() {
     // SHARED MAP: Check Supabase for existing canonical cards first
     // ========================================================================
     setLoadingDeck(deck.id)
+    loadingStartTimeRef.current = Date.now()
     setGenerationProgress({ current: 0, total: 5, phase: 'checking' })
 
     try {
@@ -4340,6 +4511,7 @@ export default function Canvas() {
       console.error('Failed to generate Core tier:', error)
     } finally {
       setLoadingDeck(null)
+      loadingStartTimeRef.current = null
       setGenerationProgress(null)
     }
   }
@@ -4900,6 +5072,12 @@ export default function Canvas() {
   }
 
   const goBack = () => {
+    // If leaving a user deck, return to My Notes screen
+    if (stack.length === 1 && stack[0]?.startsWith('user-deck:')) {
+      setStack([])
+      setLearnView('upload')
+      return
+    }
     setStack(prev => prev.slice(0, -1))
   }
 
@@ -5253,10 +5431,45 @@ export default function Canvas() {
   // Load or generate cards and children when entering any deck
   useEffect(() => {
     if (currentDeck) {
+      // User decks already have their cards embedded - no generation needed
+      if (currentDeck.isUserDeck) {
+        console.log(`[loadOrGenerateCardsForDeck] User deck "${currentDeck.name}" - cards already embedded`)
+        return
+      }
       loadOrGenerateCardsForDeck(currentDeck, parentPath)
       loadOrGenerateChildDecks(currentDeck, parentPath)
     }
   }, [currentDeck?.id])
+
+  // Recovery for stuck loading states when app returns from background
+  // When phone sleeps during card generation, requests can get stuck
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && loadingDeck && currentDeck) {
+        const loadingTime = loadingStartTimeRef.current
+        const stuckThreshold = 10000 // 10 seconds - if loading longer than this when returning, retry
+
+        if (loadingTime && Date.now() - loadingTime > stuckThreshold) {
+          console.log(`[Visibility] App returned from background, loading stuck for ${Math.round((Date.now() - loadingTime) / 1000)}s - retrying`)
+
+          // Reset loading state and retry
+          setLoadingDeck(null)
+          loadingStartTimeRef.current = null
+          setGenerationProgress(null)
+
+          // Retry after a short delay to let state settle
+          setTimeout(() => {
+            if (currentDeck) {
+              loadOrGenerateCardsForDeck(currentDeck, parentPath)
+            }
+          }, 500)
+        }
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [loadingDeck, currentDeck, parentPath])
 
   // Get overview cards - either from generated cards or empty while loading
   const overviewCards = currentDeck
@@ -5342,6 +5555,8 @@ export default function Canvas() {
   // Category nodes are: nodes with children that aren't vital articles
   const isArticleDeck = () => {
     if (!currentDeck) return false
+    // User decks always have cards
+    if (currentDeck.isUserDeck) return true
     // Vital articles always have cards
     if (currentDeck.source === 'vital-articles' || currentDeck.wikiTitle) return true
     // Leaf nodes have cards
@@ -5441,6 +5656,21 @@ export default function Canvas() {
 
   // Get tier cards for current deck (merge with latest generated content)
   const currentTierCards = currentDeck ? (() => {
+    // User decks have cards embedded directly in the deck object
+    if (currentDeck.isUserDeck && currentDeck.cards) {
+      return {
+        core: (currentDeck.cards.core || []).map(card => ({
+          ...card,
+          content: generatedContent[card.id] || card.content || null
+        })),
+        deep_dive: (currentDeck.cards.deep_dive || []).map(card => ({
+          ...card,
+          content: generatedContent[card.id] || card.content || null
+        }))
+      }
+    }
+
+    // Regular decks use the tierCards state
     const deckTierCards = tierCards[currentDeck.id] || { core: [], deep_dive: [] }
     // Merge in latest generated content for each card (handle partially loaded tiers)
     return {
@@ -7496,7 +7726,7 @@ export default function Canvas() {
             </button>
           </div>
 
-          {/* Upload Notes button */}
+          {/* My Notes button */}
           <div className="mt-4">
             <button
               onClick={() => setLearnView('upload')}
@@ -7504,12 +7734,16 @@ export default function Canvas() {
             >
               <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center">
                 <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
               <div className="flex-1 text-left">
-                <h3 className="text-lg font-semibold text-gray-800">Upload Notes</h3>
-                <p className="text-sm text-gray-500">Turn your notes into flashcards</p>
+                <h3 className="text-lg font-semibold text-gray-800">My Notes</h3>
+                <p className="text-sm text-gray-500">
+                  {getUserDecks().length > 0
+                    ? `${getUserDecks().length} deck${getUserDecks().length === 1 ? '' : 's'} from your notes`
+                    : 'Upload notes to create flashcards'}
+                </p>
               </div>
               <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -7590,8 +7824,10 @@ export default function Canvas() {
     )
   }
 
-  // Upload Notes screen
+  // My Notes screen (uploaded notes)
   if (activeTab === 'learn' && learnView === 'upload') {
+    const userDecks = getUserDecks()
+
     return (
       <div className="w-screen min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 overflow-auto pb-24">
         {/* Top navigation bar */}
@@ -7606,33 +7842,120 @@ export default function Canvas() {
               </svg>
               <span className="text-sm font-medium">Back</span>
             </button>
-            <h1 className="text-lg font-semibold text-gray-800">Upload Notes</h1>
+            <h1 className="text-lg font-semibold text-gray-800">My Notes</h1>
             <div className="w-16" /> {/* Spacer for balance */}
           </div>
         </div>
 
         {/* Content */}
         <div className="pt-14 px-4">
-          <div className="mt-6">
+          {/* Processing overlay */}
+          {notesProcessing && (
+            <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
+              <div className="bg-white rounded-2xl p-8 mx-4 max-w-sm w-full text-center shadow-xl">
+                {notesProcessing.phase === 'error' ? (
+                  <>
+                    <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </div>
+                    <p className="text-gray-700">{notesProcessing.progress}</p>
+                  </>
+                ) : notesProcessing.phase === 'complete' ? (
+                  <>
+                    <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <p className="text-gray-700 font-medium">{notesProcessing.progress}</p>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-8 h-8 text-emerald-600 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                    </div>
+                    <p className="text-gray-700">{notesProcessing.progress}</p>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Existing decks */}
+          {userDecks.length > 0 && (
+            <div className="mt-6">
+              <h2 className="text-sm font-semibold text-gray-600 mb-3">Your Decks</h2>
+              <div className="space-y-3">
+                {userDecks.map((deck) => {
+                  const cardCount = getUserDeckCardCount(deck.id)
+                  return (
+                    <button
+                      key={deck.id}
+                      onClick={() => {
+                        // Navigate to the user deck
+                        setStack([`user-deck:${deck.id}`])
+                        setLearnView(null) // Clear learnView so deck spread shows
+                      }}
+                      className="w-full bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow text-left"
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                        <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-gray-800 truncate">{deck.name}</h3>
+                        <p className="text-sm text-gray-500">
+                          {cardCount.total} cards • {cardCount.claimed} claimed
+                        </p>
+                      </div>
+                      <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Upload section */}
+          <div className={userDecks.length > 0 ? 'mt-8' : 'mt-6'}>
+            {userDecks.length > 0 && (
+              <h2 className="text-sm font-semibold text-gray-600 mb-3">Add New</h2>
+            )}
+
             {/* Upload area */}
             <div className="bg-white rounded-2xl p-8 shadow-sm border-2 border-dashed border-gray-300 text-center">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                accept=".pdf,.png,.jpg,.jpeg,.txt"
+                className="hidden"
+              />
               <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">Upload your study notes</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                {userDecks.length > 0 ? 'Upload more notes' : 'Upload your study notes'}
+              </h3>
               <p className="text-sm text-gray-500 mb-6">
                 Upload PDFs, images, or paste text from your notes.
                 <br />
                 We'll turn them into flashcards for you.
               </p>
               <button
-                className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors"
-                onClick={() => {
-                  // TODO: Implement file upload
-                  alert('Coming soon!')
-                }}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors disabled:opacity-50"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={!!notesProcessing}
               >
                 Choose File
               </button>
@@ -7646,16 +7969,17 @@ export default function Canvas() {
               <div className="text-center text-sm text-gray-400 mb-4">or</div>
               <textarea
                 placeholder="Paste your notes here..."
+                value={pastedNotesText}
+                onChange={(e) => setPastedNotesText(e.target.value)}
                 className="w-full h-40 p-4 bg-white rounded-2xl border border-gray-200 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-800"
+                disabled={!!notesProcessing}
               />
               <button
-                className="w-full mt-4 bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-semibold transition-colors"
-                onClick={() => {
-                  // TODO: Process pasted text
-                  alert('Coming soon!')
-                }}
+                className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:bg-gray-300"
+                onClick={handleProcessPastedNotes}
+                disabled={!!notesProcessing || pastedNotesText.trim().length < 50}
               >
-                Process Notes
+                {pastedNotesText.trim().length < 50 ? 'Paste at least 50 characters' : 'Process Notes'}
               </button>
             </div>
           </div>
@@ -8426,12 +8750,12 @@ export default function Canvas() {
               }}
               tierCards={currentTierCards}
               tierCompletion={currentTierCompletion}
-              unlockedTiers={currentDeck ? getUnlockedTiers(currentDeck.id) : ['core']}
+              unlockedTiers={currentDeck?.isUserDeck ? ['core', 'deep_dive'] : (currentDeck ? getUnlockedTiers(currentDeck.id) : ['core'])}
               onUnlockTier={handleUnlockTier}
               unlockingTier={unlockingTier}
               sections={currentSections}
               generationProgress={generationProgress}
-              rootCategoryId={stackDecks[0]?.id}
+              rootCategoryId={currentDeck?.isUserDeck ? 'user-notes' : stackDecks[0]?.id}
               previewCard={currentDeck ? getPreviewCard(currentDeck.id) : null}
               onReadPreviewCard={() => {
                 const preview = currentDeck ? getPreviewCard(currentDeck.id) : null
