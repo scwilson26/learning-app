@@ -3310,6 +3310,9 @@ export default function Canvas() {
   // Learn tab view state - 'hub' | 'browse'
   const [learnView, setLearnView] = useState('hub')
 
+  // User deck view mode - 'cards' | 'outline'
+  const [userDeckViewMode, setUserDeckViewMode] = useState('cards')
+
   // Toast message for "Coming Soon" etc
   const [toastMessage, setToastMessage] = useState(null)
 
@@ -7900,6 +7903,7 @@ export default function Canvas() {
                         // Navigate to the user deck
                         setStack([`user-deck:${deck.id}`])
                         setLearnView(null) // Clear learnView so deck spread shows
+                        setUserDeckViewMode('cards') // Reset to cards view
                       }}
                       className="w-full bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow text-left"
                     >
@@ -8716,65 +8720,144 @@ export default function Canvas() {
             onGoBack={goBack}
           />
 
-          {/* Card counter */}
-          <div className="bg-gray-100 rounded-full px-3 py-1 shrink-0">
-            <span className="text-gray-500 text-xs">Cards: </span>
-            <span className="text-gray-800 font-bold text-sm">{claimedCards.size}</span>
-          </div>
+          {/* Toggle for user decks OR Card counter for regular decks */}
+          {currentDeck?.isUserDeck ? (
+            <div className="flex items-center bg-gray-100 rounded-full p-0.5 shrink-0">
+              <button
+                onClick={() => setUserDeckViewMode('cards')}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  userDeckViewMode === 'cards'
+                    ? 'bg-white text-gray-800 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Cards
+              </button>
+              <button
+                onClick={() => setUserDeckViewMode('outline')}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  userDeckViewMode === 'outline'
+                    ? 'bg-white text-gray-800 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Outline
+              </button>
+            </div>
+          ) : (
+            <div className="bg-gray-100 rounded-full px-3 py-1 shrink-0">
+              <span className="text-gray-500 text-xs">Cards: </span>
+              <span className="text-gray-800 font-bold text-sm">{claimedCards.size}</span>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Current spread + parent deck underneath */}
       <div className="min-h-screen flex flex-col items-center pt-20 px-4">
-        {/* Current spread */}
-        <div className="flex-1 flex items-start justify-center w-full">
-          <AnimatePresence mode="wait">
-            <DeckSpread
-              key={currentDeck.id}
-              deck={currentDeck}
-              overviewCards={overviewCards}
-              childDecks={childDecks}
-              onOpenDeck={openDeck}
-              onReadCard={(card) => setExpandedCard(card.id)}
-              claimedCards={claimedCards}
-              isLoading={isLoading}
-              isLoadingChildren={isLoadingChildren}
-              isLoadingSections={isLoadingSectionsState}
-              skeletonCount={skeletonCount}
-              isLeaf={isLeaf}
-              isArticle={isArticle}
-              onClaimCategory={() => {
-                if (currentDeck && claimCategoryNode(currentDeck.id, currentDeck.name)) {
-                  setClaimedCards(getClaimedCardIds())
-                }
-              }}
-              tierCards={currentTierCards}
-              tierCompletion={currentTierCompletion}
-              unlockedTiers={currentDeck?.isUserDeck ? ['core', 'deep_dive'] : (currentDeck ? getUnlockedTiers(currentDeck.id) : ['core'])}
-              onUnlockTier={handleUnlockTier}
-              unlockingTier={unlockingTier}
-              sections={currentSections}
-              generationProgress={generationProgress}
-              rootCategoryId={currentDeck?.isUserDeck ? 'user-notes' : stackDecks[0]?.id}
-              previewCard={currentDeck ? getPreviewCard(currentDeck.id) : null}
-              onReadPreviewCard={() => {
-                const preview = currentDeck ? getPreviewCard(currentDeck.id) : null
-                if (preview) {
-                  // Open the preview as an expanded card-like view
-                  setShowPreviewCard({
-                    deckId: currentDeck.id,
-                    title: currentDeck.name,
-                    preview: preview.content,
-                    cardId: preview.cardId,
-                    isLoading: false,
-                    claimed: preview.claimed
-                  })
-                }
-              }}
-              outline={currentDeck ? loadedOutlines[currentDeck.id] : null}
-            />
-          </AnimatePresence>
-        </div>
+        {/* Show Outline view OR Cards view for user decks */}
+        {currentDeck?.isUserDeck && userDeckViewMode === 'outline' ? (
+          <div className="w-full max-w-2xl pb-24">
+            <h2 className="text-lg font-semibold text-gray-800 text-center mb-6">{currentDeck.name}</h2>
+
+            {/* Core sections */}
+            {currentDeck.outline?.core?.length > 0 && (
+              <div className="mb-8">
+                <h3 className="text-sm font-semibold text-emerald-600 uppercase tracking-wide mb-4">Core</h3>
+                <div className="space-y-4">
+                  {currentDeck.outline.core.map((card, idx) => (
+                    <div key={idx} className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+                      <h4 className="font-semibold text-gray-800 mb-3">{card.title}</h4>
+                      <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{card.content}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Deep Dive sections */}
+            {currentDeck.outline?.deep_dive?.length > 0 && (
+              <div className="mb-8">
+                <h3 className="text-sm font-semibold text-indigo-600 uppercase tracking-wide mb-4">Deep Dive</h3>
+                <div className="space-y-4">
+                  {currentDeck.outline.deep_dive.map((card, idx) => (
+                    <div key={idx} className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+                      <h4 className="font-semibold text-gray-800 mb-3">{card.title}</h4>
+                      <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{card.content}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Popup terms if any */}
+            {currentDeck.outline?.popup_terms?.length > 0 && (
+              <div className="mb-8">
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Key Terms</h3>
+                <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+                  <dl className="space-y-2">
+                    {currentDeck.outline.popup_terms.map((term, idx) => (
+                      <div key={idx} className="flex gap-2">
+                        <dt className="font-medium text-gray-800">{term.term}:</dt>
+                        <dd className="text-gray-600">{term.definition}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Current spread - Cards view */
+          <div className="flex-1 flex items-start justify-center w-full">
+            <AnimatePresence mode="wait">
+              <DeckSpread
+                key={currentDeck.id}
+                deck={currentDeck}
+                overviewCards={overviewCards}
+                childDecks={childDecks}
+                onOpenDeck={openDeck}
+                onReadCard={(card) => setExpandedCard(card.id)}
+                claimedCards={claimedCards}
+                isLoading={isLoading}
+                isLoadingChildren={isLoadingChildren}
+                isLoadingSections={isLoadingSectionsState}
+                skeletonCount={skeletonCount}
+                isLeaf={isLeaf}
+                isArticle={isArticle}
+                onClaimCategory={() => {
+                  if (currentDeck && claimCategoryNode(currentDeck.id, currentDeck.name)) {
+                    setClaimedCards(getClaimedCardIds())
+                  }
+                }}
+                tierCards={currentTierCards}
+                tierCompletion={currentTierCompletion}
+                unlockedTiers={currentDeck?.isUserDeck ? ['core', 'deep_dive'] : (currentDeck ? getUnlockedTiers(currentDeck.id) : ['core'])}
+                onUnlockTier={handleUnlockTier}
+                unlockingTier={unlockingTier}
+                sections={currentSections}
+                generationProgress={generationProgress}
+                rootCategoryId={currentDeck?.isUserDeck ? 'user-notes' : stackDecks[0]?.id}
+                previewCard={currentDeck ? getPreviewCard(currentDeck.id) : null}
+                onReadPreviewCard={() => {
+                  const preview = currentDeck ? getPreviewCard(currentDeck.id) : null
+                  if (preview) {
+                    // Open the preview as an expanded card-like view
+                    setShowPreviewCard({
+                      deckId: currentDeck.id,
+                      title: currentDeck.name,
+                      preview: preview.content,
+                      cardId: preview.cardId,
+                      isLoading: false,
+                      claimed: preview.claimed
+                    })
+                  }
+                }}
+                outline={currentDeck ? loadedOutlines[currentDeck.id] : null}
+              />
+            </AnimatePresence>
+          </div>
+        )}
 
       </div>
 
