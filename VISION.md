@@ -297,6 +297,73 @@ It's not "another learning app." It's a knowledge card game where the map belong
 
 **Wikipedia meets trading cards meets exploration game.**
 
+## Tile Zoom System (My Notes)
+
+**For user-uploaded study materials - a different paradigm.**
+
+When users upload their own notes (photos, PDFs, text), they get a tile-based view that represents knowledge at different zoom levels. The metaphor: **same mosaic, different magnification.**
+
+### The Core Concept
+
+```
+OUTLINE (zoomed out - bird's eye view):
+[·][·][·][·]
+[·][·][·][·]    ← Tiny tiles, all fit on screen
+[·][·][·][·]       Tap = ALL flip together → reveals full outline
+[·][·][·][·]
+
+CARDS (zoomed in - medium view):
+[██][██]
+[██][██]        ← Medium tiles, grouped by card
+[██][██]           Tap group = group flips → shows card content
+[██][██]
+
+FLASHCARDS (zoomed in most - detail view):
+[███][███]
+[███][███]      ← Large tiles, scroll to see all
+[███][███]         Tap one = it flips → shows Q/A
+```
+
+### Key Insight: Same Tiles, Different Size
+
+- **Tile count = flashcard count** (constant across all levels)
+- **Zooming changes tile SIZE, not tile count**
+- Outline level: tiny tiles, all behavior unified
+- Cards level: medium tiles, grouped behavior
+- Flashcards level: large tiles, individual behavior
+
+### Flip Behavior by Level
+
+| Level | Tile Size | Flip Behavior | Content Shown |
+|-------|-----------|---------------|---------------|
+| Outline | 8×8px | All flip together | Full outline document |
+| Cards | 20×20px | Groups flip together | Card content |
+| Flashcards | 28×28px | Individual flip | Q/A pair |
+
+### The Metaphor
+
+You're looking at a mosaic of knowledge pieces:
+- **Zoom out** = see the whole picture (outline)
+- **Zoom in** = examine individual pieces (flashcards)
+- The tiles ARE the flashcards - they just appear smaller when zoomed out
+
+### Data Structure
+
+```
+User Deck:
+├── outline (core + deep_dive sections)
+├── cards (core + deep_dive cards)
+└── flashcards (generated from cards, linked to parent)
+    └── Each flashcard knows which card it came from
+```
+
+### Future: Animated Transitions
+
+When zooming in/out:
+- Tiles smoothly grow/shrink (Framer Motion layout)
+- Feels like actual camera zoom on a mosaic
+- Reinforces the "same content, different scale" mental model
+
 ## Technical Stack
 - React (Vite)
 - Framer Motion for animations
