@@ -6,6 +6,7 @@ import { findTopicMatches, matchTopic } from '../utils/topicMatcher'
 import { generateSubDecks, generateSingleCardContent, generateTierCards, generateTopicPreview, generateTopicOutline, generateFlashcardsFromCard, classifyTopic, extractTextFromImage, extractTextFromPDF, generateNotesTitle, generateOutlineFromNotes } from '../services/claude'
 import { supabase, onAuthStateChange, signOut, syncCards, getCanonicalCardsForTopic, upsertCanonicalCard, getPreviewCardRemote, savePreviewCardRemote, getOutline, saveOutline, syncFlashcards, upsertFlashcardRemote, upsertFlashcardsRemote } from '../services/supabase'
 import Auth from './Auth'
+import TileView from './TilesDemo'
 import {
   getDeckCards,
   saveDeckCards,
@@ -3725,6 +3726,28 @@ export default function Canvas() {
         deep_dive: createCards(outline.deep_dive, 'deep_dive')
       }
 
+      // Generate flashcards from all cards
+      setNotesProcessing({ phase: 'generating', progress: 'Creating flashcards...' })
+      const allCards = [...cards.core, ...cards.deep_dive]
+      const flashcards = []
+
+      for (let i = 0; i < allCards.length; i++) {
+        const card = allCards[i]
+        setNotesProcessing({ phase: 'generating', progress: `Creating flashcards (${i + 1}/${allCards.length})...` })
+        try {
+          const cardFlashcards = await generateFlashcardsFromCard(card.title, card.content, { maxCards: 4 })
+          flashcards.push(...cardFlashcards.map((fc, idx) => ({
+            id: `${card.id}-fc-${idx}`,
+            question: fc.question,
+            answer: fc.answer,
+            sourceCardId: card.id,
+            sourceCardTitle: card.title
+          })))
+        } catch (err) {
+          console.warn(`[processUploadedNotes] Failed to generate flashcards for "${card.title}":`, err)
+        }
+      }
+
       // Save the user deck
       const deck = {
         id: deckId,
@@ -3733,12 +3756,13 @@ export default function Canvas() {
         sourceContent: content.substring(0, 10000), // Limit stored content
         outline,
         cards,
+        flashcards,
         createdAt: new Date().toISOString()
       }
 
       saveUserDeck(deck)
 
-      setNotesProcessing({ phase: 'complete', progress: `Created ${cards.core.length + cards.deep_dive.length} cards!` })
+      setNotesProcessing({ phase: 'complete', progress: `Created ${cards.core.length + cards.deep_dive.length} cards and ${flashcards.length} flashcards!` })
       setPastedNotesText('')
 
       // Clear processing state after a moment
@@ -8706,6 +8730,21 @@ export default function Canvas() {
           )}
         </AnimatePresence>
       </div>
+    )
+  }
+
+  // User deck view - render TileView for user decks
+  if (currentDeck?.isUserDeck) {
+    // Get the full user deck data from storage (includes flashcards)
+    const userDeckId = currentDeck.userDeckId
+    const fullUserDeck = getUserDeck(userDeckId)
+
+    return (
+      <TileView
+        deck={fullUserDeck || currentDeck}
+        onBack={goBack}
+        embedded={true}
+      />
     )
   }
 
