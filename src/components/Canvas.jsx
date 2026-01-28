@@ -6,7 +6,7 @@ import { findTopicMatches, matchTopic } from '../utils/topicMatcher'
 import { generateSubDecks, generateSingleCardContent, generateTierCards, generateTopicPreview, generateTopicOutline, generateFlashcardsFromCard, classifyTopic, extractTextFromImage, extractTextFromPDF, generateNotesTitle, generateOutlineFromNotes } from '../services/claude'
 import { supabase, onAuthStateChange, signOut, syncCards, getCanonicalCardsForTopic, upsertCanonicalCard, getPreviewCardRemote, savePreviewCardRemote, getOutline, saveOutline, syncFlashcards, upsertFlashcardRemote, upsertFlashcardsRemote } from '../services/supabase'
 import Auth from './Auth'
-import TileView from './TilesDemo'
+import { MosaicView } from './tiles'
 import {
   getDeckCards,
   saveDeckCards,
@@ -8733,17 +8733,17 @@ export default function Canvas() {
     )
   }
 
-  // User deck view - render TileView for user decks
+  // User deck view - render MosaicView for user decks
   if (currentDeck?.isUserDeck) {
     // Get the full user deck data from storage (includes flashcards)
     const userDeckId = currentDeck.userDeckId
     const fullUserDeck = getUserDeck(userDeckId)
 
     return (
-      <TileView
+      <MosaicView
         deck={fullUserDeck || currentDeck}
         onBack={goBack}
-        embedded={true}
+        category="default"
       />
     )
   }
