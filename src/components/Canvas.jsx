@@ -748,107 +748,41 @@ function LockedCard({ index, rootCategoryId = null }) {
 // Category card - flippable card showing category info and progress
 // Styled to match the themed child cards
 function CategoryCard({ deck, tint = '#fafbfc', rootCategoryId = null }) {
-  const [isFlipped, setIsFlipped] = useState(true) // Start showing info side
-  const theme = getCategoryTheme(rootCategoryId)
-  const isThemed = hasCustomTheme(rootCategoryId)
-
   // Get progress stats
   const totalTopics = countDescendants(deck.id)
   const claimedTopics = countClaimedDescendants(deck.id)
   const progressPercent = totalTopics > 0 ? Math.round((claimedTopics / totalTopics) * 100) : 0
 
-  const handleFlip = () => {
-    setIsFlipped(!isFlipped)
-  }
-
-  // Get card styling - clean, minimal design with left accent stripe
-  const getCardStyle = () => {
-    return {
-      background: theme.cardBg,
-      border: `1px solid ${theme.border}`,
-      boxShadow: theme.shadow,
-    }
-  }
-
-  // Render left accent stripe decoration
-  const renderDecorations = () => {
-    return (
-      <div
-        className="absolute top-0 bottom-0 left-0 rounded-l-2xl"
-        style={{
-          width: '6px',
-          background: theme.accent,
-        }}
-      />
-    )
-  }
-
-  const cardStyle = getCardStyle()
+  const gradient = CATEGORY_GRADIENTS[rootCategoryId] || CATEGORY_GRADIENTS.default
+  const patternId = CATEGORY_PATTERNS[rootCategoryId] || CATEGORY_PATTERNS.default
 
   return (
     <motion.div
-      className="relative w-64 h-44 cursor-pointer"
-      style={{ perspective: 1000 }}
-      onClick={handleFlip}
+      className={`w-full aspect-[2/1] rounded-2xl overflow-hidden shadow-lg bg-gradient-to-br ${gradient} relative`}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
     >
-      <motion.div
-        className="relative w-full h-full"
-        style={{ transformStyle: 'preserve-3d' }}
-        animate={{ rotateY: isFlipped ? 180 : 0 }}
-        transition={{ duration: 0.5, ease: 'easeInOut' }}
-      >
-        {/* Front of card */}
-        <div
-          className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center p-6 overflow-hidden"
-          style={{
-            backfaceVisibility: 'hidden',
-            WebkitBackfaceVisibility: 'hidden',
-            transform: 'translateZ(1px)',
-            ...cardStyle
-          }}
-        >
-          {renderDecorations()}
-          <h2 className="text-lg font-bold text-center relative z-10" style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}>{deck.name}</h2>
-          <p className="text-xs mt-2 relative z-10" style={{ color: isThemed ? theme.textSecondary : '#9ca3af' }}>Tap to flip</p>
-        </div>
+      {/* Pattern overlay */}
+      <TilePattern patternId={patternId} opacity={0.15} />
 
-        {/* Back of card */}
-        <div
-          className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center p-6 overflow-hidden"
-          style={{
-            backfaceVisibility: 'hidden',
-            WebkitBackfaceVisibility: 'hidden',
-            transform: 'rotateY(180deg) translateZ(1px)',
-            ...cardStyle
-          }}
-        >
-          {renderDecorations()}
-          <h3 className="text-sm font-bold text-center mb-3 relative z-10" style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}>{deck.name}</h3>
+      {/* Content */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center p-6 z-10">
+        <h2 className="text-xl font-bold text-center text-white drop-shadow-md mb-3">{deck.name}</h2>
 
-          {/* Progress bar */}
-          <div className="w-full px-4 mb-3 relative z-10">
-            <div className="flex justify-between text-xs mb-1" style={{ color: isThemed ? theme.textSecondary : '#6b7280' }}>
-              <span>Progress</span>
-              <span>{claimedTopics}/{totalTopics}</span>
-            </div>
-            <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: isThemed ? `${theme.accent}20` : '#e5e7eb' }}>
-              <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${progressPercent}%`,
-                  background: `linear-gradient(90deg, ${theme.accent}, ${theme.accent}cc)`
-                }}
-              />
-            </div>
+        {/* Progress bar */}
+        <div className="w-3/4 max-w-xs">
+          <div className="flex justify-between text-xs mb-1 text-white/80">
+            <span>Progress</span>
+            <span>{claimedTopics}/{totalTopics}</span>
           </div>
-
-          <p className="text-xs text-center relative z-10" style={{ color: isThemed ? theme.textSecondary : '#6b7280' }}>
-            Explore the topics within
-          </p>
+          <div className="w-full h-2 rounded-full overflow-hidden bg-white/20">
+            <div
+              className="h-full rounded-full transition-all duration-500 bg-white/80"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
         </div>
-      </motion.div>
+      </div>
     </motion.div>
   )
 }
@@ -2642,7 +2576,7 @@ function SectionedDecks({ sections, onOpenDeck, claimedCards, parentGradient, pa
   }
 
   return (
-    <div className="flex flex-col gap-4 w-full max-w-4xl">
+    <div className="flex flex-col gap-4 w-full">
       {sections.sections.map((section, sectionIndex) => (
         <div key={section.name} className="flex flex-col gap-3">
           <SectionHeader
@@ -2661,7 +2595,7 @@ function SectionedDecks({ sections, onOpenDeck, claimedCards, parentGradient, pa
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
               >
-                <div className="grid grid-cols-4 gap-2 pl-4 py-2">
+                <div className="grid grid-cols-4 gap-2 py-2 w-full">
                   {section.subDecks.map((subDeck, deckIndex) => (
                     <motion.div
                       key={subDeck.id}
@@ -2784,7 +2718,7 @@ function DeckSpread({
 
   return (
     <motion.div
-      className="flex flex-col items-center gap-8 pb-8"
+      className="flex flex-col items-center gap-8 pb-8 w-full"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
@@ -2891,14 +2825,6 @@ function DeckSpread({
         </div>
       )}
 
-      {/* Category card - for non-article nodes (categories with children) */}
-      {!isArticle && (
-        <CategoryCard
-          deck={deck}
-          tint={getCardTint(deck.gradient)}
-          rootCategoryId={rootCategoryId}
-        />
-      )}
 
       {/* Loading state - show progress until at least 1 card has content */}
       {isArticle && !hasReadyCard && (
@@ -3038,9 +2964,9 @@ function DeckSpread({
 
       {/* Sub-decks tile grid (for non-sectioned decks) */}
       {!isLoadingChildren && !sections && childDecks.length > 0 && (
-        <div id="explore-section" className="flex flex-col items-center gap-3 w-full px-4">
-          <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Explore</span>
-          <div className="grid grid-cols-4 gap-2 w-full max-w-2xl">
+        <div id="explore-section" className="flex flex-col gap-3 w-full">
+          <span className="text-xs font-medium text-gray-500 uppercase tracking-wide text-center">Explore</span>
+          <div className="grid grid-cols-4 gap-2 w-full">
             {childDecks.map((childDeck, index) => (
               <motion.div
                 key={childDeck.id}

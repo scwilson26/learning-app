@@ -86,8 +86,10 @@ export default function CategoryTile({
         <TilePattern patternId={patternId} opacity={0.15} />
 
         {/* Content */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-3 z-10">
-          <span className="text-white font-semibold text-center text-sm leading-tight drop-shadow-md">
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-2 z-10">
+          <span className={`text-white font-semibold text-center leading-tight drop-shadow-md ${
+            name.length > 25 ? 'text-xs' : name.length > 15 ? 'text-sm' : 'text-sm'
+          }`}>
             {name}
           </span>
 
