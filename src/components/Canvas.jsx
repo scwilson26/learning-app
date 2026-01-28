@@ -6,7 +6,7 @@ import { findTopicMatches, matchTopic } from '../utils/topicMatcher'
 import { generateSubDecks, generateSingleCardContent, generateTierCards, generateTopicPreview, generateTopicOutline, generateFlashcardsFromCard, classifyTopic, extractTextFromImage, extractTextFromPDF, generateNotesTitle, generateOutlineFromNotes } from '../services/claude'
 import { supabase, onAuthStateChange, signOut, syncCards, getCanonicalCardsForTopic, upsertCanonicalCard, getPreviewCardRemote, savePreviewCardRemote, getOutline, saveOutline, syncFlashcards, upsertFlashcardRemote, upsertFlashcardsRemote } from '../services/supabase'
 import Auth from './Auth'
-import { MosaicView, CategoryTile, TilePattern, CATEGORY_GRADIENTS, CATEGORY_PATTERNS } from './tiles'
+import { MosaicView, CategoryTile, TilePattern, CATEGORY_GRADIENTS, CATEGORY_PATTERNS, OutlineView, CardsView, FlashcardsView } from './tiles'
 import {
   getDeckCards,
   saveDeckCards,
@@ -1273,7 +1273,7 @@ function PreviewCardModal({
       onClick={onBack}
     >
       <motion.div
-        className="relative w-[85vw] max-w-[380px] h-[75vh] min-h-[400px] max-h-[600px] cursor-pointer"
+        className="relative w-[85vw] max-w-[380px] aspect-square cursor-pointer"
         style={{ perspective: 1000 }}
         initial={{ scale: 0.8, y: 50 }}
         animate={{ scale: 1, y: 0 }}
@@ -1500,7 +1500,7 @@ function WanderCard({
       onClick={isComplete ? onBack : undefined}
     >
       <motion.div
-        className="relative w-[85vw] max-w-[380px] h-[75vh] min-h-[400px] max-h-[600px] cursor-pointer"
+        className="relative w-[85vw] max-w-[380px] aspect-square cursor-pointer"
         style={{ perspective: 1000 }}
         initial={{ scale: 0.8, y: 50 }}
         animate={{ scale: 1, y: 0 }}
@@ -2270,7 +2270,7 @@ function ExpandedCard({ card, index, total, onClaim, claimed, onClose, deckName,
     >
       {/* Card container */}
       <motion.div
-        className="relative w-[85vw] max-w-[380px] h-[75vh] min-h-[400px] max-h-[600px] cursor-pointer"
+        className="relative w-[85vw] max-w-[380px] aspect-square cursor-pointer"
         style={{ perspective: 1000 }}
         initial={{ x: slideDirection * 300, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
@@ -2698,13 +2698,20 @@ function DeckSpread({
   // Outline for toggle display
   outline
 }) {
-  // State for outline toggle
-  const [showOutline, setShowOutline] = useState(false)
+  // State for view mode toggle (like MosaicView)
+  const [viewMode, setViewMode] = useState('flashcards') // outline | cards | flashcards
 
   // Tier metadata - two tiers: Core and Deep Dive
   const tiers = [
     { key: 'core', name: 'Core' },
     { key: 'deep_dive', name: 'Deep Dive' },
+  ]
+
+  // View mode options for toggle
+  const views = [
+    { id: 'outline', label: 'Outline', icon: '▦' },
+    { id: 'cards', label: 'Cards', icon: '▤' },
+    { id: 'flashcards', label: 'Flash', icon: '▢' }
   ]
 
   // Check if we have tier data
@@ -2723,105 +2730,33 @@ function DeckSpread({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
     >
-      {/* Deck title - only show for articles, categories show in card */}
-      {isArticle && (
-        <span className="text-sm font-semibold text-gray-700">{deck.name}</span>
-      )}
-
-      {/* Cover/Preview card - shows at top if claimed */}
-      {isArticle && previewCard && previewCard.claimed && (
-        <CoverCard
-          title={deck.name}
-          preview={previewCard.content}
-          claimed={true}
-          onRead={onReadPreviewCard}
-          rootCategoryId={rootCategoryId}
-        />
-      )}
-
-      {/* Outline toggle - only show when we have an outline and cards */}
-      {isArticle && outline && hasTierData && (
-        <div className="w-full max-w-md">
-          <button
-            onClick={() => setShowOutline(!showOutline)}
-            className="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-700 transition-colors mx-auto"
-          >
-            <svg
-              className={`w-4 h-4 transition-transform ${showOutline ? 'rotate-180' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-            {showOutline ? 'Hide outline' : 'Show outline'}
-          </button>
-
-          {/* Collapsible outline display */}
-          <AnimatePresence>
-            {showOutline && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden"
+      {/* View mode toggle - only show for articles with ready cards */}
+      {isArticle && hasReadyCard && (
+        <div className="w-full">
+          {/* View mode toggle buttons */}
+          <div className="flex items-center justify-center gap-1 mb-2">
+            {views.map((view) => (
+              <button
+                key={view.id}
+                onClick={() => setViewMode(view.id)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+                  viewMode === view.id
+                    ? 'bg-emerald-600 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
               >
-                <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 text-left max-h-96 overflow-y-auto">
-                  {outline.topic_type && (
-                    <div className="mb-3 text-xs text-gray-400 uppercase tracking-wide">
-                      {outline.topic_type}
-                    </div>
-                  )}
+                <span className="text-xs opacity-70">{view.icon}</span>
+                {view.label}
+              </button>
+            ))}
+          </div>
 
-                  {/* Show full outline - prefer raw_outline, fallback to structured data */}
-                  {outline.raw_outline ? (
-                    <pre className="text-xs text-gray-700 whitespace-pre-wrap font-sans leading-relaxed">
-                      {outline.raw_outline
-                        .replace(/\[CORE_COUNT:\s*\d+\]\n?/gi, '')
-                        .replace(/\[DEEP_COUNT:\s*\d+\]\n?/gi, '')
-                        .trim()}
-                    </pre>
-                  ) : (
-                    /* Fallback: Build full outline from card data */
-                    <>
-                      {outline.core && outline.core.length > 0 && (
-                        <div className="mb-4">
-                          <div className="text-xs font-semibold text-gray-600 mb-2">Core ({outline.core.length} cards)</div>
-                          {outline.core.map((card, i) => (
-                            <div key={i} className="mb-3">
-                              <div className="text-xs font-medium text-gray-700">{card.title}</div>
-                              {card.content && (
-                                <pre className="text-xs text-gray-600 whitespace-pre-wrap font-sans mt-1 ml-2">
-                                  {card.content}
-                                </pre>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {outline.deep_dive && outline.deep_dive.length > 0 && (
-                        <div>
-                          <div className="text-xs font-semibold text-gray-600 mb-2">Deep Dive ({outline.deep_dive.length} cards)</div>
-                          {outline.deep_dive.map((card, i) => (
-                            <div key={i} className="mb-3">
-                              <div className="text-xs font-medium text-gray-700">{card.title}</div>
-                              {card.content && (
-                                <pre className="text-xs text-gray-600 whitespace-pre-wrap font-sans mt-1 ml-2">
-                                  {card.content}
-                                </pre>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {/* View description */}
+          <div className="text-center text-xs text-gray-400 mb-4">
+            {viewMode === 'outline' && 'Tap anywhere → all tiles flip → full outline'}
+            {viewMode === 'cards' && 'Tap a card → tiles flip → shows card content'}
+            {viewMode === 'flashcards' && 'Tap a tile → it flips → shows Q/A'}
+          </div>
         </div>
       )}
 
@@ -2862,66 +2797,68 @@ function DeckSpread({
         </div>
       )}
 
-      {/* NEW: Tiered card display - shows progressively as tiers complete (only for articles) */}
-      {isArticle && hasReadyCard && (
-        <div className="flex flex-col items-center gap-10 w-full">
-          {tiers.map((tier, tierIndex) => {
-            const cards = tierCards[tier.key] || []
-            const completion = tierCompletion[tier.key] || { claimed: 0, total: 0 }
-            // Tier is locked if not explicitly unlocked (core is always unlocked)
-            const isLocked = tier.key !== 'core' && !unlockedTiers?.includes(tier.key)
+      {/* Tile-based card display - matching MosaicView style */}
+      {isArticle && hasReadyCard && (() => {
+        // Convert tier cards to flashcard format for tile views
+        const allCards = [
+          ...(tierCards.core || []),
+          ...(tierCards.deep_dive || [])
+        ].filter(card => !card.isPlaceholder && card.content)
 
-            // Calculate total cards across all tiers
-            const allTierCards = (tierCards.core?.length || 0) + (tierCards.deep_dive?.length || 0)
+        // Convert to flashcard format (question/answer)
+        const flashcards = allCards.map(card => ({
+          id: card.id,
+          question: card.front_text || card.title || 'Question',
+          answer: card.back_text || card.content || 'Answer',
+          title: card.title,
+          content: card.content
+        }))
 
-            return (
-              <TierSection
-                key={tier.key}
-                tier={tier.key}
-                tierName={tier.name}
-                cards={cards}
-                claimedCards={claimedCards}
-                onReadCard={onReadCard}
-                completion={completion}
-                isLocked={isLocked}
-                onUnlock={() => onUnlockTier(tier.key)}
-                isUnlocking={unlockingTier === tier.key}
-                totalCards={allTierCards || 15}
-                tint={getCardTint(deck.gradient)}
-                rootCategoryId={rootCategoryId}
-                outline={outline}
-              />
-            )
-          })}
-        </div>
-      )}
+        // Get gradient and pattern for category
+        const gradient = CATEGORY_GRADIENTS[rootCategoryId] || CATEGORY_GRADIENTS.default
+        const patternId = CATEGORY_PATTERNS[rootCategoryId] || CATEGORY_PATTERNS.default
 
-      {/* LEGACY: Flat overview cards row (for backward compatibility, only for articles) */}
-      {isArticle && !isLoading && !hasTierData && overviewCards.length > 0 && (
-        <div className="flex flex-col items-center gap-3">
-          <div className="flex gap-2 flex-wrap justify-center">
-            {overviewCards.map((card, index) => (
+        return (
+          <div className="w-full px-4">
+            <AnimatePresence mode="wait">
               <motion.div
-                key={card.id}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
+                key={viewMode}
+                initial={{ opacity: 0, x: viewMode === 'outline' ? -20 : viewMode === 'flashcards' ? 20 : 0 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
               >
-                <OverviewCard
-                  card={card}
-                  index={index}
-                  total={15}
-                  claimed={claimedCards.has(card.id)}
-                  onClaim={() => {}}
-                  onRead={onReadCard}
-                  tint={getCardTint(deck.gradient)}
-                  rootCategoryId={rootCategoryId}
-                />
+                {viewMode === 'outline' && (
+                  <OutlineView
+                    tiles={flashcards}
+                    outline={outline || { core: [], deep_dive: [] }}
+                    deckName={deck.name}
+                    gradient={gradient}
+                    patternId={patternId}
+                  />
+                )}
+
+                {viewMode === 'cards' && (
+                  <CardsView
+                    flashcards={flashcards}
+                    cards={allCards}
+                    gradient={gradient}
+                    patternId={patternId}
+                  />
+                )}
+
+                {viewMode === 'flashcards' && (
+                  <FlashcardsView
+                    flashcards={flashcards}
+                    gradient={gradient}
+                    patternId={patternId}
+                  />
+                )}
               </motion.div>
-            ))}
+            </AnimatePresence>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* Loading state for sub-decks */}
       {isLoadingChildren && (
