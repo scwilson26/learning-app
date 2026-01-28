@@ -6,7 +6,7 @@ import { findTopicMatches, matchTopic } from '../utils/topicMatcher'
 import { generateSubDecks, generateSingleCardContent, generateTierCards, generateTopicPreview, generateTopicOutline, generateFlashcardsFromCard, classifyTopic, extractTextFromImage, extractTextFromPDF, generateNotesTitle, generateOutlineFromNotes } from '../services/claude'
 import { supabase, onAuthStateChange, signOut, syncCards, getCanonicalCardsForTopic, upsertCanonicalCard, getPreviewCardRemote, savePreviewCardRemote, getOutline, saveOutline, syncFlashcards, upsertFlashcardRemote, upsertFlashcardsRemote } from '../services/supabase'
 import Auth from './Auth'
-import { MosaicView, CategoryTile } from './tiles'
+import { MosaicView, CategoryTile, TilePattern, CATEGORY_GRADIENTS, CATEGORY_PATTERNS } from './tiles'
 import {
   getDeckCards,
   saveDeckCards,
@@ -1353,67 +1353,61 @@ function PreviewCardModal({
           animate={{ rotateY: isFlipped ? -180 : 0 }}
           transition={{ duration: 0.5, ease: 'easeInOut' }}
         >
-          {/* Front of card - title and "Tap to read" */}
+          {/* Front of card - tile style with title */}
           <div
-            className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center p-6 overflow-hidden shadow-2xl"
+            className={`absolute inset-0 rounded-2xl flex flex-col items-center justify-center p-6 overflow-hidden shadow-2xl bg-gradient-to-br ${CATEGORY_GRADIENTS[rootCategoryId] || CATEGORY_GRADIENTS.default}`}
             style={{
               backfaceVisibility: 'hidden',
               WebkitBackfaceVisibility: 'hidden',
               transform: 'translateZ(1px)',
-              ...getExpandedCardStyle(rootCategoryId, theme, claimed, '#fafbfc')
             }}
           >
-            {/* Themed decorations */}
-            {renderExpandedCardDecorations(rootCategoryId, theme)}
+            {/* Tile pattern overlay */}
+            <TilePattern patternId={CATEGORY_PATTERNS[rootCategoryId] || CATEGORY_PATTERNS.default} opacity={0.15} />
 
             {/* Claimed badge - top right (next to close button) */}
             {claimed && (
-              <div className="absolute top-3 right-12 w-8 h-8 rounded-full flex items-center justify-center shadow-md z-20" style={{ background: isThemed ? theme.accent : '#facc15' }}>
-                <span className="text-white text-sm font-bold">✓</span>
+              <div className="absolute top-3 right-12 w-8 h-8 rounded-full flex items-center justify-center shadow-md z-20 bg-white/90">
+                <span className="text-emerald-600 text-sm font-bold">✓</span>
               </div>
             )}
 
             {/* Close button - top right */}
             <button
               onClick={(e) => { e.stopPropagation(); onBack(); }}
-              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full transition-colors z-20"
-              style={{
-                background: isThemed ? theme.cardBgAlt : '#f3f4f6',
-                color: isThemed ? theme.textSecondary : '#6b7280'
-              }}
+              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full transition-colors z-20 bg-white/20 hover:bg-white/30 text-white"
               aria-label="Close"
             >
               <span className="text-lg font-light">×</span>
             </button>
 
             {isLoading ? (
-              <div className="flex flex-col items-center gap-3">
-                <div className="w-8 h-8 border-3 rounded-full animate-spin" style={{
-                  borderColor: isThemed ? theme.cardBgAlt : '#e5e7eb',
-                  borderTopColor: isThemed ? theme.accent : '#eab308'
-                }} />
-                <span className="text-base" style={{ color: isThemed ? theme.textSecondary : '#9ca3af' }}>Peeking...</span>
+              <div className="flex flex-col items-center gap-3 relative z-10">
+                <div className="w-8 h-8 border-3 rounded-full animate-spin border-white/30 border-t-white" />
+                <span className="text-base text-white/80">Peeking...</span>
               </div>
             ) : (
               <>
-                <h2 className="text-xl font-bold text-center mb-4 leading-tight px-2 relative z-10" style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}>{toTitleCase(topic)}</h2>
-                <span className="text-sm relative z-10" style={{ color: isThemed ? theme.textSecondary : '#9ca3af' }}>Tap to read</span>
+                <h2 className="text-xl font-bold text-center mb-4 leading-tight px-2 relative z-10 text-white drop-shadow-md">{toTitleCase(topic)}</h2>
+                <span className="text-sm relative z-10 text-white/70">Tap to read</span>
               </>
             )}
           </div>
 
-          {/* Back of card - content and action buttons */}
+          {/* Back of card - tile background with white content overlay */}
           <div
-            className="absolute inset-0 rounded-2xl flex flex-col p-5 overflow-hidden shadow-2xl"
+            className={`absolute inset-0 rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br ${CATEGORY_GRADIENTS[rootCategoryId] || CATEGORY_GRADIENTS.default}`}
             style={{
               backfaceVisibility: 'hidden',
               WebkitBackfaceVisibility: 'hidden',
               transform: 'rotateY(-180deg) translateZ(1px)',
-              ...getExpandedCardStyle(rootCategoryId, theme, claimed, '#fafbfc')
             }}
           >
-            {/* Themed decorations */}
-            {renderExpandedCardDecorations(rootCategoryId, theme, true)}
+            {/* Tile pattern overlay */}
+            <TilePattern patternId={CATEGORY_PATTERNS[rootCategoryId] || CATEGORY_PATTERNS.default} opacity={0.1} />
+
+            {/* White content overlay */}
+            <div className="absolute inset-2 rounded-xl bg-white/95 flex flex-col p-4 overflow-hidden">
 
             {/* Close button - top right */}
             <button
@@ -1526,6 +1520,7 @@ function PreviewCardModal({
                 </div>
               </div>
             )}
+            </div>
           </div>
         </motion.div>
       </motion.div>
@@ -2666,24 +2661,23 @@ function SectionedDecks({ sections, onOpenDeck, claimedCards, parentGradient, pa
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
               >
-                <div className="flex gap-2 flex-wrap justify-start pl-4 py-2">
+                <div className="grid grid-cols-4 gap-2 pl-4 py-2">
                   {section.subDecks.map((subDeck, deckIndex) => (
                     <motion.div
                       key={subDeck.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: deckIndex * 0.03 }}
                     >
-                      <Deck
-                        deck={{
+                      <CategoryTile
+                        name={subDeck.name}
+                        categoryId={rootCategoryId}
+                        onClick={() => onOpenDeck({
                           ...subDeck,
                           gradient: parentGradient,
                           borderColor: parentBorderColor,
                           level: 2,
-                        }}
-                        onOpen={onOpenDeck}
-                        claimed={claimedCards.has(subDeck.id)}
-                        rootCategoryId={rootCategoryId}
+                        })}
                       />
                     </motion.div>
                   ))}
@@ -3042,23 +3036,22 @@ function DeckSpread({
         </div>
       )}
 
-      {/* Sub-decks grid (for non-sectioned decks) */}
+      {/* Sub-decks tile grid (for non-sectioned decks) */}
       {!isLoadingChildren && !sections && childDecks.length > 0 && (
-        <div id="explore-section" className="flex flex-col items-center gap-3">
+        <div id="explore-section" className="flex flex-col items-center gap-3 w-full px-4">
           <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Explore</span>
-          <div className="flex gap-2 flex-wrap justify-center max-w-4xl">
+          <div className="grid grid-cols-4 gap-2 w-full max-w-2xl">
             {childDecks.map((childDeck, index) => (
               <motion.div
                 key={childDeck.id}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.03 + (isLoading ? 0 : 0.15) }}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: index * 0.03 + (isLoading ? 0 : 0.1) }}
               >
-                <Deck
-                  deck={childDeck}
-                  onOpen={onOpenDeck}
-                  claimed={claimedCards.has(childDeck.id)}
-                  rootCategoryId={rootCategoryId}
+                <CategoryTile
+                  name={childDeck.name}
+                  categoryId={rootCategoryId}
+                  onClick={() => onOpenDeck(childDeck)}
                 />
               </motion.div>
             ))}
