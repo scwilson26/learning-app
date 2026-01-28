@@ -81,9 +81,44 @@ export default function CategoryTile({
       whileHover={{ scale: 1.02, y: -2 }}
       whileTap={{ scale: 0.98 }}
     >
-      <div className={`w-full h-full rounded-xl bg-gradient-to-br ${gradient} relative overflow-hidden shadow-lg`}>
+      <div
+        className={`w-full h-full rounded-lg bg-gradient-to-br ${gradient} relative overflow-hidden`}
+        style={{
+          boxShadow: '0 4px 8px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2)',
+        }}
+      >
         {/* Pattern overlay */}
         <TilePattern patternId={patternId} opacity={0.15} />
+
+        {/* Matte texture overlay - subtle grain for dry ceramic feel */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.08]" preserveAspectRatio="none">
+          <defs>
+            <filter id="matte-noise">
+              <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" result="noise" />
+              <feColorMatrix type="saturate" values="0" />
+            </filter>
+          </defs>
+          <rect width="100%" height="100%" filter="url(#matte-noise)" />
+        </svg>
+
+        {/* 3D Beveled edge effect - light from top-left */}
+        <div
+          className="absolute inset-0 pointer-events-none rounded-lg"
+          style={{
+            boxShadow: `
+              inset 2px 2px 4px rgba(255,255,255,0.25),
+              inset -2px -2px 4px rgba(0,0,0,0.25)
+            `,
+          }}
+        />
+
+        {/* Subtle top highlight for raised surface feel */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 30%, rgba(0,0,0,0.08) 100%)',
+          }}
+        />
 
         {/* Content */}
         <div className="absolute inset-0 flex flex-col items-center justify-center p-2 z-10">
