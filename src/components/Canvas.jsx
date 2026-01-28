@@ -6,7 +6,7 @@ import { findTopicMatches, matchTopic } from '../utils/topicMatcher'
 import { generateSubDecks, generateSingleCardContent, generateTierCards, generateTopicPreview, generateTopicOutline, generateFlashcardsFromCard, classifyTopic, extractTextFromImage, extractTextFromPDF, generateNotesTitle, generateOutlineFromNotes } from '../services/claude'
 import { supabase, onAuthStateChange, signOut, syncCards, getCanonicalCardsForTopic, upsertCanonicalCard, getPreviewCardRemote, savePreviewCardRemote, getOutline, saveOutline, syncFlashcards, upsertFlashcardRemote, upsertFlashcardsRemote } from '../services/supabase'
 import Auth from './Auth'
-import { MosaicView, CategoryTile, TilePattern, CATEGORY_GRADIENTS, CATEGORY_PATTERNS, OutlineView, CardsView, FlashcardsView } from './tiles'
+import { MosaicView, CategoryTile, TilePattern, CATEGORY_GRADIENTS, CATEGORY_PATTERNS, OutlineView, CardsView, FlashcardsView, TileGrid } from './tiles'
 import {
   getDeckCards,
   saveDeckCards,
@@ -794,7 +794,7 @@ function ContinueExploringSection({ decks, onOpenDeck }) {
   return (
     <div className="mb-6">
       <h2 className="text-lg font-semibold text-slate-700 mb-3">Continue Exploring</h2>
-      <div className="grid grid-cols-4 gap-2">
+      <TileGrid>
         {decks.map((deck) => {
           const progressPercent = Math.round((deck.claimedCount / deck.totalCount) * 100)
 
@@ -809,7 +809,7 @@ function ContinueExploringSection({ decks, onOpenDeck }) {
             />
           )
         })}
-      </div>
+      </TileGrid>
     </div>
   )
 }
@@ -2595,7 +2595,7 @@ function SectionedDecks({ sections, onOpenDeck, claimedCards, parentGradient, pa
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
               >
-                <div className="grid grid-cols-4 gap-2 py-2 w-full">
+                <TileGrid className="my-2">
                   {section.subDecks.map((subDeck, deckIndex) => (
                     <motion.div
                       key={subDeck.id}
@@ -2615,7 +2615,7 @@ function SectionedDecks({ sections, onOpenDeck, claimedCards, parentGradient, pa
                       />
                     </motion.div>
                   ))}
-                </div>
+                </TileGrid>
               </motion.div>
             )}
           </AnimatePresence>
@@ -2903,7 +2903,7 @@ function DeckSpread({
       {!isLoadingChildren && !sections && childDecks.length > 0 && (
         <div id="explore-section" className="flex flex-col gap-3 w-full">
           <span className="text-xs font-medium text-gray-500 uppercase tracking-wide text-center">Explore</span>
-          <div className="grid grid-cols-4 gap-2 w-full">
+          <TileGrid>
             {childDecks.map((childDeck, index) => (
               <motion.div
                 key={childDeck.id}
@@ -2918,7 +2918,7 @@ function DeckSpread({
                 />
               </motion.div>
             ))}
-          </div>
+          </TileGrid>
         </div>
       )}
 
@@ -7944,7 +7944,7 @@ export default function Canvas() {
           })()}
 
           {/* Category tile grid - 4 columns filling viewport */}
-          <div className="grid grid-cols-4 gap-2">
+          <TileGrid>
             {CATEGORIES.map((category) => (
               <CategoryTile
                 key={category.id}
@@ -7953,7 +7953,7 @@ export default function Canvas() {
                 onClick={() => openDeck(category)}
               />
             ))}
-          </div>
+          </TileGrid>
         </div>
 
         {/* Bottom navigation */}
