@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import Tile from './Tile'
+import { TilePattern } from './TilePatterns'
 
 /**
  * CardsView - Instagram-style vertical scroll of 2×2 tile groups
  * Each group of 4 tiles represents one card
- * Tap a group → all 4 tiles flip together → shows card content
+ * Tap a group → 4 tiles merge into 1 large tile showing card content
+ * Tap again → splits back into 4 tiles
  *
  * @param {Object} props
  * @param {Array} props.flashcards - Array of flashcard data (determines tile count)
@@ -20,15 +21,12 @@ export default function CardsView({
   patternId = 'geometric'
 }) {
   const [flippedCards, setFlippedCards] = useState({})
-  const [expandedCard, setExpandedCard] = useState(null)
 
   // Group flashcards by their source card
-  // Each card gets 4 tiles (or fewer for the last card)
   const tilesPerCard = 4
   const cardGroups = []
 
-  // If we have sourceCardId on flashcards, group by that
-  // Otherwise, just chunk into groups of 4
+  // Map flashcards to card indices
   const flashcardsWithCards = flashcards.map((fc, idx) => {
     if (fc.sourceCardId) {
       const cardIndex = cards.findIndex(c => c.id === fc.sourceCardId)
@@ -58,23 +56,10 @@ export default function CardsView({
   })
 
   const handleGroupClick = (cardIndex) => {
-    const isCurrentlyFlipped = flippedCards[cardIndex]
-    if (isCurrentlyFlipped) {
-      // Show expanded card content
-      setExpandedCard(cardIndex)
-    } else {
-      // Flip the tiles
-      setFlippedCards(prev => ({
-        ...prev,
-        [cardIndex]: true
-      }))
-    }
-  }
-
-  const handleCloseExpanded = () => {
-    setExpandedCard(null)
-    // Optionally unflip when closing
-    // setFlippedCards({})
+    setFlippedCards(prev => ({
+      ...prev,
+      [cardIndex]: !prev[cardIndex]
+    }))
   }
 
   return (
@@ -112,105 +97,71 @@ export default function CardsView({
                 </div>
               )}
 
-              {/* 2×2 tile grid */}
+              {/* Container for the flip animation */}
               <div
-                className="grid grid-cols-2 gap-2 max-w-sm mx-auto cursor-pointer"
+                className="max-w-sm mx-auto cursor-pointer perspective-1000"
+                style={{ perspective: '1000px' }}
                 onClick={() => handleGroupClick(group.cardIndex)}
               >
-                {gridTiles.map((tile, tileIdx) => (
-                  <div key={tileIdx} className="aspect-square">
-                    {tile ? (
-                      <Tile
-                        isFlipped={isFlipped}
-                        gradient={gradient}
-                        patternId={patternId}
-                        frontContent={
-                          <span className="text-white/80 text-xs font-medium">
-                            {tileIdx + 1}
-                          </span>
-                        }
-                        backContent={
-                          <div className="h-full flex items-center justify-center">
-                            <span className="text-emerald-600 text-2xl font-bold">
-                              {group.cardIndex + 1}
-                            </span>
+                <motion.div
+                  className="relative w-full"
+                  style={{
+                    transformStyle: 'preserve-3d',
+                    aspectRatio: '1/1'
+                  }}
+                  animate={{ rotateY: isFlipped ? 180 : 0 }}
+                  transition={{ duration: 0.5, ease: 'easeInOut' }}
+                >
+                  {/* Front - 4 tiles in 2×2 grid */}
+                  <div
+                    className="absolute inset-0 grid grid-cols-2 gap-2"
+                    style={{ backfaceVisibility: 'hidden' }}
+                  >
+                    {gridTiles.map((tile, tileIdx) => (
+                      <div key={tileIdx} className="aspect-square">
+                        {tile ? (
+                          <div className={`w-full h-full rounded-lg bg-gradient-to-br ${gradient} relative overflow-hidden shadow-md`}>
+                            <TilePattern patternId={patternId} />
                           </div>
-                        }
-                      />
-                    ) : (
-                      // Empty spot placeholder
-                      <div className="w-full h-full rounded-lg border-2 border-dashed border-gray-200 bg-gray-50" />
-                    )}
+                        ) : (
+                          <div className="w-full h-full rounded-lg border-2 border-dashed border-gray-200 bg-gray-50" />
+                        )}
+                      </div>
+                    ))}
                   </div>
-                ))}
+
+                  {/* Back - 1 large merged tile with card content */}
+                  <div
+                    className="absolute inset-0 rounded-xl bg-white shadow-lg overflow-hidden"
+                    style={{
+                      backfaceVisibility: 'hidden',
+                      transform: 'rotateY(180deg)'
+                    }}
+                  >
+                    <div className="w-full h-full p-5 overflow-auto">
+                      {group.card && (
+                        <>
+                          <h3 className="font-semibold text-emerald-600 text-lg mb-3">
+                            {group.card.title}
+                          </h3>
+                          <div className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
+                            {group.card.content || group.card.concept}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
               </div>
 
               {/* Tap hint */}
-              {isFlipped && (
-                <div className="text-center mt-2 text-gray-400 text-xs">
-                  Tap again to read full card
-                </div>
-              )}
+              <div className="text-center mt-2 text-gray-400 text-xs">
+                {isFlipped ? 'Tap to flip back' : 'Tap to reveal'}
+              </div>
             </motion.div>
           )
         })}
       </div>
-
-      {/* Expanded card overlay */}
-      <AnimatePresence>
-        {expandedCard !== null && (
-          <motion.div
-            className="fixed inset-0 z-30 bg-white/98 backdrop-blur-sm overflow-auto"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            onClick={handleCloseExpanded}
-          >
-            <div className="max-w-lg mx-auto p-6 pt-20 pb-32">
-              {cards[expandedCard] && (
-                <>
-                  <h2 className="text-2xl font-bold text-gray-800 mb-4">
-                    {cards[expandedCard].title}
-                  </h2>
-                  <div className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-                    {cards[expandedCard].content || cards[expandedCard].concept}
-                  </div>
-                </>
-              )}
-
-              {/* Show associated flashcards */}
-              {cardGroups[expandedCard]?.tiles && (
-                <div className="mt-8 pt-6 border-t border-gray-100">
-                  <h3 className="text-sm font-semibold text-gray-500 mb-4">
-                    Flashcards in this card
-                  </h3>
-                  <div className="space-y-3">
-                    {cardGroups[expandedCard].tiles.map((tile, idx) => (
-                      <div
-                        key={idx}
-                        className="p-3 bg-gray-50 rounded-lg"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <p className="text-emerald-600 font-medium text-sm">
-                          Q: {tile.question}
-                        </p>
-                        <p className="text-gray-600 text-sm mt-1">
-                          A: {tile.answer}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="text-center py-8 text-gray-400 text-sm">
-                Tap anywhere to close
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   )
 }
