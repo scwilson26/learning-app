@@ -32,7 +32,7 @@ const CATEGORY_GRADIENTS = {
 }
 
 /**
- * Category to pattern mapping
+ * Category to pattern mapping - each category has unique pattern
  */
 const CATEGORY_PATTERNS = {
   arts: 'flower',
@@ -43,10 +43,10 @@ const CATEGORY_PATTERNS = {
   history: 'star',
   mathematics: 'lattice',
   people: 'prague-cross',
-  philosophy: 'prague-cross',
-  physics: 'lattice',
-  society: 'geometric',
-  technology: 'lattice',
+  philosophy: 'sacred',      // Unique: plus signs + dots
+  physics: 'atom',           // Unique: orbital/atomic design
+  society: 'chevron',        // Unique: diagonal chevrons
+  technology: 'circuit',     // Unique: circuit board style
   'user-notes': 'geometric',
   default: 'geometric',
 }

@@ -136,10 +136,93 @@ const patterns = {
       </defs>
       <rect width="100" height="100" fill="url(#wave-pattern)" />
     </svg>
+  ),
+
+  // Sacred geometry - plus signs with dots (Philosophy & Religion)
+  'sacred': (
+    <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <defs>
+        <pattern id="sacred-pattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+          {/* Central plus */}
+          <rect x="18" y="8" width="4" height="24" fill="white" />
+          <rect x="8" y="18" width="24" height="4" fill="white" />
+          {/* Corner dots */}
+          <circle cx="8" cy="8" r="2.5" fill="white" />
+          <circle cx="32" cy="8" r="2.5" fill="white" />
+          <circle cx="8" cy="32" r="2.5" fill="white" />
+          <circle cx="32" cy="32" r="2.5" fill="white" />
+          {/* Center dot */}
+          <circle cx="20" cy="20" r="2" fill="white" />
+        </pattern>
+      </defs>
+      <rect width="100" height="100" fill="url(#sacred-pattern)" />
+    </svg>
+  ),
+
+  // Atomic orbital pattern (Physical Sciences)
+  'atom': (
+    <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <defs>
+        <pattern id="atom-pattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+          {/* Outer square */}
+          <rect x="4" y="4" width="32" height="32" fill="none" stroke="white" strokeWidth="1" />
+          {/* Inner rotated square (diamond) */}
+          <rect x="12" y="12" width="16" height="16" fill="none" stroke="white" strokeWidth="1" transform="rotate(45 20 20)" />
+          {/* Center circle (nucleus) */}
+          <circle cx="20" cy="20" r="4" fill="none" stroke="white" strokeWidth="1.5" />
+          {/* Electron dots */}
+          <circle cx="20" cy="6" r="2" fill="white" />
+          <circle cx="20" cy="34" r="2" fill="white" />
+          <circle cx="6" cy="20" r="2" fill="white" />
+          <circle cx="34" cy="20" r="2" fill="white" />
+        </pattern>
+      </defs>
+      <rect width="100" height="100" fill="url(#atom-pattern)" />
+    </svg>
+  ),
+
+  // Diagonal chevron pattern (Society)
+  'chevron': (
+    <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <defs>
+        <pattern id="chevron-pattern" x="0" y="0" width="30" height="30" patternUnits="userSpaceOnUse">
+          {/* Diagonal lines forming chevrons */}
+          <path d="M0 15 L15 0 L30 15" fill="none" stroke="white" strokeWidth="1.5" />
+          <path d="M0 30 L15 15 L30 30" fill="none" stroke="white" strokeWidth="1.5" />
+          {/* Small squares at intersections */}
+          <rect x="13" y="13" width="4" height="4" fill="white" opacity="0.5" />
+        </pattern>
+      </defs>
+      <rect width="100" height="100" fill="url(#chevron-pattern)" />
+    </svg>
+  ),
+
+  // Circuit board pattern (Technology)
+  'circuit': (
+    <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <defs>
+        <pattern id="circuit-pattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+          {/* Grid of plus signs */}
+          <rect x="18" y="5" width="4" height="12" fill="white" />
+          <rect x="12" y="9" width="16" height="4" fill="white" />
+          {/* Connection lines */}
+          <rect x="20" y="17" width="2" height="8" fill="white" opacity="0.6" />
+          <rect x="5" y="20" width="8" height="2" fill="white" opacity="0.6" />
+          <rect x="27" y="20" width="8" height="2" fill="white" opacity="0.6" />
+          {/* Node dots */}
+          <circle cx="10" cy="10" r="2" fill="white" />
+          <circle cx="30" cy="10" r="2" fill="white" />
+          <circle cx="10" cy="30" r="2" fill="white" />
+          <circle cx="30" cy="30" r="2" fill="white" />
+          <circle cx="20" cy="30" r="3" fill="none" stroke="white" strokeWidth="1.5" />
+        </pattern>
+      </defs>
+      <rect width="100" height="100" fill="url(#circuit-pattern)" />
+    </svg>
   )
 }
 
-// Map category colors to appropriate patterns
+// Map category colors to appropriate patterns - each category has unique pattern
 export const categoryPatterns = {
   'arts': 'flower',
   'biology': 'vesica',
@@ -149,10 +232,10 @@ export const categoryPatterns = {
   'history': 'star',
   'mathematics': 'lattice',
   'people': 'prague-cross',
-  'philosophy': 'prague-cross',
-  'physics': 'lattice',
-  'society': 'geometric',
-  'technology': 'lattice',
+  'philosophy': 'sacred',      // Unique: plus signs + dots
+  'physics': 'atom',           // Unique: orbital/atomic design
+  'society': 'chevron',        // Unique: diagonal chevrons
+  'technology': 'circuit',     // Unique: circuit board style
   // Default for user notes
   'default': 'geometric'
 }
