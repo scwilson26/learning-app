@@ -6,7 +6,7 @@ import { findTopicMatches, matchTopic } from '../utils/topicMatcher'
 import { generateSubDecks, generateSingleCardContent, generateTierCards, generateTopicPreview, generateTopicOutline, generateFlashcardsFromCard, classifyTopic, extractTextFromImage, extractTextFromPDF, generateNotesTitle, generateOutlineFromNotes } from '../services/claude'
 import { supabase, onAuthStateChange, signOut, syncCards, getCanonicalCardsForTopic, upsertCanonicalCard, getPreviewCardRemote, savePreviewCardRemote, getOutline, saveOutline, syncFlashcards, upsertFlashcardRemote, upsertFlashcardsRemote } from '../services/supabase'
 import Auth from './Auth'
-import { MosaicView } from './tiles'
+import { MosaicView, CategoryTile } from './tiles'
 import {
   getDeckCards,
   saveDeckCards,
@@ -853,62 +853,26 @@ function CategoryCard({ deck, tint = '#fafbfc', rootCategoryId = null }) {
   )
 }
 
-// Continue Exploring section - shows in-progress topics on Learn tab
+// Continue Exploring section - shows in-progress topics on Learn tab as tiles
 function ContinueExploringSection({ decks, onOpenDeck }) {
   if (!decks || decks.length === 0) return null
 
   return (
     <div className="mb-6">
       <h2 className="text-lg font-semibold text-slate-700 mb-3">Continue Exploring</h2>
-      <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+      <div className="grid grid-cols-4 gap-2">
         {decks.map((deck) => {
-          const theme = getCategoryTheme(deck.rootCategoryId)
-          const isThemed = hasCustomTheme(deck.rootCategoryId)
           const progressPercent = Math.round((deck.claimedCount / deck.totalCount) * 100)
 
           return (
-            <motion.button
+            <CategoryTile
               key={deck.id}
+              name={deck.name}
+              categoryId={deck.rootCategoryId}
               onClick={() => onOpenDeck({ id: deck.id, name: deck.name, rootCategoryId: deck.rootCategoryId, fromContinueExploring: true })}
-              className="flex-shrink-0 w-32 rounded-xl p-3 text-left transition-all"
-              style={{
-                background: isThemed ? theme.cardBg : '#ffffff',
-                border: `2px solid ${isThemed ? theme.accent : '#e5e7eb'}`,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-              }}
-              whileHover={{ y: -2, boxShadow: '0 4px 12px rgba(0,0,0,0.12)' }}
-              whileTap={{ scale: 0.98 }}
-            >
-              {/* Topic name */}
-              <p
-                className="text-sm font-semibold line-clamp-2 leading-tight mb-2"
-                style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}
-              >
-                {deck.name}
-              </p>
-
-              {/* Progress count */}
-              <p
-                className="text-xs font-medium mb-1.5"
-                style={{ color: isThemed ? theme.accent : '#6b7280' }}
-              >
-                {deck.claimedCount}/{deck.totalCount}
-              </p>
-
-              {/* Progress bar */}
-              <div
-                className="w-full h-1.5 rounded-full overflow-hidden"
-                style={{ background: isThemed ? `${theme.accent}20` : '#e5e7eb' }}
-              >
-                <div
-                  className="h-full rounded-full transition-all duration-300"
-                  style={{
-                    width: `${progressPercent}%`,
-                    background: isThemed ? theme.accent : '#6b7280',
-                  }}
-                />
-              </div>
-            </motion.button>
+              subtitle={`${deck.claimedCount}/${deck.totalCount}`}
+              progress={progressPercent}
+            />
           )
         })}
       </div>
@@ -8123,14 +8087,14 @@ export default function Canvas() {
             )
           })()}
 
-          {/* Category grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {/* Category tile grid - 4 columns filling viewport */}
+          <div className="grid grid-cols-4 gap-2">
             {CATEGORIES.map((category) => (
-              <Deck
+              <CategoryTile
                 key={category.id}
-                deck={category}
-                claimed={claimedCards.has(category.id)}
-                onOpen={openDeck}
+                name={category.name}
+                categoryId={category.id}
+                onClick={() => openDeck(category)}
               />
             ))}
           </div>
