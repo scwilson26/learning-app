@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getCategoryTheme, hasCustomTheme, isDarkTheme } from '../themes'
 import { findTopicMatches, matchTopic } from '../utils/topicMatcher'
-import { generateSubDecks, generateSingleCardContent, generateTierCards, generateTopicPreview, generateTopicOutline, generateFlashcardsFromCard, classifyTopic, extractTextFromImage, extractTextFromPDF, generateNotesTitle, generateOutlineFromNotes } from '../services/claude'
+import { generateSubDecks, generateSingleCardContent, generateTierCards, generateTopicPreview, generateTopicOutline, generateFlashcardsFromCard, generateFlashcardsFromOutline, classifyTopic, extractTextFromImage, extractTextFromPDF, generateNotesTitle, generateOutlineFromNotes } from '../services/claude'
 import { supabase, onAuthStateChange, signOut, syncCards, getCanonicalCardsForTopic, upsertCanonicalCard, getPreviewCardRemote, savePreviewCardRemote, getOutline, saveOutline, syncFlashcards, upsertFlashcardRemote, upsertFlashcardsRemote } from '../services/supabase'
 import Auth from './Auth'
 import { MosaicView, CategoryTile, TilePattern, CATEGORY_GRADIENTS, CATEGORY_PATTERNS, OutlineView, CardsView, FlashcardsView, TileGrid } from './tiles'
@@ -63,6 +63,7 @@ import {
   removeFromStudyDeck,
   getStudyDeckFlashcards,
   getFlashcardCountForTopic,
+  getFlashcardsForTopic,
   getAvailableStudyTopics,
   migrateToStudyDeck,
   isInStudyDeck,
@@ -2799,20 +2800,14 @@ function DeckSpread({
 
       {/* Tile-based card display - matching MosaicView style */}
       {isArticle && hasReadyCard && (() => {
-        // Convert tier cards to flashcard format for tile views
+        // Get actual cards for CardsView
         const allCards = [
           ...(tierCards.core || []),
           ...(tierCards.deep_dive || [])
         ].filter(card => !card.isPlaceholder && card.content)
 
-        // Convert to flashcard format (question/answer)
-        const flashcards = allCards.map(card => ({
-          id: card.id,
-          question: card.front_text || card.title || 'Question',
-          answer: card.back_text || card.content || 'Answer',
-          title: card.title,
-          content: card.content
-        }))
+        // Get real flashcards from storage for FlashcardsView
+        const realFlashcards = getFlashcardsForTopic(deck.id)
 
         // Get gradient and pattern for category
         const gradient = CATEGORY_GRADIENTS[rootCategoryId] || CATEGORY_GRADIENTS.default
@@ -2830,7 +2825,7 @@ function DeckSpread({
               >
                 {viewMode === 'outline' && (
                   <OutlineView
-                    tiles={flashcards}
+                    tiles={allCards}
                     outline={outline || { core: [], deep_dive: [] }}
                     deckName={deck.name}
                     gradient={gradient}
@@ -2840,7 +2835,6 @@ function DeckSpread({
 
                 {viewMode === 'cards' && (
                   <CardsView
-                    flashcards={flashcards}
                     cards={allCards}
                     gradient={gradient}
                     patternId={patternId}
@@ -2849,7 +2843,7 @@ function DeckSpread({
 
                 {viewMode === 'flashcards' && (
                   <FlashcardsView
-                    flashcards={flashcards}
+                    flashcards={realFlashcards}
                     gradient={gradient}
                     patternId={patternId}
                   />
@@ -4348,6 +4342,32 @@ export default function Canvas() {
       console.log(`[SHARED MAP] ✅ Saved canonical cards to Supabase`)
 
       setGenerationProgress({ current: 5, total: 5, phase: 'complete' })
+
+      // Generate flashcards from outline in background (single batch call)
+      if (outline) {
+        generateFlashcardsFromOutline(deck.name, outline).then(rawFlashcards => {
+          const flashcards = rawFlashcards.map((fc, index) => ({
+            id: `fc_${deck.id}_${index}`,
+            question: fc.question,
+            answer: fc.answer,
+            sourceCardId: deck.id,
+            sourceCardTitle: fc.sectionTitle || deck.name,
+            status: 'new',
+            createdAt: new Date().toISOString()
+          }))
+          if (flashcards.length > 0) {
+            saveFlashcards(flashcards)
+            console.log(`[FLASHCARDS] ✅ Batch generated ${flashcards.length} flashcards from outline for "${deck.name}"`)
+            if (user) {
+              upsertFlashcardsRemote(flashcards, user.id).catch(err => {
+                console.error('[FLASHCARDS] Failed to sync batch flashcards:', err)
+              })
+            }
+          }
+        }).catch(err => {
+          console.warn(`[FLASHCARDS] Batch generation failed, will fall back to per-card:`, err)
+        })
+      }
 
       // Start background generation of Deep Dive
       setTimeout(() => {
@@ -7552,49 +7572,56 @@ export default function Canvas() {
 
         {/* Content */}
         <div className="pt-14 px-4">
-          {/* Browse button */}
-          <div className="mt-6">
+          {/* Browse & My Notes tiles */}
+          <div className="mt-6 grid grid-cols-2 gap-3">
             <button
               onClick={() => setLearnView('browse')}
-              className="w-full bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow"
+              className="relative aspect-square rounded-lg bg-gradient-to-br from-indigo-400 to-indigo-600 overflow-hidden"
+              style={{
+                boxShadow: '0 4px 8px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2)',
+              }}
             >
-              <div className="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center">
-                <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <TilePattern patternId={0} opacity={0.15} />
+              <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.08]" preserveAspectRatio="none">
+                <defs><filter id="matte-browse"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" result="noise" /><feColorMatrix type="saturate" values="0" /></filter></defs>
+                <rect width="100%" height="100%" filter="url(#matte-browse)" />
+              </svg>
+              <div className="absolute inset-0 pointer-events-none rounded-lg" style={{ boxShadow: 'inset 2px 2px 4px rgba(255,255,255,0.25), inset -2px -2px 4px rgba(0,0,0,0.25)' }} />
+              <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 30%, rgba(0,0,0,0.08) 100%)' }} />
+              <div className="relative z-10 flex flex-col items-center justify-center h-full text-white p-4">
+                <svg className="w-8 h-8 mb-2 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
+                <h3 className="text-lg font-bold drop-shadow">Browse</h3>
+                <p className="text-xs text-white/70 mt-1">Explore topics</p>
               </div>
-              <div className="flex-1 text-left">
-                <h3 className="text-lg font-semibold text-gray-800">Browse</h3>
-                <p className="text-sm text-gray-500">Explore topics by category</p>
-              </div>
-              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
             </button>
-          </div>
 
-          {/* My Notes button */}
-          <div className="mt-4">
             <button
               onClick={() => setLearnView('upload')}
-              className="w-full bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow"
+              className="relative aspect-square rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 overflow-hidden"
+              style={{
+                boxShadow: '0 4px 8px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2)',
+              }}
             >
-              <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center">
-                <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <TilePattern patternId={3} opacity={0.15} />
+              <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.08]" preserveAspectRatio="none">
+                <defs><filter id="matte-notes"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" result="noise" /><feColorMatrix type="saturate" values="0" /></filter></defs>
+                <rect width="100%" height="100%" filter="url(#matte-notes)" />
+              </svg>
+              <div className="absolute inset-0 pointer-events-none rounded-lg" style={{ boxShadow: 'inset 2px 2px 4px rgba(255,255,255,0.25), inset -2px -2px 4px rgba(0,0,0,0.25)' }} />
+              <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 30%, rgba(0,0,0,0.08) 100%)' }} />
+              <div className="relative z-10 flex flex-col items-center justify-center h-full text-white p-4">
+                <svg className="w-8 h-8 mb-2 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-              </div>
-              <div className="flex-1 text-left">
-                <h3 className="text-lg font-semibold text-gray-800">My Notes</h3>
-                <p className="text-sm text-gray-500">
+                <h3 className="text-lg font-bold drop-shadow">My Notes</h3>
+                <p className="text-xs text-white/70 mt-1">
                   {getUserDecks().length > 0
-                    ? `${getUserDecks().length} deck${getUserDecks().length === 1 ? '' : 's'} from your notes`
-                    : 'Upload notes to create flashcards'}
+                    ? `${getUserDecks().length} deck${getUserDecks().length === 1 ? '' : 's'}`
+                    : 'Upload notes'}
                 </p>
               </div>
-              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
             </button>
           </div>
         </div>

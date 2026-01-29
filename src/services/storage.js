@@ -2594,6 +2594,24 @@ export function getFlashcardCountForTopic(topicId) {
 }
 
 /**
+ * Get all flashcards for a specific topic/deck
+ * @param {string} topicId - The topic/deck ID
+ * @returns {Array} Array of flashcard objects for this topic
+ */
+export function getFlashcardsForTopic(topicId) {
+  const data = getData()
+  return Object.values(data.flashcards || {})
+    .filter(fc => {
+      if (fc.status === 'skipped') return false
+      const sourceCardId = fc.sourceCardId || ''
+      const cardData = data.cards?.[sourceCardId]
+      if (cardData?.deckId === topicId) return true
+      if (sourceCardId === topicId || sourceCardId.startsWith(topicId + '-')) return true
+      return false
+    })
+}
+
+/**
  * Get all topics that have claimed cards (available for study deck)
  * Groups by category, includes flashcard counts
  * Uses same pattern as getClaimedCardsByCategoryAndDeck - iterates through cards, not decks

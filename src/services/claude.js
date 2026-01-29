@@ -1504,6 +1504,88 @@ Start your response with [ and end with ]
   }
 }
 
+/**
+ * Generate flashcards from a full outline in a single batch call
+ * More efficient than per-card generation, produces granular single-fact flashcards
+ * @param {string} topicName - The topic name
+ * @param {Object} outline - The outline with core and deep_dive sections
+ * @returns {Array} Array of { question, answer, sectionTitle } objects
+ */
+export async function generateFlashcardsFromOutline(topicName, outline) {
+  const allSections = [
+    ...(outline.core || []),
+    ...(outline.deep_dive || [])
+  ]
+
+  if (allSections.length === 0) return []
+
+  const sectionsText = allSections.map((section, i) => {
+    return `## Section ${i + 1}: ${section.title}\n${section.content || section.concept || ''}`
+  }).join('\n\n')
+
+  const prompt = `Generate flashcards from this learning outline about "${topicName}".
+
+CONTENT:
+"""
+${sectionsText}
+"""
+
+RULES:
+1. ONE fact = ONE flashcard. Create 3-5 flashcards PER SECTION
+2. Questions must be SPECIFIC and testable - not vague
+3. Answers must be CONCISE (1-2 sentences max)
+4. Include numbers, dates, names, definitions where relevant
+5. Vary question types: What, When, Who, Why, How, Which
+6. Don't repeat information across flashcards
+7. Include the section title in the "sectionTitle" field
+
+GOOD EXAMPLES:
+{"question": "What year did the Storming of the Bastille occur?", "answer": "1789", "sectionTitle": "The French Revolution"}
+{"question": "What is the significance of the Tennis Court Oath?", "answer": "The Third Estate swore not to disband until France had a constitution", "sectionTitle": "Road to Revolution"}
+
+BAD (avoid):
+- Too vague: "What happened in the French Revolution?"
+- Too long: Multi-paragraph answers
+- Not testable: "What do you think about X?"
+
+CRITICAL: Output ONLY a valid JSON array. No explanations, no markdown.
+Start with [ and end with ]
+
+[
+  {"question": "...", "answer": "...", "sectionTitle": "..."}
+]`
+
+  try {
+    const message = await anthropic.messages.create({
+      model: MODELS.CONTENT,
+      max_tokens: 4000,
+      messages: [{ role: 'user', content: prompt }]
+    })
+
+    const responseText = message.content[0].text.trim()
+
+    let jsonStr = responseText
+    if (responseText.includes('```')) {
+      const match = responseText.match(/```(?:json)?\s*([\s\S]*?)```/)
+      if (match) jsonStr = match[1].trim()
+    }
+    if (!jsonStr.startsWith('[')) {
+      const arrayMatch = responseText.match(/\[[\s\S]*\]/)
+      if (arrayMatch) jsonStr = arrayMatch[0]
+    }
+
+    const flashcards = JSON.parse(jsonStr)
+    if (!Array.isArray(flashcards)) throw new Error('Expected array')
+
+    const valid = flashcards.filter(fc => fc.question && fc.answer)
+    console.log(`[generateFlashcardsFromOutline] Generated ${valid.length} flashcards for "${topicName}"`)
+    return valid
+  } catch (error) {
+    console.error('[generateFlashcardsFromOutline] Error:', error)
+    throw new Error('Failed to generate flashcards from outline')
+  }
+}
+
 // ============================================================================
 // USER NOTES: Generate learning content from uploaded notes
 // ============================================================================

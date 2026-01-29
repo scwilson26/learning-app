@@ -1,107 +1,83 @@
 import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { TilePattern } from './TilePatterns'
 
 /**
- * CardsView - Instagram-style vertical scroll of 2×2 tile groups
- * Each group of 4 tiles represents one card
+ * CardsView - Vertical scroll of cards, each shown as a 2×2 tile group
  * Tap a group → 4 tiles merge into 1 large tile showing card content
  * Tap again → splits back into 4 tiles
  *
  * @param {Object} props
- * @param {Array} props.flashcards - Array of flashcard data (determines tile count)
  * @param {Array} props.cards - Array of card data (core + deep_dive combined)
  * @param {string} props.gradient - Tailwind gradient for tiles
  * @param {string} props.patternId - Pattern ID for tile decoration
  */
 export default function CardsView({
-  flashcards = [],
   cards = [],
   gradient = 'from-emerald-400 via-emerald-500 to-emerald-600',
   patternId = 'geometric'
 }) {
   const [flippedCards, setFlippedCards] = useState({})
 
-  // Group flashcards by their source card
-  const tilesPerCard = 4
-  const cardGroups = []
-
-  // Map flashcards to card indices
-  const flashcardsWithCards = flashcards.map((fc, idx) => {
-    if (fc.sourceCardId) {
-      const cardIndex = cards.findIndex(c => c.id === fc.sourceCardId)
-      return { ...fc, cardIndex: cardIndex >= 0 ? cardIndex : Math.floor(idx / tilesPerCard) }
-    }
-    return { ...fc, cardIndex: Math.floor(idx / tilesPerCard) }
-  })
-
-  // Group by card index
-  const groupedByCard = {}
-  flashcardsWithCards.forEach((fc, idx) => {
-    const cardIdx = fc.cardIndex
-    if (!groupedByCard[cardIdx]) {
-      groupedByCard[cardIdx] = []
-    }
-    groupedByCard[cardIdx].push({ ...fc, originalIndex: idx })
-  })
-
-  // Convert to array of groups
-  const cardIndices = Object.keys(groupedByCard).map(Number).sort((a, b) => a - b)
-  cardIndices.forEach(cardIdx => {
-    cardGroups.push({
-      cardIndex: cardIdx,
-      card: cards[cardIdx] || null,
-      tiles: groupedByCard[cardIdx]
-    })
-  })
-
-  const handleGroupClick = (cardIndex) => {
+  const handleCardClick = (index) => {
     setFlippedCards(prev => ({
       ...prev,
-      [cardIndex]: !prev[cardIndex]
+      [index]: !prev[index]
     }))
+  }
+
+  // Simple markdown-ish rendering: bold (**text** or ****text****), bullets
+  const renderContent = (text) => {
+    if (!text) return null
+    return text.split('\n').map((line, i) => {
+      const trimmed = line.trim()
+      if (!trimmed) return <br key={i} />
+
+      // Bold markers
+      const formatted = trimmed.replace(/\*{2,4}(.+?)\*{2,4}/g, '<strong>$1</strong>')
+      // Bullet points
+      const isBullet = trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('*')
+
+      return (
+        <p
+          key={i}
+          className={`${isBullet ? 'pl-3' : ''} mb-1`}
+          dangerouslySetInnerHTML={{ __html: formatted }}
+        />
+      )
+    })
   }
 
   return (
     <div className="relative">
-      {/* Scrollable container with snap */}
       <div
         className="h-[calc(100vh-180px)] overflow-y-auto snap-y snap-mandatory px-4 py-6"
         style={{ scrollSnapType: 'y mandatory' }}
       >
-        {cardGroups.map((group, groupIdx) => {
-          const isFlipped = flippedCards[group.cardIndex]
-          const tiles = group.tiles
-
-          // Create a 2×2 grid with empty spots if needed
-          const gridTiles = []
-          for (let i = 0; i < tilesPerCard; i++) {
-            gridTiles.push(tiles[i] || null)
-          }
+        {cards.map((card, index) => {
+          const isFlipped = flippedCards[index]
 
           return (
             <motion.div
-              key={group.cardIndex}
+              key={card.id || index}
               className="snap-center mb-6 last:mb-0"
               style={{ scrollSnapAlign: 'center' }}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: groupIdx * 0.05, duration: 0.3 }}
+              transition={{ delay: index * 0.05, duration: 0.3 }}
             >
-              {/* Card label */}
-              {group.card && (
-                <div className="text-center mb-2">
-                  <span className="text-sm font-medium text-gray-600">
-                    {group.card.title || `Card ${group.cardIndex + 1}`}
-                  </span>
-                </div>
-              )}
+              {/* Card title label */}
+              <div className="text-center mb-2">
+                <span className="text-sm font-medium text-gray-600">
+                  {card.title || `Card ${index + 1}`}
+                </span>
+              </div>
 
-              {/* Container for the flip animation */}
+              {/* Flip container */}
               <div
-                className="max-w-sm mx-auto cursor-pointer perspective-1000"
+                className="max-w-sm mx-auto cursor-pointer"
                 style={{ perspective: '1000px' }}
-                onClick={() => handleGroupClick(group.cardIndex)}
+                onClick={() => handleCardClick(index)}
               >
                 <motion.div
                   className="relative w-full"
@@ -112,25 +88,21 @@ export default function CardsView({
                   animate={{ rotateY: isFlipped ? 180 : 0 }}
                   transition={{ duration: 0.5, ease: 'easeInOut' }}
                 >
-                  {/* Front - 4 tiles in 2×2 grid */}
+                  {/* Front - 2×2 tile grid */}
                   <div
                     className="absolute inset-0 grid grid-cols-2 gap-2"
                     style={{ backfaceVisibility: 'hidden' }}
                   >
-                    {gridTiles.map((tile, tileIdx) => (
+                    {[0, 1, 2, 3].map((tileIdx) => (
                       <div key={tileIdx} className="aspect-square">
-                        {tile ? (
-                          <div className={`w-full h-full rounded-lg bg-gradient-to-br ${gradient} relative overflow-hidden shadow-md`}>
-                            <TilePattern patternId={patternId} />
-                          </div>
-                        ) : (
-                          <div className="w-full h-full rounded-lg border-2 border-dashed border-gray-200 bg-gray-50" />
-                        )}
+                        <div className={`w-full h-full rounded-lg bg-gradient-to-br ${gradient} relative overflow-hidden shadow-md`}>
+                          <TilePattern patternId={patternId} />
+                        </div>
                       </div>
                     ))}
                   </div>
 
-                  {/* Back - 1 large merged tile with card content */}
+                  {/* Back - full card content */}
                   <div
                     className="absolute inset-0 rounded-xl bg-white shadow-lg overflow-hidden"
                     style={{
@@ -139,16 +111,12 @@ export default function CardsView({
                     }}
                   >
                     <div className="w-full h-full p-5 overflow-auto">
-                      {group.card && (
-                        <>
-                          <h3 className="font-semibold text-emerald-600 text-lg mb-3">
-                            {group.card.title}
-                          </h3>
-                          <div className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
-                            {group.card.content || group.card.concept}
-                          </div>
-                        </>
-                      )}
+                      <h3 className="font-semibold text-emerald-600 text-lg mb-3">
+                        {card.title}
+                      </h3>
+                      <div className="text-gray-700 text-sm leading-relaxed">
+                        {renderContent(card.content || card.concept)}
+                      </div>
                     </div>
                   </div>
                 </motion.div>
