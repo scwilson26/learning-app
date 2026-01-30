@@ -111,7 +111,7 @@ export default function UnifiedTileView({
         setFlippedTiles({})
       }
       return
-    } else if (viewMode === 'cards') {
+    } else if (viewMode === 'cards' && showSections) {
       const sectionIdx = tileToSection[globalIndex]
       if (sectionIdx === undefined || sectionIdx < 0) return
       const section = sections[sectionIdx]
@@ -183,6 +183,14 @@ export default function UnifiedTileView({
     return null
   }
 
+  // Whether cards mode should show section grouping
+  const showSections = useMemo(() => {
+    if (sections.length === 0) return false
+    const nonEmpty = sections.filter(s => s.count > 0)
+    if (nonEmpty.length === 0) return false
+    return Math.min(...nonEmpty.map(s => s.count)) >= 4
+  }, [sections])
+
   // Simple markdown rendering
   const renderContent = (text) => {
     if (!text) return null
@@ -204,12 +212,6 @@ export default function UnifiedTileView({
     const items = []
 
     if (viewMode === 'cards') {
-      // Only show section headers when there are enough tiles per section (≥4)
-      const minTilesPerSection = sections.length > 0
-        ? Math.min(...sections.filter(s => s.count > 0).map(s => s.count))
-        : 0
-      const showSections = minTilesPerSection >= 4
-
       if (showSections) {
         sections.forEach((section, sIdx) => {
           if (section.count === 0) return
@@ -240,7 +242,7 @@ export default function UnifiedTileView({
     }
 
     return items
-  }, [viewMode, sections, effectiveTiles, flippedTiles])
+  }, [viewMode, sections, effectiveTiles, flippedTiles, showSections])
 
   // Container styles
   const containerStyle = viewMode === 'outline'
@@ -251,8 +253,6 @@ export default function UnifiedTileView({
 
   const containerClass = viewMode === 'flashcards'
     ? 'h-[calc(100vh-180px)] overflow-y-auto snap-y snap-mandatory'
-    : viewMode === 'cards'
-    ? 'h-[calc(100vh-180px)] overflow-y-auto'
     : ''
 
   return (
