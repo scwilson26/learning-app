@@ -117,6 +117,9 @@ import {
   isTopicInDeck,
   addTopicToDeck,
   removeTopicFromDeck,
+  toggleStudyQueue,
+  isTopicInStudyQueue,
+  migrateAddStudyQueue,
   getUserTopic,
   getDueUserFlashcards,
   getNewUserFlashcards,
@@ -2700,7 +2703,8 @@ function DeckSpread({
 }) {
   // State for view mode toggle (like MosaicView)
   const [viewMode, setViewMode] = useState('flashcards') // outline | cards | flashcards
-  const [addedToStudy, setAddedToStudy] = useState(() => isTopicInDeck(deck.id))
+  const [addedToCollection, setAddedToCollection] = useState(() => isTopicInDeck(deck.id))
+  const [inStudyQueue, setInStudyQueue] = useState(() => isTopicInStudyQueue(deck.id))
 
   // Tier metadata - two tiers: Core and Deep Dive
   const tiers = [
@@ -2759,11 +2763,9 @@ function DeckSpread({
             {viewMode === 'flashcards' && 'Tap a tile → it flips → shows Q/A'}
           </div>
 
-          {/* Add to Deck button */}
-          <div className="flex justify-center mb-4">
-            {addedToStudy ? (
-              <span className="text-sm text-gray-400">In Study Deck ✓</span>
-            ) : (
+          {/* Collection / Study buttons */}
+          <div className="flex justify-center gap-2 mb-4">
+            {!addedToCollection ? (
               <button
                 onClick={() => {
                   const allCards = [
@@ -2784,12 +2786,29 @@ function DeckSpread({
                     tiles: allCards.map(c => ({ title: c.title, content: c.content || c.concept || '' })),
                     flashcards: allFlashcards
                   })
-                  setAddedToStudy(true)
+                  setAddedToCollection(true)
                 }}
                 className="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white shadow-md hover:bg-indigo-700 transition-colors"
               >
-                + Add to Study Deck
+                + Add to Collection
               </button>
+            ) : (
+              <>
+                <span className="px-3 py-2 text-sm text-emerald-600 font-medium">In Collection ✓</span>
+                {!inStudyQueue ? (
+                  <button
+                    onClick={() => {
+                      toggleStudyQueue(deck.id)
+                      setInStudyQueue(true)
+                    }}
+                    className="px-4 py-2 rounded-lg text-sm font-medium bg-emerald-600 text-white shadow-md hover:bg-emerald-700 transition-colors"
+                  >
+                    + Add to Study
+                  </button>
+                ) : (
+                  <span className="px-3 py-2 text-sm text-emerald-600 font-medium">In Study ✓</span>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -3147,7 +3166,7 @@ export default function Canvas() {
   const [authLoading, setAuthLoading] = useState(true)
   const [showAuth, setShowAuth] = useState(false)
 
-  // Bottom nav state - 'learn' | 'cards' | 'study' | 'settings'
+  // Bottom nav state - 'learn' | 'mosaic' | 'study' | 'settings'
   const [activeTab, setActiveTab] = useState('learn')
 
   // Learn tab view state - 'hub' | 'browse'
@@ -5962,6 +5981,7 @@ export default function Canvas() {
       console.log('[StudyScreen] Component MOUNTED')
       migrateToStudyDeck()
       migrateFlashcardsToNewModel()
+      migrateAddStudyQueue()
       checkAndUpdateStreak()
       refreshData()
       return () => console.log('[StudyScreen] Component UNMOUNTED')
@@ -5977,7 +5997,7 @@ export default function Canvas() {
 
     // Refresh all data
     const refreshData = () => {
-      const topics = getUserTopics()
+      const topics = getUserTopics().filter(t => t.inStudyQueue)
       const stats = getUserStudyStats()
       const oldStats = getStudyStats() // For streak data
 
@@ -6255,17 +6275,17 @@ export default function Canvas() {
       setEditAnswer('')
     }
 
-    // Remove topic from study deck
+    // Remove topic from study queue (keeps in collection)
     const handleRemoveTopic = (topicId) => {
-      removeTopicFromDeck(topicId)
+      toggleStudyQueue(topicId)
       setShowRemoveConfirm(null)
       refreshData()
     }
 
-    // Add topic to study deck
+    // Toggle topic in/out of study queue
     const handleAddTopic = (topicId) => {
-      console.log('[StudyScreen] handleAddTopic called with:', topicId)
-      addToStudyDeck(topicId)
+      console.log('[StudyScreen] handleAddTopic (toggle) called with:', topicId)
+      toggleStudyQueue(topicId)
       refreshData()
     }
 
@@ -6912,14 +6932,13 @@ export default function Canvas() {
             <div className="w-16" />
           </div>
 
-          {/* Topics grouped by category */}
+          {/* Topics from Mosaic collection */}
           <div className="flex-1 p-4 space-y-4">
-            {Object.keys(availableTopics).length === 0 ? (
+            {getUserTopics().length === 0 ? (
               <div className="text-center py-12">
-                <div className="text-4xl mb-3">📚</div>
-                <h3 className="font-semibold text-gray-800 mb-1">No topics available</h3>
+                <h3 className="font-semibold text-gray-800 mb-1">No topics in your collection</h3>
                 <p className="text-sm text-gray-500 mb-4">
-                  Claim cards while learning to add topics here
+                  Add topics to your Mosaic collection first
                 </p>
                 <button
                   onClick={onGoToLearn}
@@ -6929,45 +6948,38 @@ export default function Canvas() {
                 </button>
               </div>
             ) : (
-              Object.entries(availableTopics).map(([categoryId, topics]) => {
-                const categoryNode = getTreeNode(categoryId)
-                const categoryName = categoryNode?.title || categoryId
-
-                return (
-                  <div key={categoryId} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-                    <div className="px-4 py-3 bg-gray-50 border-b border-gray-100">
-                      <h4 className="font-semibold text-gray-700">{categoryName}</h4>
-                    </div>
-                    <div className="divide-y divide-gray-50">
-                      {topics.map(topic => (
-                        <div
-                          key={topic.id}
-                          className="px-4 py-3 flex items-center justify-between"
+              <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+                <div className="divide-y divide-gray-50">
+                  {getUserTopics().map(topic => (
+                    <div
+                      key={topic.id}
+                      className="px-4 py-3 flex items-center justify-between"
+                    >
+                      <div className="flex-1 mr-3">
+                        <p className="text-gray-800 font-medium truncate">{topic.title}</p>
+                        <p className="text-xs text-gray-500">
+                          {(topic.flashcards || []).length} flashcards
+                        </p>
+                      </div>
+                      {topic.inStudyQueue ? (
+                        <button
+                          onClick={() => handleAddTopic(topic.originalTopicId)}
+                          className="px-3 py-1.5 rounded-lg text-sm font-medium bg-green-100 text-green-700 hover:bg-green-200 transition-colors"
                         >
-                          <div className="flex-1 mr-3">
-                            <p className="text-gray-800 font-medium truncate">{topic.name}</p>
-                            <p className="text-xs text-gray-500">
-                              {topic.flashcardCount} flashcards • {topic.claimedCount} cards
-                            </p>
-                          </div>
-                          {topic.inStudyDeck ? (
-                            <span className="px-3 py-1.5 rounded-lg text-sm font-medium bg-green-100 text-green-700">
-                              Added
-                            </span>
-                          ) : (
-                            <button
-                              onClick={() => handleAddTopic(topic.id)}
-                              className="px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-100 text-indigo-600 hover:bg-indigo-200 transition-colors"
-                            >
-                              + Add
-                            </button>
-                          )}
-                        </div>
-                      ))}
+                          In Study
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleAddTopic(topic.originalTopicId)}
+                          className="px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-100 text-indigo-600 hover:bg-indigo-200 transition-colors"
+                        >
+                          + Add
+                        </button>
+                      )}
                     </div>
-                  </div>
-                )
-              })
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -7114,9 +7126,9 @@ export default function Canvas() {
             <span className="text-xs text-gray-400">{studyDeck.length} topics</span>
           </div>
 
-          {getUserTopics().length > 0 ? (
+          {getUserTopics().filter(t => t.inStudyQueue).length > 0 ? (
             <div className="space-y-2 mb-4">
-              {getUserTopics().map(topic => {
+              {getUserTopics().filter(t => t.inStudyQueue).map(topic => {
                 const fcCount = (topic.flashcards || []).length
                 return (
                   <div
@@ -7146,7 +7158,7 @@ export default function Canvas() {
           ) : (
             <div className="bg-gray-50 rounded-xl p-6 text-center mb-4">
               <p className="text-gray-500 text-sm">
-                No topics in your study deck yet
+                No topics in your study queue. Add topics from your Mosaic collection.
               </p>
             </div>
           )}
@@ -7166,8 +7178,8 @@ export default function Canvas() {
         {/* Remove topic confirmation */}
         <ConfirmDialog
           isOpen={showRemoveConfirm !== null}
-          title="Remove from study deck?"
-          message="This topic's flashcards won't appear in reviews until you add it back."
+          title="Remove from study queue?"
+          message="This topic stays in your collection but its flashcards won't appear in reviews."
           onConfirm={() => handleRemoveTopic(showRemoveConfirm)}
           onCancel={() => setShowRemoveConfirm(null)}
         />
@@ -7253,20 +7265,20 @@ export default function Canvas() {
           <span className="text-xs mt-1 font-medium">Learn</span>
         </button>
 
-        {/* Cards */}
+        {/* Mosaic */}
         <button
           onClick={() => {
-            setActiveTab('cards')
+            setActiveTab('mosaic')
             setStack(['collections'])
           }}
           className={`flex flex-col items-center justify-center flex-1 py-2 transition-colors ${
-            activeTab === 'cards' ? 'text-indigo-600' : 'text-gray-400'
+            activeTab === 'mosaic' ? 'text-indigo-600' : 'text-gray-400'
           }`}
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
           </svg>
-          <span className="text-xs mt-1 font-medium">Cards</span>
+          <span className="text-xs mt-1 font-medium">Mosaic</span>
         </button>
 
         {/* Wander - spacer for center button */}
@@ -8044,300 +8056,87 @@ export default function Canvas() {
     )
   }
 
-  // Collections screen - Trophy Case with Drawers (grouped by topic)
+  // Mosaic screen - saved topics collection
   if (stack.length === 1 && stack[0] === 'collections') {
-    const cardsByCategoryAndDeck = getClaimedCardsByCategoryAndDeck()
+    const savedTopics = getUserTopics()
 
-    // Build category data with topic counts
-    const categoriesWithTopics = CATEGORIES.filter(cat => {
-      const decks = cardsByCategoryAndDeck[cat.id]
-      return decks && Object.keys(decks).length > 0
-    }).map(cat => {
-      const decks = cardsByCategoryAndDeck[cat.id]
-      const topics = Object.values(decks).sort((a, b) => {
-        // Sort by most recently interacted first
-        if (!a.lastInteracted && !b.lastInteracted) return a.name.localeCompare(b.name)
-        if (!a.lastInteracted) return 1
-        if (!b.lastInteracted) return -1
-        return new Date(b.lastInteracted) - new Date(a.lastInteracted)
-      })
-      const totalCards = topics.reduce((sum, t) => sum + t.claimedCount, 0)
-      return { ...cat, topics, topicCount: topics.length, totalCards }
-    }).sort((a, b) => a.name.localeCompare(b.name))
-
-    // Calculate total stats
-    const allCards = categoriesWithTopics.flatMap(cat => cat.topics.flatMap(t => t.cards))
-    const totalCards = allCards.length
-    const totalTopics = categoriesWithTopics.reduce((sum, cat) => sum + cat.topicCount, 0)
-    const rarityCount = {
-      common: allCards.filter(c => !c.rarity || c.rarity === 'common').length,
-      rare: allCards.filter(c => c.rarity === 'rare').length,
-      epic: allCards.filter(c => c.rarity === 'epic').length,
-      legendary: allCards.filter(c => c.rarity === 'legendary').length
+    // Group by category
+    const topicsByCategory = {}
+    for (const topic of savedTopics) {
+      const catId = topic.categoryId || 'uncategorized'
+      if (!topicsByCategory[catId]) topicsByCategory[catId] = []
+      topicsByCategory[catId].push(topic)
     }
 
-    // Topic Card View - shows cards for a specific topic
-    if (selectedCollectionTopic) {
-      const topic = selectedCollectionTopic
-      const rootCategoryId = findRootCategory(topic.id)
-      const theme = getCategoryTheme(rootCategoryId)
-      const isComplete = topic.claimedCount >= topic.expectedTotal
-
-      return (
-        <div className="w-screen min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 overflow-auto pb-20">
-          {/* Header with back button */}
-          <div className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-sm border-b border-slate-700">
-            <div className="px-4 py-3 flex items-center gap-3">
-              <button
-                onClick={() => setSelectedCollectionTopic(null)}
-                className="text-slate-400 hover:text-white transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              <div className="flex-1 min-w-0">
-                <h1 className="text-lg font-semibold text-white truncate">{topic.name}</h1>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-slate-400">{topic.claimedCount}/{topic.expectedTotal}</span>
-                  {isComplete && <span className="text-green-400 text-sm">✓ Complete</span>}
-                </div>
-              </div>
-            </div>
-            {/* Progress bar */}
-            <div className="px-4 pb-3">
-              <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-300"
-                  style={{
-                    width: `${Math.round((topic.claimedCount / topic.expectedTotal) * 100)}%`,
-                    background: theme.accent
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Card grid */}
-          <div className="p-4">
-            <div className="flex flex-wrap gap-3 justify-center">
-              {topic.cards.map((card) => (
-                <MiniCollectionCard
-                  key={card.id}
-                  card={card}
-                  rootCategoryId={rootCategoryId}
-                  size="medium"
-                  onClick={() => setSelectedCollectionCard(card)}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Bottom navigation */}
-          <BottomNav />
-
-          {/* Card detail */}
-          <AnimatePresence>
-            {selectedCollectionCard && (
-              <ExpandedCard
-                card={{
-                  ...selectedCollectionCard,
-                  content: selectedCollectionCard.content || getCardContent(selectedCollectionCard.id),
-                  contentLoaded: true
-                }}
-                index={selectedCollectionCard.number || 0}
-                total={topic.cards.length}
-                claimed={true}
-                onClaim={() => {}}
-                onClose={() => setSelectedCollectionCard(null)}
-                deckName={topic.name}
-                onContentGenerated={() => {}}
-                allCards={topic.cards}
-                hasNext={false}
-                hasPrev={false}
-                onNext={() => {}}
-                onPrev={() => {}}
-                startFlipped={true}
-                tint="#fafbfc"
-                rootCategoryId={rootCategoryId}
-                onRabbitHoleClick={handleRabbitHoleClick}
-              />
-            )}
-          </AnimatePresence>
-        </div>
-      )
-    }
+    const categoryIds = Object.keys(topicsByCategory).sort()
 
     return (
-      <div className="w-screen min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 overflow-auto pb-20">
+      <div className="w-screen min-h-screen bg-white overflow-auto pb-20">
         {/* Header */}
-        <div className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-sm border-b border-slate-700">
+        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-100">
           <div className="px-4 py-4">
-            <h1 className="text-lg font-semibold text-white text-center mb-3">Collection</h1>
-
-            {/* Stats */}
-            <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
-              {/* Total count */}
-              <div className="text-center mb-3">
-                <span className="text-4xl font-bold text-white">{totalCards}</span>
-                <span className="text-slate-400 ml-2">Cards</span>
-                <span className="text-slate-500 mx-2">·</span>
-                <span className="text-slate-400">{totalTopics} Topics</span>
-              </div>
-
-              {/* Rarity breakdown */}
-              <div className="flex justify-center gap-4 text-sm">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded-full bg-gray-400 border border-gray-300" />
-                  <span className="text-slate-300">{rarityCount.common}</span>
-                </div>
-                {rarityCount.rare > 0 && (
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded-full bg-blue-500 border border-blue-400" />
-                    <span className="text-slate-300">{rarityCount.rare}</span>
-                  </div>
-                )}
-                {rarityCount.epic > 0 && (
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded-full bg-purple-500 border border-purple-400" />
-                    <span className="text-slate-300">{rarityCount.epic}</span>
-                  </div>
-                )}
-                {rarityCount.legendary > 0 && (
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded-full bg-yellow-500 border border-yellow-400" />
-                    <span className="text-slate-300">{rarityCount.legendary}</span>
-                  </div>
-                )}
-              </div>
-            </div>
+            <h1 className="text-lg font-semibold text-gray-800 text-center mb-1">Mosaic</h1>
+            <p className="text-center text-xs text-gray-400">{savedTopics.length} {savedTopics.length === 1 ? 'topic' : 'topics'} saved</p>
           </div>
         </div>
 
-        {/* Drawers */}
         <div className="p-4">
-          {categoriesWithTopics.length === 0 ? (
+          {savedTopics.length === 0 ? (
             <div className="text-center py-16">
-              <div className="text-5xl mb-4">🏆</div>
-              <p className="text-slate-300 text-lg mb-2">Your collection is empty</p>
-              <p className="text-slate-500 text-sm">Start exploring to collect cards!</p>
+              <p className="text-gray-600 text-lg mb-2">Your collection is empty</p>
+              <p className="text-gray-400 text-sm mb-4">Explore and add topics to your collection</p>
               <button
                 onClick={() => {
                   setActiveTab('learn')
                   setStack([])
                 }}
-                className="mt-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors"
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors"
               >
                 Start Exploring
               </button>
             </div>
           ) : (
-            <div className="space-y-3">
-              {categoriesWithTopics.map((category) => {
-                const isExpanded = expandedCollectionCategory === category.id
-                const previewTopics = category.topics.slice(0, 3)
+            <div className="space-y-6">
+              {categoryIds.map(catId => {
+                const topics = topicsByCategory[catId]
+                const catName = CATEGORIES.find(c => c.id === catId)?.name || catId
+                const gradient = CATEGORY_GRADIENTS[catId] || CATEGORY_GRADIENTS.default
+                const pattern = CATEGORY_PATTERNS[catId] || 'geometric'
 
                 return (
-                  <motion.div
-                    key={category.id}
-                    className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden"
-                    layout
-                  >
-                    {/* Drawer header */}
-                    <button
-                      onClick={() => setExpandedCollectionCategory(isExpanded ? null : category.id)}
-                      className="w-full p-4 flex items-center justify-between hover:bg-slate-700/50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="font-medium text-white">{category.name}</span>
-                        <span className="text-slate-400 text-sm">
-                          ({category.topicCount} {category.topicCount === 1 ? 'topic' : 'topics'}, {category.totalCards} cards)
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        {/* Topic name pills (when collapsed) */}
-                        {!isExpanded && (
-                          <div className="flex gap-1.5">
-                            {previewTopics.map((topic) => (
-                              <span
-                                key={topic.id}
-                                className="px-2 py-0.5 bg-slate-700 text-slate-300 text-xs rounded-full truncate max-w-[80px]"
-                              >
-                                {topic.name}
+                  <div key={catId}>
+                    <h2 className="text-sm font-medium text-gray-400 mb-2 px-1">{catName}</h2>
+                    <div className="grid grid-cols-2 gap-3">
+                      {topics.map(topic => (
+                        <button
+                          key={topic.id}
+                          onClick={() => {
+                            // Navigate to this topic's content view
+                            const catPath = topic.categoryId || ''
+                            setStack([catPath, topic.originalTopicId])
+                          }}
+                          className="relative aspect-square rounded-xl overflow-hidden shadow-md"
+                        >
+                          <div className={`w-full h-full bg-gradient-to-br ${gradient} relative`}>
+                            <TilePattern patternId={pattern} />
+                            <div className="absolute inset-0 flex flex-col items-center justify-center p-3 z-10">
+                              <span className="text-white font-semibold text-sm text-center drop-shadow-md line-clamp-2">
+                                {topic.title}
                               </span>
-                            ))}
-                            {category.topicCount > 3 && (
-                              <span className="text-xs text-slate-500">+{category.topicCount - 3}</span>
-                            )}
+                              <span className="text-white/70 text-xs mt-1">
+                                {(topic.flashcards || []).length} cards
+                              </span>
+                              {topic.inStudyQueue && (
+                                <span className="mt-2 px-2 py-0.5 bg-white/20 rounded-full text-white/90 text-[10px]">
+                                  Studying
+                                </span>
+                              )}
+                            </div>
                           </div>
-                        )}
-
-                        {/* Chevron */}
-                        <svg
-                          className={`w-5 h-5 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </div>
-                    </button>
-
-                    {/* Expanded content - topic list with progress */}
-                    <AnimatePresence>
-                      {isExpanded && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="overflow-hidden"
-                        >
-                          <div className="px-4 pb-4 pt-2 border-t border-slate-700 space-y-2">
-                            {category.topics.map((topic) => {
-                              const progressPercent = Math.round((topic.claimedCount / topic.expectedTotal) * 100)
-                              const isComplete = topic.claimedCount >= topic.expectedTotal
-                              const theme = getCategoryTheme(category.id)
-
-                              return (
-                                <button
-                                  key={topic.id}
-                                  onClick={() => setSelectedCollectionTopic(topic)}
-                                  className="w-full p-3 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors text-left"
-                                >
-                                  <div className="flex items-center justify-between mb-2">
-                                    <span className="text-white font-medium truncate pr-2">{topic.name}</span>
-                                    <div className="flex items-center gap-2 flex-shrink-0">
-                                      <span className="text-slate-400 text-sm">
-                                        {topic.claimedCount}/{topic.expectedTotal}
-                                      </span>
-                                      {isComplete ? (
-                                        <span className="text-green-400">✓</span>
-                                      ) : (
-                                        <span className="text-slate-500">→</span>
-                                      )}
-                                    </div>
-                                  </div>
-                                  {/* Progress bar */}
-                                  <div className="w-full h-1.5 bg-slate-600 rounded-full overflow-hidden">
-                                    <div
-                                      className="h-full rounded-full transition-all duration-300"
-                                      style={{
-                                        width: `${progressPercent}%`,
-                                        background: isComplete ? '#22c55e' : theme.accent
-                                      }}
-                                    />
-                                  </div>
-                                </button>
-                              )
-                            })}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </motion.div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 )
               })}
             </div>

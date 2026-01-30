@@ -2855,6 +2855,7 @@ export function addTopicToDeck(topic) {
     title: topic.title,
     categoryId: topic.categoryId || null,
     addedAt: now,
+    inStudyQueue: false,
     outline: topic.outline || null,
     tiles: topic.tiles || [],
     flashcards: (topic.flashcards || []).map((fc, idx) => ({
@@ -2898,11 +2899,49 @@ export function getUserTopic(topicId) {
 }
 
 /**
+ * Toggle a topic's inStudyQueue status
+ */
+export function toggleStudyQueue(topicId) {
+  const data = getData()
+  if (!data.userTopics) return false
+  const topic = data.userTopics.find(t => t.originalTopicId === topicId)
+  if (!topic) return false
+  topic.inStudyQueue = !topic.inStudyQueue
+  saveData(data)
+  return topic.inStudyQueue
+}
+
+/**
+ * Check if a topic is in the study queue
+ */
+export function isTopicInStudyQueue(topicId) {
+  const topics = getUserTopics()
+  const t = topics.find(t => t.originalTopicId === topicId)
+  return t ? !!t.inStudyQueue : false
+}
+
+/**
+ * Migrate existing topics to have inStudyQueue field (backward compat)
+ */
+export function migrateAddStudyQueue() {
+  const data = getData()
+  if (!data.userTopics) return
+  let changed = false
+  for (const topic of data.userTopics) {
+    if (topic.inStudyQueue === undefined) {
+      topic.inStudyQueue = true
+      changed = true
+    }
+  }
+  if (changed) saveData(data)
+}
+
+/**
  * Get all flashcards from all user topics that are due for review
  * @returns {Array} Flashcards with nextReview <= now or nextReview === null (new)
  */
 export function getDueUserFlashcards() {
-  const topics = getUserTopics()
+  const topics = getUserTopics().filter(t => t.inStudyQueue)
   const now = new Date()
   const due = []
   for (const topic of topics) {
@@ -2920,7 +2959,7 @@ export function getDueUserFlashcards() {
  * @returns {Array}
  */
 export function getNewUserFlashcards() {
-  const topics = getUserTopics()
+  const topics = getUserTopics().filter(t => t.inStudyQueue)
   const cards = []
   for (const topic of topics) {
     for (const fc of (topic.flashcards || [])) {
