@@ -204,17 +204,30 @@ export default function UnifiedTileView({
     const items = []
 
     if (viewMode === 'cards') {
-      sections.forEach((section, sIdx) => {
-        if (section.count === 0) return
-        items.push({ type: 'header', section, sectionIdx: sIdx })
-        if (flippedTiles[section.startIdx]) {
-          items.push({ type: 'merged', section, sectionIdx: sIdx })
-        } else {
-          for (let i = section.startIdx; i < section.endIdx; i++) {
-            items.push({ type: 'tile', globalIndex: i, fc: effectiveTiles[i] })
+      // Only show section headers when there are enough tiles per section (≥4)
+      const minTilesPerSection = sections.length > 0
+        ? Math.min(...sections.filter(s => s.count > 0).map(s => s.count))
+        : 0
+      const showSections = minTilesPerSection >= 4
+
+      if (showSections) {
+        sections.forEach((section, sIdx) => {
+          if (section.count === 0) return
+          items.push({ type: 'header', section, sectionIdx: sIdx })
+          if (flippedTiles[section.startIdx]) {
+            items.push({ type: 'merged', section, sectionIdx: sIdx })
+          } else {
+            for (let i = section.startIdx; i < section.endIdx; i++) {
+              items.push({ type: 'tile', globalIndex: i, fc: effectiveTiles[i] })
+            }
           }
-        }
-      })
+        })
+      } else {
+        // Flat grid — not enough tiles to group
+        effectiveTiles.forEach((fc, i) => {
+          items.push({ type: 'tile', globalIndex: i, fc })
+        })
+      }
     } else if (viewMode === 'flashcards') {
       effectiveTiles.forEach((fc, i) => {
         items.push({ type: 'tile', globalIndex: i, fc })
