@@ -228,7 +228,8 @@ export default function UnifiedTileView({
         display: 'grid',
         gridTemplateColumns: 'repeat(4, 1fr)',
         padding: '1rem',
-        gap: slateMerging ? '0px' : '0.5rem'
+        gap: slateMerging ? '0px' : '0.5rem',
+        ...((slateMerged && !slateReversing) ? { height: 0, overflow: 'hidden', padding: 0 } : {})
       }
     }
     if (activeMode === 'cards' && !cardsExpanded) {
