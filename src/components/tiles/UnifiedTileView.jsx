@@ -165,6 +165,10 @@ export default function UnifiedTileView({
 
   // Container styles per mode
   const containerStyle = useMemo(() => {
+    if (activeMode === 'outline') {
+      // Slate: tiles shrink into tight 4-col mini-grid
+      return { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', padding: '0.5rem 3rem', gap: '2px' }
+    }
     if (activeMode === 'cards' && !cardsExpanded) {
       return { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', padding: '1rem', gap: '0.5rem' }
     }
@@ -198,12 +202,12 @@ export default function UnifiedTileView({
           }
         })
       }
-    } else if (activeMode === 'flashcards') {
+    } else {
+      // flashcards and outline: render all tiles
       effectiveTiles.forEach((fc, i) => {
         items.push({ type: 'tile', globalIndex: i, fc })
       })
     }
-    // outline mode: no tiles rendered (slate overlay shows instead)
 
     return items
   }, [activeMode, sections, effectiveTiles, flippedTiles])
@@ -281,6 +285,26 @@ export default function UnifiedTileView({
                   <div className="text-center mt-3 text-gray-400 text-sm">
                     {globalIndex + 1} / {effectiveTiles.length}
                   </div>
+                </motion.div>
+              )
+            }
+
+            // Slate mode: tiny tiles that shrink down
+            if (activeMode === 'outline') {
+              return (
+                <motion.div
+                  key={`tile-${globalIndex}`}
+                  layoutId={`tile-${globalIndex}`}
+                  layout
+                  transition={LAYOUT_TRANSITION}
+                  animate={{ opacity: 0.3 }}
+                  className="aspect-square"
+                >
+                  <Tile
+                    gradient={gradient}
+                    patternId={patternId}
+                    onClick={onSlateClick}
+                  />
                 </motion.div>
               )
             }
