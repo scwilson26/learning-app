@@ -166,8 +166,8 @@ export default function UnifiedTileView({
   // Container styles per mode
   const containerStyle = useMemo(() => {
     if (activeMode === 'outline') {
-      // Slate: tiles shrink into tight 4-col mini-grid
-      return { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', padding: '0.5rem 3rem', gap: '2px' }
+      // Slate: tiles collapse to zero height (hidden)
+      return { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', padding: '0', gap: '0px', height: '0px', overflow: 'hidden' }
     }
     if (activeMode === 'cards' && !cardsExpanded) {
       return { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', padding: '1rem', gap: '0.5rem' }
