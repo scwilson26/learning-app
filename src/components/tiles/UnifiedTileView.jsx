@@ -259,8 +259,8 @@ export default function UnifiedTileView({
     <>
       {!outlineOpen && <motion.div
         className={containerClass}
-        style={{ ...containerStyle, gap: undefined }}
-        animate={{ gap: merging ? '0px' : (viewMode === 'flashcards' ? '1.5rem' : '0.5rem') }}
+        style={containerStyle}
+        animate={merging ? { gap: '0px' } : {}}
         transition={{ duration: 0.3, ease: 'easeInOut' }}
       >
         {gridItems.map((item) => {
@@ -310,12 +310,7 @@ export default function UnifiedTileView({
                 className="snap-center max-w-sm mx-auto w-full"
                 style={{ scrollSnapAlign: 'center' }}
               >
-                <motion.div
-                  layout
-                  layoutId={`tile-${globalIndex}`}
-                  transition={{ layout: { duration: 0.4, ease: [0.4, 0, 0.2, 1] } }}
-                  className="aspect-square"
-                >
+                <div className="aspect-square">
                   <Tile
                     isFlipped={isFlipped}
                     gradient={gradient}
@@ -324,7 +319,7 @@ export default function UnifiedTileView({
                     frontContent={getFrontContent(fc, globalIndex)}
                     backContent={getBackContent(fc, globalIndex)}
                   />
-                </motion.div>
+                </div>
                 <div className="text-center mt-3 text-gray-400 text-sm">
                   {globalIndex + 1} / {effectiveTiles.length}
                 </div>
@@ -334,11 +329,8 @@ export default function UnifiedTileView({
 
           // Grid tiles (Slate/Tiles modes)
           return (
-            <motion.div
+            <div
               key={`tile-${globalIndex}`}
-              layout
-              layoutId={`tile-${globalIndex}`}
-              transition={{ layout: { duration: 0.4, ease: [0.4, 0, 0.2, 1] } }}
               className="aspect-square"
             >
               <Tile
@@ -350,7 +342,7 @@ export default function UnifiedTileView({
                 frontContent={getFrontContent(fc, globalIndex)}
                 backContent={getBackContent(fc, globalIndex)}
               />
-            </motion.div>
+            </div>
           )
         })}
       </motion.div>}
