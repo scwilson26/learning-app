@@ -115,16 +115,15 @@ export default function UnifiedTileView({
         setFlippedTiles({})
       }
       return
-    } else if (viewMode === 'cards' && showSections) {
+    } else if (viewMode === 'cards') {
       const sectionIdx = tileToSection[globalIndex]
       if (sectionIdx === undefined || sectionIdx < 0) return
-      const section = sections[sectionIdx]
-      const isCurrentlyFlipped = flippedTiles[section.startIdx]
-      const newState = { ...flippedTiles }
-      for (let i = section.startIdx; i < section.endIdx; i++) {
-        newState[i] = !isCurrentlyFlipped
-      }
-      setFlippedTiles(newState)
+      // Toggle: if this section is already expanded, collapse it; otherwise expand it (and collapse any other)
+      setFlippedTiles(prev => {
+        const wasExpanded = prev._expandedSection === sectionIdx
+        return wasExpanded ? {} : { _expandedSection: sectionIdx }
+      })
+      return
     } else {
       setFlippedTiles(prev => ({ ...prev, [globalIndex]: !prev[globalIndex] }))
     }
@@ -202,14 +201,6 @@ export default function UnifiedTileView({
     return null
   }
 
-  // Whether cards mode should show section grouping
-  const showSections = useMemo(() => {
-    if (sections.length === 0) return false
-    const nonEmpty = sections.filter(s => s.count > 0)
-    if (nonEmpty.length === 0) return false
-    return Math.min(...nonEmpty.map(s => s.count)) >= 4
-  }, [sections])
-
   // Simple markdown rendering
   const renderContent = (text) => {
     if (!text) return null
@@ -231,20 +222,15 @@ export default function UnifiedTileView({
     const items = []
 
     if (viewMode === 'cards') {
-      if (showSections) {
-        sections.forEach((section, sIdx) => {
-          if (section.count === 0) return
-          items.push({ type: 'header', section, sectionIdx: sIdx })
-          if (flippedTiles[section.startIdx]) {
-            items.push({ type: 'merged', section, sectionIdx: sIdx })
-          } else {
-            for (let i = section.startIdx; i < section.endIdx; i++) {
-              items.push({ type: 'tile', globalIndex: i, fc: effectiveTiles[i] })
-            }
-          }
-        })
+      const expandedSection = flippedTiles._expandedSection
+      if (expandedSection !== undefined && expandedSection !== null) {
+        // Show only the expanded section as a 2x2 content tile
+        const section = sections[expandedSection]
+        if (section) {
+          items.push({ type: 'expanded', section, sectionIdx: expandedSection })
+        }
       } else {
-        // Flat grid — not enough tiles to group
+        // Show all tiles in flat 2-col grid
         effectiveTiles.forEach((fc, i) => {
           items.push({ type: 'tile', globalIndex: i, fc })
         })
@@ -261,7 +247,7 @@ export default function UnifiedTileView({
     }
 
     return items
-  }, [viewMode, sections, effectiveTiles, flippedTiles, showSections])
+  }, [viewMode, sections, effectiveTiles, flippedTiles])
 
   // Container styles
   const containerStyle = viewMode === 'outline'
@@ -283,37 +269,30 @@ export default function UnifiedTileView({
         transition={{ duration: 0.3, ease: 'easeInOut' }}
       >
         {gridItems.map((item) => {
-          if (item.type === 'header') {
-            return (
-              <div
-                key={`header-${item.sectionIdx}`}
-                style={{ gridColumn: '1 / -1' }}
-                className={`text-center py-3 ${item.sectionIdx > 0 ? 'mt-4' : ''}`}
-              >
-                <span className="text-sm font-medium text-gray-600">
-                  {item.section.title.replace(/\*{2,4}/g, '')}
-                </span>
-              </div>
-            )
-          }
-
-          if (item.type === 'merged') {
+          if (item.type === 'expanded') {
             const { section, sectionIdx } = item
             return (
               <div
-                key={`merged-${sectionIdx}`}
-                style={{ gridColumn: '1 / -1' }}
-                className="rounded-xl bg-white shadow-lg border border-gray-200 cursor-pointer"
-                onClick={() => handleTileClick(section.startIdx)}
+                key={`expanded-${sectionIdx}`}
+                style={{ gridColumn: 'span 2', gridRow: 'span 2' }}
+                className="aspect-square"
               >
-                <div className="p-5">
-                  <h3 className="font-semibold text-emerald-600 text-lg mb-3">
-                    {section.title.replace(/\*{2,4}/g, '')}
-                  </h3>
-                  <div className="text-gray-700 text-sm leading-relaxed">
-                    {renderContent(section.content)}
-                  </div>
-                </div>
+                <Tile
+                  isFlipped={true}
+                  gradient={gradient}
+                  patternId={patternId}
+                  onClick={() => handleTileClick(section.startIdx)}
+                  backContent={
+                    <div className="w-full h-full p-4 overflow-auto">
+                      <h3 className="font-semibold text-emerald-600 text-base mb-2">
+                        {section.title.replace(/\*{2,4}/g, '')}
+                      </h3>
+                      <div className="text-gray-700 text-sm leading-relaxed">
+                        {renderContent(section.content)}
+                      </div>
+                    </div>
+                  }
+                />
               </div>
             )
           }
