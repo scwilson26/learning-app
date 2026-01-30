@@ -54,15 +54,21 @@ export default function Tile({
           </div>
         </motion.div>
 
-        {/* Back - white with content */}
+        {/* Back - white with category-colored border frame */}
         <motion.div
-          className="absolute inset-0 bg-white overflow-hidden"
+          className="absolute inset-0 overflow-hidden"
           style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
           animate={{ borderRadius, boxShadow: merging ? '0 0 0 rgba(0,0,0,0)' : '0 10px 15px -3px rgba(0,0,0,0.1)' }}
           transition={{ duration: 0.3 }}
         >
-          <div className="w-full h-full p-3 overflow-auto">
-            {backContent}
+          {/* Category gradient border frame */}
+          <div className={`w-full h-full bg-gradient-to-br ${gradient} relative`}>
+            <TilePattern patternId={patternId} opacity={0.12} />
+            {/* White center that fades from the border */}
+            <div className="absolute inset-2 bg-white rounded-lg" />
+            <div className="absolute inset-0 p-3 overflow-auto z-10">
+              {backContent}
+            </div>
           </div>
         </motion.div>
       </motion.div>
