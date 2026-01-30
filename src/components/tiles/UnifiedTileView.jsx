@@ -10,8 +10,12 @@ export default function UnifiedTileView({
   deckName = '',
   gradient = 'from-emerald-400 via-emerald-500 to-emerald-600',
   patternId = 'geometric',
+  onEditFlashcard,
 }) {
   const [flippedTiles, setFlippedTiles] = useState({})
+  const [editingIndex, setEditingIndex] = useState(null)
+  const [editQuestion, setEditQuestion] = useState('')
+  const [editAnswer, setEditAnswer] = useState('')
   const [outlineOpen, setOutlineOpen] = useState(false)
   const [merging, setMerging] = useState(false)
   const timeoutRefs = useRef([])
@@ -158,7 +162,22 @@ export default function UnifiedTileView({
     }
     // Flash mode
     return (
-      <div className="h-full flex flex-col p-4">
+      <div className="h-full flex flex-col p-4 relative">
+        {onEditFlashcard && (
+          <button
+            className="absolute top-1 right-1 p-1.5 text-gray-300 hover:text-gray-500 transition-colors"
+            onClick={(e) => {
+              e.stopPropagation()
+              setEditingIndex(globalIndex)
+              setEditQuestion(fc.question)
+              setEditAnswer(fc.answer)
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11.5 1.5l3 3L5 14H2v-3L11.5 1.5z" />
+            </svg>
+          </button>
+        )}
         <div className="text-emerald-600 font-medium text-sm mb-3 line-clamp-2">
           {fc.question}
         </div>
@@ -397,6 +416,52 @@ export default function UnifiedTileView({
                 +{effectiveTiles.length - 10}
               </span>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Edit flashcard modal */}
+      {editingIndex !== null && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => setEditingIndex(null)}
+        >
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="font-semibold text-gray-800 mb-3">Edit Flashcard</h3>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Question</label>
+            <textarea
+              className="w-full border border-gray-200 rounded-lg p-2 text-sm mb-3 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              rows={3}
+              value={editQuestion}
+              onChange={(e) => setEditQuestion(e.target.value)}
+            />
+            <label className="block text-xs font-medium text-gray-500 mb-1">Answer</label>
+            <textarea
+              className="w-full border border-gray-200 rounded-lg p-2 text-sm mb-4 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              rows={4}
+              value={editAnswer}
+              onChange={(e) => setEditAnswer(e.target.value)}
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                onClick={() => setEditingIndex(null)}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-3 py-1.5 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                onClick={() => {
+                  if (onEditFlashcard) {
+                    onEditFlashcard(editingIndex, editQuestion, editAnswer)
+                  }
+                  setEditingIndex(null)
+                }}
+              >
+                Save
+              </button>
+            </div>
           </div>
         </div>
       )}

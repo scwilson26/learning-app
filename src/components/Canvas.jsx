@@ -2873,6 +2873,20 @@ function DeckSpread({
               deckName={deck.name}
               gradient={gradient}
               patternId={patternId}
+              onEditFlashcard={(index, newQuestion, newAnswer) => {
+                // Find which card and which flashcard within it
+                let count = 0
+                for (const card of allCards) {
+                  const fcs = card.flashcards || []
+                  if (index < count + fcs.length) {
+                    const fcIdx = index - count
+                    fcs[fcIdx].question = newQuestion
+                    fcs[fcIdx].answer = newAnswer
+                    break
+                  }
+                  count += fcs.length
+                }
+              }}
             />
           </div>
         )
