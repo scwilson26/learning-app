@@ -370,8 +370,8 @@ export default function UnifiedTileView({
                   <h3 className="font-semibold text-emerald-600 text-lg mb-3">
                     {idx + 1}. {section.title}
                   </h3>
-                  <div className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-                    {section.content || section.concept}
+                  <div className="text-gray-700 leading-relaxed">
+                    {renderContent(section.content || section.concept)}
                   </div>
                 </div>
               ))}
