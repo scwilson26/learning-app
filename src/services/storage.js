@@ -2899,6 +2899,31 @@ export function getUserTopic(topicId) {
 }
 
 /**
+ * Update a topic's flashcards (e.g., when generated after initial save)
+ */
+export function updateTopicFlashcards(topicId, flashcards) {
+  const data = getData()
+  if (!data.userTopics) return
+  const topic = data.userTopics.find(t => t.originalTopicId === topicId)
+  if (!topic) return
+  if (topic.flashcards && topic.flashcards.length > 0) return // Already has flashcards
+  const now = new Date().toISOString()
+  topic.flashcards = (flashcards || []).map((fc, idx) => ({
+    id: fc.id || `fc_${topicId}_${idx}`,
+    question: fc.question,
+    answer: fc.answer,
+    sectionTitle: fc.sectionTitle || '',
+    nextReview: null,
+    interval: 0,
+    easeFactor: 2.5,
+    reviewCount: 0,
+    createdAt: now
+  }))
+  saveData(data)
+  console.log(`[updateTopicFlashcards] Updated "${topic.title}" with ${topic.flashcards.length} flashcards`)
+}
+
+/**
  * Toggle a topic's inStudyQueue status
  */
 export function toggleStudyQueue(topicId) {
@@ -3038,7 +3063,7 @@ export function recordUserReview(topicId, flashcardId, quality) {
  * @returns {Object} { totalTopics, totalCards, newCards, dueCards }
  */
 export function getUserStudyStats() {
-  const topics = getUserTopics()
+  const topics = getUserTopics().filter(t => t.inStudyQueue)
   const now = new Date()
   let totalCards = 0, newCards = 0, dueCards = 0
   for (const topic of topics) {

@@ -120,6 +120,7 @@ import {
   toggleStudyQueue,
   isTopicInStudyQueue,
   migrateAddStudyQueue,
+  updateTopicFlashcards,
   getUserTopic,
   getDueUserFlashcards,
   getNewUserFlashcards,
@@ -2705,6 +2706,21 @@ function DeckSpread({
   const [viewMode, setViewMode] = useState('flashcards') // outline | cards | flashcards
   const [addedToCollection, setAddedToCollection] = useState(() => isTopicInDeck(deck.id))
   const [inStudyQueue, setInStudyQueue] = useState(() => isTopicInStudyQueue(deck.id))
+
+  // Sync flashcards to collection when they become available
+  useEffect(() => {
+    if (!addedToCollection || !tierCards) return
+    const allCards = [
+      ...(tierCards.core || []),
+      ...(tierCards.deep_dive || [])
+    ].filter(card => !card.isPlaceholder && card.content)
+    const allFlashcards = allCards.flatMap(card =>
+      (card.flashcards || []).map(fc => ({ ...fc, sectionTitle: card.title }))
+    )
+    if (allFlashcards.length > 0) {
+      updateTopicFlashcards(deck.id, allFlashcards)
+    }
+  }, [tierCards, addedToCollection, deck.id])
 
   // Tier metadata - two tiers: Core and Deep Dive
   const tiers = [
