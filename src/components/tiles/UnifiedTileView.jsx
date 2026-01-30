@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
 import Tile from './Tile'
 import { TilePattern } from './TilePatterns'
@@ -17,17 +17,29 @@ export default function UnifiedTileView({
   onSlateClick,
 }) {
   const [flippedTiles, setFlippedTiles] = useState({})
+  const [slateMerging, setSlateMerging] = useState(false)
+  const [slateMerged, setSlateMerged] = useState(false)
   const [editingIndex, setEditingIndex] = useState(null)
   const [editQuestion, setEditQuestion] = useState('')
   const [editAnswer, setEditAnswer] = useState('')
+  const slateTimers = useRef([])
 
   // Use viewMode directly as activeMode (simplified)
   const activeMode = viewMode
 
-  // Reset flip state when mode changes
+  // Reset all slate/flip state when mode changes
   useEffect(() => {
+    slateTimers.current.forEach(t => clearTimeout(t))
+    slateTimers.current = []
     setFlippedTiles({})
+    setSlateMerging(false)
+    setSlateMerged(false)
   }, [activeMode])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => slateTimers.current.forEach(t => clearTimeout(t))
+  }, [])
 
   // Build the effective tile list
   const hasFlashcards = allFlashcards.length > 0
@@ -87,14 +99,26 @@ export default function UnifiedTileView({
   // Click handlers per mode
   const handleTileClick = (globalIndex) => {
     if (activeMode === 'outline') {
-      // Slate mode: flip all tiles to reveal outline content
-      const anyFlipped = Object.keys(flippedTiles).length > 0
-      if (anyFlipped) {
+      if (slateMerged) {
+        // Reverse: hide outline, unmerge, unflip
+        setSlateMerged(false)
+        setSlateMerging(false)
         setFlippedTiles({})
-      } else {
+      } else if (!slateMerging) {
+        // Phase 1: flip all tiles
         const newState = {}
         effectiveTiles.forEach((_, i) => { newState[i] = true })
         setFlippedTiles(newState)
+        // Phase 2: after flip, start merging (close gaps)
+        const t1 = setTimeout(() => {
+          setSlateMerging(true)
+          // Phase 3: after merge, show outline
+          const t2 = setTimeout(() => {
+            setSlateMerged(true)
+          }, 400)
+          slateTimers.current.push(t2)
+        }, 450)
+        slateTimers.current.push(t1)
       }
       return
     } else if (activeMode === 'cards') {
@@ -186,8 +210,14 @@ export default function UnifiedTileView({
   // Container styles per mode
   const containerStyle = useMemo(() => {
     if (activeMode === 'outline') {
-      // Slate: dense 4-col grid, tiles flip to show content
-      return { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', padding: '1rem', gap: '0.5rem' }
+      // Slate: dense 4-col grid, gap closes during merge
+      return {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        padding: '1rem',
+        gap: slateMerging ? '0px' : '0.5rem',
+        ...(slateMerged ? { height: 0, overflow: 'hidden', padding: 0 } : {})
+      }
     }
     if (activeMode === 'cards' && !cardsExpanded) {
       return { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', padding: '1rem', gap: '0.5rem' }
@@ -197,7 +227,7 @@ export default function UnifiedTileView({
     }
     // flashcards
     return { display: 'flex', flexDirection: 'column', padding: '1rem', gap: '1.5rem' }
-  }, [activeMode, cardsExpanded])
+  }, [activeMode, cardsExpanded, slateMerging, slateMerged])
 
   const containerClass = activeMode === 'flashcards'
     ? 'h-[calc(100vh-180px)] overflow-y-auto snap-y snap-mandatory'
@@ -309,7 +339,7 @@ export default function UnifiedTileView({
               )
             }
 
-            // Slate mode: 4-col grid tiles that flip to show section titles
+            // Slate mode: 4-col grid tiles that flip to show section titles, then merge
             if (activeMode === 'outline') {
               return (
                 <motion.div
@@ -317,8 +347,13 @@ export default function UnifiedTileView({
                   layoutId={`tile-${globalIndex}`}
                   layout
                   transition={LAYOUT_TRANSITION}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="aspect-square"
+                  animate={{
+                    opacity: slateMerged ? 0 : 1,
+                    scale: slateMerged ? 0.8 : 1,
+                    borderRadius: slateMerging ? '0px' : '8px',
+                  }}
+                  className="aspect-square overflow-hidden"
+                  style={{ pointerEvents: slateMerged ? 'none' : 'auto' }}
                 >
                   <Tile
                     isFlipped={!!flippedTiles[globalIndex]}
@@ -352,9 +387,9 @@ export default function UnifiedTileView({
         </motion.div>
       </LayoutGroup>
 
-      {/* Slate mode: full outline shown below tiles when flipped */}
+      {/* Slate mode: full outline revealed after tiles merge */}
       <AnimatePresence>
-        {activeMode === 'outline' && Object.keys(flippedTiles).length > 0 && (
+        {activeMode === 'outline' && slateMerged && (
           <motion.div
             key="slate-content"
             initial={{ opacity: 0 }}
