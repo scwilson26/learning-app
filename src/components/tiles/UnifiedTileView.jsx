@@ -87,8 +87,15 @@ export default function UnifiedTileView({
   // Click handlers per mode
   const handleTileClick = (globalIndex) => {
     if (activeMode === 'outline') {
-      // In slate mode, clicking toggles back to tiles view by triggering parent
-      // (the overlay handles this via onClick)
+      // Slate mode: flip all tiles to reveal outline content
+      const anyFlipped = Object.keys(flippedTiles).length > 0
+      if (anyFlipped) {
+        setFlippedTiles({})
+      } else {
+        const newState = {}
+        effectiveTiles.forEach((_, i) => { newState[i] = true })
+        setFlippedTiles(newState)
+      }
       return
     } else if (activeMode === 'cards') {
       // Toggle all sections expanded/collapsed
@@ -101,8 +108,21 @@ export default function UnifiedTileView({
     }
   }
 
-  // Get back content for a tile (Flash mode only now — Slate/Tiles don't flip)
+  // Get back content for a tile
   const getBackContent = (fc, globalIndex) => {
+    if (activeMode === 'outline') {
+      // Slate: show section title on back
+      const sectionIdx = tileToSection[globalIndex]
+      const section = sectionIdx >= 0 ? sections[sectionIdx] : null
+      return (
+        <div className="w-full h-full flex items-center justify-center p-1">
+          <span className="text-emerald-600 text-[10px] font-medium text-center leading-tight line-clamp-3">
+            {section?.title || ''}
+          </span>
+        </div>
+      )
+    }
+    // Flash mode
     return (
       <div className="h-full flex flex-col p-4 relative">
         {onEditFlashcard && (
@@ -166,8 +186,8 @@ export default function UnifiedTileView({
   // Container styles per mode
   const containerStyle = useMemo(() => {
     if (activeMode === 'outline') {
-      // Slate: tiles collapse to zero height (hidden)
-      return { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', padding: '0', gap: '0px', height: '0px', overflow: 'hidden' }
+      // Slate: dense 4-col grid, tiles flip to show content
+      return { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', padding: '1rem', gap: '0.5rem' }
     }
     if (activeMode === 'cards' && !cardsExpanded) {
       return { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', padding: '1rem', gap: '0.5rem' }
@@ -289,7 +309,7 @@ export default function UnifiedTileView({
               )
             }
 
-            // Slate mode: tiny tiles that shrink down
+            // Slate mode: 4-col grid tiles that flip to show section titles
             if (activeMode === 'outline') {
               return (
                 <motion.div
@@ -297,13 +317,15 @@ export default function UnifiedTileView({
                   layoutId={`tile-${globalIndex}`}
                   layout
                   transition={LAYOUT_TRANSITION}
-                  animate={{ opacity: 0.3 }}
+                  animate={{ opacity: 1, scale: 1 }}
                   className="aspect-square"
                 >
                   <Tile
+                    isFlipped={!!flippedTiles[globalIndex]}
                     gradient={gradient}
                     patternId={patternId}
-                    onClick={onSlateClick}
+                    onClick={() => handleTileClick(globalIndex)}
+                    backContent={getBackContent(fc, globalIndex)}
                   />
                 </motion.div>
               )
@@ -330,17 +352,16 @@ export default function UnifiedTileView({
         </motion.div>
       </LayoutGroup>
 
-      {/* Slate overlay: outline text */}
+      {/* Slate mode: full outline shown below tiles when flipped */}
       <AnimatePresence>
-        {activeMode === 'outline' && (
+        {activeMode === 'outline' && Object.keys(flippedTiles).length > 0 && (
           <motion.div
-            key="slate-overlay"
+            key="slate-content"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.35 }}
-            className="px-4 pb-8 cursor-pointer"
-            onClick={onSlateClick}
+            transition={{ duration: 0.3 }}
+            className="px-4 pb-8"
           >
             <div className="max-w-lg mx-auto">
               <h2 className="text-2xl font-bold text-gray-800 mb-8 text-center">
