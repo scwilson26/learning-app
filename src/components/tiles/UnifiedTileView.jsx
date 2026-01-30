@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import Tile from './Tile'
+import { TilePattern } from './TilePatterns'
 
 export default function UnifiedTileView({
   viewMode = 'outline',
@@ -116,12 +117,9 @@ export default function UnifiedTileView({
       }
       return
     } else if (viewMode === 'cards') {
-      const sectionIdx = tileToSection[globalIndex]
-      if (sectionIdx === undefined || sectionIdx < 0) return
-      // Toggle: if this section is already expanded, collapse it; otherwise expand it (and collapse any other)
+      // Toggle all sections expanded/collapsed
       setFlippedTiles(prev => {
-        const wasExpanded = prev._expandedSection === sectionIdx
-        return wasExpanded ? {} : { _expandedSection: sectionIdx }
+        return prev._allExpanded ? {} : { _allExpanded: true }
       })
       return
     } else {
@@ -222,13 +220,12 @@ export default function UnifiedTileView({
     const items = []
 
     if (viewMode === 'cards') {
-      const expandedSection = flippedTiles._expandedSection
-      if (expandedSection !== undefined && expandedSection !== null) {
-        // Show only the expanded section as a 2x2 content tile
-        const section = sections[expandedSection]
-        if (section) {
-          items.push({ type: 'expanded', section, sectionIdx: expandedSection })
-        }
+      if (flippedTiles._allExpanded) {
+        // Show all sections as large content cards stacked vertically
+        sections.forEach((section, sIdx) => {
+          if (section.count === 0) return
+          items.push({ type: 'expanded', section, sectionIdx: sIdx })
+        })
       } else {
         // Show tiles grouped by section with subtle labels
         sections.forEach((section, sIdx) => {
@@ -254,10 +251,13 @@ export default function UnifiedTileView({
   }, [viewMode, sections, effectiveTiles, flippedTiles])
 
   // Container styles
+  const cardsExpanded = viewMode === 'cards' && flippedTiles._allExpanded
   const containerStyle = viewMode === 'outline'
     ? { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', padding: '1rem', gap: '0.5rem' }
-    : viewMode === 'cards'
+    : viewMode === 'cards' && !cardsExpanded
     ? { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', padding: '1rem', gap: '0.5rem' }
+    : viewMode === 'cards' && cardsExpanded
+    ? { display: 'flex', flexDirection: 'column', padding: '1rem', gap: '1rem' }
     : { display: 'flex', flexDirection: 'column', padding: '1rem 1rem', gap: '1.5rem' }
 
   const containerClass = viewMode === 'flashcards'
@@ -292,25 +292,19 @@ export default function UnifiedTileView({
             return (
               <div
                 key={`expanded-${sectionIdx}`}
-                style={{ gridColumn: 'span 2', gridRow: 'span 2' }}
-                className="aspect-square"
+                className={`rounded-xl overflow-hidden shadow-md cursor-pointer bg-gradient-to-br ${gradient} relative`}
+                onClick={() => handleTileClick(section.startIdx)}
               >
-                <Tile
-                  isFlipped={true}
-                  gradient={gradient}
-                  patternId={patternId}
-                  onClick={() => handleTileClick(section.startIdx)}
-                  backContent={
-                    <div className="w-full h-full p-4 overflow-auto">
-                      <h3 className="font-semibold text-emerald-600 text-base mb-2">
-                        {section.title.replace(/\*{2,4}/g, '')}
-                      </h3>
-                      <div className="text-gray-700 text-sm leading-relaxed">
-                        {renderContent(section.content)}
-                      </div>
-                    </div>
-                  }
-                />
+                <TilePattern patternId={patternId} opacity={0.12} />
+                <div className="absolute inset-2 bg-white rounded-lg" />
+                <div className="relative z-10 p-5">
+                  <h3 className="font-semibold text-emerald-600 text-base mb-2">
+                    {section.title.replace(/\*{2,4}/g, '')}
+                  </h3>
+                  <div className="text-gray-700 text-sm leading-relaxed">
+                    {renderContent(section.content)}
+                  </div>
+                </div>
               </div>
             )
           }
