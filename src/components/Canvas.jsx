@@ -6,7 +6,7 @@ import { findTopicMatches, matchTopic } from '../utils/topicMatcher'
 import { generateSubDecks, generateSingleCardContent, generateTierCards, generateTopicPreview, generateTopicOutline, generateFlashcardsFromCard, generateFlashcardsFromOutline, classifyTopic, extractTextFromImage, extractTextFromPDF, generateNotesTitle, generateOutlineFromNotes } from '../services/claude'
 import { supabase, onAuthStateChange, signOut, syncCards, getCanonicalCardsForTopic, upsertCanonicalCard, getPreviewCardRemote, savePreviewCardRemote, getOutline, saveOutline, syncFlashcards, upsertFlashcardRemote, upsertFlashcardsRemote } from '../services/supabase'
 import Auth from './Auth'
-import { MosaicView, CategoryTile, TilePattern, CATEGORY_GRADIENTS, CATEGORY_PATTERNS, OutlineView, CardsView, FlashcardsView, TileGrid } from './tiles'
+import { MosaicView, CategoryTile, TilePattern, CATEGORY_GRADIENTS, CATEGORY_PATTERNS, UnifiedTileView, TileGrid } from './tiles'
 import {
   getDeckCards,
   saveDeckCards,
@@ -2818,44 +2818,16 @@ function DeckSpread({
         const patternId = CATEGORY_PATTERNS[rootCategoryId] || CATEGORY_PATTERNS.default
 
         return (
-          <div className="w-full px-4">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={viewMode}
-                initial={{ opacity: 0, x: viewMode === 'outline' ? -20 : viewMode === 'flashcards' ? 20 : 0 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                {viewMode === 'outline' && (
-                  <OutlineView
-                    tiles={allCards}
-                    outline={outline || { core: [], deep_dive: [] }}
-                    flashcards={allFlashcards}
-                    deckName={deck.name}
-                    gradient={gradient}
-                    patternId={patternId}
-                  />
-                )}
-
-                {viewMode === 'cards' && (
-                  <CardsView
-                    cards={allCards}
-                    flashcards={allFlashcards}
-                    gradient={gradient}
-                    patternId={patternId}
-                  />
-                )}
-
-                {viewMode === 'flashcards' && (
-                  <FlashcardsView
-                    flashcards={allFlashcards}
-                    gradient={gradient}
-                    patternId={patternId}
-                  />
-                )}
-              </motion.div>
-            </AnimatePresence>
+          <div className="w-full">
+            <UnifiedTileView
+              viewMode={viewMode}
+              allFlashcards={allFlashcards}
+              allCards={allCards}
+              outline={outline || { core: [], deep_dive: [] }}
+              deckName={deck.name}
+              gradient={gradient}
+              patternId={patternId}
+            />
           </div>
         )
       })()}

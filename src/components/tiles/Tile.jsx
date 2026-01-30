@@ -24,7 +24,7 @@ export default function Tile({
 }) {
   return (
     <div
-      className={`aspect-square cursor-pointer perspective-1000 ${className}`}
+      className={`w-full h-full cursor-pointer ${className}`}
       onClick={onClick}
       style={{ perspective: '1000px' }}
     >
