@@ -1519,11 +1519,20 @@ function WanderCard({
         onClick={(e) => { e.stopPropagation(); handleFlip(e); }}
       >
         {/* WANDERING STATE - non-flipping card */}
-        {!showPreview && (
-          <div
-            className="w-full h-full rounded-2xl flex flex-col overflow-hidden relative shadow-2xl"
-            style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #4f46e5 100%)' }}
+        {!showPreview && (() => {
+          // Stage 1: neutral slate; Stage 2: category colors
+          const categoryGradient = CATEGORY_GRADIENTS[rootCategoryId] || CATEGORY_GRADIENTS.default
+          const categoryPattern = CATEGORY_PATTERNS[rootCategoryId] || CATEGORY_PATTERNS.default
+
+          return (
+          <motion.div
+            className={`w-full h-full rounded-2xl flex flex-col overflow-hidden relative shadow-2xl bg-gradient-to-br ${isComplete ? categoryGradient : 'from-slate-600 via-slate-700 to-slate-800'}`}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6 }}
           >
+            {/* Pattern overlay - generic when searching, category-specific when found */}
+            <TilePattern patternId={isComplete ? categoryPattern : 'geometric'} opacity={0.15} />
+
             {/* Close button - top right (only when complete) */}
             {isComplete && (
               <button
@@ -1537,50 +1546,29 @@ function WanderCard({
             )}
 
             <div className="flex-1 flex flex-col items-center justify-center p-5 relative">
-              {/* Mini stars background */}
-              <div className="absolute inset-0 overflow-hidden rounded-2xl">
-                {[...Array(12)].map((_, i) => (
-                  <motion.div
-                    key={i}
-                    className="absolute w-1 h-1 bg-white rounded-full"
-                    style={{
-                      left: `${10 + Math.random() * 80}%`,
-                      top: `${10 + Math.random() * 80}%`,
-                    }}
-                    animate={{
-                      opacity: [0.3, 0.8, 0.3],
-                      scale: [1, 1.3, 1],
-                    }}
-                    transition={{
-                      duration: 2 + Math.random() * 2,
-                      repeat: Infinity,
-                      delay: Math.random() * 2,
-                    }}
-                  />
-                ))}
-              </div>
-
-              {/* Dice/target animation */}
-              <motion.div
-                className="text-5xl mb-4 relative z-10"
-                animate={{
-                  rotate: isComplete ? 0 : [0, 360],
-                  scale: isComplete ? [1, 1.2, 1] : 1,
-                }}
-                transition={{
-                  rotate: { duration: 2, repeat: isComplete ? 0 : Infinity, ease: 'linear' },
-                  scale: { duration: 0.5 },
-                }}
-              >
-                {isComplete ? '🎯' : '🎲'}
-              </motion.div>
+              {/* Searching spinner (stage 1) or target icon (stage 2) */}
+              {!isComplete ? (
+                <div className="mb-4 relative z-10">
+                  <div className="w-12 h-12 border-3 border-white/20 border-t-white rounded-full animate-spin" />
+                </div>
+              ) : (
+                <motion.div
+                  className="text-5xl mb-4 relative z-10"
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+                >
+                  🎯
+                </motion.div>
+              )}
 
               <motion.h2
                 className="text-lg font-bold text-white mb-3 relative z-10"
+                key={isComplete ? 'found' : 'searching'}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
               >
-                {isComplete ? 'Found something!' : 'Wandering...'}
+                {isComplete ? 'Found something!' : 'Searching...'}
               </motion.h2>
 
               {/* Path building animation */}
@@ -1594,7 +1582,7 @@ function WanderCard({
                     transition={{ delay: index * 0.3 }}
                   >
                     {index > 0 && <span className="text-white/50 mx-1">→</span>}
-                    <span className={index === pathSteps.length - 1 ? 'text-yellow-300 font-medium' : ''}>
+                    <span className={index === pathSteps.length - 1 && isComplete ? 'text-yellow-300 font-medium' : ''}>
                       {step.name}
                     </span>
                     {index === currentStep && !isComplete && (
@@ -1632,8 +1620,9 @@ function WanderCard({
                 </motion.p>
               )}
             </div>
-          </div>
-        )}
+          </motion.div>
+          )
+        })()}
 
         {/* PREVIEW STATE - flipping card */}
         {showPreview && (
