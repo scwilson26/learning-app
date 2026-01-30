@@ -305,7 +305,7 @@ export default function UnifiedTileView({
       {/* Outline mode: tap hint */}
       {viewMode === 'outline' && !outlineOpen && (
         <div className="text-center py-2 text-gray-400 text-sm">
-          Tap to reveal outline
+          Tap to reveal full slate
         </div>
       )}
 

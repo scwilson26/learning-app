@@ -2709,8 +2709,8 @@ function DeckSpread({
 
   // View mode options for toggle
   const views = [
-    { id: 'outline', label: 'Outline', icon: '▦' },
-    { id: 'cards', label: 'Cards', icon: '▤' },
+    { id: 'outline', label: 'Slate', icon: '▦' },
+    { id: 'cards', label: 'Tiles', icon: '▤' },
     { id: 'flashcards', label: 'Flash', icon: '▢' }
   ]
 
@@ -2753,8 +2753,8 @@ function DeckSpread({
 
           {/* View description */}
           <div className="text-center text-xs text-gray-400 mb-4">
-            {viewMode === 'outline' && 'Tap anywhere → all tiles flip → full outline'}
-            {viewMode === 'cards' && 'Tap a card → tiles flip → shows card content'}
+            {viewMode === 'outline' && 'Full text workspace — all content visible'}
+            {viewMode === 'cards' && 'Tap a section → tiles merge → shows content'}
             {viewMode === 'flashcards' && 'Tap a tile → it flips → shows Q/A'}
           </div>
         </div>
@@ -8655,7 +8655,7 @@ export default function Canvas() {
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
-                Cards
+                Tiles
               </button>
               <button
                 onClick={() => setUserDeckViewMode('outline')}
@@ -8665,7 +8665,7 @@ export default function Canvas() {
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
-                Outline
+                Slate
               </button>
             </div>
           ) : (
