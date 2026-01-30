@@ -467,6 +467,7 @@ function getDeck(id) {
         isUserDeck: true,
         userDeckId: deckId,
         cards: userDeck.cards,
+        flashcards: userDeck.flashcards,
         outline: userDeck.outline,
         level: 1, // Treat as top-level for styling
         source: 'user-notes'
@@ -2876,12 +2877,15 @@ function DeckSpread({
         ].filter(card => !card.isPlaceholder && card.content)
 
         // Flatten all flashcards from all sections for FlashcardsView
-        const allFlashcards = allCards.flatMap(card =>
-          (card.flashcards || []).map(fc => ({
-            ...fc,
-            sectionTitle: card.title
-          }))
-        )
+        // User decks store flashcards on the deck itself with sourceCardTitle, not on each card
+        const allFlashcards = deck?.flashcards?.length > 0
+          ? deck.flashcards.map(fc => ({ ...fc, sectionTitle: fc.sourceCardTitle || '' }))
+          : allCards.flatMap(card =>
+              (card.flashcards || []).map(fc => ({
+                ...fc,
+                sectionTitle: card.title
+              }))
+            )
 
         // Get gradient and pattern for category
         const gradient = CATEGORY_GRADIENTS[rootCategoryId] || CATEGORY_GRADIENTS.default
@@ -3642,9 +3646,11 @@ export default function Canvas() {
       setNotesProcessing({ phase: 'complete', progress: `Created ${cards.core.length + cards.deep_dive.length} cards and ${flashcards.length} flashcards!` })
       setPastedNotesText('')
 
-      // Clear processing state after a moment
+      // Navigate to DeckSpread after a moment
       setTimeout(() => {
         setNotesProcessing(null)
+        setStack([`user-deck:${deckId}`])
+        setLearnView('browse')
       }, 2000)
 
       console.log(`[processUploadedNotes] ✅ Created deck "${title}" with ${cards.core.length + cards.deep_dive.length} cards`)
@@ -5424,6 +5430,10 @@ export default function Canvas() {
       // User decks already have their cards embedded - no generation needed
       if (currentDeck.isUserDeck) {
         console.log(`[loadOrGenerateCardsForDeck] User deck "${currentDeck.name}" - cards already embedded`)
+        // Load outline into loadedOutlines so DeckSpread can access it
+        if (currentDeck.outline) {
+          setLoadedOutlines(prev => ({ ...prev, [currentDeck.id]: currentDeck.outline }))
+        }
         return
       }
       loadOrGenerateCardsForDeck(currentDeck, parentPath)
@@ -7776,6 +7786,38 @@ export default function Canvas() {
             </div>
           )}
 
+          {/* Recent Uploads */}
+          {userDecks.length > 0 && (
+            <div className="mt-6">
+              <h2 className="text-sm font-medium text-gray-500 mb-3">Recent Uploads</h2>
+              <div className="bg-white rounded-2xl shadow-sm overflow-hidden divide-y divide-gray-100">
+                {userDecks.slice(0, 10).map(deck => (
+                  <button
+                    key={deck.id}
+                    onClick={() => {
+                      setStack([`user-deck:${deck.id}`])
+                      setLearnView('browse')
+                    }}
+                    className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="text-lg shrink-0">📄</span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-800 truncate">{deck.name}</p>
+                        <p className="text-xs text-gray-400">
+                          {(deck.cards?.core?.length || 0) + (deck.cards?.deep_dive?.length || 0)} cards
+                        </p>
+                      </div>
+                    </div>
+                    <svg className="w-4 h-4 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Upload section */}
           <div className="mt-6">
 
@@ -8342,20 +8384,6 @@ export default function Canvas() {
   }
 
   // User deck view - render MosaicView for user decks
-  if (currentDeck?.isUserDeck) {
-    // Get the full user deck data from storage (includes flashcards)
-    const userDeckId = currentDeck.userDeckId
-    const fullUserDeck = getUserDeck(userDeckId)
-
-    return (
-      <MosaicView
-        deck={fullUserDeck || currentDeck}
-        onBack={goBack}
-        category="default"
-      />
-    )
-  }
-
   // Inside the stack - show parent decks underneath and current spread on top
   return (
     <div className="w-screen min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 overflow-auto">
