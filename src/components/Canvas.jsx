@@ -2905,17 +2905,48 @@ function DeckSpread({
               patternId={patternId}
               onSlateClick={() => setViewMode('cards')}
               onEditFlashcard={(index, newQuestion, newAnswer) => {
-                // Find which card and which flashcard within it
-                let count = 0
-                for (const card of allCards) {
-                  const fcs = card.flashcards || []
-                  if (index < count + fcs.length) {
-                    const fcIdx = index - count
-                    fcs[fcIdx].question = newQuestion
-                    fcs[fcIdx].answer = newAnswer
-                    break
+                const fc = allFlashcards[index]
+                if (!fc) return
+                // Update in-memory
+                fc.question = newQuestion
+                fc.answer = newAnswer
+
+                // Persist to userDecks if this is a user deck
+                if (deck?.isUserDeck && deck.flashcards) {
+                  const deckFc = deck.flashcards.find(f => f.id === fc.id)
+                  if (deckFc) {
+                    deckFc.question = newQuestion
+                    deckFc.answer = newAnswer
+                    const rawId = deck.userDeckId || deck.id.replace('user-deck:', '')
+                    updateUserDeck(rawId, { flashcards: deck.flashcards })
                   }
-                  count += fcs.length
+                } else {
+                  // Regular deck: update on the card object
+                  let count = 0
+                  for (const card of allCards) {
+                    const fcs = card.flashcards || []
+                    if (index < count + fcs.length) {
+                      const fcIdx = index - count
+                      fcs[fcIdx].question = newQuestion
+                      fcs[fcIdx].answer = newAnswer
+                      break
+                    }
+                    count += fcs.length
+                  }
+                }
+
+                // Sync to userTopics (Study deck) if topic is in collection
+                if (isTopicInDeck(deck.id)) {
+                  const data = JSON.parse(localStorage.getItem('learning_app_data') || '{}')
+                  const topic = (data.userTopics || []).find(t => t.originalTopicId === deck.id)
+                  if (topic) {
+                    const topicFc = (topic.flashcards || []).find(f => f.id === fc.id)
+                    if (topicFc) {
+                      topicFc.question = newQuestion
+                      topicFc.answer = newAnswer
+                      localStorage.setItem('learning_app_data', JSON.stringify(data))
+                    }
+                  }
                 }
               }}
             />
@@ -4058,8 +4089,11 @@ export default function Canvas() {
                 if (!current) return prev
                 const allCardTitles = [...(current.core || []), ...(current.deep_dive || [])].map(c => c.title)
                 console.log('[FLASHCARDS] card titles:', allCardTitles)
+                console.log('[FLASHCARDS] AI sectionTitles:', [...new Set(flashcards.map(fc => fc.sectionTitle))])
+                const normalize = (s) => (s || '').trim().toLowerCase().replace(/\*+/g, '')
                 const attachFlashcards = (cards) => cards.map(card => {
-                  const matched = flashcards.filter(fc => fc.sectionTitle === card.title)
+                  const cardNorm = normalize(card.title)
+                  const matched = flashcards.filter(fc => normalize(fc.sectionTitle) === cardNorm)
                   if (matched.length === 0) console.warn(`[FLASHCARDS] No match for card "${card.title}"`)
                   return { ...card, flashcards: matched }
                 })
@@ -4085,9 +4119,10 @@ export default function Canvas() {
                 setTierCards(prev => {
                   const current = prev[deck.id]
                   if (!current) return prev
+                  const normalize = (s) => (s || '').trim().toLowerCase().replace(/\*+/g, '')
                   const attachFlashcards = (cards) => cards.map(card => ({
                     ...card,
-                    flashcards: flashcards.filter(fc => fc.sectionTitle === card.title)
+                    flashcards: flashcards.filter(fc => normalize(fc.sectionTitle) === normalize(card.title))
                   }))
                   return { ...prev, [deck.id]: { core: attachFlashcards(current.core || []), deep_dive: attachFlashcards(current.deep_dive || []) } }
                 })
@@ -4157,10 +4192,11 @@ export default function Canvas() {
               setTierCards(prev => {
                 const current = prev[deck.id]
                 if (!current) return prev
-                const attachFlashcards = (cards) => cards.map(card => ({
-                  ...card,
-                  flashcards: flashcards.filter(fc => fc.sectionTitle === card.title)
-                }))
+                const normalize = (s) => (s || '').trim().toLowerCase().replace(/\*+/g, '')
+                const attachFlashcards = (cards) => cards.map(card => {
+                  const cardNorm = normalize(card.title)
+                  return { ...card, flashcards: flashcards.filter(fc => normalize(fc.sectionTitle) === cardNorm) }
+                })
                 return { ...prev, [deck.id]: { core: attachFlashcards(current.core || []), deep_dive: attachFlashcards(current.deep_dive || []) } }
               })
             }).catch(err => console.warn('[FLASHCARDS] Failed:', err))
@@ -4483,10 +4519,11 @@ export default function Canvas() {
           setTierCards(prev => {
             const current = prev[deck.id]
             if (!current) return prev
-            const attachFlashcards = (cards) => cards.map(card => ({
-              ...card,
-              flashcards: flashcards.filter(fc => fc.sectionTitle === card.title)
-            }))
+            const normalize = (s) => (s || '').trim().toLowerCase().replace(/\*+/g, '')
+            const attachFlashcards = (cards) => cards.map(card => {
+              const cardNorm = normalize(card.title)
+              return { ...card, flashcards: flashcards.filter(fc => normalize(fc.sectionTitle) === cardNorm) }
+            })
             return {
               ...prev,
               [deck.id]: {
@@ -6286,6 +6323,58 @@ export default function Canvas() {
       setReviewCards(prev =>
         prev.map(c => c.id === editingCard.id ? { ...c, ...updates } : c)
       )
+
+      // Sync to userTopics and userDecks in localStorage
+      if (editingCard.topicId) {
+        const data = JSON.parse(localStorage.getItem('learning_app_data') || '{}')
+        // Update in userTopics
+        const topic = (data.userTopics || []).find(t => t.originalTopicId === editingCard.topicId)
+        if (topic) {
+          const fc = (topic.flashcards || []).find(f => f.id === editingCard.id)
+          if (fc) {
+            fc.question = updates.question
+            fc.answer = updates.answer
+          }
+        }
+        // Update in userDecks (if it's a user-deck flashcard)
+        const rawDeckId = editingCard.topicId.startsWith('user-deck:')
+          ? editingCard.topicId.replace('user-deck:', '')
+          : null
+        if (rawDeckId && data.userDecks?.[rawDeckId]) {
+          const deckFc = (data.userDecks[rawDeckId].flashcards || []).find(f => f.id === editingCard.id)
+          if (deckFc) {
+            deckFc.question = updates.question
+            deckFc.answer = updates.answer
+          }
+        }
+        localStorage.setItem('learning_app_data', JSON.stringify(data))
+      }
+
+      // Update in-memory tierCards so Flash mode sees the edit
+      // Match by ID or by original question (IDs differ between tierCards and userTopics)
+      if (editingCard.topicId) {
+        const origQ = editingCard.question
+        const origA = editingCard.answer
+        setTierCards(prev => {
+          const deckData = prev[editingCard.topicId]
+          if (!deckData) return prev
+          const updateCards = (cards) => (cards || []).map(card => ({
+            ...card,
+            flashcards: (card.flashcards || []).map(fc =>
+              (fc.id === editingCard.id || (fc.question === origQ && fc.answer === origA))
+                ? { ...fc, ...updates }
+                : fc
+            )
+          }))
+          return {
+            ...prev,
+            [editingCard.topicId]: {
+              core: updateCards(deckData.core),
+              deep_dive: updateCards(deckData.deep_dive)
+            }
+          }
+        })
+      }
 
       // Sync to Supabase if logged in
       if (user) {

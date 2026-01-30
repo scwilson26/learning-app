@@ -37,7 +37,7 @@ export default function Tile({
         {/* Front - colored tile with pattern */}
         <div
           className="absolute inset-0 overflow-hidden rounded-lg shadow-md"
-          style={{ backfaceVisibility: 'hidden' }}
+          style={{ backfaceVisibility: 'hidden', pointerEvents: isFlipped ? 'none' : 'auto' }}
         >
           <div className={`w-full h-full bg-gradient-to-br ${gradient} relative`}>
             <TilePattern patternId={patternId} />
