@@ -19,6 +19,7 @@ export default function UnifiedTileView({
   const [flippedTiles, setFlippedTiles] = useState({})
   const [slateMerging, setSlateMerging] = useState(false)
   const [slateMerged, setSlateMerged] = useState(false)
+  const [slateReversing, setSlateReversing] = useState(false)
   const [editingIndex, setEditingIndex] = useState(null)
   const [editQuestion, setEditQuestion] = useState('')
   const [editAnswer, setEditAnswer] = useState('')
@@ -34,6 +35,7 @@ export default function UnifiedTileView({
     setFlippedTiles({})
     setSlateMerging(false)
     setSlateMerged(false)
+    setSlateReversing(false)
   }, [activeMode])
 
   // Cleanup on unmount
@@ -100,14 +102,16 @@ export default function UnifiedTileView({
   const handleTileClick = (globalIndex) => {
     if (activeMode === 'outline') {
       if (slateMerged) {
-        // Reverse phase 1: fade out outline, show tiles (unmerge)
+        // Reverse phase 1: fade out outline, tiles already visible merged
+        setSlateReversing(true)
         setSlateMerged(false)
-        // Reverse phase 2: after tiles reappear, open gaps
+        // Reverse phase 2: after outline fades, open gaps
         const t1 = setTimeout(() => {
           setSlateMerging(false)
           // Reverse phase 3: after unmerge, flip tiles back
           const t2 = setTimeout(() => {
             setFlippedTiles({})
+            setSlateReversing(false)
           }, 400)
           slateTimers.current.push(t2)
         }, 300)
@@ -224,8 +228,7 @@ export default function UnifiedTileView({
         display: 'grid',
         gridTemplateColumns: 'repeat(4, 1fr)',
         padding: '1rem',
-        gap: slateMerging ? '0px' : '0.5rem',
-        ...(slateMerged ? { height: 0, overflow: 'hidden', padding: 0 } : {})
+        gap: slateMerging ? '0px' : '0.5rem'
       }
     }
     if (activeMode === 'cards' && !cardsExpanded) {
@@ -357,12 +360,12 @@ export default function UnifiedTileView({
                   layout
                   transition={LAYOUT_TRANSITION}
                   animate={{
-                    opacity: slateMerged ? 0 : 1,
-                    scale: slateMerged ? 0.8 : 1,
+                    opacity: (slateMerged && !slateReversing) ? 0 : 1,
+                    scale: (slateMerged && !slateReversing) ? 0.8 : 1,
                     borderRadius: slateMerging ? '0px' : '8px',
                   }}
                   className="aspect-square overflow-hidden"
-                  style={{ pointerEvents: slateMerged ? 'none' : 'auto' }}
+                  style={{ pointerEvents: (slateMerged && !slateReversing) ? 'none' : 'auto' }}
                 >
                   <Tile
                     isFlipped={!!flippedTiles[globalIndex]}
