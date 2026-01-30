@@ -3,17 +3,18 @@ import { motion } from 'framer-motion'
 import { TilePattern } from './TilePatterns'
 
 /**
- * CardsView - Vertical scroll of cards, each shown as a 2×2 tile group
- * Tap a group → 4 tiles merge into 1 large tile showing card content
- * Tap again → splits back into 4 tiles
+ * CardsView - Vertical scroll of section groups
+ * Each section's flashcards displayed as a 2×2 tile grid
+ * Tap a group → tiles merge into 1 large tile showing section content
  *
  * @param {Object} props
- * @param {Array} props.cards - Array of card data (core + deep_dive combined)
+ * @param {Array} props.cards - Array of card/section data with flashcards embedded
  * @param {string} props.gradient - Tailwind gradient for tiles
  * @param {string} props.patternId - Pattern ID for tile decoration
  */
 export default function CardsView({
   cards = [],
+  flashcards = [],
   gradient = 'from-emerald-400 via-emerald-500 to-emerald-600',
   patternId = 'geometric'
 }) {
@@ -32,12 +33,8 @@ export default function CardsView({
     return text.split('\n').map((line, i) => {
       const trimmed = line.trim()
       if (!trimmed) return <br key={i} />
-
-      // Bold markers
       const formatted = trimmed.replace(/\*{2,4}(.+?)\*{2,4}/g, '<strong>$1</strong>')
-      // Bullet points
       const isBullet = trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('*')
-
       return (
         <p
           key={i}
@@ -56,6 +53,9 @@ export default function CardsView({
       >
         {cards.map((card, index) => {
           const isFlipped = flippedCards[index]
+          const flashcardCount = flashcards.filter(fc => fc.sectionTitle === card.title).length || 4
+          // Grid: 2 columns, rows = ceil(flashcardCount / 2)
+          const rows = Math.ceil(flashcardCount / 2)
 
           return (
             <motion.div
@@ -83,17 +83,18 @@ export default function CardsView({
                   className="relative w-full"
                   style={{
                     transformStyle: 'preserve-3d',
-                    aspectRatio: '1/1'
+                    // Aspect ratio based on flashcard count: 2 cols, variable rows
+                    aspectRatio: `1/${rows / 2}`
                   }}
                   animate={{ rotateY: isFlipped ? 180 : 0 }}
                   transition={{ duration: 0.5, ease: 'easeInOut' }}
                 >
-                  {/* Front - 2×2 tile grid */}
+                  {/* Front - tile grid matching flashcard count */}
                   <div
                     className="absolute inset-0 grid grid-cols-2 gap-2"
                     style={{ backfaceVisibility: 'hidden' }}
                   >
-                    {[0, 1, 2, 3].map((tileIdx) => (
+                    {Array.from({ length: flashcardCount }).map((_, tileIdx) => (
                       <div key={tileIdx} className="aspect-square">
                         <div className={`w-full h-full rounded-lg bg-gradient-to-br ${gradient} relative overflow-hidden shadow-md`}>
                           <TilePattern patternId={patternId} />
@@ -124,7 +125,7 @@ export default function CardsView({
 
               {/* Tap hint */}
               <div className="text-center mt-2 text-gray-400 text-xs">
-                {isFlipped ? 'Tap to flip back' : 'Tap to reveal'}
+                {isFlipped ? 'Tap to flip back' : `Tap to reveal · ${flashcardCount} tiles`}
               </div>
             </motion.div>
           )

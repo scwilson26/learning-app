@@ -16,6 +16,7 @@ import Tile from './Tile'
 export default function OutlineView({
   tiles = [],
   outline,
+  flashcards = [],
   deckName = 'Outline',
   gradient = 'from-emerald-400 via-emerald-500 to-emerald-600',
   patternId = 'geometric'
@@ -28,6 +29,9 @@ export default function OutlineView({
     ...(outline?.deep_dive || [])
   ]
 
+  // Total tiles = flashcard count (single source of truth), fallback to card count
+  const totalTiles = flashcards.length || tiles.length
+
   const handleFlip = () => {
     setIsFlipped(!isFlipped)
   }
@@ -39,9 +43,9 @@ export default function OutlineView({
         className="grid grid-cols-4 gap-2 p-4 cursor-pointer"
         onClick={handleFlip}
       >
-        {tiles.map((tile, index) => (
+        {Array.from({ length: totalTiles }).map((_, index) => (
           <motion.div
-            key={tile.id || index}
+            key={index}
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: index * 0.02, duration: 0.2 }}

@@ -63,7 +63,6 @@ import {
   removeFromStudyDeck,
   getStudyDeckFlashcards,
   getFlashcardCountForTopic,
-  getFlashcardsForTopic,
   getAvailableStudyTopics,
   migrateToStudyDeck,
   isInStudyDeck,
@@ -2800,14 +2799,19 @@ function DeckSpread({
 
       {/* Tile-based card display - matching MosaicView style */}
       {isArticle && hasReadyCard && (() => {
-        // Get actual cards for CardsView
+        // Get cards (sections) with embedded flashcards
         const allCards = [
           ...(tierCards.core || []),
           ...(tierCards.deep_dive || [])
         ].filter(card => !card.isPlaceholder && card.content)
 
-        // Get real flashcards from storage for FlashcardsView
-        const realFlashcards = getFlashcardsForTopic(deck.id)
+        // Flatten all flashcards from all sections for FlashcardsView
+        const allFlashcards = allCards.flatMap(card =>
+          (card.flashcards || []).map(fc => ({
+            ...fc,
+            sectionTitle: card.title
+          }))
+        )
 
         // Get gradient and pattern for category
         const gradient = CATEGORY_GRADIENTS[rootCategoryId] || CATEGORY_GRADIENTS.default
@@ -2827,6 +2831,7 @@ function DeckSpread({
                   <OutlineView
                     tiles={allCards}
                     outline={outline || { core: [], deep_dive: [] }}
+                    flashcards={allFlashcards}
                     deckName={deck.name}
                     gradient={gradient}
                     patternId={patternId}
@@ -2836,6 +2841,7 @@ function DeckSpread({
                 {viewMode === 'cards' && (
                   <CardsView
                     cards={allCards}
+                    flashcards={allFlashcards}
                     gradient={gradient}
                     patternId={patternId}
                   />
@@ -2843,7 +2849,7 @@ function DeckSpread({
 
                 {viewMode === 'flashcards' && (
                   <FlashcardsView
-                    flashcards={realFlashcards}
+                    flashcards={allFlashcards}
                     gradient={gradient}
                     patternId={patternId}
                   />
@@ -3977,6 +3983,21 @@ export default function Canvas() {
             })
           }
           console.log(`[PREBUILT] Background streaming complete for: ${deck.name}`)
+          // Generate flashcards from the completed outline
+          if (resultOutline) {
+            generateFlashcardsFromOutline(deck.name, resultOutline).then(flashcards => {
+              console.log(`[FLASHCARDS] Generated ${flashcards.length} flashcards for "${deck.name}" (prebuilt)`)
+              setTierCards(prev => {
+                const current = prev[deck.id]
+                if (!current) return prev
+                const attachFlashcards = (cards) => cards.map(card => ({
+                  ...card,
+                  flashcards: flashcards.filter(fc => fc.sectionTitle === card.title)
+                }))
+                return { ...prev, [deck.id]: { core: attachFlashcards(current.core || []), deep_dive: attachFlashcards(current.deep_dive || []) } }
+              })
+            }).catch(err => console.warn('[FLASHCARDS] Failed:', err))
+          }
         }).catch(() => {
           clearInterval(pollInterval)
         })
@@ -3985,7 +4006,24 @@ export default function Canvas() {
         try {
           const { data: existingOutline, error } = await getOutline(deck.id)
           if (!error && existingOutline && existingOutline.outline_json) {
-            setLoadedOutlines(prev => ({ ...prev, [deck.id]: existingOutline.outline_json }))
+            const outlineJson = existingOutline.outline_json
+            setLoadedOutlines(prev => ({ ...prev, [deck.id]: outlineJson }))
+            // Generate flashcards if cards don't have them yet
+            const hasFlashcards = coreCards.some(c => c.flashcards?.length > 0)
+            if (!hasFlashcards) {
+              generateFlashcardsFromOutline(deck.name, outlineJson).then(flashcards => {
+                console.log(`[FLASHCARDS] Generated ${flashcards.length} flashcards for "${deck.name}" (cached)`)
+                setTierCards(prev => {
+                  const current = prev[deck.id]
+                  if (!current) return prev
+                  const attachFlashcards = (cards) => cards.map(card => ({
+                    ...card,
+                    flashcards: flashcards.filter(fc => fc.sectionTitle === card.title)
+                  }))
+                  return { ...prev, [deck.id]: { core: attachFlashcards(current.core || []), deep_dive: attachFlashcards(current.deep_dive || []) } }
+                })
+              }).catch(err => console.warn('[FLASHCARDS] Failed:', err))
+            }
           }
         } catch (err) {
           console.warn(`[OUTLINE] Error fetching outline:`, err)
@@ -4037,6 +4075,31 @@ export default function Canvas() {
         ...prev,
         [deck.id]: allCards
       }))
+
+      // Generate flashcards if outline is available but cards don't have flashcards
+      const hasFlashcards = allCards.some(c => c.flashcards?.length > 0)
+      if (!hasFlashcards) {
+        try {
+          const { data: existingOutline } = await getOutline(deck.id)
+          if (existingOutline?.outline_json) {
+            setLoadedOutlines(prev => ({ ...prev, [deck.id]: existingOutline.outline_json }))
+            generateFlashcardsFromOutline(deck.name, existingOutline.outline_json).then(flashcards => {
+              console.log(`[FLASHCARDS] Generated ${flashcards.length} flashcards for "${deck.name}" (localStorage)`)
+              setTierCards(prev => {
+                const current = prev[deck.id]
+                if (!current) return prev
+                const attachFlashcards = (cards) => cards.map(card => ({
+                  ...card,
+                  flashcards: flashcards.filter(fc => fc.sectionTitle === card.title)
+                }))
+                return { ...prev, [deck.id]: { core: attachFlashcards(current.core || []), deep_dive: attachFlashcards(current.deep_dive || []) } }
+              })
+            }).catch(err => console.warn('[FLASHCARDS] Failed:', err))
+          }
+        } catch (err) {
+          console.warn('[OUTLINE] Error fetching outline for flashcards:', err)
+        }
+      }
       return
     }
 
@@ -4343,29 +4406,28 @@ export default function Canvas() {
 
       setGenerationProgress({ current: 5, total: 5, phase: 'complete' })
 
-      // Generate flashcards from outline in background (single batch call)
+      // Generate flashcards from outline in background
       if (outline) {
-        generateFlashcardsFromOutline(deck.name, outline).then(rawFlashcards => {
-          const flashcards = rawFlashcards.map((fc, index) => ({
-            id: `fc_${deck.id}_${index}`,
-            question: fc.question,
-            answer: fc.answer,
-            sourceCardId: deck.id,
-            sourceCardTitle: fc.sectionTitle || deck.name,
-            status: 'new',
-            createdAt: new Date().toISOString()
-          }))
-          if (flashcards.length > 0) {
-            saveFlashcards(flashcards)
-            console.log(`[FLASHCARDS] ✅ Batch generated ${flashcards.length} flashcards from outline for "${deck.name}"`)
-            if (user) {
-              upsertFlashcardsRemote(flashcards, user.id).catch(err => {
-                console.error('[FLASHCARDS] Failed to sync batch flashcards:', err)
-              })
+        generateFlashcardsFromOutline(deck.name, outline).then(flashcards => {
+          console.log(`[FLASHCARDS] Generated ${flashcards.length} flashcards for "${deck.name}"`)
+          // Attach flashcards to their matching cards by section title
+          setTierCards(prev => {
+            const current = prev[deck.id]
+            if (!current) return prev
+            const attachFlashcards = (cards) => cards.map(card => ({
+              ...card,
+              flashcards: flashcards.filter(fc => fc.sectionTitle === card.title)
+            }))
+            return {
+              ...prev,
+              [deck.id]: {
+                core: attachFlashcards(current.core || []),
+                deep_dive: attachFlashcards(current.deep_dive || [])
+              }
             }
-          }
+          })
         }).catch(err => {
-          console.warn(`[FLASHCARDS] Batch generation failed, will fall back to per-card:`, err)
+          console.warn('[FLASHCARDS] Failed to generate flashcards from outline:', err)
         })
       }
 

@@ -388,7 +388,7 @@ RULES:
 - Flag 4-8 popup terms (terms a beginner might not know)
 
 OUTPUT:
-Return the full outline as structured text with [CORE] and [DEEP DIVE] labels. End with POPUP TERMS section.`;
+Return the full outline with all sections and subsections. End with POPUP TERMS.`;
 
   try {
     // If streaming callback provided, stream and parse sections as they complete
@@ -575,7 +575,8 @@ function parseSingleSection(text) {
     card: {
       title,
       concept: formatSubsectionsAsConcept(subsections),
-      content: formatSubsectionsAsContent(subsections)
+      content: formatSubsectionsAsContent(subsections),
+      flashcards: []
     }
   };
 }
@@ -621,7 +622,6 @@ function parseOutlineText(text) {
   let currentSection = null;
   let currentTier = null;
   let currentSubsections = [];
-
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const trimmed = line.trim();
@@ -642,12 +642,9 @@ function parseOutlineText(text) {
     }
 
     // Check for Roman numeral section header (I. II. III. etc)
-    // Handles formats: "I. Section [CORE]" or "## I. Section [CORE]" (with markdown heading)
-    // Must have [CORE] or [DEEP DIVE] tag, OR be a non-ambiguous Roman numeral (not single C, D, L, M which are subsection letters)
     const sectionMatch = trimmed.match(/^(?:#{1,3}\s*)?([IVXLC]+)\.\s+(.+?)(?:\s+\[(CORE|DEEP DIVE)\])?\s*$/i);
     const romanNumeral = sectionMatch?.[1]?.toUpperCase();
     const hasTierTag = !!sectionMatch?.[3];
-    // Single letters C, D, L, M are ambiguous (could be subsections) - only treat as section if has tier tag
     const isAmbiguousSingleLetter = romanNumeral && romanNumeral.length === 1 && ['C', 'D', 'L', 'M'].includes(romanNumeral);
     const isValidSection = sectionMatch && (hasTierTag || !isAmbiguousSingleLetter);
 
@@ -659,9 +656,9 @@ function parseOutlineText(text) {
         const card = {
           title: currentSection,
           concept: formatSubsectionsAsConcept(currentSubsections),
-          content: formatSubsectionsAsContent(currentSubsections)
+          content: formatSubsectionsAsContent(currentSubsections),
+          flashcards: []
         };
-        console.log(`[PARSER] Saved card: "${card.title}" with ${currentSubsections.length} subsections, content length: ${card.content.length}`);
         if (currentTier === 'core') {
           core.push(card);
         } else {
@@ -672,13 +669,12 @@ function parseOutlineText(text) {
       // Start new section
       currentSection = sectionMatch[2].trim();
       currentTier = sectionMatch[3]?.toLowerCase().replace(' ', '_') || 'core';
-      if (currentTier === 'deep_dive') currentTier = 'deep_dive'; // normalize
+      if (currentTier === 'deep_dive') currentTier = 'deep_dive';
       currentSubsections = [];
       continue;
     }
 
     // Check for subsection (A. B. C. etc)
-    // Handles formats: "A. Title" or "### A. Title" (with markdown heading)
     const subsectionMatch = trimmed.match(/^(?:#{1,4}\s*)?([A-Z])\.\s+(.+)$/);
     if (subsectionMatch && currentSection) {
       currentSubsections.push({
@@ -700,7 +696,8 @@ function parseOutlineText(text) {
     const card = {
       title: currentSection,
       concept: formatSubsectionsAsConcept(currentSubsections),
-      content: formatSubsectionsAsContent(currentSubsections)
+      content: formatSubsectionsAsContent(currentSubsections),
+      flashcards: []
     };
     if (currentTier === 'core') {
       core.push(card);
