@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
 import Tile from './Tile'
 import { TilePattern } from './TilePatterns'
@@ -20,41 +20,10 @@ export default function UnifiedTileView({
   const [editQuestion, setEditQuestion] = useState('')
   const [editAnswer, setEditAnswer] = useState('')
 
-  // Internal mode for sequencing Slate exit (fade text out before layout change)
-  const [activeMode, setActiveMode] = useState(viewMode)
-  const [slateRevealed, setSlateRevealed] = useState(false)
-  const pendingModeRef = useRef(null)
+  // Use viewMode directly as activeMode (simplified)
+  const activeMode = viewMode
 
-  // Handle viewMode prop changes
-  useEffect(() => {
-    if (viewMode === activeMode) return
-    if (activeMode === 'outline' && slateRevealed) {
-      // Exiting slate: fade text out first, then switch layout
-      pendingModeRef.current = viewMode
-      setSlateRevealed(false)
-    } else {
-      setActiveMode(viewMode)
-    }
-  }, [viewMode])
-
-  // When entering slate, reveal text after tiles finish merging
-  useEffect(() => {
-    if (activeMode === 'outline') {
-      const t = setTimeout(() => setSlateRevealed(true), 500)
-      return () => clearTimeout(t)
-    }
-    setSlateRevealed(false)
-  }, [activeMode])
-
-  // AnimatePresence exit complete — apply pending mode
-  const handleSlateTextExited = () => {
-    if (pendingModeRef.current) {
-      setActiveMode(pendingModeRef.current)
-      pendingModeRef.current = null
-    }
-  }
-
-  // Reset flip state when active mode changes
+  // Reset flip state when mode changes
   useEffect(() => {
     setFlippedTiles({})
   }, [activeMode])
@@ -195,10 +164,6 @@ export default function UnifiedTileView({
 
   // Container styles per mode
   const containerStyle = useMemo(() => {
-    if (activeMode === 'outline') {
-      // Slate: collapse all tiles into a single grid cell
-      return { display: 'grid', gridTemplateColumns: '1fr', padding: '1rem', gap: '0px' }
-    }
     if (activeMode === 'cards' && !cardsExpanded) {
       return { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', padding: '1rem', gap: '0.5rem' }
     }
@@ -232,12 +197,12 @@ export default function UnifiedTileView({
           }
         })
       }
-    } else {
-      // Both outline and flashcards: render all tiles
+    } else if (activeMode === 'flashcards') {
       effectiveTiles.forEach((fc, i) => {
         items.push({ type: 'tile', globalIndex: i, fc })
       })
     }
+    // outline mode: no tiles rendered (slate overlay shows instead)
 
     return items
   }, [activeMode, sections, effectiveTiles, flippedTiles])
@@ -319,27 +284,6 @@ export default function UnifiedTileView({
               )
             }
 
-            // Slate mode: tiles collapse into one cell, shrink and fade
-            if (activeMode === 'outline') {
-              return (
-                <motion.div
-                  key={`tile-${globalIndex}`}
-                  layoutId={`tile-${globalIndex}`}
-                  layout
-                  transition={LAYOUT_TRANSITION}
-                  style={{ gridColumn: '1 / 2', gridRow: '1 / 2' }}
-                  animate={{ opacity: 0, scale: 0.3 }}
-                  initial={false}
-                  className="aspect-square"
-                >
-                  <Tile
-                    gradient={gradient}
-                    patternId={patternId}
-                  />
-                </motion.div>
-              )
-            }
-
             // Tiles (cards) mode: normal grid
             return (
               <motion.div
@@ -361,21 +305,16 @@ export default function UnifiedTileView({
         </motion.div>
       </LayoutGroup>
 
-      {/* Slate overlay: fades in after tiles merge */}
-      <AnimatePresence onExitComplete={handleSlateTextExited}>
-        {slateRevealed && activeMode === 'outline' && (
+      {/* Slate overlay: outline text */}
+      <AnimatePresence>
+        {activeMode === 'outline' && (
           <motion.div
             key="slate-overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="px-4 pb-8 cursor-pointer"
-            onClick={() => {
-              // Trigger exit: parent should switch viewMode
-              // For now, clicking just hides slate text
-              setSlateRevealed(false)
-            }}
+            transition={{ duration: 0.35 }}
+            className="px-4 pb-8"
           >
             <div className="max-w-lg mx-auto">
               <h2 className="text-2xl font-bold text-gray-800 mb-8 text-center">
@@ -393,20 +332,10 @@ export default function UnifiedTileView({
                   </div>
                 ))}
               </div>
-              <div className="text-center py-6 text-gray-400 text-sm">
-                Tap to show tiles
-              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Slate mode: tap hint (before text reveals) */}
-      {activeMode === 'outline' && !slateRevealed && (
-        <div className="text-center py-2 text-gray-400 text-sm">
-          Tiles are merging...
-        </div>
-      )}
 
       {/* Flash mode: progress dots */}
       {activeMode === 'flashcards' && (
