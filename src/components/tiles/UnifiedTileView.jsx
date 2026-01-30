@@ -44,70 +44,37 @@ export default function UnifiedTileView({
     )
   }, [allFlashcards, allCards, hasFlashcards])
 
-  // Pre-compute section ranges — match by title, fallback to even distribution
+  // Pre-compute section ranges — evenly distribute tiles across cards
   const { sections, tileToSection } = useMemo(() => {
     const secs = []
     const t2s = {}
+    const cardCount = allCards.length
+    const tileCount = effectiveTiles.length
 
-    // Try title matching first
-    const titleGroups = {}
-    effectiveTiles.forEach((fc) => {
-      const title = fc.sectionTitle || ''
-      if (!titleGroups[title]) titleGroups[title] = 0
-      titleGroups[title]++
-    })
+    if (cardCount === 0 || tileCount === 0) {
+      return { sections: secs, tileToSection: t2s }
+    }
 
-    // Check if title matching works (at least some cards match)
-    const matchCount = allCards.filter(c => titleGroups[c.title] > 0).length
-    const useTitleMatch = matchCount > 0 && matchCount >= allCards.length / 2
+    // Distribute tiles evenly across cards
+    const basePerCard = Math.floor(tileCount / cardCount)
+    const remainder = tileCount % cardCount
+    let idx = 0
 
-    if (useTitleMatch) {
-      let idx = 0
-      for (const card of allCards) {
-        const cardTiles = effectiveTiles.filter(fc => fc.sectionTitle === card.title)
-        const startIdx = idx
-        cardTiles.forEach(() => {
-          t2s[idx] = secs.length
-          idx++
-        })
-        secs.push({
-          title: card.title,
-          content: card.content || card.concept || '',
-          startIdx,
-          endIdx: idx,
-          count: idx - startIdx
-        })
-      }
-      // Orphaned tiles distributed to last section
-      while (idx < effectiveTiles.length) {
-        t2s[idx] = secs.length - 1
-        if (secs.length > 0) secs[secs.length - 1].endIdx = idx + 1
+    for (let c = 0; c < cardCount; c++) {
+      const card = allCards[c]
+      const count = basePerCard + (c < remainder ? 1 : 0)
+      const startIdx = idx
+      for (let i = 0; i < count; i++) {
+        t2s[idx] = secs.length
         idx++
       }
-    } else {
-      // Even distribution: split tiles equally across cards
-      const tilesPerCard = Math.ceil(effectiveTiles.length / Math.max(allCards.length, 1))
-      let idx = 0
-      for (const card of allCards) {
-        const startIdx = idx
-        const endIdx = Math.min(idx + tilesPerCard, effectiveTiles.length)
-        for (let i = startIdx; i < endIdx; i++) {
-          t2s[i] = secs.length
-          idx++
-        }
-        secs.push({
-          title: card.title,
-          content: card.content || card.concept || '',
-          startIdx,
-          endIdx,
-          count: endIdx - startIdx
-        })
-      }
-      while (idx < effectiveTiles.length) {
-        t2s[idx] = secs.length - 1
-        if (secs.length > 0) secs[secs.length - 1].endIdx = idx + 1
-        idx++
-      }
+      secs.push({
+        title: card.title,
+        content: card.content || card.concept || '',
+        startIdx,
+        endIdx: idx,
+        count
+      })
     }
 
     return { sections: secs, tileToSection: t2s }
