@@ -2862,6 +2862,7 @@ function DeckSpread({
               deckName={deck.name}
               gradient={gradient}
               patternId={patternId}
+              onSlateClick={() => setViewMode('cards')}
               onEditFlashcard={(index, newQuestion, newAnswer) => {
                 // Find which card and which flashcard within it
                 let count = 0

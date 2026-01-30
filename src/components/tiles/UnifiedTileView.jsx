@@ -14,6 +14,7 @@ export default function UnifiedTileView({
   gradient = 'from-emerald-400 via-emerald-500 to-emerald-600',
   patternId = 'geometric',
   onEditFlashcard,
+  onSlateClick,
 }) {
   const [flippedTiles, setFlippedTiles] = useState({})
   const [editingIndex, setEditingIndex] = useState(null)
@@ -314,7 +315,8 @@ export default function UnifiedTileView({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.35 }}
-            className="px-4 pb-8"
+            className="px-4 pb-8 cursor-pointer"
+            onClick={onSlateClick}
           >
             <div className="max-w-lg mx-auto">
               <h2 className="text-2xl font-bold text-gray-800 mb-8 text-center">
