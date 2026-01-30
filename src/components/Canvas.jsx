@@ -3959,13 +3959,17 @@ export default function Canvas() {
           if (resultOutline) {
             generateFlashcardsFromOutline(deck.name, resultOutline).then(flashcards => {
               console.log(`[FLASHCARDS] Generated ${flashcards.length} flashcards for "${deck.name}" (prebuilt)`)
+              console.log('[FLASHCARDS] sectionTitles from AI:', [...new Set(flashcards.map(fc => fc.sectionTitle))])
               setTierCards(prev => {
                 const current = prev[deck.id]
                 if (!current) return prev
-                const attachFlashcards = (cards) => cards.map(card => ({
-                  ...card,
-                  flashcards: flashcards.filter(fc => fc.sectionTitle === card.title)
-                }))
+                const allCardTitles = [...(current.core || []), ...(current.deep_dive || [])].map(c => c.title)
+                console.log('[FLASHCARDS] card titles:', allCardTitles)
+                const attachFlashcards = (cards) => cards.map(card => {
+                  const matched = flashcards.filter(fc => fc.sectionTitle === card.title)
+                  if (matched.length === 0) console.warn(`[FLASHCARDS] No match for card "${card.title}"`)
+                  return { ...card, flashcards: matched }
+                })
                 return { ...prev, [deck.id]: { core: attachFlashcards(current.core || []), deep_dive: attachFlashcards(current.deep_dive || []) } }
               })
             }).catch(err => console.warn('[FLASHCARDS] Failed:', err))

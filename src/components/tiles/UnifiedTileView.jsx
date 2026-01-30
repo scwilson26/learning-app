@@ -20,15 +20,31 @@ export default function UnifiedTileView({
     setOutlineOpen(false)
   }, [viewMode])
 
-  // Pre-compute section ranges: which flashcard indices belong to which section
+  // Build the effective tile list: use flashcards if available, otherwise generate
+  // placeholder tiles (4 per card) so tiles show before flashcards are generated
+  const hasFlashcards = allFlashcards.length > 0
+  const effectiveTiles = useMemo(() => {
+    if (hasFlashcards) return allFlashcards
+    // Generate placeholder tiles from cards
+    return allCards.flatMap(card =>
+      Array.from({ length: 4 }, (_, i) => ({
+        question: '',
+        answer: '',
+        sectionTitle: card.title,
+        _placeholder: true
+      }))
+    )
+  }, [allFlashcards, allCards, hasFlashcards])
+
+  // Pre-compute section ranges: which tile indices belong to which section
   const { sections, tileToSection } = useMemo(() => {
     const secs = []
     const t2s = {}
     let idx = 0
     for (const card of allCards) {
-      const cardFlashcards = allFlashcards.filter(fc => fc.sectionTitle === card.title)
+      const cardTiles = effectiveTiles.filter(fc => fc.sectionTitle === card.title)
       const startIdx = idx
-      cardFlashcards.forEach((_, fi) => {
+      cardTiles.forEach(() => {
         t2s[idx] = secs.length
         idx++
       })
@@ -40,13 +56,12 @@ export default function UnifiedTileView({
         count: idx - startIdx
       })
     }
-    // Handle any flashcards that didn't match a section
-    while (idx < allFlashcards.length) {
+    while (idx < effectiveTiles.length) {
       t2s[idx] = -1
       idx++
     }
     return { sections: secs, tileToSection: t2s }
-  }, [allFlashcards, allCards])
+  }, [effectiveTiles, allCards])
 
   // Combine outline sections for overlay
   const outlineSections = useMemo(() => [
@@ -60,7 +75,7 @@ export default function UnifiedTileView({
       // Flip all tiles + show overlay
       const allFlipped = !flippedTiles[0]
       const newState = {}
-      allFlashcards.forEach((_, i) => { newState[i] = allFlipped })
+      effectiveTiles.forEach((_, i) => { newState[i] = allFlipped })
       setFlippedTiles(newState)
       setOutlineOpen(allFlipped)
     } else if (viewMode === 'cards') {
@@ -94,7 +109,22 @@ export default function UnifiedTileView({
       )
     }
     if (viewMode === 'cards') {
-      return <div className="w-full h-full" />
+      const sectionIdx = tileToSection[globalIndex]
+      const section = sectionIdx >= 0 ? sections[sectionIdx] : null
+      // Only show content on the first tile of each section
+      if (!section || globalIndex !== section.startIdx) {
+        return <div className="w-full h-full" />
+      }
+      return (
+        <div className="w-full h-full p-2 overflow-auto">
+          <h3 className="font-semibold text-emerald-600 text-xs mb-1 line-clamp-1">
+            {section.title}
+          </h3>
+          <div className="text-gray-700 text-[10px] leading-relaxed">
+            {renderContent(section.content)}
+          </div>
+        </div>
+      )
     }
     // Flash mode
     return (
@@ -146,22 +176,24 @@ export default function UnifiedTileView({
     if (viewMode === 'cards') {
       sections.forEach((section, sIdx) => {
         if (section.count === 0) return
-        // Section header
         items.push({ type: 'header', section, sectionIdx: sIdx })
-        // Tiles for this section
-        for (let i = section.startIdx; i < section.endIdx; i++) {
-          items.push({ type: 'tile', globalIndex: i, fc: allFlashcards[i] })
+        if (flippedTiles[section.startIdx]) {
+          // Merged: one large card spanning full width
+          items.push({ type: 'merged', section, sectionIdx: sIdx })
+        } else {
+          for (let i = section.startIdx; i < section.endIdx; i++) {
+            items.push({ type: 'tile', globalIndex: i, fc: effectiveTiles[i] })
+          }
         }
       })
     } else {
-      // Outline and Flash: just tiles
-      allFlashcards.forEach((fc, i) => {
+      effectiveTiles.forEach((fc, i) => {
         items.push({ type: 'tile', globalIndex: i, fc })
       })
     }
 
     return items
-  }, [viewMode, sections, allFlashcards])
+  }, [viewMode, sections, effectiveTiles, flippedTiles])
 
   // Container styles per mode
   const containerStyle = viewMode === 'outline'
@@ -188,8 +220,29 @@ export default function UnifiedTileView({
                 className={`text-center py-3 ${item.sectionIdx > 0 ? 'mt-4' : ''}`}
               >
                 <span className="text-sm font-medium text-gray-600">
-                  {item.section.title}
+                  {item.section.title.replace(/\*{2,4}/g, '')}
                 </span>
+              </div>
+            )
+          }
+
+          if (item.type === 'merged') {
+            const { section, sectionIdx } = item
+            return (
+              <div
+                key={`merged-${sectionIdx}`}
+                style={{ gridColumn: '1 / -1' }}
+                className="rounded-xl bg-white shadow-lg border border-gray-200 cursor-pointer"
+                onClick={() => handleTileClick(section.startIdx)}
+              >
+                <div className="p-5">
+                  <h3 className="font-semibold text-emerald-600 text-lg mb-3">
+                    {section.title.replace(/\*{2,4}/g, '')}
+                  </h3>
+                  <div className="text-gray-700 text-sm leading-relaxed">
+                    {renderContent(section.content)}
+                  </div>
+                </div>
               </div>
             )
           }
@@ -221,7 +274,7 @@ export default function UnifiedTileView({
                   />
                 </motion.div>
                 <div className="text-center mt-3 text-gray-400 text-sm">
-                  {globalIndex + 1} / {allFlashcards.length}
+                  {globalIndex + 1} / {effectiveTiles.length}
                 </div>
               </div>
             )
@@ -248,30 +301,6 @@ export default function UnifiedTileView({
           )
         })}
       </div>
-
-      {/* Cards mode: section content overlays */}
-      {viewMode === 'cards' && sections.map((section, sIdx) => {
-        const isFlipped = flippedTiles[section.startIdx]
-        if (!isFlipped) return null
-        return (
-          <motion.div
-            key={`content-${sIdx}`}
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mx-4 mb-4 rounded-xl bg-white shadow-lg overflow-hidden"
-          >
-            <div className="p-5">
-              <h3 className="font-semibold text-emerald-600 text-lg mb-3">
-                {section.title}
-              </h3>
-              <div className="text-gray-700 text-sm leading-relaxed">
-                {renderContent(section.content)}
-              </div>
-            </div>
-          </motion.div>
-        )
-      })}
 
       {/* Outline mode: tap hint */}
       {viewMode === 'outline' && !outlineOpen && (
@@ -322,7 +351,7 @@ export default function UnifiedTileView({
       {viewMode === 'flashcards' && (
         <div className="flex justify-center py-4">
           <div className="flex gap-1">
-            {allFlashcards.slice(0, Math.min(10, allFlashcards.length)).map((_, idx) => (
+            {effectiveTiles.slice(0, Math.min(10, effectiveTiles.length)).map((_, idx) => (
               <div
                 key={idx}
                 className={`w-1.5 h-1.5 rounded-full transition-colors ${
@@ -330,9 +359,9 @@ export default function UnifiedTileView({
                 }`}
               />
             ))}
-            {allFlashcards.length > 10 && (
+            {effectiveTiles.length > 10 && (
               <span className="text-gray-400 text-xs ml-1">
-                +{allFlashcards.length - 10}
+                +{effectiveTiles.length - 10}
               </span>
             )}
           </div>
