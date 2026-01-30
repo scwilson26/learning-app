@@ -275,6 +275,21 @@ export default function UnifiedTileView({
     return items
   }, [activeMode, sections, effectiveTiles, flippedTiles])
 
+  // Loading states for Slate and Flash (Tiles streams fine)
+  const slateLoading = activeMode === 'outline' && outlineSections.length === 0
+  const flashLoading = activeMode === 'flashcards' && !hasFlashcards
+
+  if (slateLoading || flashLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-4">
+        <div className="w-10 h-10 border-3 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+        <p className="text-sm text-gray-400">
+          {slateLoading ? 'Building outline...' : 'Creating flashcards...'}
+        </p>
+      </div>
+    )
+  }
+
   return (
     <>
       {/* Tile container — always rendered, layout changes drive animation */}
