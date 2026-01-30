@@ -44,30 +44,72 @@ export default function UnifiedTileView({
     )
   }, [allFlashcards, allCards, hasFlashcards])
 
-  // Pre-compute section ranges
+  // Pre-compute section ranges — match by title, fallback to even distribution
   const { sections, tileToSection } = useMemo(() => {
     const secs = []
     const t2s = {}
-    let idx = 0
-    for (const card of allCards) {
-      const cardTiles = effectiveTiles.filter(fc => fc.sectionTitle === card.title)
-      const startIdx = idx
-      cardTiles.forEach(() => {
-        t2s[idx] = secs.length
+
+    // Try title matching first
+    const titleGroups = {}
+    effectiveTiles.forEach((fc) => {
+      const title = fc.sectionTitle || ''
+      if (!titleGroups[title]) titleGroups[title] = 0
+      titleGroups[title]++
+    })
+
+    // Check if title matching works (at least some cards match)
+    const matchCount = allCards.filter(c => titleGroups[c.title] > 0).length
+    const useTitleMatch = matchCount > 0 && matchCount >= allCards.length / 2
+
+    if (useTitleMatch) {
+      let idx = 0
+      for (const card of allCards) {
+        const cardTiles = effectiveTiles.filter(fc => fc.sectionTitle === card.title)
+        const startIdx = idx
+        cardTiles.forEach(() => {
+          t2s[idx] = secs.length
+          idx++
+        })
+        secs.push({
+          title: card.title,
+          content: card.content || card.concept || '',
+          startIdx,
+          endIdx: idx,
+          count: idx - startIdx
+        })
+      }
+      // Orphaned tiles distributed to last section
+      while (idx < effectiveTiles.length) {
+        t2s[idx] = secs.length - 1
+        if (secs.length > 0) secs[secs.length - 1].endIdx = idx + 1
         idx++
-      })
-      secs.push({
-        title: card.title,
-        content: card.content || card.concept || '',
-        startIdx,
-        endIdx: idx,
-        count: idx - startIdx
-      })
+      }
+    } else {
+      // Even distribution: split tiles equally across cards
+      const tilesPerCard = Math.ceil(effectiveTiles.length / Math.max(allCards.length, 1))
+      let idx = 0
+      for (const card of allCards) {
+        const startIdx = idx
+        const endIdx = Math.min(idx + tilesPerCard, effectiveTiles.length)
+        for (let i = startIdx; i < endIdx; i++) {
+          t2s[i] = secs.length
+          idx++
+        }
+        secs.push({
+          title: card.title,
+          content: card.content || card.concept || '',
+          startIdx,
+          endIdx,
+          count: endIdx - startIdx
+        })
+      }
+      while (idx < effectiveTiles.length) {
+        t2s[idx] = secs.length - 1
+        if (secs.length > 0) secs[secs.length - 1].endIdx = idx + 1
+        idx++
+      }
     }
-    while (idx < effectiveTiles.length) {
-      t2s[idx] = -1
-      idx++
-    }
+
     return { sections: secs, tileToSection: t2s }
   }, [effectiveTiles, allCards])
 
@@ -335,7 +377,7 @@ export default function UnifiedTileView({
 
       {/* Slate mode: outline content replaces tiles */}
       {viewMode === 'outline' && outlineOpen && (
-        <div className="px-4 pb-8">
+        <div className="px-4 pb-8 cursor-pointer" onClick={() => handleTileClick(0)}>
           <div className="max-w-lg mx-auto">
             <h2 className="text-2xl font-bold text-gray-800 mb-8 text-center">
               {deckName}
@@ -352,11 +394,8 @@ export default function UnifiedTileView({
                 </div>
               ))}
             </div>
-            <div
-              className="text-center py-6 text-gray-400 text-sm cursor-pointer"
-              onClick={() => handleTileClick(0)}
-            >
-              Tap to show tiles
+            <div className="text-center py-6 text-gray-400 text-sm">
+              Click anywhere to show tiles
             </div>
           </div>
         </div>
