@@ -230,9 +230,13 @@ export default function UnifiedTileView({
           items.push({ type: 'expanded', section, sectionIdx: expandedSection })
         }
       } else {
-        // Show all tiles in flat 2-col grid
-        effectiveTiles.forEach((fc, i) => {
-          items.push({ type: 'tile', globalIndex: i, fc })
+        // Show tiles grouped by section with subtle labels
+        sections.forEach((section, sIdx) => {
+          if (section.count === 0) return
+          items.push({ type: 'label', title: section.title, sectionIdx: sIdx })
+          for (let i = section.startIdx; i < section.endIdx; i++) {
+            items.push({ type: 'tile', globalIndex: i, fc: effectiveTiles[i] })
+          }
         })
       }
     } else if (viewMode === 'flashcards') {
@@ -269,6 +273,20 @@ export default function UnifiedTileView({
         transition={{ duration: 0.3, ease: 'easeInOut' }}
       >
         {gridItems.map((item) => {
+          if (item.type === 'label') {
+            return (
+              <div
+                key={`label-${item.sectionIdx}`}
+                style={{ gridColumn: '1 / -1' }}
+                className={`px-1 ${item.sectionIdx > 0 ? 'pt-3' : ''}`}
+              >
+                <span className="text-xs text-gray-400 font-medium">
+                  {item.title.replace(/\*{2,4}/g, '')}
+                </span>
+              </div>
+            )
+          }
+
           if (item.type === 'expanded') {
             const { section, sectionIdx } = item
             return (
