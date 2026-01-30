@@ -100,10 +100,19 @@ export default function UnifiedTileView({
   const handleTileClick = (globalIndex) => {
     if (activeMode === 'outline') {
       if (slateMerged) {
-        // Reverse: hide outline, unmerge, unflip
+        // Reverse phase 1: fade out outline, show tiles (unmerge)
         setSlateMerged(false)
-        setSlateMerging(false)
-        setFlippedTiles({})
+        // Reverse phase 2: after tiles reappear, open gaps
+        const t1 = setTimeout(() => {
+          setSlateMerging(false)
+          // Reverse phase 3: after unmerge, flip tiles back
+          const t2 = setTimeout(() => {
+            setFlippedTiles({})
+          }, 400)
+          slateTimers.current.push(t2)
+        }, 300)
+        slateTimers.current.push(t1)
+        return
       } else if (!slateMerging) {
         // Phase 1: flip all tiles
         const newState = {}
@@ -396,7 +405,8 @@ export default function UnifiedTileView({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="px-4 pb-8"
+            className="px-4 pb-8 cursor-pointer"
+            onClick={() => handleTileClick(0)}
           >
             <div className="max-w-lg mx-auto">
               <h2 className="text-2xl font-bold text-gray-800 mb-8 text-center">
