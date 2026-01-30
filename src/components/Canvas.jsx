@@ -2789,12 +2789,14 @@ function DeckSpread({
                     ...(tierCards.core || []),
                     ...(tierCards.deep_dive || [])
                   ].filter(card => !card.isPlaceholder && card.content)
-                  const allFlashcards = allCards.flatMap(card =>
-                    (card.flashcards || []).map(fc => ({
-                      ...fc,
-                      sectionTitle: card.title
-                    }))
-                  )
+                  const allFlashcards = deck?.flashcards?.length > 0
+                    ? deck.flashcards.map(fc => ({ ...fc, sectionTitle: fc.sourceCardTitle || '' }))
+                    : allCards.flatMap(card =>
+                        (card.flashcards || []).map(fc => ({
+                          ...fc,
+                          sectionTitle: card.title
+                        }))
+                      )
                   addTopicToDeck({
                     originalTopicId: deck.id,
                     title: deck.name,
