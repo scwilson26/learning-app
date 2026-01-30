@@ -13,6 +13,7 @@ export default function UnifiedTileView({
 }) {
   const [flippedTiles, setFlippedTiles] = useState({})
   const [outlineOpen, setOutlineOpen] = useState(false)
+  const [merging, setMerging] = useState(false)
   const timeoutRefs = useRef([])
 
   // Cleanup timeouts on unmount
@@ -26,6 +27,7 @@ export default function UnifiedTileView({
     timeoutRefs.current = []
     setFlippedTiles({})
     setOutlineOpen(false)
+    setMerging(false)
   }, [viewMode])
 
   // Build the effective tile list
@@ -79,14 +81,21 @@ export default function UnifiedTileView({
   const handleTileClick = (globalIndex) => {
     if (viewMode === 'outline') {
       if (!outlineOpen) {
-        // Flip all tiles, then after flip animation swap to outline
+        // Phase 1: flip all tiles
         const newState = {}
         effectiveTiles.forEach((_, i) => { newState[i] = true })
         setFlippedTiles(newState)
-        const t = setTimeout(() => {
-          setOutlineOpen(true)
-        }, 400)
-        timeoutRefs.current.push(t)
+        // Phase 2: after flip, merge (close gaps, remove borders)
+        const t1 = setTimeout(() => {
+          setMerging(true)
+          // Phase 3: after merge, swap to outline
+          const t2 = setTimeout(() => {
+            setOutlineOpen(true)
+            setMerging(false)
+          }, 350)
+          timeoutRefs.current.push(t2)
+        }, 350)
+        timeoutRefs.current.push(t1)
       } else {
         // Hide outline, show tiles unflipped
         setOutlineOpen(false)
@@ -226,9 +235,11 @@ export default function UnifiedTileView({
 
   return (
     <>
-      {!outlineOpen && <div
+      {!outlineOpen && <motion.div
         className={containerClass}
-        style={containerStyle}
+        style={{ ...containerStyle, gap: undefined }}
+        animate={{ gap: merging ? '0px' : (viewMode === 'flashcards' ? '1.5rem' : '0.5rem') }}
+        transition={{ duration: 0.3, ease: 'easeInOut' }}
       >
         {gridItems.map((item) => {
           if (item.type === 'header') {
@@ -299,7 +310,7 @@ export default function UnifiedTileView({
             )
           }
 
-          // Grid tiles (Slate/Tiles modes + transitions)
+          // Grid tiles (Slate/Tiles modes)
           return (
             <motion.div
               key={`tile-${globalIndex}`}
@@ -310,6 +321,7 @@ export default function UnifiedTileView({
             >
               <Tile
                 isFlipped={isFlipped}
+                merging={merging}
                 gradient={gradient}
                 patternId={patternId}
                 onClick={() => handleTileClick(globalIndex)}
@@ -319,7 +331,7 @@ export default function UnifiedTileView({
             </motion.div>
           )
         })}
-      </div>}
+      </motion.div>}
 
       {/* Slate mode: outline content replaces tiles */}
       {viewMode === 'outline' && outlineOpen && (
