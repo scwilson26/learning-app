@@ -17,14 +17,11 @@ export default function Tile({
   frontContent,
   backContent,
   isFlipped = false,
-  merging = false,
   onClick,
   gradient = 'from-emerald-400 via-emerald-500 to-emerald-600',
   patternId = 'prague-cross',
   className = ''
 }) {
-  const borderRadius = merging ? '0px' : '0.5rem'
-
   return (
     <div
       className={`w-full h-full cursor-pointer ${className}`}
@@ -34,15 +31,13 @@ export default function Tile({
       <motion.div
         className="relative w-full h-full"
         animate={{ rotateY: isFlipped ? 180 : 0 }}
-        transition={{ duration: 0.3, ease: 'easeInOut' }}
+        transition={{ duration: 0.45, ease: 'easeInOut' }}
         style={{ transformStyle: 'preserve-3d' }}
       >
         {/* Front - colored tile with pattern */}
-        <motion.div
-          className="absolute inset-0 overflow-hidden"
+        <div
+          className="absolute inset-0 overflow-hidden rounded-lg shadow-md"
           style={{ backfaceVisibility: 'hidden' }}
-          animate={{ borderRadius, boxShadow: merging ? '0 0 0 rgba(0,0,0,0)' : '0 4px 6px -1px rgba(0,0,0,0.1)' }}
-          transition={{ duration: 0.3 }}
         >
           <div className={`w-full h-full bg-gradient-to-br ${gradient} relative`}>
             <TilePattern patternId={patternId} />
@@ -52,14 +47,12 @@ export default function Tile({
               </div>
             )}
           </div>
-        </motion.div>
+        </div>
 
         {/* Back - white with category-colored border frame */}
-        <motion.div
-          className="absolute inset-0 overflow-hidden"
+        <div
+          className="absolute inset-0 overflow-hidden rounded-lg shadow-lg"
           style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
-          animate={{ borderRadius, boxShadow: merging ? '0 0 0 rgba(0,0,0,0)' : '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-          transition={{ duration: 0.3 }}
         >
           {/* Category gradient border frame */}
           <div className={`w-full h-full bg-gradient-to-br ${gradient} relative`}>
@@ -70,7 +63,7 @@ export default function Tile({
               {backContent}
             </div>
           </div>
-        </motion.div>
+        </div>
       </motion.div>
     </div>
   )
