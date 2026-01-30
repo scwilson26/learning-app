@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { motion, LayoutGroup, AnimatePresence } from 'framer-motion'
 import Tile from './Tile'
 
@@ -13,19 +13,69 @@ export default function UnifiedTileView({
 }) {
   const [flippedTiles, setFlippedTiles] = useState({})
   const [outlineOpen, setOutlineOpen] = useState(false)
+  const [transitionPhase, setTransitionPhase] = useState(null) // null | 'flip' | 'merge' | 'shatter' | 'flip-back'
+  const prevViewMode = useRef(viewMode)
+  const timeoutRefs = useRef([])
 
-  // Reset flip state when view mode changes
+  // Cleanup timeouts on unmount
   useEffect(() => {
-    setFlippedTiles({})
-    setOutlineOpen(false)
+    return () => timeoutRefs.current.forEach(t => clearTimeout(t))
+  }, [])
+
+  // Orchestrate transitions when viewMode changes
+  useEffect(() => {
+    const prev = prevViewMode.current
+    prevViewMode.current = viewMode
+
+    // Clear pending timeouts from previous transitions
+    timeoutRefs.current.forEach(t => clearTimeout(t))
+    timeoutRefs.current = []
+
+    if (prev === 'cards' && viewMode === 'outline') {
+      // Tiles → Slate: flip then merge
+      setTransitionPhase('flip')
+      const allFlipped = {}
+      effectiveTiles.forEach((_, i) => { allFlipped[i] = true })
+      setFlippedTiles(allFlipped)
+
+      const t1 = setTimeout(() => {
+        setTransitionPhase('merge')
+        const t2 = setTimeout(() => {
+          setTransitionPhase(null)
+          setOutlineOpen(true)
+        }, 350)
+        timeoutRefs.current.push(t2)
+      }, 350)
+      timeoutRefs.current.push(t1)
+    } else if (prev === 'outline' && viewMode === 'cards') {
+      // Slate → Tiles: shatter then flip back
+      setOutlineOpen(false)
+      setTransitionPhase('shatter')
+      const allFlipped = {}
+      effectiveTiles.forEach((_, i) => { allFlipped[i] = true })
+      setFlippedTiles(allFlipped)
+
+      const t1 = setTimeout(() => {
+        setTransitionPhase('flip-back')
+        setFlippedTiles({})
+        const t2 = setTimeout(() => {
+          setTransitionPhase(null)
+        }, 350)
+        timeoutRefs.current.push(t2)
+      }, 350)
+      timeoutRefs.current.push(t1)
+    } else {
+      // Other transitions: instant
+      setFlippedTiles({})
+      setOutlineOpen(false)
+      setTransitionPhase(null)
+    }
   }, [viewMode])
 
-  // Build the effective tile list: use flashcards if available, otherwise generate
-  // placeholder tiles (4 per card) so tiles show before flashcards are generated
+  // Build the effective tile list
   const hasFlashcards = allFlashcards.length > 0
   const effectiveTiles = useMemo(() => {
     if (hasFlashcards) return allFlashcards
-    // Generate placeholder tiles from cards
     return allCards.flatMap(card =>
       Array.from({ length: 4 }, (_, i) => ({
         question: '',
@@ -36,7 +86,7 @@ export default function UnifiedTileView({
     )
   }, [allFlashcards, allCards, hasFlashcards])
 
-  // Pre-compute section ranges: which tile indices belong to which section
+  // Pre-compute section ranges
   const { sections, tileToSection } = useMemo(() => {
     const secs = []
     const t2s = {}
@@ -63,7 +113,7 @@ export default function UnifiedTileView({
     return { sections: secs, tileToSection: t2s }
   }, [effectiveTiles, allCards])
 
-  // Combine outline sections for overlay
+  // Combine outline sections
   const outlineSections = useMemo(() => [
     ...(outline?.core || []),
     ...(outline?.deep_dive || [])
@@ -71,15 +121,16 @@ export default function UnifiedTileView({
 
   // Click handlers per mode
   const handleTileClick = (globalIndex) => {
+    // Ignore clicks during transitions
+    if (transitionPhase) return
+
     if (viewMode === 'outline') {
-      // Flip all tiles + show overlay
       const allFlipped = !flippedTiles[0]
       const newState = {}
       effectiveTiles.forEach((_, i) => { newState[i] = allFlipped })
       setFlippedTiles(newState)
       setOutlineOpen(allFlipped)
     } else if (viewMode === 'cards') {
-      // Flip all tiles in the same section
       const sectionIdx = tileToSection[globalIndex]
       if (sectionIdx === undefined || sectionIdx < 0) return
       const section = sections[sectionIdx]
@@ -90,13 +141,25 @@ export default function UnifiedTileView({
       }
       setFlippedTiles(newState)
     } else {
-      // Flash: flip individual tile
       setFlippedTiles(prev => ({ ...prev, [globalIndex]: !prev[globalIndex] }))
     }
   }
 
-  // Get back content for a tile based on view mode
+  // Get back content for a tile
   const getBackContent = (fc, globalIndex) => {
+    // During transitions, show outline-style backs (section titles)
+    if (transitionPhase) {
+      const sectionIdx = tileToSection[globalIndex]
+      const section = sectionIdx >= 0 ? sections[sectionIdx] : null
+      return (
+        <div className="w-full h-full flex items-center justify-center p-1">
+          <span className="text-emerald-600 text-[10px] font-medium text-center leading-tight line-clamp-3">
+            {section?.title?.replace(/\*{2,4}/g, '') || ''}
+          </span>
+        </div>
+      )
+    }
+
     if (viewMode === 'outline') {
       const sectionIdx = tileToSection[globalIndex]
       const section = sectionIdx >= 0 ? sections[sectionIdx] : null
@@ -111,7 +174,6 @@ export default function UnifiedTileView({
     if (viewMode === 'cards') {
       const sectionIdx = tileToSection[globalIndex]
       const section = sectionIdx >= 0 ? sections[sectionIdx] : null
-      // Only show content on the first tile of each section
       if (!section || globalIndex !== section.startIdx) {
         return <div className="w-full h-full" />
       }
@@ -150,10 +212,10 @@ export default function UnifiedTileView({
         </div>
       )
     }
-    return null // outline and cards: just pattern
+    return null
   }
 
-  // Simple markdown rendering for cards overlay
+  // Simple markdown rendering
   const renderContent = (text) => {
     if (!text) return null
     return text.split('\n').map((line, i) => {
@@ -169,16 +231,27 @@ export default function UnifiedTileView({
     })
   }
 
-  // Build the grid items: interleave section headers (cards mode) with tiles
+  // Determine the visual layout mode (during transitions, keep the source layout)
+  const visualMode = transitionPhase ? (
+    // During tiles→slate transitions, keep cards (2-col) grid
+    // During slate→tiles transitions, also use cards (2-col) grid
+    'cards'
+  ) : viewMode
+
+  // Build grid items based on visual mode
   const gridItems = useMemo(() => {
     const items = []
 
-    if (viewMode === 'cards') {
+    if (visualMode === 'cards') {
+      // During transitions OR normal cards mode: use 2-col grid with section headers
+      // But during transitions, don't merge — show individual tiles
+      const isTransitioning = !!transitionPhase
       sections.forEach((section, sIdx) => {
         if (section.count === 0) return
-        items.push({ type: 'header', section, sectionIdx: sIdx })
-        if (flippedTiles[section.startIdx]) {
-          // Merged: one large card spanning full width
+        if (!isTransitioning) {
+          items.push({ type: 'header', section, sectionIdx: sIdx })
+        }
+        if (!isTransitioning && flippedTiles[section.startIdx]) {
           items.push({ type: 'merged', section, sectionIdx: sIdx })
         } else {
           for (let i = section.startIdx; i < section.endIdx; i++) {
@@ -186,31 +259,47 @@ export default function UnifiedTileView({
           }
         }
       })
+    } else if (visualMode === 'flashcards') {
+      effectiveTiles.forEach((fc, i) => {
+        items.push({ type: 'tile', globalIndex: i, fc })
+      })
     } else {
+      // Outline mode (no transition): all tiles flat
       effectiveTiles.forEach((fc, i) => {
         items.push({ type: 'tile', globalIndex: i, fc })
       })
     }
 
     return items
-  }, [viewMode, sections, effectiveTiles, flippedTiles])
+  }, [visualMode, sections, effectiveTiles, flippedTiles, transitionPhase])
 
-  // Container styles per mode
-  const containerStyle = viewMode === 'outline'
-    ? { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', padding: '1rem' }
-    : viewMode === 'cards'
-    ? { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem', padding: '1rem' }
-    : { display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: '1rem 1rem' }
+  // Container styles — use visualMode for layout during transitions
+  const isMerging = transitionPhase === 'merge'
+  const containerStyle = visualMode === 'outline'
+    ? { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', padding: '1rem' }
+    : visualMode === 'cards'
+    ? { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', padding: '1rem' }
+    : { display: 'flex', flexDirection: 'column', padding: '1rem 1rem' }
 
-  const containerClass = viewMode === 'flashcards'
+  const containerClass = visualMode === 'flashcards'
     ? 'h-[calc(100vh-180px)] overflow-y-auto snap-y snap-mandatory'
-    : viewMode === 'cards'
+    : visualMode === 'cards'
     ? 'h-[calc(100vh-180px)] overflow-y-auto'
     : ''
 
+  // Animated gap value
+  const animatedGap = isMerging ? '0px'
+    : visualMode === 'flashcards' ? '1.5rem'
+    : '0.5rem'
+
   return (
     <LayoutGroup>
-      <div className={containerClass} style={containerStyle}>
+      <motion.div
+        className={containerClass}
+        style={containerStyle}
+        animate={{ gap: animatedGap }}
+        transition={{ duration: 0.3, ease: 'easeInOut' }}
+      >
         {gridItems.map((item) => {
           if (item.type === 'header') {
             return (
@@ -251,7 +340,7 @@ export default function UnifiedTileView({
           const isFlipped = !!flippedTiles[globalIndex]
 
           // Flash mode: large tile with snap
-          if (viewMode === 'flashcards') {
+          if (visualMode === 'flashcards') {
             return (
               <div
                 key={`wrap-${globalIndex}`}
@@ -280,7 +369,7 @@ export default function UnifiedTileView({
             )
           }
 
-          // Outline + Cards: tiles in grid
+          // Grid tiles (Slate/Tiles modes + transitions)
           return (
             <motion.div
               key={`tile-${globalIndex}`}
@@ -291,6 +380,7 @@ export default function UnifiedTileView({
             >
               <Tile
                 isFlipped={isFlipped}
+                merging={isMerging}
                 gradient={gradient}
                 patternId={patternId}
                 onClick={() => handleTileClick(globalIndex)}
@@ -300,30 +390,19 @@ export default function UnifiedTileView({
             </motion.div>
           )
         })}
-      </div>
+      </motion.div>
 
-      {/* Outline mode: tap hint */}
-      {viewMode === 'outline' && !outlineOpen && (
-        <div className="text-center py-2 text-gray-400 text-sm">
-          Tap to reveal full slate
-        </div>
-      )}
-
-      {/* Outline mode: full-screen overlay */}
+      {/* Slate mode: inline outline content (replaces full-screen overlay) */}
       <AnimatePresence>
-        {viewMode === 'outline' && outlineOpen && (
+        {viewMode === 'outline' && outlineOpen && !transitionPhase && (
           <motion.div
-            className="fixed inset-0 z-30 bg-white/98 backdrop-blur-sm overflow-auto"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            className="px-4 pb-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.3 }}
-            onClick={() => {
-              setFlippedTiles({})
-              setOutlineOpen(false)
-            }}
           >
-            <div className="max-w-lg mx-auto p-6 pt-20 pb-32">
+            <div className="max-w-lg mx-auto">
               <h2 className="text-2xl font-bold text-gray-800 mb-8 text-center">
                 {deckName}
               </h2>
@@ -339,13 +418,17 @@ export default function UnifiedTileView({
                   </div>
                 ))}
               </div>
-              <div className="text-center py-8 text-gray-400 text-sm">
-                Tap anywhere to close
-              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Slate mode: tap hint (only when not showing content) */}
+      {viewMode === 'outline' && !outlineOpen && !transitionPhase && (
+        <div className="text-center py-2 text-gray-400 text-sm">
+          Tap to reveal full slate
+        </div>
+      )}
 
       {/* Flash mode: progress dots */}
       {viewMode === 'flashcards' && (

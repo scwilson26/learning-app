@@ -17,11 +17,14 @@ export default function Tile({
   frontContent,
   backContent,
   isFlipped = false,
+  merging = false,
   onClick,
   gradient = 'from-emerald-400 via-emerald-500 to-emerald-600',
   patternId = 'prague-cross',
   className = ''
 }) {
+  const borderRadius = merging ? '0px' : '0.5rem'
+
   return (
     <div
       className={`w-full h-full cursor-pointer ${className}`}
@@ -31,36 +34,37 @@ export default function Tile({
       <motion.div
         className="relative w-full h-full"
         animate={{ rotateY: isFlipped ? 180 : 0 }}
-        transition={{ duration: 0.5, ease: 'easeInOut' }}
+        transition={{ duration: 0.3, ease: 'easeInOut' }}
         style={{ transformStyle: 'preserve-3d' }}
       >
         {/* Front - colored tile with pattern */}
-        <div
-          className="absolute inset-0 rounded-lg overflow-hidden shadow-md"
+        <motion.div
+          className="absolute inset-0 overflow-hidden"
           style={{ backfaceVisibility: 'hidden' }}
+          animate={{ borderRadius, boxShadow: merging ? '0 0 0 rgba(0,0,0,0)' : '0 4px 6px -1px rgba(0,0,0,0.1)' }}
+          transition={{ duration: 0.3 }}
         >
           <div className={`w-full h-full bg-gradient-to-br ${gradient} relative`}>
-            {/* Decorative pattern overlay */}
             <TilePattern patternId={patternId} />
-
-            {/* Optional front content (e.g., question text at large sizes) */}
             {frontContent && (
               <div className="absolute inset-0 flex items-center justify-center p-2 z-10">
                 {frontContent}
               </div>
             )}
           </div>
-        </div>
+        </motion.div>
 
         {/* Back - white with content */}
-        <div
-          className="absolute inset-0 rounded-lg bg-white shadow-lg overflow-hidden"
+        <motion.div
+          className="absolute inset-0 bg-white overflow-hidden"
           style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+          animate={{ borderRadius, boxShadow: merging ? '0 0 0 rgba(0,0,0,0)' : '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+          transition={{ duration: 0.3 }}
         >
           <div className="w-full h-full p-3 overflow-auto">
             {backContent}
           </div>
-        </div>
+        </motion.div>
       </motion.div>
     </div>
   )
