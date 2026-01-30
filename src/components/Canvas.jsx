@@ -7732,7 +7732,7 @@ export default function Canvas() {
               </svg>
               <span className="text-sm font-medium">Back</span>
             </button>
-            <h1 className="text-lg font-semibold text-gray-800">My Notes</h1>
+            <h1 className="text-lg font-semibold text-gray-800">Upload</h1>
             <div className="w-16" /> {/* Spacer for balance */}
           </div>
         </div>
