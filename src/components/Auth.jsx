@@ -34,7 +34,7 @@ export default function Auth({ onSkip }) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <h1 className="text-2xl font-bold text-gray-800 mb-2 text-center">Spaced</h1>
+        <h1 className="text-2xl font-bold text-gray-800 mb-2 text-center">Mosaic</h1>
         <p className="text-gray-500 text-center mb-8">Sign in to sync progress</p>
 
         <AnimatePresence mode="wait">

@@ -111,7 +111,18 @@ import {
   saveUserDeck,
   updateUserDeck,
   deleteUserDeck,
-  getUserDeckCardCount
+  getUserDeckCardCount,
+  // User topics (study deck)
+  getUserTopics,
+  isTopicInDeck,
+  addTopicToDeck,
+  removeTopicFromDeck,
+  getUserTopic,
+  getDueUserFlashcards,
+  getNewUserFlashcards,
+  updateUserFlashcard,
+  recordUserReview,
+  getUserStudyStats
 } from '../services/storage'
 
 // Configuration - card counts can be adjusted here or per-deck
@@ -2700,6 +2711,7 @@ function DeckSpread({
 }) {
   // State for view mode toggle (like MosaicView)
   const [viewMode, setViewMode] = useState('flashcards') // outline | cards | flashcards
+  const [addedToStudy, setAddedToStudy] = useState(() => isTopicInDeck(deck.id))
 
   // Tier metadata - two tiers: Core and Deep Dive
   const tiers = [
@@ -2752,10 +2764,44 @@ function DeckSpread({
           </div>
 
           {/* View description */}
-          <div className="text-center text-xs text-gray-400 mb-4">
+          <div className="text-center text-xs text-gray-400 mb-2">
             {viewMode === 'outline' && 'Full text workspace — all content visible'}
             {viewMode === 'cards' && 'Tap a section → tiles merge → shows content'}
             {viewMode === 'flashcards' && 'Tap a tile → it flips → shows Q/A'}
+          </div>
+
+          {/* Add to Deck button */}
+          <div className="flex justify-center mb-4">
+            {addedToStudy ? (
+              <span className="text-sm text-gray-400">In Study Deck ✓</span>
+            ) : (
+              <button
+                onClick={() => {
+                  const allCards = [
+                    ...(tierCards.core || []),
+                    ...(tierCards.deep_dive || [])
+                  ].filter(card => !card.isPlaceholder && card.content)
+                  const allFlashcards = allCards.flatMap(card =>
+                    (card.flashcards || []).map(fc => ({
+                      ...fc,
+                      sectionTitle: card.title
+                    }))
+                  )
+                  addTopicToDeck({
+                    originalTopicId: deck.id,
+                    title: deck.name,
+                    categoryId: rootCategoryId,
+                    outline: outline || null,
+                    tiles: allCards.map(c => ({ title: c.title, content: c.content || c.concept || '' })),
+                    flashcards: allFlashcards
+                  })
+                  setAddedToStudy(true)
+                }}
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white shadow-md hover:bg-indigo-700 transition-colors"
+              >
+                + Add to Study Deck
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -5927,57 +5973,42 @@ export default function Canvas() {
 
     // Refresh all data
     const refreshData = () => {
-      const deck = getStudyDeck()
-      const newCount = getLearningAvailableCount() // Includes both 'new' and 'acquiring'
-      const dueCount = getDueCardCount()
-      const overdue = getOverdueCardCount()
-      const boxes = getCardsByBox()
-      const stats = getStudyStats()
-      const nextTime = getNextReviewTime()
-      const available = getAvailableStudyTopics()
+      const topics = getUserTopics()
+      const stats = getUserStudyStats()
+      const oldStats = getStudyStats() // For streak data
 
-      setStudyDeck(deck)
-      setNewCardCount(newCount)
-      setDueCardCount(dueCount)
-      setOverdueCount(overdue)
-      setBoxCounts(boxes)
-      setStudyStats(stats)
-      setNextReviewTime(nextTime)
-      setAvailableTopics(available)
+      setStudyDeck(topics.map(t => t.originalTopicId)) // Compat
+      setNewCardCount(stats.newCards)
+      setDueCardCount(stats.dueCards)
+      setOverdueCount(0)
+      setBoxCounts({})
+      setStudyStats(oldStats)
+      setNextReviewTime(null)
+      setAvailableTopics({})
     }
 
     // ========== ACQUISITION MODE (Snowball Method) ==========
 
-    // Start Acquisition session
+    // Start Acquisition session - uses userTopics flashcards
     const startAcquisitionSession = (topicId = null) => {
-      // Get cards already in acquisition (from previous incomplete sessions)
-      const alreadyAcquiring = getAcquiringCards(topicId)
-      // Get new cards not yet started
-      const newCards = getNewCards(topicId)
+      const newCards = getNewUserFlashcards()
+      if (newCards.length === 0) return
 
-      const totalAvailable = alreadyAcquiring.length + newCards.length
-      if (totalAvailable === 0) return
-
-      // Build the rotation: start with acquiring cards, then add new ones to fill batch
+      // Take a batch of new cards
       const batchSize = ACQUISITION_CONFIG.batchSize
-      let rotation = [...alreadyAcquiring]
+      const batch = newCards.slice(0, batchSize)
 
-      // If we have room in the batch, add new cards
-      if (rotation.length < batchSize && newCards.length > 0) {
-        const slotsAvailable = batchSize - rotation.length
-        const newToAdd = newCards.slice(0, slotsAvailable)
-        // Mark new cards as acquiring
-        newToAdd.forEach(card => startAcquisition(card.id))
-        rotation = [...rotation, ...newToAdd]
-      }
-
-      // Shuffle the batch
-      const shuffled = rotation.sort(() => Math.random() - 0.5)
+      // Shuffle
+      const shuffled = batch.sort(() => Math.random() - 0.5).map(fc => ({
+        ...fc,
+        acquisitionCorrectStreak: 0,
+        acquisitionTotalAttempts: 0
+      }))
 
       setAcquiringCards(shuffled)
       setCurrentCardIndex(0)
       setGraduatedCount(0)
-      setTotalCardsToLearn(totalAvailable)
+      setTotalCardsToLearn(newCards.length)
       setSessionAttempts(0)
       setIsFlipped(false)
       setStudyView('acquisition')
@@ -5987,33 +6018,21 @@ export default function Canvas() {
     const handleAcquisitionMissed = () => {
       setIsFlipped(false)
 
-      // Capture card ID (not the card object, which can go stale)
-      const cardId = acquiringCards[currentCardIndex]?.id
-      if (!cardId) return
+      const card = acquiringCards[currentCardIndex]
+      if (!card) return
 
-      // Record the attempt in storage (resets streak)
-      const result = recordAcquisitionAttempt(cardId, false)
       setSessionAttempts(prev => prev + 1)
 
-      // Update local rotation - find card by ID to handle rapid clicks
+      // Reset streak, move to end
       setAcquiringCards(prev => {
-        const cardIndex = prev.findIndex(c => c.id === cardId)
-        if (cardIndex === -1) return prev // Already processed
-
+        const cardIndex = prev.findIndex(c => c.id === card.id)
+        if (cardIndex === -1) return prev
         const newCards = [...prev]
-        newCards[cardIndex] = {
-          ...prev[cardIndex],
-          acquisitionCorrectStreak: result.correctStreak,
-          acquisitionTotalAttempts: result.totalAttempts
-        }
-        // Move card to end of rotation
-        const [card] = newCards.splice(cardIndex, 1)
-        newCards.push(card)
+        newCards[cardIndex] = { ...prev[cardIndex], acquisitionCorrectStreak: 0 }
+        const [moved] = newCards.splice(cardIndex, 1)
+        newCards.push(moved)
         return newCards
       })
-
-      // After moving card to end, next card slides into position
-      // Only wrap to 0 if we were at the last position
       setCurrentCardIndex(prev => prev >= acquiringCards.length - 1 ? 0 : prev)
     }
 
@@ -6021,62 +6040,37 @@ export default function Canvas() {
     const handleAcquisitionGotIt = () => {
       setIsFlipped(false)
 
-      // Capture card ID and card object
-      const cardId = acquiringCards[currentCardIndex]?.id
-      const currentCard = acquiringCards[currentCardIndex]
-      if (!cardId || !currentCard) return
+      const card = acquiringCards[currentCardIndex]
+      if (!card) return
 
-      // Record the attempt
-      const result = recordAcquisitionAttempt(cardId, true)
       setSessionAttempts(prev => prev + 1)
+      const newStreak = (card.acquisitionCorrectStreak || 0) + 1
+      const graduated = newStreak >= ACQUISITION_CONFIG.correctStreakToGraduate
 
-      if (result.graduated) {
-        // Card graduated! Remove from rotation
+      if (graduated) {
+        // Card graduated - record review in storage
+        recordUserReview(card.topicId, card.id, 4) // quality 4 = good
         const newGraduated = graduatedCount + 1
         setGraduatedCount(newGraduated)
-
-        // Record study activity for streak
         recordStudyActivity('learn', 1)
 
-        // Sync to Supabase if logged in
-        if (user) {
-          const graduatedCard = { ...currentCard, studyState: 'learned', leitnerBox: 1 }
-          upsertFlashcardRemote(graduatedCard, user.id).catch(console.error)
-        }
-
-        // Remove graduated card from rotation by ID
         setAcquiringCards(prev => {
-          const newCards = prev.filter(c => c.id !== cardId)
-
+          const newCards = prev.filter(c => c.id !== card.id)
           if (newCards.length === 0) {
-            // Check if there are more new cards to load
-            const remainingNew = getNewCards()
-            if (remainingNew.length > 0) {
-              // Load next batch
-              const nextBatch = remainingNew.slice(0, ACQUISITION_CONFIG.batchSize)
-              nextBatch.forEach(c => startAcquisition(c.id))
-              const shuffled = [...nextBatch].sort(() => Math.random() - 0.5)
-              // Reset index will happen via setCurrentCardIndex below
-              return shuffled
-            } else {
-              // Session complete - will be handled by useEffect or next render
-              finishAcquisitionSession(newGraduated)
-              return []
-            }
+            finishAcquisitionSession(newGraduated)
+            return []
           }
           return newCards
         })
-
-        // Adjust index if needed
         setCurrentCardIndex(prev => {
-          const newLen = acquiringCards.length - 1 // One card removed
+          const newLen = acquiringCards.length - 1
           if (newLen <= 0) return 0
           return prev >= newLen ? 0 : prev
         })
       } else {
-        // Not graduated yet, update card in place and move to next
+        // Not graduated yet, update streak and move to next
         setAcquiringCards(prev => {
-          const cardIndex = prev.findIndex(c => c.id === cardId)
+          const cardIndex = prev.findIndex(c => c.id === card.id)
           if (cardIndex === -1) return prev
 
           const newCards = [...prev]
@@ -6113,9 +6107,9 @@ export default function Canvas() {
 
     // ========== REVIEW MODE (Leitner + SM-2 Hybrid) ==========
 
-    // Start Review session
+    // Start Review session - uses userTopics due flashcards
     const startReviewSession = (topicId = null) => {
-      const due = getDueCards(topicId)
+      const due = getDueUserFlashcards().filter(fc => fc.reviewCount > 0) // Only reviewed cards, not new
       if (due.length === 0) return
 
       setReviewCards(due)
@@ -6144,55 +6138,22 @@ export default function Canvas() {
       }
     }
 
-    // Handle Review: Missed (back to Box 1)
+    // Handle Review: Missed
     const handleReviewMissed = () => {
       const currentCard = reviewCards[reviewIndex]
-
-      // Record the review attempt
-      const result = recordReviewAttempt(currentCard.id, false)
+      recordUserReview(currentCard.topicId, currentCard.id, 1) // quality 1 = fail
       setReviewedCount(prev => prev + 1)
-
-      // Record study activity
       recordStudyActivity('review', 1)
-
-      // Sync to Supabase
-      if (user) {
-        const updatedCard = {
-          ...currentCard,
-          leitnerBox: result.newBox,
-          easeFactor: result.easeFactor,
-          nextReviewDate: Date.now() + (result.newInterval * 24 * 60 * 60 * 1000)
-        }
-        upsertFlashcardRemote(updatedCard, user.id).catch(console.error)
-      }
-
-      // Move to next card
       moveToNextReviewCard()
     }
 
-    // Handle Review: Got it (move up one box)
+    // Handle Review: Got it
     const handleReviewGotIt = () => {
       const currentCard = reviewCards[reviewIndex]
-
-      // Record the review attempt
-      const result = recordReviewAttempt(currentCard.id, true)
+      recordUserReview(currentCard.topicId, currentCard.id, 4) // quality 4 = good
       setReviewedCount(prev => prev + 1)
       setCorrectCount(prev => prev + 1)
-
-      // Record study activity
       recordStudyActivity('review', 1)
-
-      // Sync to Supabase
-      if (user) {
-        const updatedCard = {
-          ...currentCard,
-          studyState: result.mastered ? 'mastered' : 'learned',
-          leitnerBox: result.newBox,
-          easeFactor: result.easeFactor,
-          nextReviewDate: Date.now() + (result.newInterval * 24 * 60 * 60 * 1000)
-        }
-        upsertFlashcardRemote(updatedCard, user.id).catch(console.error)
-      }
 
       // Move to next card
       moveToNextReviewCard()
@@ -6292,7 +6253,7 @@ export default function Canvas() {
 
     // Remove topic from study deck
     const handleRemoveTopic = (topicId) => {
-      removeFromStudyDeck(topicId)
+      removeTopicFromDeck(topicId)
       setShowRemoveConfirm(null)
       refreshData()
     }
@@ -6586,7 +6547,7 @@ export default function Canvas() {
                     <p className="text-lg text-gray-800 text-center leading-relaxed whitespace-pre-line">{currentCard.answer}</p>
                   </div>
                   <p className="text-xs text-gray-400 text-center mb-4">
-                    From: {currentCard.sourceCardTitle}
+                    From: {currentCard.topicTitle || currentCard.sourceCardTitle || currentCard.sectionTitle}
                   </p>
 
                   {/* Buttons: Missed / Got it */}
@@ -6821,7 +6782,7 @@ export default function Canvas() {
                     <p className="text-lg text-gray-800 text-center leading-relaxed whitespace-pre-line">{currentCard.answer}</p>
                   </div>
                   <p className="text-xs text-gray-400 text-center mb-4">
-                    From: {currentCard.sourceCardTitle}
+                    From: {currentCard.topicTitle || currentCard.sourceCardTitle || currentCard.sectionTitle}
                   </p>
 
                   {/* Review buttons - Missed / Got it */}
@@ -7149,39 +7110,24 @@ export default function Canvas() {
             <span className="text-xs text-gray-400">{studyDeck.length} topics</span>
           </div>
 
-          {studyDeck.length > 0 ? (
+          {getUserTopics().length > 0 ? (
             <div className="space-y-2 mb-4">
-              {studyDeck.map(topicId => {
-                const info = getTopicInfo(topicId)
-                const isGenerating = generatingTopicId === topicId
+              {getUserTopics().map(topic => {
+                const fcCount = (topic.flashcards || []).length
                 return (
                   <div
-                    key={topicId}
+                    key={topic.id}
                     className="bg-white rounded-xl border border-gray-100 p-4 flex items-center justify-between"
                   >
                     <div className="flex-1 mr-3">
-                      <p className="font-medium text-gray-800 truncate">{info.name}</p>
+                      <p className="font-medium text-gray-800 truncate">{topic.title}</p>
                       <p className="text-xs text-gray-500">
-                        {isGenerating ? 'Generating...' : `${info.flashcardCount} flashcards`}
+                        {fcCount} flashcards
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      {info.flashcardCount === 0 && !isGenerating && (
-                        <button
-                          onClick={() => handleGenerateForTopic(topicId)}
-                          className="px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-100 text-indigo-600 hover:bg-indigo-200 transition-colors"
-                        >
-                          Generate
-                        </button>
-                      )}
-                      {isGenerating && (
-                        <svg className="animate-spin h-5 w-5 text-indigo-600" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                        </svg>
-                      )}
                       <button
-                        onClick={() => setShowRemoveConfirm(topicId)}
+                        onClick={() => setShowRemoveConfirm(topic.originalTopicId)}
                         className="text-gray-400 hover:text-red-500 transition-colors p-1"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

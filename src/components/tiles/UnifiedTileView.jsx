@@ -9,7 +9,7 @@ export default function UnifiedTileView({
   outline,
   deckName = '',
   gradient = 'from-emerald-400 via-emerald-500 to-emerald-600',
-  patternId = 'geometric'
+  patternId = 'geometric',
 }) {
   const [flippedTiles, setFlippedTiles] = useState({})
   const [outlineOpen, setOutlineOpen] = useState(false)
@@ -400,6 +400,7 @@ export default function UnifiedTileView({
           </div>
         </div>
       )}
+
     </>
   )
 }

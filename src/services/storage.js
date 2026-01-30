@@ -2804,3 +2804,210 @@ export function getUserDeckCardCount(deckId) {
     claimed: claimedCount
   }
 }
+
+// ============================================================================
+// USER TOPICS (Study Deck - topic-based)
+// ============================================================================
+
+/**
+ * Get all user topics
+ * @returns {Array} Array of user topic objects
+ */
+export function getUserTopics() {
+  const data = getData()
+  return data.userTopics || []
+}
+
+/**
+ * Check if a topic is in the user's study deck
+ * @param {string} topicId - Original topic ID
+ * @returns {boolean}
+ */
+export function isTopicInDeck(topicId) {
+  const topics = getUserTopics()
+  return topics.some(t => t.originalTopicId === topicId)
+}
+
+/**
+ * Add a topic to the user's study deck
+ * @param {Object} topic - Topic data to add
+ * @param {string} topic.originalTopicId - Original topic ID
+ * @param {string} topic.title - Topic title
+ * @param {string} topic.categoryId - Root category ID for theming
+ * @param {Object} topic.outline - Outline content { core: [], deep_dive: [] }
+ * @param {Array} topic.tiles - Section/card data array
+ * @param {Array} topic.flashcards - Flashcard array [{ question, answer, sectionTitle }]
+ */
+export function addTopicToDeck(topic) {
+  const data = getData()
+  if (!data.userTopics) data.userTopics = []
+
+  // Don't add duplicates
+  if (data.userTopics.some(t => t.originalTopicId === topic.originalTopicId)) {
+    console.log(`[addTopicToDeck] ${topic.originalTopicId} already in deck`)
+    return
+  }
+
+  const now = new Date().toISOString()
+  const userTopic = {
+    id: `ut_${Date.now()}`,
+    originalTopicId: topic.originalTopicId,
+    title: topic.title,
+    categoryId: topic.categoryId || null,
+    addedAt: now,
+    outline: topic.outline || null,
+    tiles: topic.tiles || [],
+    flashcards: (topic.flashcards || []).map((fc, idx) => ({
+      id: fc.id || `fc_${topic.originalTopicId}_${idx}`,
+      question: fc.question,
+      answer: fc.answer,
+      sectionTitle: fc.sectionTitle || '',
+      nextReview: null,
+      interval: 0,
+      easeFactor: 2.5,
+      reviewCount: 0,
+      createdAt: now
+    }))
+  }
+
+  data.userTopics.push(userTopic)
+  saveData(data)
+  console.log(`[addTopicToDeck] Added "${topic.title}" with ${userTopic.flashcards.length} flashcards`)
+}
+
+/**
+ * Remove a topic from the user's study deck
+ * @param {string} topicId - Original topic ID to remove
+ */
+export function removeTopicFromDeck(topicId) {
+  const data = getData()
+  if (!data.userTopics) return
+  data.userTopics = data.userTopics.filter(t => t.originalTopicId !== topicId)
+  saveData(data)
+  console.log(`[removeTopicFromDeck] Removed ${topicId}`)
+}
+
+/**
+ * Get a user topic by original topic ID
+ * @param {string} topicId - Original topic ID
+ * @returns {Object|null}
+ */
+export function getUserTopic(topicId) {
+  const topics = getUserTopics()
+  return topics.find(t => t.originalTopicId === topicId) || null
+}
+
+/**
+ * Get all flashcards from all user topics that are due for review
+ * @returns {Array} Flashcards with nextReview <= now or nextReview === null (new)
+ */
+export function getDueUserFlashcards() {
+  const topics = getUserTopics()
+  const now = new Date()
+  const due = []
+  for (const topic of topics) {
+    for (const fc of (topic.flashcards || [])) {
+      if (!fc.nextReview || new Date(fc.nextReview) <= now) {
+        due.push({ ...fc, topicId: topic.originalTopicId, topicTitle: topic.title })
+      }
+    }
+  }
+  return due
+}
+
+/**
+ * Get new (unreviewed) flashcards from user topics
+ * @returns {Array}
+ */
+export function getNewUserFlashcards() {
+  const topics = getUserTopics()
+  const cards = []
+  for (const topic of topics) {
+    for (const fc of (topic.flashcards || [])) {
+      if (!fc.nextReview && fc.reviewCount === 0) {
+        cards.push({ ...fc, topicId: topic.originalTopicId, topicTitle: topic.title })
+      }
+    }
+  }
+  return cards
+}
+
+/**
+ * Update a flashcard in a user topic (after review or edit)
+ * @param {string} topicId - Original topic ID
+ * @param {string} flashcardId - Flashcard ID
+ * @param {Object} updates - Fields to update
+ */
+export function updateUserFlashcard(topicId, flashcardId, updates) {
+  const data = getData()
+  const topic = (data.userTopics || []).find(t => t.originalTopicId === topicId)
+  if (!topic) return
+  const fc = topic.flashcards.find(f => f.id === flashcardId)
+  if (!fc) return
+  Object.assign(fc, updates)
+  saveData(data)
+}
+
+/**
+ * Record a review attempt on a user flashcard (SM-2 algorithm)
+ * @param {string} topicId - Original topic ID
+ * @param {string} flashcardId - Flashcard ID
+ * @param {number} quality - 0-5 rating (0-2 = fail, 3-5 = pass)
+ */
+export function recordUserReview(topicId, flashcardId, quality) {
+  const data = getData()
+  const topic = (data.userTopics || []).find(t => t.originalTopicId === topicId)
+  if (!topic) return
+  const fc = topic.flashcards.find(f => f.id === flashcardId)
+  if (!fc) return
+
+  // SM-2 algorithm
+  let { easeFactor = 2.5, interval = 0, reviewCount = 0 } = fc
+
+  if (quality >= 3) {
+    // Correct
+    if (interval === 0) interval = 1
+    else if (interval === 1) interval = 6
+    else interval = Math.round(interval * easeFactor)
+    reviewCount++
+  } else {
+    // Incorrect - reset
+    interval = 0
+    reviewCount = 0
+  }
+
+  easeFactor = Math.max(1.3, easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02)))
+
+  const nextReview = new Date()
+  nextReview.setDate(nextReview.getDate() + (interval || 0))
+  // If interval is 0 (failed), set to review again in 1 minute
+  if (interval === 0) {
+    nextReview.setTime(nextReview.getTime() + 60000)
+  }
+
+  fc.easeFactor = easeFactor
+  fc.interval = interval
+  fc.reviewCount = reviewCount
+  fc.nextReview = nextReview.toISOString()
+  fc.lastReviewed = new Date().toISOString()
+
+  saveData(data)
+}
+
+/**
+ * Get study stats for user topics
+ * @returns {Object} { totalTopics, totalCards, newCards, dueCards }
+ */
+export function getUserStudyStats() {
+  const topics = getUserTopics()
+  const now = new Date()
+  let totalCards = 0, newCards = 0, dueCards = 0
+  for (const topic of topics) {
+    for (const fc of (topic.flashcards || [])) {
+      totalCards++
+      if (!fc.nextReview && fc.reviewCount === 0) newCards++
+      else if (fc.nextReview && new Date(fc.nextReview) <= now) dueCards++
+    }
+  }
+  return { totalTopics: topics.length, totalCards, newCards, dueCards }
+}
