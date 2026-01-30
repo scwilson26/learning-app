@@ -7776,50 +7776,8 @@ export default function Canvas() {
             </div>
           )}
 
-          {/* Existing decks */}
-          {userDecks.length > 0 && (
-            <div className="mt-6">
-              <h2 className="text-sm font-semibold text-gray-600 mb-3">Your Decks</h2>
-              <div className="space-y-3">
-                {userDecks.map((deck) => {
-                  const cardCount = getUserDeckCardCount(deck.id)
-                  return (
-                    <button
-                      key={deck.id}
-                      onClick={() => {
-                        // Navigate to the user deck
-                        setStack([`user-deck:${deck.id}`])
-                        setLearnView(null) // Clear learnView so deck spread shows
-                        setUserDeckViewMode('cards') // Reset to cards view
-                      }}
-                      className="w-full bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow text-left"
-                    >
-                      <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                        <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-800 truncate">{deck.name}</h3>
-                        <p className="text-sm text-gray-500">
-                          {cardCount.total} cards • {cardCount.claimed} claimed
-                        </p>
-                      </div>
-                      <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
           {/* Upload section */}
-          <div className={userDecks.length > 0 ? 'mt-8' : 'mt-6'}>
-            {userDecks.length > 0 && (
-              <h2 className="text-sm font-semibold text-gray-600 mb-3">Add New</h2>
-            )}
+          <div className="mt-6">
 
             {/* Upload area */}
             <div className="bg-white rounded-2xl p-8 shadow-sm border-2 border-dashed border-gray-300 text-center">
