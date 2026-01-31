@@ -374,7 +374,7 @@ export default function UnifiedTileView({
                 >
                   <TilePattern patternId={patternId} opacity={0.12} />
                   <div className="absolute inset-2 bg-white rounded-lg" />
-                  <div className="relative z-10 p-5 overflow-auto" style={{ maxHeight: '70vh' }}>
+                  <div className="absolute inset-2 z-10 overflow-y-auto p-4 pb-6 hide-scrollbar">
                     <h3 className="font-semibold text-emerald-600 text-base mb-2">
                       {section.title?.replace(/\*{2,4}/g, '')}
                     </h3>
@@ -424,7 +424,7 @@ export default function UnifiedTileView({
                 >
                   <TilePattern patternId={patternId} opacity={0.12} />
                   <div className="absolute inset-2 bg-white rounded-lg" />
-                  <div className="relative z-10 p-5 overflow-auto" style={{ maxHeight: '70vh' }}>
+                  <div className="absolute inset-2 z-10 overflow-y-auto p-4 pb-6 hide-scrollbar">
                     {onEditFlashcard && (
                       <button
                         className="absolute top-1 right-1 p-1.5 text-gray-300 hover:text-gray-500 transition-colors z-20"

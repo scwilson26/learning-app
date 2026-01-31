@@ -10,6 +10,9 @@
 }
 
 /* Hide scrollbar for snap scroll container */
+.hide-scrollbar {
+  scrollbar-width: none;
+}
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
