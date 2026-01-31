@@ -7311,7 +7311,7 @@ export default function Canvas() {
           <div className="w-10 h-10 flex items-center justify-center">
             <span className="text-gray-400 font-bold text-xl">?</span>
           </div>
-          <span className="text-[10px] mt-0.5 font-medium text-gray-400">Discover</span>
+          <span className="text-[10px] mt-0.5 font-medium text-gray-400">Wander</span>
         </button>
         <NavTab
           isActive={activeTab === 'study'}
@@ -7634,8 +7634,8 @@ export default function Canvas() {
               <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 30%, rgba(0,0,0,0.08) 100%)' }} />
               <div className="relative z-10 flex flex-col items-center justify-center h-full text-white p-4">
                 <span className="text-2xl mb-2">{isWandering ? '✨' : '🎲'}</span>
-                <h3 className="text-lg font-bold drop-shadow">Discover</h3>
-                <p className="text-xs text-white/70 mt-1">Find something new</p>
+                <h3 className="text-lg font-bold drop-shadow">Wander</h3>
+                <p className="text-xs text-white/70 mt-1">Explore something random</p>
               </div>
             </button>
           </div>
