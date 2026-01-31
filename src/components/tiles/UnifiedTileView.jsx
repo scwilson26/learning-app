@@ -354,8 +354,8 @@ export default function UnifiedTileView({
           return (
             <div className="max-w-sm mx-auto w-full cursor-pointer" onClick={handleCarouselFlip} style={{ perspective: '1000px' }}>
               <motion.div
-                className="relative w-full"
-                style={{ minHeight: '280px', transformStyle: 'preserve-3d' }}
+                className="relative w-full aspect-square"
+                style={{ transformStyle: 'preserve-3d' }}
                 animate={{ rotateY: isFlipped ? 180 : 0 }}
                 transition={{ duration: 0.45, ease: 'easeInOut' }}
               >
@@ -405,8 +405,8 @@ export default function UnifiedTileView({
           return (
             <div className="max-w-sm mx-auto w-full cursor-pointer" onClick={handleCarouselFlip} style={{ perspective: '1000px' }}>
               <motion.div
-                className="relative w-full"
-                style={{ minHeight: '280px', transformStyle: 'preserve-3d' }}
+                className="relative w-full aspect-square"
+                style={{ transformStyle: 'preserve-3d' }}
                 animate={{ rotateY: isFlipped ? 180 : 0 }}
                 transition={{ duration: 0.45, ease: 'easeInOut' }}
               >
