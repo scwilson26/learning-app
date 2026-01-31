@@ -5,7 +5,8 @@
 export default function TileGrid({ children, className = '' }) {
   return (
     <div
-      className={`grid grid-cols-4 gap-1 bg-gray-100 ${className}`}
+      className={`grid grid-cols-2 gap-1.5 ${className}`}
+      style={{ maxWidth: '400px', margin: '0 auto' }}
     >
       {children}
     </div>
