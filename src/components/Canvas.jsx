@@ -2617,10 +2617,11 @@ function DeckSpread({
   previewCard,
   onReadPreviewCard,
   // Outline for toggle display
-  outline
+  outline,
+  // View mode passed from parent header
+  viewMode = 'cards',
 }) {
-  // State for view mode toggle (like MosaicView)
-  const [viewMode, setViewMode] = useState('cards') // outline | cards | flashcards
+  // viewMode is passed in as prop now
   const [addedToCollection, setAddedToCollection] = useState(() => isTopicInDeck(deck.id))
   const [inStudyQueue, setInStudyQueue] = useState(() => isTopicInStudyQueue(deck.id))
 
@@ -2645,13 +2646,6 @@ function DeckSpread({
     { key: 'deep_dive', name: 'Deep Dive' },
   ]
 
-  // View mode options for toggle
-  const views = [
-    { id: 'outline', label: 'Slate', icon: '▦' },
-    { id: 'cards', label: 'Tiles', icon: '▤' },
-    { id: 'flashcards', label: 'Flash', icon: '▢' }
-  ]
-
   // Check if we have tier data
   const hasTierData = tierCards && (tierCards.core?.length > 0 || tierCards.deep_dive?.length > 0)
 
@@ -2668,77 +2662,51 @@ function DeckSpread({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
     >
-      {/* View mode toggle - only show for articles with ready cards */}
+      {/* Floating action button - Add to Collection / Study */}
       {isArticle && hasReadyCard && (
-        <div className="w-full">
-          {/* View mode toggle buttons */}
-          <div className="flex items-center justify-center gap-1 mb-2">
-            {views.map((view) => (
-              <button
-                key={view.id}
-                onClick={() => setViewMode(view.id)}
-                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
-                  viewMode === view.id
-                    ? 'bg-emerald-600 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                <span className="text-xs opacity-70">{view.icon}</span>
-                {view.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Collection / Study buttons */}
-          <div className="flex justify-center gap-2 mb-2">
-            {!addedToCollection ? (
-              <button
-                onClick={() => {
-                  const allCards = [
-                    ...(tierCards.core || []),
-                    ...(tierCards.deep_dive || [])
-                  ].filter(card => !card.isPlaceholder && card.content)
-                  const allFlashcards = deck?.flashcards?.length > 0
-                    ? deck.flashcards.map(fc => ({ ...fc, sectionTitle: fc.sourceCardTitle || '' }))
-                    : allCards.flatMap(card =>
-                        (card.flashcards || []).map(fc => ({
-                          ...fc,
-                          sectionTitle: card.title
-                        }))
-                      )
-                  addTopicToDeck({
-                    originalTopicId: deck.id,
-                    title: deck.name,
-                    categoryId: rootCategoryId,
-                    outline: outline || null,
-                    tiles: allCards.map(c => ({ title: c.title, content: c.content || c.concept || '' })),
-                    flashcards: allFlashcards
-                  })
-                  setAddedToCollection(true)
-                }}
-                className="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white shadow-md hover:bg-indigo-700 transition-colors"
-              >
-                + Add to Collection
-              </button>
-            ) : (
-              <>
-                <span className="px-3 py-2 text-sm text-emerald-600 font-medium">In Collection ✓</span>
-                {!inStudyQueue ? (
-                  <button
-                    onClick={() => {
-                      toggleStudyQueue(deck.id)
-                      setInStudyQueue(true)
-                    }}
-                    className="px-4 py-2 rounded-lg text-sm font-medium bg-emerald-600 text-white shadow-md hover:bg-emerald-700 transition-colors"
-                  >
-                    + Add to Study
-                  </button>
-                ) : (
-                  <span className="px-3 py-2 text-sm text-emerald-600 font-medium">In Study ✓</span>
-                )}
-              </>
-            )}
-          </div>
+        <div className="fixed bottom-20 right-4 z-30 flex flex-col items-end gap-2">
+          {!addedToCollection ? (
+            <button
+              onClick={() => {
+                const allCards = [
+                  ...(tierCards.core || []),
+                  ...(tierCards.deep_dive || [])
+                ].filter(card => !card.isPlaceholder && card.content)
+                const allFlashcards = deck?.flashcards?.length > 0
+                  ? deck.flashcards.map(fc => ({ ...fc, sectionTitle: fc.sourceCardTitle || '' }))
+                  : allCards.flatMap(card =>
+                      (card.flashcards || []).map(fc => ({
+                        ...fc,
+                        sectionTitle: card.title
+                      }))
+                    )
+                addTopicToDeck({
+                  originalTopicId: deck.id,
+                  title: deck.name,
+                  categoryId: rootCategoryId,
+                  outline: outline || null,
+                  tiles: allCards.map(c => ({ title: c.title, content: c.content || c.concept || '' })),
+                  flashcards: allFlashcards
+                })
+                setAddedToCollection(true)
+              }}
+              className="w-10 h-10 rounded-full bg-indigo-600 text-white shadow-lg hover:bg-indigo-700 transition-colors flex items-center justify-center"
+              title="Add to Collection"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+          ) : !inStudyQueue ? (
+            <button
+              onClick={() => {
+                toggleStudyQueue(deck.id)
+                setInStudyQueue(true)
+              }}
+              className="w-10 h-10 rounded-full bg-emerald-600 text-white shadow-lg hover:bg-emerald-700 transition-colors flex items-center justify-center"
+              title="Add to Study"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+          ) : null}
         </div>
       )}
 
@@ -2812,7 +2780,7 @@ function DeckSpread({
               deckName={deck.name}
               gradient={gradient}
               patternId={patternId}
-              onSlateClick={() => setViewMode('cards')}
+              onSlateClick={() => {}}
               onEditFlashcard={(index, newQuestion, newAnswer) => {
                 const fc = allFlashcards[index]
                 if (!fc) return
@@ -3137,6 +3105,9 @@ export default function Canvas() {
 
   // User deck view mode - 'cards' | 'outline'
   const [userDeckViewMode, setUserDeckViewMode] = useState('cards')
+
+  // Article view mode - 'outline' | 'cards' | 'flashcards'
+  const [articleViewMode, setArticleViewMode] = useState('cards')
 
   // Toast message for "Coming Soon" etc
   const [toastMessage, setToastMessage] = useState(null)
@@ -8330,7 +8301,7 @@ export default function Canvas() {
   // Inside the stack - show parent decks underneath and current spread on top
   return (
     <div className="w-screen min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 overflow-auto">
-      {/* Top navigation bar - back arrow + title */}
+      {/* Top navigation bar - back arrow + title + view toggle */}
       <div className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200">
         <div className="flex items-center px-3 py-2 gap-2">
           <button
@@ -8339,11 +8310,35 @@ export default function Canvas() {
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
           </button>
-          <h1 className="text-base font-semibold text-gray-800 truncate flex-1 text-center">
+          <h1 className="text-sm font-semibold text-gray-800 truncate flex-1 text-center">
             {currentDeck?.name || ''}
           </h1>
-          {/* Spacer to balance back button for centering (when no user deck toggle) */}
-          {!currentDeck?.isUserDeck && <div className="w-8 shrink-0" />}
+          {/* Article view toggle: Slate / Tiles / Flash */}
+          {isArticle && !currentDeck?.isUserDeck && (() => {
+            const articleReady = [...(currentTierCards.core || []), ...(currentTierCards.deep_dive || [])].some(c => !c.isPlaceholder && c.content)
+            if (!articleReady) return <div className="w-8 shrink-0" />
+            return (
+              <div className="flex items-center bg-gray-100 rounded-full p-0.5 shrink-0">
+                {[
+                  { id: 'outline', label: 'S' },
+                  { id: 'cards', label: 'T' },
+                  { id: 'flashcards', label: 'F' },
+                ].map(v => (
+                  <button
+                    key={v.id}
+                    onClick={() => setArticleViewMode(v.id)}
+                    className={`w-7 h-6 rounded-full text-xs font-semibold transition-colors ${
+                      articleViewMode === v.id
+                        ? 'bg-white text-gray-800 shadow-sm'
+                        : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                  >
+                    {v.label}
+                  </button>
+                ))}
+              </div>
+            )
+          })()}
           {/* User deck toggle */}
           {currentDeck?.isUserDeck && (
             <div className="flex items-center bg-gray-100 rounded-full p-0.5 shrink-0">
@@ -8369,11 +8364,13 @@ export default function Canvas() {
               </button>
             </div>
           )}
+          {/* Spacer when no toggle shown */}
+          {!isArticle && !currentDeck?.isUserDeck && <div className="w-8 shrink-0" />}
         </div>
       </div>
 
       {/* Current spread + parent deck underneath */}
-      <div className="min-h-screen flex flex-col items-center pt-14 px-4">
+      <div className="min-h-screen flex flex-col items-center pt-12 px-2">
         {/* Show Outline view OR Cards view for user decks */}
         {currentDeck?.isUserDeck && userDeckViewMode === 'outline' ? (
           <div className="w-full max-w-2xl pb-24">
@@ -8473,6 +8470,7 @@ export default function Canvas() {
                   }
                 }}
                 outline={currentDeck ? loadedOutlines[currentDeck.id] : null}
+                viewMode={articleViewMode}
               />
             </AnimatePresence>
           </div>

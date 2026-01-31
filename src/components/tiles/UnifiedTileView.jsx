@@ -223,7 +223,7 @@ export default function UnifiedTileView({
     const maxIdx = items.length - 1
     return (
       <div
-        className="px-4 pb-4 overflow-hidden"
+        className="px-2 pb-2 overflow-hidden"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={() => handleTouchEnd(maxIdx)}
@@ -246,51 +246,11 @@ export default function UnifiedTileView({
           </motion.div>
         </AnimatePresence>
 
-        {/* Progress indicator with arrows */}
-        <div className="flex items-center justify-center gap-3 mt-4">
-          <button
-            className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${carouselIndex > 0 ? 'bg-gray-100 hover:bg-gray-200 text-gray-600' : 'text-gray-200 cursor-default'}`}
-            onClick={() => {
-              if (carouselIndex > 0) {
-                swipeDirection.current = -1
-                setCarouselIndex(prev => prev - 1)
-              }
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-          </button>
-          <div className="flex items-center gap-1.5">
-            {items.length <= 15 ? items.map((_, idx) => (
-              <button
-                key={idx}
-                className={`w-2 h-2 rounded-full transition-all ${idx === carouselIndex ? 'bg-emerald-500 scale-125' : 'bg-gray-300'}`}
-                onClick={() => {
-                  swipeDirection.current = idx > carouselIndex ? 1 : -1
-                  setCarouselIndex(idx)
-                }}
-              />
-            )) : (
-              <span className="text-xs text-gray-400">
-                {carouselIndex + 1} / {items.length}
-              </span>
-            )}
-          </div>
-          <button
-            className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${carouselIndex < maxIdx ? 'bg-gray-100 hover:bg-gray-200 text-gray-600' : 'text-gray-200 cursor-default'}`}
-            onClick={() => {
-              if (carouselIndex < maxIdx) {
-                swipeDirection.current = 1
-                setCarouselIndex(prev => prev + 1)
-              }
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-          </button>
-          {items.length <= 15 && (
-            <span className="text-xs text-gray-400 ml-1">
-              {carouselIndex + 1} / {items.length}
-            </span>
-          )}
+        {/* Compact progress indicator */}
+        <div className="flex items-center justify-center mt-2">
+          <span className="text-xs text-gray-400 font-medium">
+            {carouselIndex + 1} / {items.length}
+          </span>
         </div>
       </div>
     )
@@ -382,11 +342,9 @@ export default function UnifiedTileView({
           if (!section) return null
 
           return (
-            <div className="max-w-sm mx-auto w-full" style={{ height: 'calc(100vh - 260px)', minHeight: '400px' }}>
-              <div className={`h-full rounded-xl overflow-hidden shadow-md bg-gradient-to-br ${gradient} relative`}>
-                <TilePattern patternId={patternId} opacity={0.12} />
-                <div className="absolute inset-2 bg-white rounded-lg" />
-                <div className="absolute inset-2 z-10 overflow-y-auto p-4 pb-6 hide-scrollbar">
+            <div className="w-full" style={{ height: 'calc(100vh - 160px)', minHeight: '400px' }}>
+              <div className={`h-full rounded-lg overflow-hidden shadow-md bg-gradient-to-br ${gradient} p-[3px]`}>
+                <div className="h-full bg-white rounded-md overflow-y-auto p-4 pb-6 hide-scrollbar">
                   <h3 className="font-semibold text-emerald-600 text-base mb-3">
                     {section.title?.replace(/\*{2,4}/g, '')}
                   </h3>
@@ -409,7 +367,7 @@ export default function UnifiedTileView({
           const isFlipped = !!carouselFlipped[idx]
 
           return (
-            <div className="max-w-sm mx-auto w-full cursor-pointer" onClick={handleCarouselFlip} style={{ perspective: '1000px', height: 'calc(100vh - 260px)', minHeight: '400px' }}>
+            <div className="w-full cursor-pointer" onClick={handleCarouselFlip} style={{ perspective: '1000px', height: 'calc(100vh - 160px)', minHeight: '400px' }}>
               <motion.div
                 className="relative w-full h-full"
                 style={{ transformStyle: 'preserve-3d' }}
@@ -418,24 +376,22 @@ export default function UnifiedTileView({
               >
                 {/* Front: gradient + pattern + question */}
                 <div
-                  className={`absolute inset-0 rounded-xl overflow-hidden shadow-md bg-gradient-to-br ${gradient}`}
+                  className={`absolute inset-0 rounded-lg overflow-hidden shadow-md bg-gradient-to-br ${gradient}`}
                   style={{ backfaceVisibility: 'hidden' }}
                 >
                   <TilePattern patternId={patternId} />
                   <div className="absolute inset-0 flex items-center justify-center p-6">
-                    <span className="text-white font-semibold text-lg text-center drop-shadow-md leading-snug">
+                    <span className="text-white font-semibold text-xl text-center drop-shadow-md leading-snug">
                       {fc.question}
                     </span>
                   </div>
                 </div>
                 {/* Back: gradient border + white center + Q&A */}
                 <div
-                  className={`absolute inset-0 rounded-xl overflow-hidden shadow-md bg-gradient-to-br ${gradient}`}
+                  className={`absolute inset-0 rounded-lg overflow-hidden shadow-md bg-gradient-to-br ${gradient} p-[3px]`}
                   style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
                 >
-                  <TilePattern patternId={patternId} opacity={0.12} />
-                  <div className="absolute inset-2 bg-white rounded-lg" />
-                  <div className="absolute inset-2 z-10 overflow-y-auto p-4 pb-6 hide-scrollbar">
+                  <div className="h-full bg-white rounded-md overflow-y-auto p-4 pb-6 hide-scrollbar">
                     {onEditFlashcard && (
                       <button
                         className="absolute top-1 right-1 p-1.5 text-gray-300 hover:text-gray-500 transition-colors z-20"
