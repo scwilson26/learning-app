@@ -30,8 +30,6 @@ export default function UnifiedTileView({
   const [editAnswer, setEditAnswer] = useState('')
   const slateTimers = useRef([])
   const hasPlayedSlate = useRef(false)
-  const hasPlayedTilesIntro = useRef(false)
-
   const activeMode = viewMode
 
   // Reset all state when mode changes
@@ -52,7 +50,7 @@ export default function UnifiedTileView({
       setSlateMerging(false)
       setSlateMerged(false)
       const t0 = setTimeout(() => {
-        setFlippedTiles(prev => {
+        setFlippedTiles(() => {
           const newState = {}
           for (let i = 0; i < 9; i++) newState[i] = true
           return newState
@@ -71,19 +69,6 @@ export default function UnifiedTileView({
     } else {
       setSlateMerging(false)
       setSlateMerged(false)
-      // Auto-flip first tile in Tiles view
-      if (activeMode === 'cards') {
-        if (hasPlayedTilesIntro.current) {
-          // Already seen intro — show content immediately
-          setCarouselFlipped({ 0: true })
-        } else {
-          const t = setTimeout(() => {
-            setCarouselFlipped({ 0: true })
-            hasPlayedTilesIntro.current = true
-          }, 300)
-          slateTimers.current.push(t)
-        }
-      }
     }
   }, [activeMode])
 
@@ -389,63 +374,33 @@ export default function UnifiedTileView({
         )}
       </AnimatePresence>
 
-      {/* Tiles (cards) mode: horizontal carousel */}
+      {/* Tiles (cards) mode: tall content cards carousel */}
       {activeMode === 'cards' && sections.length > 0 && renderCarousel(
         sections,
         (idx) => {
           const section = sections[idx]
           if (!section) return null
-          // All non-zero tiles always show content; tile 0 is flippable
-          const isFlipped = idx === 0 ? !!carouselFlipped[0] : true
-          // Non-zero tiles: instant. Tile 0: always 0.45s for flip animation.
-          // initial prevents re-mount animation when navigating back to tile 0.
-          const targetRotateY = isFlipped ? 180 : 0
-          const duration = idx !== 0 ? 0 : 0.45
 
           return (
-            <div className="max-w-sm mx-auto w-full cursor-pointer" onClick={handleCarouselFlip} style={{ perspective: '1000px' }}>
-              <motion.div
-                className="relative w-full aspect-square"
-                style={{ transformStyle: 'preserve-3d' }}
-                initial={{ rotateY: targetRotateY }}
-                animate={{ rotateY: targetRotateY }}
-                transition={{ duration, ease: 'easeInOut' }}
-              >
-                {/* Front: gradient + pattern + section title */}
-                <div
-                  className={`absolute inset-0 rounded-xl overflow-hidden shadow-md bg-gradient-to-br ${gradient}`}
-                  style={{ backfaceVisibility: 'hidden' }}
-                >
-                  <TilePattern patternId={patternId} />
-                  <div className="absolute inset-0 flex items-center justify-center p-6">
-                    <h3 className="text-white font-bold text-xl text-center drop-shadow-md leading-snug">
-                      {section.title?.replace(/\*{2,4}/g, '')}
-                    </h3>
+            <div className="max-w-sm mx-auto w-full" style={{ height: 'calc(100vh - 260px)', minHeight: '400px' }}>
+              <div className={`h-full rounded-xl overflow-hidden shadow-md bg-gradient-to-br ${gradient} relative`}>
+                <TilePattern patternId={patternId} opacity={0.12} />
+                <div className="absolute inset-2 bg-white rounded-lg" />
+                <div className="absolute inset-2 z-10 overflow-y-auto p-4 pb-6 hide-scrollbar">
+                  <h3 className="font-semibold text-emerald-600 text-base mb-3">
+                    {section.title?.replace(/\*{2,4}/g, '')}
+                  </h3>
+                  <div className="text-gray-700 text-base leading-relaxed">
+                    {renderContent(section.content)}
                   </div>
                 </div>
-                {/* Back: gradient border + white center + content */}
-                <div
-                  className={`absolute inset-0 rounded-xl overflow-hidden shadow-md bg-gradient-to-br ${gradient}`}
-                  style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
-                >
-                  <TilePattern patternId={patternId} opacity={0.12} />
-                  <div className="absolute inset-2 bg-white rounded-lg" />
-                  <div className="absolute inset-2 z-10 overflow-y-auto p-4 pb-6 hide-scrollbar">
-                    <h3 className="font-semibold text-emerald-600 text-base mb-2">
-                      {section.title?.replace(/\*{2,4}/g, '')}
-                    </h3>
-                    <div className="text-gray-700 text-base leading-relaxed">
-                      {renderContent(section.content)}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
+              </div>
             </div>
           )
         },
       )}
 
-      {/* Flash mode: horizontal carousel */}
+      {/* Flash mode: tall flashcard carousel with tap-to-flip */}
       {activeMode === 'flashcards' && allFlashcards.length > 0 && renderCarousel(
         allFlashcards,
         (idx) => {
@@ -454,9 +409,9 @@ export default function UnifiedTileView({
           const isFlipped = !!carouselFlipped[idx]
 
           return (
-            <div className="max-w-sm mx-auto w-full cursor-pointer" onClick={handleCarouselFlip} style={{ perspective: '1000px' }}>
+            <div className="max-w-sm mx-auto w-full cursor-pointer" onClick={handleCarouselFlip} style={{ perspective: '1000px', height: 'calc(100vh - 260px)', minHeight: '400px' }}>
               <motion.div
-                className="relative w-full aspect-square"
+                className="relative w-full h-full"
                 style={{ transformStyle: 'preserve-3d' }}
                 animate={{ rotateY: isFlipped ? 180 : 0 }}
                 transition={{ duration: 0.45, ease: 'easeInOut' }}
@@ -468,7 +423,7 @@ export default function UnifiedTileView({
                 >
                   <TilePattern patternId={patternId} />
                   <div className="absolute inset-0 flex items-center justify-center p-6">
-                    <span className="text-white font-semibold text-lg text-center drop-shadow-md leading-snug line-clamp-5">
+                    <span className="text-white font-semibold text-lg text-center drop-shadow-md leading-snug">
                       {fc.question}
                     </span>
                   </div>
