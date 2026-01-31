@@ -2704,7 +2704,7 @@ function DeckSpread({
   outline
 }) {
   // State for view mode toggle (like MosaicView)
-  const [viewMode, setViewMode] = useState('flashcards') // outline | cards | flashcards
+  const [viewMode, setViewMode] = useState('cards') // outline | cards | flashcards
   const [addedToCollection, setAddedToCollection] = useState(() => isTopicInDeck(deck.id))
   const [inStudyQueue, setInStudyQueue] = useState(() => isTopicInStudyQueue(deck.id))
 

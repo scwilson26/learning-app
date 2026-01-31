@@ -20,15 +20,19 @@ export default function UnifiedTileView({
   const [slateMerging, setSlateMerging] = useState(false)
   const [slateMerged, setSlateMerged] = useState(false)
   const [slateReversing, setSlateReversing] = useState(false)
+  const [carouselIndex, setCarouselIndex] = useState(0)
+  const [carouselFlipped, setCarouselFlipped] = useState({})
+  const touchStart = useRef(null)
+  const touchDelta = useRef(0)
+  const swipeDirection = useRef(0)
   const [editingIndex, setEditingIndex] = useState(null)
   const [editQuestion, setEditQuestion] = useState('')
   const [editAnswer, setEditAnswer] = useState('')
   const slateTimers = useRef([])
 
-  // Use viewMode directly as activeMode (simplified)
   const activeMode = viewMode
 
-  // Reset all slate/flip state when mode changes
+  // Reset all state when mode changes
   useEffect(() => {
     slateTimers.current.forEach(t => clearTimeout(t))
     slateTimers.current = []
@@ -36,6 +40,8 @@ export default function UnifiedTileView({
     setSlateMerging(false)
     setSlateMerged(false)
     setSlateReversing(false)
+    setCarouselIndex(0)
+    setCarouselFlipped({})
   }, [activeMode])
 
   // Cleanup on unmount
@@ -43,162 +49,96 @@ export default function UnifiedTileView({
     return () => slateTimers.current.forEach(t => clearTimeout(t))
   }, [])
 
-  // Build the effective tile list
-  const hasFlashcards = allFlashcards.length > 0
-  const effectiveTiles = useMemo(() => {
-    if (hasFlashcards) return allFlashcards
-    return allCards.flatMap(card =>
-      Array.from({ length: 4 }, (_, i) => ({
-        question: '',
-        answer: '',
-        sectionTitle: card.title,
-        _placeholder: true
-      }))
-    )
-  }, [allFlashcards, allCards, hasFlashcards])
-
-  // Pre-compute section ranges — evenly distribute tiles across cards
-  const { sections, tileToSection } = useMemo(() => {
-    const secs = []
-    const t2s = {}
-    const cardCount = allCards.length
-    const tileCount = effectiveTiles.length
-
-    if (cardCount === 0 || tileCount === 0) {
-      return { sections: secs, tileToSection: t2s }
-    }
-
-    const basePerCard = Math.floor(tileCount / cardCount)
-    const remainder = tileCount % cardCount
-    let idx = 0
-
-    for (let c = 0; c < cardCount; c++) {
-      const card = allCards[c]
-      const count = basePerCard + (c < remainder ? 1 : 0)
-      const startIdx = idx
-      for (let i = 0; i < count; i++) {
-        t2s[idx] = secs.length
-        idx++
+  // Keyboard arrow keys for carousel navigation (Tiles and Flash)
+  useEffect(() => {
+    if (activeMode !== 'cards' && activeMode !== 'flashcards') return
+    const maxIdx = activeMode === 'flashcards' ? allFlashcards.length - 1 : sections.length - 1
+    const handleKey = (e) => {
+      if (e.key === 'ArrowRight' && carouselIndex < maxIdx) {
+        swipeDirection.current = 1
+        setCarouselIndex(prev => prev + 1)
+      } else if (e.key === 'ArrowLeft' && carouselIndex > 0) {
+        swipeDirection.current = -1
+        setCarouselIndex(prev => prev - 1)
       }
-      secs.push({
-        title: card.title,
-        content: card.content || card.concept || '',
-        startIdx,
-        endIdx: idx,
-        count
-      })
     }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [activeMode, carouselIndex, allFlashcards.length])
 
-    return { sections: secs, tileToSection: t2s }
-  }, [effectiveTiles, allCards])
+  // Sections from allCards (one tile per section for Slate and Tiles)
+  const sections = useMemo(() => {
+    return allCards.map((card, idx) => ({
+      title: card.title,
+      content: card.content || card.concept || '',
+      index: idx,
+    }))
+  }, [allCards])
 
-  // Combine outline sections
+  // Combine outline sections for Slate content display
   const outlineSections = useMemo(() => [
     ...(outline?.core || []),
     ...(outline?.deep_dive || [])
   ], [outline])
 
-  // Click handlers per mode
-  const handleTileClick = (globalIndex) => {
-    if (activeMode === 'outline') {
-      if (slateMerged) {
-        // Reverse phase 1: fade out outline, tiles already visible merged
-        setSlateReversing(true)
-        setSlateMerged(false)
-        // Reverse phase 2: after outline fades, open gaps
-        const t1 = setTimeout(() => {
-          setSlateMerging(false)
-          // Reverse phase 3: after unmerge, flip tiles back
-          const t2 = setTimeout(() => {
-            setFlippedTiles({})
-            setSlateReversing(false)
-          }, 400)
-          slateTimers.current.push(t2)
-        }, 300)
-        slateTimers.current.push(t1)
-        return
-      } else if (!slateMerging) {
-        // Phase 1: flip all tiles
-        const newState = {}
-        effectiveTiles.forEach((_, i) => { newState[i] = true })
-        setFlippedTiles(newState)
-        // Phase 2: after flip, start merging (close gaps)
-        const t1 = setTimeout(() => {
-          setSlateMerging(true)
-          // Phase 3: after merge, show outline
-          const t2 = setTimeout(() => {
-            setSlateMerged(true)
-          }, 400)
-          slateTimers.current.push(t2)
-        }, 450)
-        slateTimers.current.push(t1)
+  const hasFlashcards = allFlashcards.length > 0
+
+  // Click handler for Slate tiles
+  const handleSlateClick = () => {
+    if (slateMerged) {
+      setSlateReversing(true)
+      setSlateMerged(false)
+      const t1 = setTimeout(() => {
+        setSlateMerging(false)
+        const t2 = setTimeout(() => {
+          setFlippedTiles({})
+          setSlateReversing(false)
+        }, 400)
+        slateTimers.current.push(t2)
+      }, 300)
+      slateTimers.current.push(t1)
+    } else if (!slateMerging) {
+      const newState = {}
+      sections.forEach((_, i) => { newState[i] = true })
+      setFlippedTiles(newState)
+      const t1 = setTimeout(() => {
+        setSlateMerging(true)
+        const t2 = setTimeout(() => {
+          setSlateMerged(true)
+        }, 400)
+        slateTimers.current.push(t2)
+      }, 450)
+      slateTimers.current.push(t1)
+    }
+  }
+
+  // Click handler for carousel tile flip (Tiles and Flash)
+  const handleCarouselFlip = () => {
+    setCarouselFlipped(prev => ({ ...prev, [carouselIndex]: !prev[carouselIndex] }))
+  }
+
+  // Swipe handlers for carousel
+  const handleTouchStart = (e) => {
+    touchStart.current = e.touches[0].clientX
+    touchDelta.current = 0
+  }
+  const handleTouchMove = (e) => {
+    if (touchStart.current !== null) {
+      touchDelta.current = e.touches[0].clientX - touchStart.current
+    }
+  }
+  const handleTouchEnd = (maxIdx) => {
+    if (Math.abs(touchDelta.current) > 50) {
+      if (touchDelta.current < 0 && carouselIndex < maxIdx) {
+        swipeDirection.current = 1
+        setCarouselIndex(prev => prev + 1)
+      } else if (touchDelta.current > 0 && carouselIndex > 0) {
+        swipeDirection.current = -1
+        setCarouselIndex(prev => prev - 1)
       }
-      return
-    } else if (activeMode === 'cards') {
-      // Toggle all sections expanded/collapsed
-      setFlippedTiles(prev => {
-        return prev._allExpanded ? {} : { _allExpanded: true }
-      })
-      return
-    } else {
-      setFlippedTiles(prev => ({ ...prev, [globalIndex]: !prev[globalIndex] }))
     }
-  }
-
-  // Get back content for a tile
-  const getBackContent = (fc, globalIndex) => {
-    if (activeMode === 'outline') {
-      // Slate: show section title on back
-      const sectionIdx = tileToSection[globalIndex]
-      const section = sectionIdx >= 0 ? sections[sectionIdx] : null
-      return (
-        <div className="w-full h-full flex items-center justify-center p-1">
-          <span className="text-emerald-600 text-[10px] font-medium text-center leading-tight line-clamp-3">
-            {section?.title || ''}
-          </span>
-        </div>
-      )
-    }
-    // Flash mode
-    return (
-      <div className="h-full flex flex-col p-4 relative">
-        {onEditFlashcard && (
-          <button
-            className="absolute top-1 right-1 p-1.5 text-gray-300 hover:text-gray-500 transition-colors"
-            onClick={(e) => {
-              e.stopPropagation()
-              setEditingIndex(globalIndex)
-              setEditQuestion(fc.question)
-              setEditAnswer(fc.answer)
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M11.5 1.5l3 3L5 14H2v-3L11.5 1.5z" />
-            </svg>
-          </button>
-        )}
-        <div className="text-emerald-600 font-medium text-sm mb-3 line-clamp-2">
-          {fc.question}
-        </div>
-        <div className="flex-1 overflow-auto">
-          <p className="text-gray-700 leading-relaxed">{fc.answer}</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Get front content for a tile
-  const getFrontContent = (fc, globalIndex) => {
-    if (activeMode === 'flashcards') {
-      return (
-        <div className="text-center p-4">
-          <span className="text-white font-semibold text-lg drop-shadow-md line-clamp-5">
-            {fc.question}
-          </span>
-        </div>
-      )
-    }
-    return null
+    touchStart.current = null
+    touchDelta.current = 0
   }
 
   // Simple markdown rendering
@@ -217,203 +157,160 @@ export default function UnifiedTileView({
     })
   }
 
-  // Cards expanded state
-  const cardsExpanded = activeMode === 'cards' && flippedTiles._allExpanded
-
-  // Container styles per mode
+  // Container styles — Slate only (Tiles and Flash use separate carousel)
   const containerStyle = useMemo(() => {
     if (activeMode === 'outline') {
-      // Slate: dense 4-col grid, gap closes during merge
       return {
         display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
+        gridTemplateColumns: `repeat(${Math.min(4, sections.length)}, 1fr)`,
         padding: '1rem',
         gap: slateMerging ? '0px' : '0.5rem',
         ...((slateMerged && !slateReversing) ? { position: 'absolute', visibility: 'hidden' } : {})
       }
     }
-    if (activeMode === 'cards' && !cardsExpanded) {
-      return { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', padding: '1rem', gap: '0.5rem' }
-    }
-    if (activeMode === 'cards' && cardsExpanded) {
-      return { display: 'flex', flexDirection: 'column', padding: '1rem', gap: '1rem' }
-    }
-    // flashcards
-    return { display: 'flex', flexDirection: 'column', padding: '1rem', gap: '1.5rem' }
-  }, [activeMode, cardsExpanded, slateMerging, slateMerged])
+    return { display: 'none' }
+  }, [activeMode, sections.length, slateMerging, slateMerged, slateReversing])
 
-  const containerClass = activeMode === 'flashcards'
-    ? 'h-[calc(100vh-180px)] overflow-y-auto snap-y snap-mandatory'
-    : ''
-
-  // Build grid items
-  const gridItems = useMemo(() => {
-    const items = []
-
-    if (activeMode === 'cards') {
-      if (flippedTiles._allExpanded) {
-        sections.forEach((section, sIdx) => {
-          if (section.count === 0) return
-          items.push({ type: 'expanded', section, sectionIdx: sIdx })
-        })
-      } else {
-        sections.forEach((section, sIdx) => {
-          if (section.count === 0) return
-          items.push({ type: 'label', title: section.title, sectionIdx: sIdx })
-          for (let i = section.startIdx; i < section.endIdx; i++) {
-            items.push({ type: 'tile', globalIndex: i, fc: effectiveTiles[i] })
-          }
-        })
-      }
-    } else {
-      // flashcards and outline: render all tiles
-      effectiveTiles.forEach((fc, i) => {
-        items.push({ type: 'tile', globalIndex: i, fc })
-      })
-    }
-
-    return items
-  }, [activeMode, sections, effectiveTiles, flippedTiles])
-
-  // Loading states for Slate and Flash (Tiles streams fine)
+  // Loading states
   const slateLoading = activeMode === 'outline' && outlineSections.length === 0
   const flashLoading = activeMode === 'flashcards' && !hasFlashcards
+  const cardsLoading = activeMode === 'cards' && sections.length === 0
 
-  if (slateLoading || flashLoading) {
+  if (slateLoading || flashLoading || cardsLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4">
         <div className="w-10 h-10 border-3 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
         <p className="text-sm text-gray-400">
-          {slateLoading ? 'Building outline...' : 'Creating flashcards...'}
+          {slateLoading ? 'Building outline...' : flashLoading ? 'Creating flashcards...' : 'Loading cards...'}
         </p>
+      </div>
+    )
+  }
+
+  // Carousel renderer shared by Tiles and Flash
+  const renderCarousel = (items, renderSlide, labelFn) => {
+    const maxIdx = items.length - 1
+    return (
+      <div
+        className="px-4 pb-4 overflow-hidden"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={() => handleTouchEnd(maxIdx)}
+      >
+        {/* Label */}
+        <div className="px-1 mb-2">
+          <span className="text-xs text-gray-400 font-medium">
+            {labelFn(carouselIndex)}
+          </span>
+        </div>
+
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={carouselIndex}
+            initial={{ x: swipeDirection.current >= 0 ? 300 : -300, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: swipeDirection.current >= 0 ? -300 : 300, opacity: 0 }}
+            transition={{ duration: 0.25, ease: 'easeInOut' }}
+          >
+            {renderSlide(carouselIndex)}
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Progress indicator with arrows */}
+        <div className="flex items-center justify-center gap-3 mt-4">
+          <button
+            className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${carouselIndex > 0 ? 'bg-gray-100 hover:bg-gray-200 text-gray-600' : 'text-gray-200 cursor-default'}`}
+            onClick={() => {
+              if (carouselIndex > 0) {
+                swipeDirection.current = -1
+                setCarouselIndex(prev => prev - 1)
+              }
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <div className="flex items-center gap-1.5">
+            {items.length <= 15 ? items.map((_, idx) => (
+              <button
+                key={idx}
+                className={`w-2 h-2 rounded-full transition-all ${idx === carouselIndex ? 'bg-emerald-500 scale-125' : 'bg-gray-300'}`}
+                onClick={() => {
+                  swipeDirection.current = idx > carouselIndex ? 1 : -1
+                  setCarouselIndex(idx)
+                }}
+              />
+            )) : (
+              <span className="text-xs text-gray-400">
+                {carouselIndex + 1} / {items.length}
+              </span>
+            )}
+          </div>
+          <button
+            className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${carouselIndex < maxIdx ? 'bg-gray-100 hover:bg-gray-200 text-gray-600' : 'text-gray-200 cursor-default'}`}
+            onClick={() => {
+              if (carouselIndex < maxIdx) {
+                swipeDirection.current = 1
+                setCarouselIndex(prev => prev + 1)
+              }
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+          {items.length <= 15 && (
+            <span className="text-xs text-gray-400 ml-1">
+              {carouselIndex + 1} / {items.length}
+            </span>
+          )}
+        </div>
       </div>
     )
   }
 
   return (
     <>
-      {/* Tile container — always rendered, layout changes drive animation */}
-      <LayoutGroup>
-        <motion.div
-          className={containerClass}
-          style={containerStyle}
-          layout
-          transition={LAYOUT_TRANSITION}
-        >
-          {gridItems.map((item) => {
-            if (item.type === 'label') {
-              return (
-                <div
-                  key={`label-${item.sectionIdx}`}
-                  style={{ gridColumn: '1 / -1' }}
-                  className={`px-1 ${item.sectionIdx > 0 ? 'pt-3' : ''}`}
-                >
-                  <span className="text-xs text-gray-400 font-medium">
-                    {item.title.replace(/\*{2,4}/g, '')}
-                  </span>
-                </div>
-              )
-            }
-
-            if (item.type === 'expanded') {
-              const { section, sectionIdx } = item
-              return (
-                <div
-                  key={`expanded-${sectionIdx}`}
-                  className={`rounded-xl overflow-hidden shadow-md cursor-pointer bg-gradient-to-br ${gradient} relative`}
-                  onClick={() => handleTileClick(section.startIdx)}
-                >
-                  <TilePattern patternId={patternId} opacity={0.12} />
-                  <div className="absolute inset-2 bg-white rounded-lg" />
-                  <div className="relative z-10 p-5">
-                    <h3 className="font-semibold text-emerald-600 text-base mb-2">
-                      {section.title.replace(/\*{2,4}/g, '')}
-                    </h3>
-                    <div className="text-gray-700 text-sm leading-relaxed">
-                      {renderContent(section.content)}
-                    </div>
-                  </div>
-                </div>
-              )
-            }
-
-            const { globalIndex, fc } = item
-            const isFlipped = activeMode === 'flashcards' && !!flippedTiles[globalIndex]
-
-            // Flash mode: large tile with snap
-            if (activeMode === 'flashcards') {
-              return (
-                <motion.div
-                  key={`tile-${globalIndex}`}
-                  layoutId={`tile-${globalIndex}`}
-                  layout
-                  transition={LAYOUT_TRANSITION}
-                  className="snap-center max-w-sm mx-auto w-full"
-                >
-                  <div className="aspect-square">
-                    <Tile
-                      isFlipped={isFlipped}
-                      gradient={gradient}
-                      patternId={patternId}
-                      onClick={() => handleTileClick(globalIndex)}
-                      frontContent={getFrontContent(fc, globalIndex)}
-                      backContent={getBackContent(fc, globalIndex)}
-                    />
-                  </div>
-                  <div className="text-center mt-3 text-gray-400 text-sm">
-                    {globalIndex + 1} / {effectiveTiles.length}
-                  </div>
-                </motion.div>
-              )
-            }
-
-            // Slate mode: 4-col grid tiles that flip to show section titles, then merge
-            if (activeMode === 'outline') {
-              return (
-                <motion.div
-                  key={`tile-${globalIndex}`}
-                  layoutId={`tile-${globalIndex}`}
-                  layout
-                  transition={LAYOUT_TRANSITION}
-                  animate={{
-                    opacity: (slateMerged && !slateReversing) ? 0 : 1,
-                    scale: (slateMerged && !slateReversing) ? 0.8 : 1,
-                    borderRadius: slateMerging ? '0px' : '8px',
-                  }}
-                  className="aspect-square overflow-hidden"
-                  style={{ pointerEvents: (slateMerged && !slateReversing) ? 'none' : 'auto' }}
-                >
-                  <Tile
-                    isFlipped={!!flippedTiles[globalIndex]}
-                    gradient={gradient}
-                    patternId={patternId}
-                    onClick={() => handleTileClick(globalIndex)}
-                    backContent={getBackContent(fc, globalIndex)}
-                  />
-                </motion.div>
-              )
-            }
-
-            // Tiles (cards) mode: normal grid
-            return (
+      {/* Slate mode: title + tile grid */}
+      {activeMode === 'outline' && (
+        <LayoutGroup>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center px-4">
+            {deckName}
+          </h2>
+          <motion.div
+            style={containerStyle}
+            layout
+            transition={LAYOUT_TRANSITION}
+          >
+            {sections.map((section, idx) => (
               <motion.div
-                key={`tile-${globalIndex}`}
-                layoutId={`tile-${globalIndex}`}
+                key={`tile-${idx}`}
+                layoutId={`tile-${idx}`}
                 layout
                 transition={LAYOUT_TRANSITION}
-                animate={{ opacity: 1, scale: 1 }}
-                className="aspect-square"
+                animate={{
+                  opacity: (slateMerged && !slateReversing) ? 0 : 1,
+                  scale: (slateMerged && !slateReversing) ? 0.8 : 1,
+                  borderRadius: slateMerging ? '0px' : '8px',
+                }}
+                className="aspect-square overflow-hidden"
+                style={{ pointerEvents: (slateMerged && !slateReversing) ? 'none' : 'auto' }}
               >
                 <Tile
+                  isFlipped={!!flippedTiles[idx]}
                   gradient={gradient}
                   patternId={patternId}
-                  onClick={() => handleTileClick(globalIndex)}
+                  onClick={handleSlateClick}
+                  backContent={
+                    <div className="w-full h-full flex items-center justify-center p-1">
+                      <span className="text-emerald-600 text-[10px] font-medium text-center leading-tight line-clamp-3">
+                        {section.title?.replace(/\*{2,4}/g, '') || ''}
+                      </span>
+                    </div>
+                  }
                 />
               </motion.div>
-            )
-          })}
-        </motion.div>
-      </LayoutGroup>
+            ))}
+          </motion.div>
+        </LayoutGroup>
+      )}
 
       {/* Slate mode: full outline revealed after tiles merge */}
       <AnimatePresence>
@@ -425,12 +322,9 @@ export default function UnifiedTileView({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
             className="px-4 pb-8 cursor-pointer"
-            onClick={() => handleTileClick(0)}
+            onClick={handleSlateClick}
           >
             <div className="max-w-lg mx-auto">
-              <h2 className="text-2xl font-bold text-gray-800 mb-8 text-center">
-                {deckName}
-              </h2>
               <div className="space-y-6">
                 {outlineSections.map((section, idx) => (
                   <div key={idx} className="border-b border-gray-100 pb-6 last:border-0">
@@ -448,25 +342,113 @@ export default function UnifiedTileView({
         )}
       </AnimatePresence>
 
-      {/* Flash mode: progress dots */}
-      {activeMode === 'flashcards' && (
-        <div className="flex justify-center py-4">
-          <div className="flex gap-1">
-            {effectiveTiles.slice(0, Math.min(10, effectiveTiles.length)).map((_, idx) => (
+      {/* Tiles (cards) mode: horizontal carousel */}
+      {activeMode === 'cards' && sections.length > 0 && renderCarousel(
+        sections,
+        (idx) => {
+          const section = sections[idx]
+          if (!section) return null
+          const isFlipped = !!carouselFlipped[idx]
+
+          if (isFlipped && section.content) {
+            // Show content card
+            return (
               <div
-                key={idx}
-                className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                  flippedTiles[idx] ? 'bg-emerald-500' : 'bg-gray-300'
-                }`}
-              />
-            ))}
-            {effectiveTiles.length > 10 && (
-              <span className="text-gray-400 text-xs ml-1">
-                +{effectiveTiles.length - 10}
-              </span>
-            )}
-          </div>
-        </div>
+                className={`rounded-xl overflow-hidden shadow-md bg-gradient-to-br ${gradient} relative cursor-pointer`}
+                onClick={handleCarouselFlip}
+              >
+                <TilePattern patternId={patternId} opacity={0.12} />
+                <div className="absolute inset-2 bg-white rounded-lg" />
+                <div className="relative z-10 p-5">
+                  <h3 className="font-semibold text-emerald-600 text-base mb-2">
+                    {section.title?.replace(/\*{2,4}/g, '')}
+                  </h3>
+                  <div className="text-gray-700 text-sm leading-relaxed">
+                    {renderContent(section.content)}
+                  </div>
+                </div>
+              </div>
+            )
+          }
+
+          // Show tile
+          return (
+            <div className="max-w-xs mx-auto">
+              <div className="aspect-square">
+                <Tile
+                  isFlipped={isFlipped}
+                  gradient={gradient}
+                  patternId={patternId}
+                  onClick={handleCarouselFlip}
+                  backContent={
+                    <div className="w-full h-full flex items-center justify-center p-2">
+                      <span className="text-emerald-600 text-sm font-medium text-center leading-tight line-clamp-3">
+                        {section.title?.replace(/\*{2,4}/g, '')}
+                      </span>
+                    </div>
+                  }
+                />
+              </div>
+            </div>
+          )
+        },
+        (idx) => sections[idx]?.title?.replace(/\*{2,4}/g, '') || ''
+      )}
+
+      {/* Flash mode: horizontal carousel */}
+      {activeMode === 'flashcards' && allFlashcards.length > 0 && renderCarousel(
+        allFlashcards,
+        (idx) => {
+          const fc = allFlashcards[idx]
+          if (!fc) return null
+          const isFlipped = !!carouselFlipped[idx]
+
+          return (
+            <div className="max-w-xs mx-auto">
+              <div className="aspect-square">
+                <Tile
+                  isFlipped={isFlipped}
+                  gradient={gradient}
+                  patternId={patternId}
+                  onClick={handleCarouselFlip}
+                  frontContent={
+                    <div className="text-center p-4">
+                      <span className="text-white font-semibold text-lg drop-shadow-md line-clamp-5">
+                        {fc.question}
+                      </span>
+                    </div>
+                  }
+                  backContent={
+                    <div className="h-full flex flex-col p-4 relative">
+                      {onEditFlashcard && (
+                        <button
+                          className="absolute top-1 right-1 p-1.5 text-gray-300 hover:text-gray-500 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setEditingIndex(idx)
+                            setEditQuestion(fc.question)
+                            setEditAnswer(fc.answer)
+                          }}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M11.5 1.5l3 3L5 14H2v-3L11.5 1.5z" />
+                          </svg>
+                        </button>
+                      )}
+                      <div className="text-emerald-600 font-medium text-sm mb-3 line-clamp-2">
+                        {fc.question}
+                      </div>
+                      <div className="flex-1 overflow-auto">
+                        <p className="text-gray-700 leading-relaxed">{fc.answer}</p>
+                      </div>
+                    </div>
+                  }
+                />
+              </div>
+            </div>
+          )
+        },
+        (idx) => allFlashcards[idx]?.sectionTitle?.replace(/\*{2,4}/g, '') || ''
       )}
 
       {/* Edit flashcard modal */}
@@ -514,7 +496,6 @@ export default function UnifiedTileView({
           </div>
         </div>
       )}
-
     </>
   )
 }
