@@ -8065,7 +8065,7 @@ export default function Canvas() {
                 return (
                   <div key={catId}>
                     <h2 className="text-sm font-medium text-gray-400 mb-2 px-1">{catName}</h2>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-3 gap-1.5" style={{ maxWidth: '400px', margin: '0 auto' }}>
                       {topics.map(topic => (
                         <button
                           key={topic.id}
@@ -8074,7 +8074,7 @@ export default function Canvas() {
                             const catPath = topic.categoryId || ''
                             setStack([catPath, topic.originalTopicId])
                           }}
-                          className="relative aspect-square rounded-xl overflow-hidden shadow-md"
+                          className="relative aspect-square rounded-lg overflow-hidden shadow-md"
                         >
                           <div className={`w-full h-full bg-gradient-to-br ${gradient} relative`}>
                             <TilePattern patternId={pattern} />
