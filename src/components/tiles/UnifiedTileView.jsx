@@ -70,6 +70,13 @@ export default function UnifiedTileView({
     } else {
       setSlateMerging(false)
       setSlateMerged(false)
+      // Auto-flip first tile in Tiles/Flash view after short delay
+      if (activeMode === 'cards') {
+        const t = setTimeout(() => {
+          setCarouselFlipped({ 0: true })
+        }, 300)
+        slateTimers.current.push(t)
+      }
     }
   }, [activeMode])
 
