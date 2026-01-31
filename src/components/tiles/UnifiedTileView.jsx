@@ -382,7 +382,8 @@ export default function UnifiedTileView({
         (idx) => {
           const section = sections[idx]
           if (!section) return null
-          const isFlipped = !!carouselFlipped[idx]
+          // First tile animates flip; all others start on content side
+          const isFlipped = idx === 0 ? !!carouselFlipped[0] : true
 
           return (
             <div className="max-w-sm mx-auto w-full cursor-pointer" onClick={handleCarouselFlip} style={{ perspective: '1000px' }}>
@@ -390,7 +391,7 @@ export default function UnifiedTileView({
                 className="relative w-full aspect-square"
                 style={{ transformStyle: 'preserve-3d' }}
                 animate={{ rotateY: isFlipped ? 180 : 0 }}
-                transition={{ duration: 0.45, ease: 'easeInOut' }}
+                transition={{ duration: idx === 0 ? 0.45 : 0, ease: 'easeInOut' }}
               >
                 {/* Front: gradient + pattern + section title */}
                 <div
