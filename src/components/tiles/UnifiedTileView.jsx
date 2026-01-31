@@ -378,7 +378,7 @@ export default function UnifiedTileView({
                     <h3 className="font-semibold text-emerald-600 text-base mb-2">
                       {section.title?.replace(/\*{2,4}/g, '')}
                     </h3>
-                    <div className="text-gray-700 text-sm leading-relaxed">
+                    <div className="text-gray-700 text-base leading-relaxed">
                       {renderContent(section.content)}
                     </div>
                   </div>
@@ -440,7 +440,7 @@ export default function UnifiedTileView({
                         </svg>
                       </button>
                     )}
-                    <div className="text-emerald-600 font-medium text-sm mb-3">
+                    <div className="text-emerald-600 font-medium text-base mb-3">
                       {fc.question}
                     </div>
                     <p className="text-gray-700 leading-relaxed">{fc.answer}</p>
