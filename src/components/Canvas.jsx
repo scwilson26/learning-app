@@ -7422,27 +7422,6 @@ export default function Canvas() {
         </button>
       </div>
 
-      {/* Wander button - floating above nav bar */}
-      <motion.button
-        onClick={handleWander}
-        disabled={isWandering}
-        className={`
-          absolute left-1/2 -translate-x-1/2 -top-8 w-16 h-16 rounded-full
-          bg-gradient-to-br from-purple-400 via-purple-500 to-indigo-600
-          text-white z-50
-          flex items-center justify-center
-          ${isWandering ? 'opacity-70' : ''}
-        `}
-        style={{
-          boxShadow: isWandering
-            ? '0 4px 15px rgba(139, 92, 246, 0.3)'
-            : '0 8px 25px rgba(139, 92, 246, 0.5), 0 0 20px rgba(139, 92, 246, 0.3), inset 0 1px 1px rgba(255,255,255,0.3)'
-        }}
-        whileHover={isWandering ? {} : { scale: 1.08, boxShadow: '0 10px 30px rgba(139, 92, 246, 0.6), 0 0 25px rgba(139, 92, 246, 0.4), inset 0 1px 1px rgba(255,255,255,0.3)' }}
-        whileTap={isWandering ? {} : { scale: 0.95 }}
-      >
-        <span className="text-2xl">{isWandering ? '✨' : '🎲'}</span>
-      </motion.button>
     </div>
   )
 
@@ -7683,7 +7662,7 @@ export default function Canvas() {
         {/* Content */}
         <div className="pt-14 px-4">
           {/* Browse & My Notes tiles */}
-          <div className="mt-6 grid grid-cols-2 gap-1.5" style={{ maxWidth: '400px', margin: '0 auto' }}>
+          <div className="mt-6 grid grid-cols-3 gap-1.5" style={{ maxWidth: '400px', margin: '0 auto' }}>
             <button
               onClick={() => setLearnView('browse')}
               className="relative aspect-square rounded-lg bg-gradient-to-br from-indigo-400 to-indigo-600 overflow-hidden"
@@ -7731,6 +7710,28 @@ export default function Canvas() {
                     ? `${getUserDecks().length} deck${getUserDecks().length === 1 ? '' : 's'}`
                     : 'Upload notes'}
                 </p>
+              </div>
+            </button>
+
+            <button
+              onClick={handleWander}
+              disabled={isWandering}
+              className={`relative aspect-square rounded-lg bg-gradient-to-br from-purple-400 via-purple-500 to-indigo-600 overflow-hidden ${isWandering ? 'opacity-70' : ''}`}
+              style={{
+                boxShadow: '0 4px 8px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2)',
+              }}
+            >
+              <TilePattern patternId={5} opacity={0.15} />
+              <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.08]" preserveAspectRatio="none">
+                <defs><filter id="matte-discover"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" result="noise" /><feColorMatrix type="saturate" values="0" /></filter></defs>
+                <rect width="100%" height="100%" filter="url(#matte-discover)" />
+              </svg>
+              <div className="absolute inset-0 pointer-events-none rounded-lg" style={{ boxShadow: 'inset 2px 2px 4px rgba(255,255,255,0.25), inset -2px -2px 4px rgba(0,0,0,0.25)' }} />
+              <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 30%, rgba(0,0,0,0.08) 100%)' }} />
+              <div className="relative z-10 flex flex-col items-center justify-center h-full text-white p-4">
+                <span className="text-2xl mb-2">{isWandering ? '✨' : '🎲'}</span>
+                <h3 className="text-lg font-bold drop-shadow">Discover</h3>
+                <p className="text-xs text-white/70 mt-1">Find something new</p>
               </div>
             </button>
           </div>
