@@ -268,12 +268,9 @@ export default function UnifiedTileView({
 
   return (
     <>
-      {/* Slate mode: title + tile grid */}
+      {/* Slate mode: tile grid */}
       {activeMode === 'outline' && (
         <LayoutGroup>
-          <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center px-4">
-            {deckName}
-          </h2>
           <motion.div
             style={containerStyle}
             layout

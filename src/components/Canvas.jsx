@@ -2747,7 +2747,7 @@ function DeckSpread({
 
   return (
     <motion.div
-      className="flex flex-col items-center gap-8 pb-8 w-full"
+      className="flex flex-col items-center gap-3 pb-8 w-full"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
@@ -2761,7 +2761,7 @@ function DeckSpread({
               <button
                 key={view.id}
                 onClick={() => setViewMode(view.id)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
                   viewMode === view.id
                     ? 'bg-emerald-600 text-white shadow-md'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -2773,15 +2773,8 @@ function DeckSpread({
             ))}
           </div>
 
-          {/* View description */}
-          <div className="text-center text-xs text-gray-400 mb-2">
-            {viewMode === 'outline' && 'Full text workspace — all content visible'}
-            {viewMode === 'cards' && 'Tap a section → tiles merge → shows content'}
-            {viewMode === 'flashcards' && 'Tap a tile → it flips → shows Q/A'}
-          </div>
-
           {/* Collection / Study buttons */}
-          <div className="flex justify-center gap-2 mb-4">
+          <div className="flex justify-center gap-2 mb-2">
             {!addedToCollection ? (
               <button
                 onClick={() => {
@@ -8478,16 +8471,22 @@ export default function Canvas() {
   // Inside the stack - show parent decks underneath and current spread on top
   return (
     <div className="w-screen min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 overflow-auto">
-      {/* Top navigation bar - simplified */}
+      {/* Top navigation bar - back arrow + title */}
       <div className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200">
-        <div className="flex items-center justify-between px-3 py-2">
-          <DeckHeader
-            stackDecks={stackDecks}
-            onGoBack={goBack}
-          />
-
-          {/* Toggle for user decks OR Card counter for regular decks */}
-          {currentDeck?.isUserDeck ? (
+        <div className="flex items-center px-3 py-2 gap-2">
+          <button
+            onClick={goBack}
+            className="flex items-center justify-center w-8 h-8 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors shrink-0"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <h1 className="text-base font-semibold text-gray-800 truncate flex-1 text-center">
+            {currentDeck?.name || ''}
+          </h1>
+          {/* Spacer to balance back button for centering (when no user deck toggle) */}
+          {!currentDeck?.isUserDeck && <div className="w-8 shrink-0" />}
+          {/* User deck toggle */}
+          {currentDeck?.isUserDeck && (
             <div className="flex items-center bg-gray-100 rounded-full p-0.5 shrink-0">
               <button
                 onClick={() => setUserDeckViewMode('cards')}
@@ -8510,17 +8509,12 @@ export default function Canvas() {
                 Slate
               </button>
             </div>
-          ) : (
-            <div className="bg-gray-100 rounded-full px-3 py-1 shrink-0">
-              <span className="text-gray-500 text-xs">Cards: </span>
-              <span className="text-gray-800 font-bold text-sm">{claimedCards.size}</span>
-            </div>
           )}
         </div>
       </div>
 
       {/* Current spread + parent deck underneath */}
-      <div className="min-h-screen flex flex-col items-center pt-20 px-4">
+      <div className="min-h-screen flex flex-col items-center pt-14 px-4">
         {/* Show Outline view OR Cards view for user decks */}
         {currentDeck?.isUserDeck && userDeckViewMode === 'outline' ? (
           <div className="w-full max-w-2xl pb-24">
