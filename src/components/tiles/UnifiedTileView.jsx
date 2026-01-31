@@ -190,7 +190,7 @@ export default function UnifiedTileView({
   }
 
   // Carousel renderer shared by Tiles and Flash
-  const renderCarousel = (items, renderSlide, labelFn) => {
+  const renderCarousel = (items, renderSlide) => {
     const maxIdx = items.length - 1
     return (
       <div
@@ -199,13 +199,6 @@ export default function UnifiedTileView({
         onTouchMove={handleTouchMove}
         onTouchEnd={() => handleTouchEnd(maxIdx)}
       >
-        {/* Label */}
-        <div className="px-1 mb-2">
-          <span className="text-xs text-gray-400 font-medium">
-            {labelFn(carouselIndex)}
-          </span>
-        </div>
-
         <AnimatePresence mode="wait">
           <motion.div
             key={carouselIndex}
@@ -394,7 +387,6 @@ export default function UnifiedTileView({
             </div>
           )
         },
-        (idx) => sections[idx]?.title?.replace(/\*{2,4}/g, '') || ''
       )}
 
       {/* Flash mode: horizontal carousel */}
@@ -458,7 +450,6 @@ export default function UnifiedTileView({
             </div>
           )
         },
-        (idx) => allFlashcards[idx]?.sectionTitle?.replace(/\*{2,4}/g, '') || ''
       )}
 
       {/* Edit flashcard modal */}
