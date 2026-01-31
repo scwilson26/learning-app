@@ -1629,170 +1629,87 @@ function WanderCard({
           )
         })()}
 
-        {/* PREVIEW STATE - flipping card */}
-        {showPreview && (
-          <motion.div
-            className="relative w-full h-full"
-            style={{ transformStyle: 'preserve-3d' }}
-            animate={{ rotateY: isFlipped ? -180 : 0 }}
-            transition={{ duration: 0.5, ease: 'easeInOut' }}
-          >
-            {/* Front of card - "Introduction" and "Tap to read" */}
-            <div
-              className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center p-6 overflow-hidden shadow-2xl"
-              style={{
-                backfaceVisibility: 'hidden',
-                WebkitBackfaceVisibility: 'hidden',
-                transform: 'translateZ(1px)',
-                ...getExpandedCardStyle(rootCategoryId, theme, previewData?.claimed, '#fafbfc')
-              }}
-            >
-              {renderExpandedCardDecorations(rootCategoryId, theme)}
+        {/* PREVIEW STATE - tile-style card with buttons below */}
+        {showPreview && (() => {
+          const categoryGradient = CATEGORY_GRADIENTS[rootCategoryId] || CATEGORY_GRADIENTS.default
+          const categoryPattern = CATEGORY_PATTERNS[rootCategoryId] || CATEGORY_PATTERNS.default
 
-              {/* Claimed badge - top right (next to close button) */}
-              {previewData?.claimed && (
-                <div className="absolute top-3 right-12 w-8 h-8 rounded-full flex items-center justify-center shadow-md z-20" style={{ background: isThemed ? theme.accent : '#facc15' }}>
-                  <span className="text-white text-sm font-bold">✓</span>
-                </div>
-              )}
-
-              {/* Close button */}
-              <button
-                onClick={(e) => { e.stopPropagation(); onBack(); }}
-                className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full transition-colors z-20"
-                style={{
-                  background: isThemed ? theme.cardBgAlt : '#f3f4f6',
-                  color: isThemed ? theme.textSecondary : '#6b7280'
-                }}
-                aria-label="Close"
+          return (
+            <div className="flex flex-col items-center gap-4">
+              {/* Card with tile-style border */}
+              <motion.div
+                className="relative w-full aspect-square"
+                style={{ transformStyle: 'preserve-3d' }}
+                animate={{ rotateY: isFlipped ? -180 : 0 }}
+                transition={{ duration: 0.5, ease: 'easeInOut' }}
               >
-                <span className="text-lg font-light">×</span>
-              </button>
-
-              <h2 className="text-xl font-bold text-center mb-4 leading-tight px-2 relative z-10" style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}>{toTitleCase(previewData?.title)}</h2>
-              <span className="text-sm relative z-10" style={{ color: isThemed ? theme.textSecondary : '#9ca3af' }}>Tap to read</span>
-            </div>
-
-            {/* Back of card - content and action buttons */}
-            <div
-              className="absolute inset-0 rounded-2xl flex flex-col p-5 overflow-hidden shadow-2xl"
-              style={{
-                backfaceVisibility: 'hidden',
-                WebkitBackfaceVisibility: 'hidden',
-                transform: 'rotateY(-180deg) translateZ(1px)',
-                ...getExpandedCardStyle(rootCategoryId, theme, previewData?.claimed, '#fafbfc')
-              }}
-            >
-              {renderExpandedCardDecorations(rootCategoryId, theme, true)}
-
-              {/* Close button */}
-              <button
-                onClick={(e) => { e.stopPropagation(); onBack(); }}
-                className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full transition-colors z-20"
-                style={{
-                  background: isThemed ? theme.cardBgAlt : '#f3f4f6',
-                  color: isThemed ? theme.textSecondary : '#6b7280'
-                }}
-                aria-label="Close"
-              >
-                <span className="text-lg font-light">×</span>
-              </button>
-
-              {/* Title */}
-              <div className="flex justify-between items-start mb-3 pr-8 relative z-10">
-                <h2 className="text-lg font-bold leading-tight flex-1" style={{ color: isThemed ? theme.textPrimary : '#1f2937' }}>{previewData.title}</h2>
-              </div>
-
-              {/* Content */}
-              <div className="flex-1 overflow-auto text-sm leading-relaxed relative z-10" style={{ color: isThemed ? theme.textPrimary : '#374151' }}>
-                {renderMarkdown(previewData.preview, previewData.title, onRabbitHoleClick)}
-              </div>
-
-              {/* Card ID - bottom left corner */}
-              {previewData.cardId && (
+                {/* Front - gradient tile with title */}
                 <div
-                  className="absolute bottom-3 left-4 text-xs font-mono z-10"
-                  style={{ color: isThemed ? `${theme.textSecondary}80` : '#9ca3af' }}
+                  className={`absolute inset-0 rounded-xl overflow-hidden shadow-2xl bg-gradient-to-br ${categoryGradient}`}
+                  style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'translateZ(1px)' }}
                 >
-                  {previewData.cardId}
+                  <TilePattern patternId={categoryPattern} />
+                  {/* Close button */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onBack(); }}
+                    className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full z-20"
+                    style={{ background: 'rgba(0,0,0,0.2)', color: 'white' }}
+                    aria-label="Close"
+                  >
+                    <span className="text-lg font-light">×</span>
+                  </button>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6">
+                    <h2 className="text-xl font-bold text-white text-center drop-shadow-md leading-tight">{toTitleCase(previewData?.title)}</h2>
+                    <span className="text-sm text-white/60 mt-3">Tap to read</span>
+                  </div>
                 </div>
-              )}
 
-              {/* Claimed badge - bottom right corner */}
-              {previewData.claimed && (
+                {/* Back - gradient border + white center + content */}
                 <div
-                  className="absolute bottom-3 right-4 flex items-center gap-1 px-2 py-1 rounded-full z-10"
-                  style={{
-                    background: isThemed ? theme.accent : '#10b981',
-                    boxShadow: `0 1px 4px ${isThemed ? theme.accentGlow : 'rgba(16, 185, 129, 0.3)'}`
+                  className={`absolute inset-0 rounded-xl overflow-hidden shadow-2xl bg-gradient-to-br ${categoryGradient}`}
+                  style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(-180deg) translateZ(1px)' }}
+                >
+                  <TilePattern patternId={categoryPattern} opacity={0.12} />
+                  <div className="absolute inset-2 bg-white rounded-lg" />
+                  <div className="absolute inset-2 z-10 overflow-y-auto p-4 pb-5 hide-scrollbar">
+                    {/* Close button */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onBack(); }}
+                      className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-full z-20 bg-gray-100 text-gray-500"
+                      aria-label="Close"
+                    >
+                      <span className="text-base font-light">×</span>
+                    </button>
+                    <h2 className="text-lg font-bold text-gray-900 leading-tight mb-3 pr-8">{previewData.title}</h2>
+                    <div className="text-base text-gray-700 leading-relaxed">
+                      {renderMarkdown(previewData.preview, previewData.title, onRabbitHoleClick)}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Buttons below card */}
+              <div className="flex gap-3 w-full" onClick={e => e.stopPropagation()}>
+                <button
+                  onClick={onWander}
+                  className="flex-1 py-3 rounded-xl font-semibold text-base transition-all active:scale-[0.98] flex items-center justify-center gap-2 bg-white text-gray-700 border-2 border-gray-200"
+                >
+                  <span>🎲</span>
+                  <span>Next</span>
+                </button>
+                <button
+                  onClick={() => {
+                    if (!previewData.claimed) onClaim()
+                    onExplore()
                   }}
+                  className={`flex-1 py-3 rounded-xl font-bold text-base transition-all active:scale-[0.98] text-white bg-gradient-to-r ${categoryGradient} shadow-lg`}
                 >
-                  <span className={`text-xs font-bold ${rootCategoryId === 'technology' ? 'text-slate-900' : (rootCategoryId === 'philosophy' ? 'text-indigo-900' : 'text-white')}`}>✓</span>
-                  <span className={`text-[10px] font-semibold ${rootCategoryId === 'technology' ? 'text-slate-900' : (rootCategoryId === 'philosophy' ? 'text-indigo-900' : 'text-white')}`}>Claimed</span>
-                </div>
-              )}
-
-              {/* Action buttons */}
-              <div className="mt-3 pt-3 space-y-2 relative z-10" style={{ borderTop: isThemed ? `1px solid ${theme.accent}20` : '1px solid #f3f4f6' }} onClick={e => e.stopPropagation()}>
-                <div className="flex gap-2">
-                  <button
-                    onClick={onClaim}
-                    disabled={previewData.claimed}
-                    className="flex-1 py-3 rounded-xl font-bold text-base transition-all active:scale-[0.98] disabled:opacity-50"
-                    style={{
-                      background: previewData.claimed ? theme.buttonDisabledBg : theme.buttonPrimaryBg,
-                      color: previewData.claimed ? theme.buttonDisabledText : theme.buttonPrimaryText,
-                      boxShadow: previewData.claimed ? 'none' : theme.buttonPrimaryShadow
-                    }}
-                  >
-                    {previewData.claimed ? 'Claimed' : 'Claim'}
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (!previewData.claimed) onClaim()
-                      onExplore()
-                    }}
-                    className="flex-1 py-3 rounded-xl font-bold text-base transition-all active:scale-[0.98]"
-                    style={{
-                      background: theme.buttonPrimaryBg,
-                      color: theme.buttonPrimaryText,
-                      boxShadow: theme.buttonPrimaryShadow
-                    }}
-                  >
-                    Explore →
-                  </button>
-                </div>
-
-                <div className="flex gap-2">
-                  <button
-                    onClick={onWander}
-                    className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 hover:scale-[1.02] active:scale-[0.98]"
-                    style={{
-                      background: theme.buttonWanderGradient,
-                      color: theme.buttonWanderText,
-                      boxShadow: theme.buttonWanderShadow
-                    }}
-                  >
-                    <span>🎲</span>
-                    <span>Wander</span>
-                  </button>
-                  <button
-                    onClick={onBack}
-                    className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-1.5"
-                    style={{
-                      background: theme.buttonSecondaryBg,
-                      color: theme.buttonSecondaryText,
-                      border: `2px solid ${theme.buttonSecondaryBorder}`
-                    }}
-                  >
-                    <span>←</span>
-                    <span>Back</span>
-                  </button>
-                </div>
+                  Explore →
+                </button>
               </div>
             </div>
-          </motion.div>
-        )}
+          )
+        })()}
       </motion.div>
     </motion.div>
   )
