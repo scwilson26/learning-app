@@ -162,9 +162,11 @@ export default function UnifiedTileView({
     if (activeMode === 'outline') {
       return {
         display: 'grid',
-        gridTemplateColumns: `repeat(2, 1fr)`,
-        padding: '1rem',
-        gap: slateMerging ? '0px' : '0.5rem',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: slateMerging ? '0px' : '6px',
+        maxWidth: '400px',
+        margin: '0 auto',
+        padding: '0 1rem',
         ...((slateMerged && !slateReversing) ? { position: 'absolute', visibility: 'hidden' } : {})
       }
     }
