@@ -236,12 +236,18 @@ export default function UnifiedTileView({
         onTouchMove={handleTouchMove}
         onTouchEnd={() => handleTouchEnd(maxIdx)}
       >
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait" custom={swipeDirection.current}>
           <motion.div
             key={carouselIndex}
-            initial={{ x: swipeDirection.current >= 0 ? 300 : -300, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: swipeDirection.current >= 0 ? -300 : 300, opacity: 0 }}
+            custom={swipeDirection.current}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            variants={{
+              enter: (dir) => ({ x: dir >= 0 ? 300 : -300, opacity: 0 }),
+              center: { x: 0, opacity: 1 },
+              exit: (dir) => ({ x: dir >= 0 ? -300 : 300, opacity: 0 }),
+            }}
             transition={{ duration: 0.25, ease: 'easeInOut' }}
           >
             {renderSlide(carouselIndex)}
