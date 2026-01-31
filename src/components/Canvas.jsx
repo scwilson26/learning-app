@@ -7302,6 +7302,18 @@ export default function Canvas() {
           icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />}
           label="Mosaic"
         />
+        {/* Discover button */}
+        <button
+          onClick={handleWander}
+          disabled={isWandering}
+          className="flex flex-col items-center justify-center py-2 px-3"
+        >
+          <div
+            className={`w-10 h-10 flex items-center justify-center rounded-lg bg-gradient-to-br from-purple-400 to-indigo-500 shadow-sm ${isWandering ? 'opacity-60' : ''}`}
+          >
+            <span className="text-white font-bold text-lg">?</span>
+          </div>
+        </button>
         <NavTab
           isActive={activeTab === 'study'}
           onClick={() => setActiveTab('study')}
