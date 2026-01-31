@@ -7289,7 +7289,17 @@ export default function Canvas() {
       className="fixed bottom-0 left-0 right-0 z-40"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
-      <div className="bg-white border-t border-gray-200 flex items-end justify-evenly h-16">
+      {/* Floating Wander tile */}
+      <button
+        onClick={handleWander}
+        disabled={isWandering}
+        className={`absolute left-1/2 -translate-x-1/2 -top-5 w-11 h-11 rounded-lg overflow-hidden shadow-md z-50 ${isWandering ? 'opacity-60' : ''}`}
+        style={{ background: 'linear-gradient(135deg, #a78bfa, #6366f1)' }}
+      >
+        <TilePattern patternId="geometric" opacity={0.2} />
+        <span className="absolute inset-0 flex items-center justify-center text-white font-bold text-lg">?</span>
+      </button>
+      <div className="bg-white border-t border-gray-200 flex items-end justify-evenly h-16 relative">
         <NavTab
           isActive={activeTab === 'learn'}
           onClick={() => { setActiveTab('learn'); setLearnView('hub'); setStack(['my-decks']) }}
@@ -7302,17 +7312,6 @@ export default function Canvas() {
           icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />}
           label="Mosaic"
         />
-        {/* Discover button */}
-        <button
-          onClick={handleWander}
-          disabled={isWandering}
-          className={`flex flex-col items-center justify-center py-2 px-3 transition-colors ${isWandering ? 'opacity-50' : ''}`}
-        >
-          <div className="w-10 h-10 flex items-center justify-center">
-            <span className="text-gray-400 font-bold text-xl">?</span>
-          </div>
-          <span className="text-[10px] mt-0.5 font-medium text-gray-400">Wander</span>
-        </button>
         <NavTab
           isActive={activeTab === 'study'}
           onClick={() => setActiveTab('study')}
