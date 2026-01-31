@@ -809,7 +809,7 @@ function ContinueExploringSection({ decks, onOpenDeck }) {
 
   return (
     <div className="mb-6">
-      <h2 className="text-lg font-semibold text-slate-700 mb-3">Continue Exploring</h2>
+      <h2 className="text-lg font-semibold text-slate-700 mb-3 text-center">Continue Exploring</h2>
       <TileGrid>
         {decks.map((deck) => {
           const progressPercent = Math.round((deck.claimedCount / deck.totalCount) * 100)
@@ -8065,7 +8065,7 @@ export default function Canvas() {
 
                 {/* Categories header - only show if there are in-progress decks */}
                 {inProgressDecks.length > 0 && (
-                  <h2 className="text-lg font-semibold text-slate-700 mb-3">Categories</h2>
+                  <h2 className="text-lg font-semibold text-slate-700 mb-3 text-center">Categories</h2>
                 )}
               </>
             )
