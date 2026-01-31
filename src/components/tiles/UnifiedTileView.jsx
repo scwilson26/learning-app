@@ -30,6 +30,7 @@ export default function UnifiedTileView({
   const [editAnswer, setEditAnswer] = useState('')
   const slateTimers = useRef([])
   const hasPlayedSlate = useRef(false)
+  const hasPlayedTilesIntro = useRef(false)
 
   const activeMode = viewMode
 
@@ -70,12 +71,18 @@ export default function UnifiedTileView({
     } else {
       setSlateMerging(false)
       setSlateMerged(false)
-      // Auto-flip first tile in Tiles/Flash view after short delay
+      // Auto-flip first tile in Tiles view
       if (activeMode === 'cards') {
-        const t = setTimeout(() => {
+        if (hasPlayedTilesIntro.current) {
+          // Already seen intro — show content immediately
           setCarouselFlipped({ 0: true })
-        }, 300)
-        slateTimers.current.push(t)
+        } else {
+          const t = setTimeout(() => {
+            setCarouselFlipped({ 0: true })
+            hasPlayedTilesIntro.current = true
+          }, 300)
+          slateTimers.current.push(t)
+        }
       }
     }
   }, [activeMode])
@@ -388,16 +395,21 @@ export default function UnifiedTileView({
         (idx) => {
           const section = sections[idx]
           if (!section) return null
-          // First tile animates flip; all others start on content side
+          // All non-zero tiles always show content; tile 0 is flippable
           const isFlipped = idx === 0 ? !!carouselFlipped[0] : true
+          // Non-zero tiles: instant. Tile 0: always 0.45s for flip animation.
+          // initial prevents re-mount animation when navigating back to tile 0.
+          const targetRotateY = isFlipped ? 180 : 0
+          const duration = idx !== 0 ? 0 : 0.45
 
           return (
             <div className="max-w-sm mx-auto w-full cursor-pointer" onClick={handleCarouselFlip} style={{ perspective: '1000px' }}>
               <motion.div
                 className="relative w-full aspect-square"
                 style={{ transformStyle: 'preserve-3d' }}
-                animate={{ rotateY: isFlipped ? 180 : 0 }}
-                transition={{ duration: idx === 0 ? 0.45 : 0, ease: 'easeInOut' }}
+                initial={{ rotateY: targetRotateY }}
+                animate={{ rotateY: targetRotateY }}
+                transition={{ duration, ease: 'easeInOut' }}
               >
                 {/* Front: gradient + pattern + section title */}
                 <div
