@@ -7633,7 +7633,7 @@ export default function Canvas() {
               <div className="absolute inset-0 pointer-events-none rounded-lg" style={{ boxShadow: 'inset 2px 2px 4px rgba(255,255,255,0.25), inset -2px -2px 4px rgba(0,0,0,0.25)' }} />
               <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 30%, rgba(0,0,0,0.08) 100%)' }} />
               <div className="relative z-10 flex flex-col items-center justify-center h-full text-white p-4">
-                <span className="text-2xl mb-2">{isWandering ? '✨' : '🎲'}</span>
+                <span className="text-3xl font-bold mb-2">{isWandering ? '✨' : '?'}</span>
                 <h3 className="text-lg font-bold drop-shadow">Wander</h3>
                 <p className="text-xs text-white/70 mt-1">Explore something random</p>
               </div>
