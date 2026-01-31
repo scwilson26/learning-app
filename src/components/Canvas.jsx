@@ -7306,12 +7306,10 @@ export default function Canvas() {
         <button
           onClick={handleWander}
           disabled={isWandering}
-          className="flex flex-col items-center justify-center py-2 px-3"
+          className={`flex flex-col items-center justify-center py-2 px-3 ${isWandering ? 'opacity-50' : ''}`}
         >
-          <div
-            className={`w-10 h-10 flex items-center justify-center rounded-lg bg-gradient-to-br from-purple-400 to-indigo-500 shadow-sm ${isWandering ? 'opacity-60' : ''}`}
-          >
-            <span className="text-white font-bold text-lg">?</span>
+          <div className="w-10 h-10 flex items-center justify-center">
+            <span className="text-gray-400 font-bold text-xl">?</span>
           </div>
         </button>
         <NavTab
