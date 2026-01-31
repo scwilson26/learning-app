@@ -321,18 +321,22 @@ export default function UnifiedTileView({
             className="px-4 pb-8 cursor-pointer"
             onClick={handleSlateClick}
           >
-            <div className="max-w-lg mx-auto">
-              <div className="space-y-6">
-                {outlineSections.map((section, idx) => (
-                  <div key={idx} className="border-b border-gray-100 pb-6 last:border-0">
-                    <h3 className="font-semibold text-emerald-600 text-lg mb-3">
-                      {idx + 1}. {section.title}
-                    </h3>
-                    <div className="text-gray-700 leading-relaxed">
-                      {renderContent(section.content || section.concept)}
+            <div className={`rounded-xl overflow-hidden shadow-md bg-gradient-to-br ${gradient} relative`}>
+              <TilePattern patternId={patternId} opacity={0.12} />
+              <div className="absolute inset-2 bg-white rounded-lg" />
+              <div className="relative z-10 p-5">
+                <div className="space-y-6">
+                  {outlineSections.map((section, idx) => (
+                    <div key={idx} className="border-b border-gray-100 pb-6 last:border-0">
+                      <h3 className="font-semibold text-emerald-600 text-lg mb-3">
+                        {idx + 1}. {section.title}
+                      </h3>
+                      <div className="text-gray-700 leading-relaxed">
+                        {renderContent(section.content || section.concept)}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           </motion.div>
@@ -347,45 +351,43 @@ export default function UnifiedTileView({
           if (!section) return null
           const isFlipped = !!carouselFlipped[idx]
 
-          if (isFlipped && section.content) {
-            // Show content card
-            return (
-              <div
-                className={`rounded-xl overflow-hidden shadow-md bg-gradient-to-br ${gradient} relative cursor-pointer`}
-                onClick={handleCarouselFlip}
+          return (
+            <div className="max-w-sm mx-auto w-full cursor-pointer" onClick={handleCarouselFlip} style={{ perspective: '1000px' }}>
+              <motion.div
+                className="relative w-full"
+                style={{ minHeight: '280px', transformStyle: 'preserve-3d' }}
+                animate={{ rotateY: isFlipped ? 180 : 0 }}
+                transition={{ duration: 0.45, ease: 'easeInOut' }}
               >
-                <TilePattern patternId={patternId} opacity={0.12} />
-                <div className="absolute inset-2 bg-white rounded-lg" />
-                <div className="relative z-10 p-5">
-                  <h3 className="font-semibold text-emerald-600 text-base mb-2">
-                    {section.title?.replace(/\*{2,4}/g, '')}
-                  </h3>
-                  <div className="text-gray-700 text-sm leading-relaxed">
-                    {renderContent(section.content)}
+                {/* Front: gradient + pattern + section title */}
+                <div
+                  className={`absolute inset-0 rounded-xl overflow-hidden shadow-md bg-gradient-to-br ${gradient}`}
+                  style={{ backfaceVisibility: 'hidden' }}
+                >
+                  <TilePattern patternId={patternId} />
+                  <div className="absolute inset-0 flex items-center justify-center p-6">
+                    <h3 className="text-white font-bold text-xl text-center drop-shadow-md leading-snug">
+                      {section.title?.replace(/\*{2,4}/g, '')}
+                    </h3>
                   </div>
                 </div>
-              </div>
-            )
-          }
-
-          // Show tile
-          return (
-            <div className="max-w-xs mx-auto">
-              <div className="aspect-square">
-                <Tile
-                  isFlipped={isFlipped}
-                  gradient={gradient}
-                  patternId={patternId}
-                  onClick={handleCarouselFlip}
-                  backContent={
-                    <div className="w-full h-full flex items-center justify-center p-2">
-                      <span className="text-emerald-600 text-sm font-medium text-center leading-tight line-clamp-3">
-                        {section.title?.replace(/\*{2,4}/g, '')}
-                      </span>
+                {/* Back: gradient border + white center + content */}
+                <div
+                  className={`absolute inset-0 rounded-xl overflow-hidden shadow-md bg-gradient-to-br ${gradient}`}
+                  style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+                >
+                  <TilePattern patternId={patternId} opacity={0.12} />
+                  <div className="absolute inset-2 bg-white rounded-lg" />
+                  <div className="relative z-10 p-5 overflow-auto" style={{ maxHeight: '70vh' }}>
+                    <h3 className="font-semibold text-emerald-600 text-base mb-2">
+                      {section.title?.replace(/\*{2,4}/g, '')}
+                    </h3>
+                    <div className="text-gray-700 text-sm leading-relaxed">
+                      {renderContent(section.content)}
                     </div>
-                  }
-                />
-              </div>
+                  </div>
+                </div>
+              </motion.div>
             </div>
           )
         },
@@ -401,47 +403,55 @@ export default function UnifiedTileView({
           const isFlipped = !!carouselFlipped[idx]
 
           return (
-            <div className="max-w-xs mx-auto">
-              <div className="aspect-square">
-                <Tile
-                  isFlipped={isFlipped}
-                  gradient={gradient}
-                  patternId={patternId}
-                  onClick={handleCarouselFlip}
-                  frontContent={
-                    <div className="text-center p-4">
-                      <span className="text-white font-semibold text-lg drop-shadow-md line-clamp-5">
-                        {fc.question}
-                      </span>
+            <div className="max-w-sm mx-auto w-full cursor-pointer" onClick={handleCarouselFlip} style={{ perspective: '1000px' }}>
+              <motion.div
+                className="relative w-full"
+                style={{ minHeight: '280px', transformStyle: 'preserve-3d' }}
+                animate={{ rotateY: isFlipped ? 180 : 0 }}
+                transition={{ duration: 0.45, ease: 'easeInOut' }}
+              >
+                {/* Front: gradient + pattern + question */}
+                <div
+                  className={`absolute inset-0 rounded-xl overflow-hidden shadow-md bg-gradient-to-br ${gradient}`}
+                  style={{ backfaceVisibility: 'hidden' }}
+                >
+                  <TilePattern patternId={patternId} />
+                  <div className="absolute inset-0 flex items-center justify-center p-6">
+                    <span className="text-white font-semibold text-lg text-center drop-shadow-md leading-snug line-clamp-5">
+                      {fc.question}
+                    </span>
+                  </div>
+                </div>
+                {/* Back: gradient border + white center + Q&A */}
+                <div
+                  className={`absolute inset-0 rounded-xl overflow-hidden shadow-md bg-gradient-to-br ${gradient}`}
+                  style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+                >
+                  <TilePattern patternId={patternId} opacity={0.12} />
+                  <div className="absolute inset-2 bg-white rounded-lg" />
+                  <div className="relative z-10 p-5 overflow-auto" style={{ maxHeight: '70vh' }}>
+                    {onEditFlashcard && (
+                      <button
+                        className="absolute top-1 right-1 p-1.5 text-gray-300 hover:text-gray-500 transition-colors z-20"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setEditingIndex(idx)
+                          setEditQuestion(fc.question)
+                          setEditAnswer(fc.answer)
+                        }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11.5 1.5l3 3L5 14H2v-3L11.5 1.5z" />
+                        </svg>
+                      </button>
+                    )}
+                    <div className="text-emerald-600 font-medium text-sm mb-3">
+                      {fc.question}
                     </div>
-                  }
-                  backContent={
-                    <div className="h-full flex flex-col p-4 relative">
-                      {onEditFlashcard && (
-                        <button
-                          className="absolute top-1 right-1 p-1.5 text-gray-300 hover:text-gray-500 transition-colors"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setEditingIndex(idx)
-                            setEditQuestion(fc.question)
-                            setEditAnswer(fc.answer)
-                          }}
-                        >
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M11.5 1.5l3 3L5 14H2v-3L11.5 1.5z" />
-                          </svg>
-                        </button>
-                      )}
-                      <div className="text-emerald-600 font-medium text-sm mb-3 line-clamp-2">
-                        {fc.question}
-                      </div>
-                      <div className="flex-1 overflow-auto">
-                        <p className="text-gray-700 leading-relaxed">{fc.answer}</p>
-                      </div>
-                    </div>
-                  }
-                />
-              </div>
+                    <p className="text-gray-700 leading-relaxed">{fc.answer}</p>
+                  </div>
+                </div>
+              </motion.div>
             </div>
           )
         },
