@@ -320,7 +320,8 @@ export default function UnifiedTileView({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="px-4 pb-8 cursor-pointer"
+            className="pb-8 cursor-pointer"
+            style={{ maxWidth: '400px', margin: '0 auto', padding: '0 1rem' }}
             onClick={handleSlateClick}
           >
             <div className={`rounded-xl overflow-hidden shadow-md bg-gradient-to-br ${gradient} relative`}>
