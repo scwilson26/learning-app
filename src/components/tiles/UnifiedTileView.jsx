@@ -29,6 +29,7 @@ export default function UnifiedTileView({
   const [editQuestion, setEditQuestion] = useState('')
   const [editAnswer, setEditAnswer] = useState('')
   const slateTimers = useRef([])
+  const hasPlayedSlate = useRef(false)
 
   const activeMode = viewMode
 
@@ -37,11 +38,39 @@ export default function UnifiedTileView({
     slateTimers.current.forEach(t => clearTimeout(t))
     slateTimers.current = []
     setFlippedTiles({})
-    setSlateMerging(false)
-    setSlateMerged(false)
     setSlateReversing(false)
     setCarouselIndex(0)
     setCarouselFlipped({})
+
+    if (activeMode === 'outline' && hasPlayedSlate.current) {
+      // Already seen animation — show outline directly
+      setSlateMerging(true)
+      setSlateMerged(true)
+    } else if (activeMode === 'outline' && !hasPlayedSlate.current) {
+      // First time — auto-trigger flip animation after tiles render
+      setSlateMerging(false)
+      setSlateMerged(false)
+      const t0 = setTimeout(() => {
+        setFlippedTiles(prev => {
+          const newState = {}
+          for (let i = 0; i < 9; i++) newState[i] = true
+          return newState
+        })
+        const t1 = setTimeout(() => {
+          setSlateMerging(true)
+          const t2 = setTimeout(() => {
+            setSlateMerged(true)
+            hasPlayedSlate.current = true
+          }, 400)
+          slateTimers.current.push(t2)
+        }, 450)
+        slateTimers.current.push(t1)
+      }, 200)
+      slateTimers.current.push(t0)
+    } else {
+      setSlateMerging(false)
+      setSlateMerged(false)
+    }
   }, [activeMode])
 
   // Cleanup on unmount
@@ -105,6 +134,7 @@ export default function UnifiedTileView({
         setSlateMerging(true)
         const t2 = setTimeout(() => {
           setSlateMerged(true)
+          hasPlayedSlate.current = true
         }, 400)
         slateTimers.current.push(t2)
       }, 450)
