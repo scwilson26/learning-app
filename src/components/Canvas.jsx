@@ -821,7 +821,6 @@ function ContinueExploringSection({ decks, onOpenDeck }) {
               categoryId={deck.rootCategoryId}
               onClick={() => onOpenDeck({ id: deck.id, name: deck.name, rootCategoryId: deck.rootCategoryId, fromContinueExploring: true })}
               subtitle={`${deck.claimedCount}/${deck.totalCount}`}
-              progress={progressPercent}
             />
           )
         })}
@@ -2993,10 +2992,12 @@ function SearchBar({ onNavigate }) {
   }
 
   return (
-    <div className="relative w-full max-w-xl mx-auto">
+    <div className="relative w-full mx-auto" style={{ maxWidth: '400px' }}>
       {/* Search input */}
       <div className="relative">
-        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg">🔍</span>
+        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
         <input
           ref={inputRef}
           type="text"
@@ -3007,15 +3008,14 @@ function SearchBar({ onNavigate }) {
           onKeyDown={handleKeyDown}
           placeholder={`Search ${topicCount.toLocaleString()} topics...`}
           className="
-            w-full pl-12 pr-4 py-3
-            text-base
-            bg-white
-            border-2 border-gray-200
-            rounded-full
-            shadow-sm
+            w-full pl-9 pr-3 py-2
+            text-sm
+            bg-gray-50
+            border border-gray-200
+            rounded-lg
             outline-none
             transition-all duration-200
-            focus:border-indigo-400 focus:shadow-md
+            focus:border-indigo-400 focus:bg-white
             placeholder:text-gray-400
           "
         />
@@ -7865,52 +7865,17 @@ export default function Canvas() {
       <div className="w-screen min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 overflow-auto">
         {/* Top navigation bar */}
         <div className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200">
-          <div className="flex items-center justify-between px-3 py-2">
-            {/* User button / Sign In + Reset */}
-            <div className="flex items-center gap-2">
-              {user ? (
-                <button
-                  onClick={() => signOut()}
-                  className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
-                >
-                  <span className="w-7 h-7 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
-                    {user.email?.charAt(0).toUpperCase()}
-                  </span>
-                  <span className="text-sm hidden sm:inline">Sign Out</span>
-                </button>
-              ) : (
-                <button
-                  onClick={() => setShowAuth(true)}
-                  className="text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
-                >
-                  Sign In
-                </button>
-              )}
-              <button
-                onClick={() => {
-                  if (window.confirm('Reset all data? This cannot be undone.')) {
-                    localStorage.clear()
-                    window.location.reload()
-                  }
-                }}
-                className="text-xs text-gray-400 hover:text-red-500 transition-colors"
-              >
-                Reset
-              </button>
-            </div>
+          <div className="flex items-center px-3 py-2 gap-2">
             <button
               onClick={() => setLearnView('hub')}
-              className="font-semibold text-gray-800 flex items-center gap-1 hover:text-indigo-600 transition-colors"
+              className="flex items-center justify-center w-8 h-8 text-gray-600 hover:text-indigo-600 transition-colors"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-              Browse
             </button>
-            <div className="bg-gray-100 rounded-full px-3 py-1">
-              <span className="text-gray-500 text-xs">Cards: </span>
-              <span className="text-gray-800 font-bold text-sm">{claimedCards.size}</span>
-            </div>
+            <h1 className="text-base font-semibold text-gray-800 flex-1 text-center">Browse</h1>
+            <div className="w-8 shrink-0" />
           </div>
         </div>
 
