@@ -7683,7 +7683,7 @@ export default function Canvas() {
         {/* Content */}
         <div className="pt-14 px-4">
           {/* Browse & My Notes tiles */}
-          <div className="mt-6 grid grid-cols-2 gap-3">
+          <div className="mt-6 grid grid-cols-2 gap-1.5" style={{ maxWidth: '400px', margin: '0 auto' }}>
             <button
               onClick={() => setLearnView('browse')}
               className="relative aspect-square rounded-lg bg-gradient-to-br from-indigo-400 to-indigo-600 overflow-hidden"
