@@ -7351,77 +7351,53 @@ export default function Canvas() {
   }
 
   // Bottom navigation bar
+  const NavTab = ({ isActive, onClick, icon, label }) => (
+    <button
+      onClick={onClick}
+      className="flex flex-col items-center justify-center py-2 px-3 transition-colors"
+    >
+      <div className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors ${
+        isActive ? 'bg-gray-100' : ''
+      }`}>
+        <svg className={`w-5 h-5 transition-colors ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          {icon}
+        </svg>
+      </div>
+      <span className={`text-[10px] mt-0.5 font-medium transition-colors ${isActive ? 'text-indigo-600' : 'text-gray-400'}`}>{label}</span>
+    </button>
+  )
+
   const BottomNav = () => (
     <div
       className="fixed bottom-0 left-0 right-0 z-40"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
-      <div className="bg-white border-t border-gray-200 flex items-end justify-around px-2 h-16 relative">
-        {/* Learn */}
-        <button
-          onClick={() => {
-            setActiveTab('learn')
-            // Always reset to hub view and root categories
-            setLearnView('hub')
-            setStack(['my-decks'])
-          }}
-          className={`flex flex-col items-center justify-center flex-1 py-2 transition-colors ${
-            activeTab === 'learn' ? 'text-indigo-600' : 'text-gray-400'
-          }`}
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-          </svg>
-          <span className="text-xs mt-1 font-medium">Learn</span>
-        </button>
-
-        {/* Mosaic */}
-        <button
-          onClick={() => {
-            setActiveTab('mosaic')
-            setStack(['collections'])
-          }}
-          className={`flex flex-col items-center justify-center flex-1 py-2 transition-colors ${
-            activeTab === 'mosaic' ? 'text-indigo-600' : 'text-gray-400'
-          }`}
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
-          </svg>
-          <span className="text-xs mt-1 font-medium">Mosaic</span>
-        </button>
-
-        {/* Wander - spacer for center button */}
-        <div className="flex-1" />
-
-        {/* Study */}
-        <button
+      <div className="bg-white border-t border-gray-200 flex items-end justify-evenly h-16">
+        <NavTab
+          isActive={activeTab === 'learn'}
+          onClick={() => { setActiveTab('learn'); setLearnView('hub'); setStack(['my-decks']) }}
+          icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />}
+          label="Learn"
+        />
+        <NavTab
+          isActive={activeTab === 'mosaic'}
+          onClick={() => { setActiveTab('mosaic'); setStack(['collections']) }}
+          icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />}
+          label="Mosaic"
+        />
+        <NavTab
+          isActive={activeTab === 'study'}
           onClick={() => setActiveTab('study')}
-          className={`flex flex-col items-center justify-center flex-1 py-2 transition-colors ${
-            activeTab === 'study' ? 'text-indigo-600' : 'text-gray-400'
-          }`}
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-          </svg>
-          <span className="text-xs mt-1 font-medium">Study</span>
-        </button>
-
-        {/* Settings */}
-        <button
+          icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />}
+          label="Study"
+        />
+        <NavTab
+          isActive={activeTab === 'settings'}
           onClick={() => setActiveTab('settings')}
-          className={`flex flex-col items-center justify-center flex-1 py-2 transition-colors ${
-            activeTab === 'settings' ? 'text-indigo-600' : 'text-gray-400'
-          }`}
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          <span className="text-xs mt-1 font-medium">Settings</span>
-        </button>
+          icon={<><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></>}
+          label="Settings"
+        />
       </div>
-
     </div>
   )
 
