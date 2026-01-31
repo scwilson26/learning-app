@@ -162,7 +162,7 @@ export default function UnifiedTileView({
     if (activeMode === 'outline') {
       return {
         display: 'grid',
-        gridTemplateColumns: `repeat(${Math.min(4, sections.length)}, 1fr)`,
+        gridTemplateColumns: `repeat(2, 1fr)`,
         padding: '1rem',
         gap: slateMerging ? '0px' : '0.5rem',
         ...((slateMerged && !slateReversing) ? { position: 'absolute', visibility: 'hidden' } : {})
