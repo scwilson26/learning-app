@@ -2618,11 +2618,7 @@ function DeckSpread({
   onReadPreviewCard,
   // Outline for toggle display
   outline,
-  // View mode passed from parent header
-  viewMode = 'cards',
-  onViewModeChange,
 }) {
-  // viewMode is passed in as prop now
   const [addedToCollection, setAddedToCollection] = useState(() => isTopicInDeck(deck.id))
 
   // Sync flashcards to collection when they become available
@@ -2701,28 +2697,6 @@ function DeckSpread({
       )}
 
 
-      {/* View mode toggle: Slate | Tiles | Flash */}
-      {isArticle && hasReadyCard && onViewModeChange && (
-        <div className="flex items-center justify-center gap-4 py-2 w-full">
-          {[
-            { id: 'outline', label: 'Slate' },
-            { id: 'cards', label: 'Tiles' },
-            { id: 'flashcards', label: 'Flash' },
-          ].map(v => (
-            <button
-              key={v.id}
-              onClick={() => onViewModeChange(v.id)}
-              className={`text-sm font-medium transition-colors ${
-                viewMode === v.id
-                  ? 'text-gray-800'
-                  : 'text-gray-400 hover:text-gray-600'
-              }`}
-            >
-              {v.label}
-            </button>
-          ))}
-        </div>
-      )}
 
       {/* Loading state - show progress until at least 1 card has content */}
       {isArticle && !hasReadyCard && (
@@ -2768,17 +2742,6 @@ function DeckSpread({
           ...(tierCards.deep_dive || [])
         ].filter(card => !card.isPlaceholder && card.content)
 
-        // Flatten all flashcards from all sections for FlashcardsView
-        // User decks store flashcards on the deck itself with sourceCardTitle, not on each card
-        const allFlashcards = deck?.flashcards?.length > 0
-          ? deck.flashcards.map(fc => ({ ...fc, sectionTitle: fc.sourceCardTitle || '' }))
-          : allCards.flatMap(card =>
-              (card.flashcards || []).map(fc => ({
-                ...fc,
-                sectionTitle: card.title
-              }))
-            )
-
         // Get gradient and pattern for category
         const gradient = CATEGORY_GRADIENTS[rootCategoryId] || CATEGORY_GRADIENTS.default
         const patternId = CATEGORY_PATTERNS[rootCategoryId] || CATEGORY_PATTERNS.default
@@ -2786,59 +2749,13 @@ function DeckSpread({
         return (
           <div className="w-full">
             <UnifiedTileView
-              viewMode={viewMode}
-              allFlashcards={allFlashcards}
+              viewMode="cards"
               allCards={allCards}
               outline={outline || { core: [], deep_dive: [] }}
               deckName={deck.name}
               gradient={gradient}
               patternId={patternId}
               onSlateClick={() => {}}
-              onEditFlashcard={(index, newQuestion, newAnswer) => {
-                const fc = allFlashcards[index]
-                if (!fc) return
-                // Update in-memory
-                fc.question = newQuestion
-                fc.answer = newAnswer
-
-                // Persist to userDecks if this is a user deck
-                if (deck?.isUserDeck && deck.flashcards) {
-                  const deckFc = deck.flashcards.find(f => f.id === fc.id)
-                  if (deckFc) {
-                    deckFc.question = newQuestion
-                    deckFc.answer = newAnswer
-                    const rawId = deck.userDeckId || deck.id.replace('user-deck:', '')
-                    updateUserDeck(rawId, { flashcards: deck.flashcards })
-                  }
-                } else {
-                  // Regular deck: update on the card object
-                  let count = 0
-                  for (const card of allCards) {
-                    const fcs = card.flashcards || []
-                    if (index < count + fcs.length) {
-                      const fcIdx = index - count
-                      fcs[fcIdx].question = newQuestion
-                      fcs[fcIdx].answer = newAnswer
-                      break
-                    }
-                    count += fcs.length
-                  }
-                }
-
-                // Sync to userTopics (Study deck) if topic is in collection
-                if (isTopicInDeck(deck.id)) {
-                  const data = JSON.parse(localStorage.getItem('learning_app_data') || '{}')
-                  const topic = (data.userTopics || []).find(t => t.originalTopicId === deck.id)
-                  if (topic) {
-                    const topicFc = (topic.flashcards || []).find(f => f.id === fc.id)
-                    if (topicFc) {
-                      topicFc.question = newQuestion
-                      topicFc.answer = newAnswer
-                      localStorage.setItem('learning_app_data', JSON.stringify(data))
-                    }
-                  }
-                }
-              }}
             />
           </div>
         )
@@ -3111,7 +3028,7 @@ export default function Canvas() {
   const [showAuth, setShowAuth] = useState(false)
 
   // Bottom nav state - 'learn' | 'mosaic' | 'study' | 'settings'
-  const [activeTab, setActiveTab] = useState('learn')
+  const [activeTab, setActiveTab] = useState('explore')
 
   // Learn tab view state - 'hub' | 'browse'
   const [learnView, setLearnView] = useState('hub')
@@ -3120,7 +3037,9 @@ export default function Canvas() {
   const [userDeckViewMode, setUserDeckViewMode] = useState('cards')
 
   // Article view mode - 'outline' | 'cards' | 'flashcards'
-  const [articleViewMode, setArticleViewMode] = useState('cards')
+
+  // Study session overlay (launched from Library tab)
+  const [showStudySession, setShowStudySession] = useState(false)
 
   // Toast message for "Coming Soon" etc
   const [toastMessage, setToastMessage] = useState(null)
@@ -3441,7 +3360,7 @@ export default function Canvas() {
     // 2. Navigate using the path
     if (navigatePath) {
       // Switch to Learn tab and browse view to show the content
-      setActiveTab('learn')
+      setActiveTab('explore')
       setLearnView('browse')
       setStack(navigatePath)
       updateDeckLastInteracted(deckId)
@@ -4867,6 +4786,7 @@ export default function Canvas() {
 
     // If coming from Continue Exploring, skip preview and go directly to topic with proper theming
     if (deck.fromContinueExploring && deck.rootCategoryId) {
+      setLearnView('browse')
       setStack([deck.rootCategoryId, deck.id])
       return
     }
@@ -5889,7 +5809,7 @@ export default function Canvas() {
   }
 
   // Study Screen Hub - Two-Phase Study System (Acquisition + Retention)
-  const StudyScreen = ({ onGoToLearn }) => {
+  const StudyScreen = ({ onGoToLearn, onDone }) => {
     const [studyView, setStudyViewRaw] = useState('hub') // 'hub' | 'acquisition' | 'review' | 'summary' | 'addTopics'
 
     // Wrap setStudyView to log all view changes
@@ -6949,13 +6869,13 @@ export default function Canvas() {
               <div className="text-center py-12">
                 <h3 className="font-semibold text-gray-800 mb-1">No topics in your collection</h3>
                 <p className="text-sm text-gray-500 mb-4">
-                  Add topics to your Mosaic collection first
+                  Add topics to your Library first
                 </p>
                 <button
                   onClick={onGoToLearn}
                   className="text-indigo-600 hover:text-indigo-700 font-medium text-sm"
                 >
-                  Go to Learn →
+                  Go to Explore →
                 </button>
               </div>
             ) : (
@@ -7003,7 +6923,14 @@ export default function Canvas() {
         {/* Header with streak */}
         <div className="p-4 border-b border-gray-100">
           <div className="flex items-center justify-between">
-            <h1 className="text-lg font-semibold text-gray-800">Study</h1>
+            <div className="flex items-center gap-2">
+              {onDone && (
+                <button onClick={onDone} className="flex items-center justify-center w-8 h-8 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                </button>
+              )}
+              <h1 className="text-lg font-semibold text-gray-800">Study</h1>
+            </div>
             {studyStats.currentStreak > 0 && (
               <div className="flex items-center gap-1.5 text-amber-600">
                 <span className="text-lg">🔥</span>
@@ -7169,7 +7096,7 @@ export default function Canvas() {
           ) : (
             <div className="bg-gray-50 rounded-xl p-6 text-center mb-4">
               <p className="text-gray-500 text-sm">
-                No topics in your study queue. Add topics from your Mosaic collection.
+                No topics in your study queue. Add topics from your Library.
               </p>
             </div>
           )}
@@ -7275,22 +7202,16 @@ export default function Canvas() {
     >
       <div className="bg-white border-t border-gray-200 flex items-end justify-evenly h-16">
         <NavTab
-          isActive={activeTab === 'learn'}
-          onClick={() => { setActiveTab('learn'); setLearnView('hub'); setStack(['my-decks']) }}
+          isActive={activeTab === 'library'}
+          onClick={() => { setActiveTab('library'); setStack(['collections']) }}
           icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />}
-          label="Learn"
+          label="Library"
         />
         <NavTab
-          isActive={activeTab === 'mosaic'}
-          onClick={() => { setActiveTab('mosaic'); setStack(['collections']) }}
-          icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />}
-          label="Mosaic"
-        />
-        <NavTab
-          isActive={activeTab === 'study'}
-          onClick={() => setActiveTab('study')}
-          icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />}
-          label="Study"
+          isActive={activeTab === 'explore'}
+          onClick={() => { setActiveTab('explore'); setLearnView('hub'); setStack(['my-decks']) }}
+          icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />}
+          label="Explore"
         />
         <NavTab
           isActive={activeTab === 'settings'}
@@ -7440,73 +7361,9 @@ export default function Canvas() {
     )
   }
 
-  // Study screen - spaced repetition flashcard review
-  if (activeTab === 'study') {
-    return (
-      <div className="w-screen min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 overflow-auto pb-24">
-        <StudyScreen onGoToLearn={() => setActiveTab('learn')} />
-        <BottomNav />
-        <ToastMessage />
-        <WanderMessage />
-
-        {/* Wander card overlay */}
-        <AnimatePresence>
-          {(isWandering || (showPreviewCard && showPreviewCard.navigatePath && wanderPathSteps.length > 0)) && (
-            <WanderCard
-              pathSteps={wanderPathSteps}
-              currentStep={wanderCurrentStep}
-              isComplete={wanderComplete}
-              previewData={showPreviewCard ? {
-                title: showPreviewCard.title,
-                preview: showPreviewCard.preview,
-                isLoading: showPreviewCard.isLoading,
-                claimed: showPreviewCard.claimed,
-                cardId: showPreviewCard.cardId
-              } : null}
-              onClaim={() => {
-                claimPreviewCard(showPreviewCard.deckId)
-                setClaimedCards(getClaimedCardIds())
-                setShowPreviewCard(prev => ({ ...prev, claimed: true }))
-              }}
-              onExplore={() => sharedExploreHandler(showPreviewCard.deckId, showPreviewCard.navigatePath)}
-              onWander={() => {
-                setShowPreviewCard(null)
-                setWanderPathSteps([])
-                handleWander()
-              }}
-              onBack={() => {
-                setShowPreviewCard(null)
-                setWanderPathSteps([])
-                setIsWandering(false)
-              }}
-              onRabbitHoleClick={handleRabbitHoleClick}
-              rootCategoryId={showPreviewCard?.navigatePath?.[0] || wanderPathSteps[0]?.id}
-            />
-          )}
-        </AnimatePresence>
-
-        {/* Preview card modal for non-wander */}
-        <AnimatePresence>
-          {showPreviewCard && wanderPathSteps.length === 0 && (
-            <PreviewCardModal
-              isOpen={true}
-              topic={{ id: showPreviewCard.deckId, name: showPreviewCard.title }}
-              previewContent={showPreviewCard.preview}
-              isLoading={showPreviewCard.isLoading}
-              isClaimed={showPreviewCard.claimed}
-              onClose={() => setShowPreviewCard(null)}
-              onDealMeIn={() => sharedExploreHandler(showPreviewCard.deckId, showPreviewCard.navigatePath)}
-              onRabbitHoleClick={handleRabbitHoleClick}
-              rootCategoryId={showPreviewCard?.navigatePath?.[0]}
-            />
-          )}
-        </AnimatePresence>
-      </div>
-    )
-  }
 
   // Learn Hub screen - main entry point for Learn tab
-  if (activeTab === 'learn' && learnView === 'hub') {
+  if (activeTab === 'explore' && learnView === 'hub') {
     return (
       <div className="w-screen min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 overflow-auto pb-24">
         {/* Top navigation bar */}
@@ -7531,7 +7388,7 @@ export default function Canvas() {
                 </button>
               )}
             </div>
-            <h1 className="text-lg font-semibold text-gray-800">Learn</h1>
+            <h1 className="text-lg font-semibold text-gray-800">Explore</h1>
             <div className="w-16" /> {/* Spacer for balance */}
           </div>
         </div>
@@ -7687,7 +7544,7 @@ export default function Canvas() {
   }
 
   // My Notes screen (uploaded notes)
-  if (activeTab === 'learn' && learnView === 'upload') {
+  if (activeTab === 'explore' && learnView === 'upload') {
     const userDecks = getUserDecks()
 
     return (
@@ -7999,9 +7856,25 @@ export default function Canvas() {
     )
   }
 
-  // Mosaic screen - saved topics collection
+  // Library screen - saved topics + study entry
   if (stack.length === 1 && stack[0] === 'collections') {
+    // Study session overlay
+    if (showStudySession) {
+      return (
+        <div className="w-screen min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 overflow-auto pb-24">
+          <StudyScreen onGoToLearn={() => { setShowStudySession(false); setActiveTab('explore') }} onDone={() => setShowStudySession(false)} />
+          <BottomNav />
+          <ToastMessage />
+          <WanderMessage />
+        </div>
+      )
+    }
+
     const savedTopics = getUserTopics()
+    const studyStats = getUserStudyStats()
+    const dueCount = studyStats.dueCards || 0
+    const newCount = studyStats.newCards || 0
+    const hasDueCards = dueCount > 0 || newCount > 0
 
     // Group by category
     const topicsByCategory = {}
@@ -8018,19 +7891,37 @@ export default function Canvas() {
         {/* Header */}
         <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-100">
           <div className="px-4 py-4">
-            <h1 className="text-lg font-semibold text-gray-800 text-center mb-1">Mosaic</h1>
+            <h1 className="text-lg font-semibold text-gray-800 text-center mb-1">Library</h1>
             <p className="text-center text-xs text-gray-400">{savedTopics.length} {savedTopics.length === 1 ? 'topic' : 'topics'} saved</p>
           </div>
         </div>
 
         <div className="p-4">
+          {/* Due Today banner */}
+          {hasDueCards && (
+            <div className="mb-4 bg-indigo-50 rounded-xl p-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-gray-800">Due Today</p>
+                <p className="text-xs text-gray-500">
+                  {newCount > 0 && `${newCount} new`}{newCount > 0 && dueCount > 0 && ' · '}{dueCount > 0 && `${dueCount} to review`}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowStudySession(true)}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+              >
+                Study
+              </button>
+            </div>
+          )}
+
           {savedTopics.length === 0 ? (
             <div className="text-center py-16">
               <p className="text-gray-600 text-lg mb-2">Your collection is empty</p>
               <p className="text-gray-400 text-sm mb-4">Explore and add topics to your collection</p>
               <button
                 onClick={() => {
-                  setActiveTab('learn')
+                  setActiveTab('explore')
                   setStack([])
                 }}
                 className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors"
@@ -8459,8 +8350,6 @@ export default function Canvas() {
                   }
                 }}
                 outline={currentDeck ? loadedOutlines[currentDeck.id] : null}
-                viewMode={articleViewMode}
-                onViewModeChange={setArticleViewMode}
               />
             </AnimatePresence>
           </div>
