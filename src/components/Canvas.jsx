@@ -2638,6 +2638,8 @@ function DeckSpread({
   outline,
   // Toast callback
   onToast,
+  // Live streaming content for word-by-word display
+  streamingContent,
 }) {
   const [addedToCollection, setAddedToCollection] = useState(() => isTopicInDeck(deck.id))
 
@@ -2665,11 +2667,11 @@ function DeckSpread({
   // Check if we have tier data
   const hasTierData = tierCards && (tierCards.core?.length > 0 || tierCards.deep_dive?.length > 0)
 
-  // Check if at least 1 card has real content (not just a placeholder)
-  const hasReadyCard = hasTierData && [
+  // Check if at least 1 card has real content (not just a placeholder), or streaming content is available
+  const hasReadyCard = streamingContent || (hasTierData && [
     ...(tierCards.core || []),
     ...(tierCards.deep_dive || [])
-  ].some(card => !card.isPlaceholder && card.content)
+  ].some(card => !card.isPlaceholder && card.content))
 
   return (
     <div
@@ -2779,6 +2781,7 @@ function DeckSpread({
               patternId={patternId}
               onSlateClick={() => {}}
               isStreaming={!!(generationProgress && generationProgress.current < generationProgress.total)}
+              streamingContent={streamingContent}
             />
           </div>
         )
@@ -3171,6 +3174,7 @@ export default function Canvas() {
   const [dynamicChildren, setDynamicChildren] = useState({}) // deckId -> array of child deck objects (in-memory cache)
   const [loadingDeck, setLoadingDeck] = useState(null) // deckId currently loading
   const [generationProgress, setGenerationProgress] = useState(null) // { current, total } for progress display
+  const [streamingContent, setStreamingContent] = useState(null) // { title, content, tier } for live streaming display
   const [loadingChildren, setLoadingChildren] = useState(null) // deckId currently loading children
   const [isWandering, setIsWandering] = useState(false) // True when wander navigation is in progress
   const [wanderMessage, setWanderMessage] = useState(null) // Message to show user (e.g., "All explored!")
@@ -3865,11 +3869,26 @@ export default function Canvas() {
         let lastSeenCoreReal = countRealCards(coreCards)
         let lastSeenDeepDiveReal = countRealCards(deepDiveCards)
         let hasShownFirstCard = coreCards.length > 0
+        let lastStreamingContent = null
+
+        // Immediately pick up any existing streaming content (don't wait for first poll)
+        const initialSc = prebuiltCardsRef.current[deck.id]?._streamingContent || null
+        if (initialSc) {
+          lastStreamingContent = initialSc
+          setStreamingContent(initialSc)
+        }
 
         // Poll for new cards while streaming continues
         const pollInterval = setInterval(() => {
           const currentPrebuilt = prebuiltCardsRef.current[deck.id]
           if (currentPrebuilt && currentPrebuilt.core) {
+            // Update live streaming content for word-by-word display (only if changed)
+            const sc = currentPrebuilt._streamingContent || null
+            if (sc !== lastStreamingContent) {
+              lastStreamingContent = sc
+              setStreamingContent(sc)
+            }
+
             const currentCoreReal = countRealCards(currentPrebuilt.core)
             const currentDeepDiveReal = countRealCards(currentPrebuilt.deep_dive)
             const totalCards = currentPrebuilt.core.length + currentPrebuilt.deep_dive.length
@@ -3915,6 +3934,7 @@ export default function Canvas() {
         // Wait for streaming to complete, then clean up
         streamingInProgress.then((resultOutline) => {
           clearInterval(pollInterval)
+          setStreamingContent(null) // Clear streaming display
           setLoadedOutlines(prev => ({ ...prev, [deck.id]: resultOutline }))
           // Final update with all cards
           const finalPrebuilt = prebuiltCardsRef.current[deck.id]
@@ -4264,16 +4284,24 @@ export default function Canvas() {
           console.log(`[STREAM] Section ${sectionNumber} displayed: "${card.title}" [${tier}]`)
         }
 
+        // Stream chunk callback — fires on every text delta with full formatted text
+        const onStreamChunk = (fullText) => {
+          setStreamingContent(fullText)
+        }
+
         // Generate outline with streaming - cards appear as sections complete
         const { outline: generatedOutline, rawOutline } = await generateTopicOutline(
           deck.name,
           parentPath,
           null, // previewText - could pass it here
           topicType,
-          onSection // streaming callback
+          onSection, // streaming callback (per complete section)
+          null, // onCounts
+          onStreamChunk // live streaming callback (per text chunk)
         )
 
         outline = generatedOutline
+        setStreamingContent(null) // Clear streaming display — full content now in tierCards
         setLoadedOutlines(prev => ({ ...prev, [deck.id]: outline }))
 
         // Save outline to Supabase for future use
@@ -4759,7 +4787,19 @@ export default function Canvas() {
           }
         }
 
-        const { outline, rawOutline } = await generateTopicOutline(topicName, parentContext, previewText, topicType, onSection, onCounts)
+        // Stream chunk callback — store full text in ref for polling subscriber
+        const onStreamChunk = (fullText) => {
+          if (prebuiltCardsRef.current[deckId]) {
+            prebuiltCardsRef.current[deckId]._streamingContent = fullText
+          }
+        }
+
+        const { outline, rawOutline } = await generateTopicOutline(topicName, parentContext, previewText, topicType, onSection, onCounts, onStreamChunk)
+
+        // Clear streaming content now that generation is complete
+        if (prebuiltCardsRef.current[deckId]) {
+          prebuiltCardsRef.current[deckId]._streamingContent = null
+        }
 
         // Add topicType and rawOutline for future reference
         const outlineWithMeta = {
@@ -8404,6 +8444,7 @@ export default function Canvas() {
                 }}
                 outline={currentDeck ? loadedOutlines[currentDeck.id] : null}
                 onToast={(msg) => { setToastMessage(msg); setTimeout(() => setToastMessage(null), 2000) }}
+                streamingContent={streamingContent}
               />
           </div>
         )}

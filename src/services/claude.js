@@ -202,7 +202,7 @@ Write ONLY the preview text - no intro, no labels.`;
  * @param {string} topicType - Optional classified topic type for structure guidance
  * @returns {Promise<{outline: Object}>} outline with core and deep_dive arrays
  */
-export async function generateTopicOutline(topic, parentContext = null, previewText = null, topicType = null, onSection = null, onCounts = null) {
+export async function generateTopicOutline(topic, parentContext = null, previewText = null, topicType = null, onSection = null, onCounts = null, onStreamChunk = null) {
   console.log(`[OUTLINE] Generating outline for: ${topic}${previewText ? ' (with preview context)' : ''}${topicType ? ` [${topicType}]` : ''}${onSection ? ' [STREAMING]' : ''}`);
 
   const contextNote = parentContext ? `\nContext: "${topic}" is under "${parentContext}"` : '';
@@ -427,6 +427,49 @@ Return the full outline with all sections and subsections. End with POPUP TERMS.
               console.log(`[OUTLINE STREAM] Counts detected: core=${coreCount}, deep_dive=${deepCount}`);
               onCounts(coreCount, deepCount);
               countsParsed = true;
+            }
+          }
+
+          // Stream full buffer for live word-by-word display
+          if (onStreamChunk) {
+            // Build formatted text from all completed sections + current partial section
+            const formattedParts = [];
+            // Add already-emitted sections
+            for (const tier of ['core', 'deep_dive']) {
+              for (const card of streamedCards[tier]) {
+                formattedParts.push(`**${card.title}**\n${card.content}`);
+              }
+            }
+            // Add current in-progress section from buffer
+            const partialLines = buffer.split('\n');
+            let lastHeaderIdx = -1;
+            let lastHeaderTitle = '';
+            for (let i = 0; i < partialLines.length; i++) {
+              const headerMatch = partialLines[i].trim().match(/^(?:#{1,3}\s*)?([IVXLC]+)\.\s+(.+?)(?:\s+\[(CORE|DEEP DIVE)\])?\s*$/i);
+              if (headerMatch) {
+                lastHeaderIdx = i;
+                lastHeaderTitle = headerMatch[2].trim();
+              }
+            }
+            if (lastHeaderIdx !== -1) {
+              const contentLines = partialLines.slice(lastHeaderIdx + 1);
+              const rawContent = contentLines.join('\n').trim();
+              if (lastHeaderTitle || rawContent) {
+                formattedParts.push(`**${lastHeaderTitle}**\n${rawContent}`);
+              }
+            } else if (formattedParts.length === 0) {
+              // No header found yet and no completed sections — stream raw buffer
+              // Strip count lines like [CORE_COUNT: X] and [DEEP_COUNT: X]
+              const raw = partialLines
+                .filter(l => !l.trim().match(/^\[(CORE_COUNT|DEEP_COUNT):\s*\d+\]/i))
+                .join('\n').trim();
+              if (raw) {
+                formattedParts.push(raw);
+              }
+            }
+            const fullText = formattedParts.join('\n\n');
+            if (fullText) {
+              onStreamChunk(fullText);
             }
           }
 

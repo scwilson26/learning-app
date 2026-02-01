@@ -14,6 +14,7 @@ export default function UnifiedTileView({
   patternId = 'geometric',
   onSlateClick,
   isStreaming = false,
+  streamingContent = null,
 }) {
   const [flippedTiles, setFlippedTiles] = useState({})
   const [slateMerging, setSlateMerging] = useState(false)
@@ -146,7 +147,7 @@ export default function UnifiedTileView({
 
   // Loading states
   const slateLoading = activeMode === 'outline' && outlineSections.length === 0
-  const cardsLoading = activeMode === 'cards' && sections.length === 0
+  const cardsLoading = activeMode === 'cards' && sections.length === 0 && !streamingContent
 
   if (slateLoading || cardsLoading) {
     return (
@@ -238,35 +239,26 @@ export default function UnifiedTileView({
       </AnimatePresence>
 
       {/* Cards mode: single scrollable page with all sections */}
-      {activeMode === 'cards' && sections.length > 0 && (
+      {activeMode === 'cards' && (sections.length > 0 || streamingContent) && (
         <div className="px-4 pb-6">
-          {sections.map((section, idx) => (
-            <motion.div
-              key={section.title || idx}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
-              className={idx > 0 ? 'mt-6' : ''}
-            >
-              <h3 className="font-semibold text-emerald-600 text-base mb-3">
-                {section.title?.replace(/\*{2,4}/g, '')}
-              </h3>
-              <div className="text-gray-700 text-base leading-relaxed">
-                {renderContent(section.content)}
-              </div>
-            </motion.div>
-          ))}
-          {isStreaming && (
-            <div className="flex items-center gap-1.5 pt-4 pb-2 justify-center">
-              {[0, 1, 2].map(i => (
-                <motion.div
-                  key={i}
-                  className="w-1.5 h-1.5 rounded-full bg-emerald-400"
-                  animate={{ opacity: [0.3, 1, 0.3] }}
-                  transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
-                />
-              ))}
+          {/* While streaming: show only the live streaming text */}
+          {streamingContent ? (
+            <div className="text-gray-700 text-base leading-relaxed">
+              {renderContent(streamingContent)}
+              <span className="inline-block w-2 h-4 bg-emerald-400 ml-0.5 animate-pulse rounded-sm" style={{ verticalAlign: 'text-bottom' }} />
             </div>
+          ) : (
+            /* After streaming: show completed sections */
+            sections.map((section, idx) => (
+              <div key={section.title || idx} className={idx > 0 ? 'mt-6' : ''}>
+                <h3 className="font-semibold text-emerald-600 text-base mb-3">
+                  {section.title?.replace(/\*{2,4}/g, '')}
+                </h3>
+                <div className="text-gray-700 text-base leading-relaxed">
+                  {renderContent(section.content)}
+                </div>
+              </div>
+            ))
           )}
         </div>
       )}
