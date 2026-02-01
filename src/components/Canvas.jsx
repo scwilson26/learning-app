@@ -2586,6 +2586,24 @@ function CoverCard({ title, preview, claimed, onRead, rootCategoryId }) {
   )
 }
 
+// CSS gradient backgrounds for sub-deck tiles (inline styles to avoid Tailwind/motion issues)
+const INLINE_GRADIENTS = {
+  mathematics: 'linear-gradient(135deg, #3f3f46, #27272a, #18181b)',
+  philosophy: 'linear-gradient(135deg, #475569, #334155, #1e293b)',
+  physics: 'linear-gradient(135deg, #64748b, #475569, #334155)',
+  technology: 'linear-gradient(135deg, #065f46, #064e3b, #134e4a)',
+  history: 'linear-gradient(135deg, #d97706, #c2410c, #92400e)',
+  geography: 'linear-gradient(135deg, #78716c, #57534e, #44403c)',
+  everyday: 'linear-gradient(135deg, #6b7280, #4b5563, #374151)',
+  people: 'linear-gradient(135deg, #ea580c, #b45309, #c2410c)',
+  arts: 'linear-gradient(135deg, #ec4899, #e11d48, #be185d)',
+  biology: 'linear-gradient(135deg, #14b8a6, #0d9488, #047857)',
+  health: 'linear-gradient(135deg, #0ea5e9, #2563eb, #0284c7)',
+  society: 'linear-gradient(135deg, #a855f7, #d946ef, #9333ea)',
+  'user-notes': 'linear-gradient(135deg, #10b981, #059669, #0d9488)',
+  default: 'linear-gradient(135deg, #6b7280, #4b5563, #374151)',
+}
+
 // The spread - overview cards + sub-decks laid out in a grid (now with tiered cards)
 function DeckSpread({
   deck,
@@ -2654,11 +2672,8 @@ function DeckSpread({
   ].some(card => !card.isPlaceholder && card.content)
 
   return (
-    <motion.div
+    <div
       className="flex flex-col items-center gap-3 pb-8 w-full"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
     >
       {/* Bookmark icon — tap to save/unsave from library */}
       {isArticle && hasReadyCard && (
@@ -2813,28 +2828,46 @@ function DeckSpread({
 
       {/* Sub-decks tile grid (for non-sectioned decks) */}
       {!isLoadingChildren && !sections && childDecks.length > 0 && (
-        <div id="explore-section" className="flex flex-col gap-3 w-full">
-          <span className="text-xs font-medium text-gray-500 uppercase tracking-wide text-center">Explore</span>
-          <TileGrid>
-            {childDecks.map((childDeck, index) => (
-              <motion.div
-                key={childDeck.id}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.03 + (isLoading ? 0 : 0.1) }}
-              >
-                <CategoryTile
-                  name={childDeck.name}
-                  categoryId={rootCategoryId}
+        <div id="explore-section" style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', padding: '0 16px' }}>
+          <span style={{ fontSize: '12px', fontWeight: 500, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'center' }}>Explore</span>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', maxWidth: '400px', margin: '0 auto', width: '100%' }}>
+            {childDecks.map((childDeck) => {
+              const tileName = childDeck.name || childDeck.title || ''
+              const bg = INLINE_GRADIENTS[rootCategoryId] || INLINE_GRADIENTS.default
+              return (
+                <div
+                  key={childDeck.id}
+                  style={{
+                    aspectRatio: '1', borderRadius: '8px', background: bg,
+                    position: 'relative', overflow: 'hidden', cursor: 'pointer',
+                    boxShadow: '0 4px 8px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2)',
+                  }}
                   onClick={() => onOpenDeck(childDeck)}
-                />
-              </motion.div>
-            ))}
-          </TileGrid>
+                >
+                  <div style={{
+                    position: 'absolute', inset: 0, borderRadius: '8px', pointerEvents: 'none',
+                    boxShadow: 'inset 2px 2px 4px rgba(255,255,255,0.25), inset -2px -2px 4px rgba(0,0,0,0.25)',
+                  }} />
+                  <div style={{
+                    position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '8px', zIndex: 10,
+                  }}>
+                    <span style={{
+                      color: 'white', fontWeight: 600, textAlign: 'center', lineHeight: 1.2,
+                      fontSize: tileName.length > 25 ? '10px' : '13px',
+                      textShadow: '0 1px 3px rgba(0,0,0,0.4)',
+                    }}>
+                      {tileName}
+                    </span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
 
-    </motion.div>
+    </div>
   )
 }
 
@@ -3641,7 +3674,7 @@ export default function Canvas() {
       // Build deck objects from tree children
       const childDeckObjects = treeChildren.map(child => ({
         id: child.id,
-        name: child.name,
+        name: child.name || child.title,
         gradient: deck.gradient,
         borderColor: deck.borderColor,
         level: deckLevel + 1,
@@ -8327,7 +8360,6 @@ export default function Canvas() {
         ) : (
           /* Current spread - Cards view */
           <div className="flex-1 flex items-start justify-center w-full">
-            <AnimatePresence mode="wait">
               <DeckSpread
                 key={currentDeck.id}
                 deck={currentDeck}
@@ -8373,7 +8405,6 @@ export default function Canvas() {
                 outline={currentDeck ? loadedOutlines[currentDeck.id] : null}
                 onToast={(msg) => { setToastMessage(msg); setTimeout(() => setToastMessage(null), 2000) }}
               />
-            </AnimatePresence>
           </div>
         )}
 

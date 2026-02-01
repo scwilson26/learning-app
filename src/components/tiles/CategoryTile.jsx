@@ -123,9 +123,9 @@ export default function CategoryTile({
         {/* Content */}
         <div className="absolute inset-0 flex flex-col items-center justify-center p-2 z-10">
           <span className={`text-white font-semibold text-center leading-tight drop-shadow-md ${
-            name.length > 25 ? 'text-xs' : name.length > 15 ? 'text-sm' : 'text-sm'
+            (name || '').length > 25 ? 'text-xs' : (name || '').length > 15 ? 'text-sm' : 'text-sm'
           }`}>
-            {name}
+            {name || ''}
           </span>
 
           {/* Optional subtitle */}
