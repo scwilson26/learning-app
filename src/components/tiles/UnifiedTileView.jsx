@@ -22,6 +22,7 @@ export default function UnifiedTileView({
   const [slateReversing, setSlateReversing] = useState(false)
   const slateTimers = useRef([])
   const hasPlayedSlate = useRef(false)
+  const lastStreamingContent = useRef(null)
   const activeMode = viewMode
 
   // Reset all state when mode changes
@@ -115,6 +116,22 @@ export default function UnifiedTileView({
 
   // Simple markdown rendering
   const renderContent = (text) => {
+    if (!text) return null
+    return text.split('\n').map((line, i) => {
+      const trimmed = line.trim()
+      if (!trimmed) return <br key={i} />
+      const formatted = trimmed.replace(/\*{2,4}(.+?)\*{2,4}/g, '<strong>$1</strong>')
+      const isBullet = trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('*')
+      return (
+        <p key={i} className={`${isBullet ? 'pl-3' : ''} mb-1`}
+          dangerouslySetInnerHTML={{ __html: formatted }}
+        />
+      )
+    })
+  }
+
+  // Unified markdown rendering — same output for streaming and static content
+  const renderStreamingContent = (text) => {
     if (!text) return null
     return text.split('\n').map((line, i) => {
       const trimmed = line.trim()
@@ -238,30 +255,29 @@ export default function UnifiedTileView({
         )}
       </AnimatePresence>
 
-      {/* Cards mode: single scrollable page with all sections */}
-      {activeMode === 'cards' && (sections.length > 0 || streamingContent) && (
-        <div className="px-4 pb-6">
-          {/* While streaming: show only the live streaming text */}
-          {streamingContent ? (
+      {/* Cards mode: single scrollable page with all sections — one renderer for both streaming and static */}
+      {activeMode === 'cards' && (() => {
+        if (streamingContent) {
+          lastStreamingContent.current = streamingContent
+        }
+        // Build unified text: use streaming content, or last streamed content, or build from sections
+        const displayContent = streamingContent
+          || lastStreamingContent.current
+          || (sections.length > 0
+            ? sections.map(s => `**${s.title}**\n${s.content}`).join('\n\n')
+            : null)
+        if (!displayContent) return null
+        return (
+          <div className="px-4 pb-6">
             <div className="text-gray-700 text-base leading-relaxed">
-              {renderContent(streamingContent)}
-              <span className="inline-block w-2 h-4 bg-emerald-400 ml-0.5 animate-pulse rounded-sm" style={{ verticalAlign: 'text-bottom' }} />
+              {renderStreamingContent(displayContent)}
+              {streamingContent && (
+                <span className="inline-block w-2 h-4 bg-emerald-400 ml-0.5 animate-pulse rounded-sm" style={{ verticalAlign: 'text-bottom' }} />
+              )}
             </div>
-          ) : (
-            /* After streaming: show completed sections */
-            sections.map((section, idx) => (
-              <div key={section.title || idx} className={idx > 0 ? 'mt-6' : ''}>
-                <h3 className="font-semibold text-emerald-600 text-base mb-3">
-                  {section.title?.replace(/\*{2,4}/g, '')}
-                </h3>
-                <div className="text-gray-700 text-base leading-relaxed">
-                  {renderContent(section.content)}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      )}
+          </div>
+        )
+      })()}
 
     </>
   )

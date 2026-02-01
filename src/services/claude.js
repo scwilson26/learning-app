@@ -459,10 +459,15 @@ Return the full outline with all sections and subsections. End with POPUP TERMS.
               }
             } else if (formattedParts.length === 0) {
               // No header found yet and no completed sections — stream raw buffer
-              // Strip count lines like [CORE_COUNT: X] and [DEEP_COUNT: X]
-              const raw = partialLines
-                .filter(l => !l.trim().match(/^\[(CORE_COUNT|DEEP_COUNT):\s*\d+\]/i))
-                .join('\n').trim();
+              // Strip count lines and format any partial section headers as **Title**
+              const cleaned = partialLines
+                .filter(l => !l.trim().match(/^\[(CORE_COUNT|DEEP_COUNT):\s*\d+\]/i));
+              const reformatted = cleaned.map(l => {
+                const hMatch = l.trim().match(/^(?:#{1,3}\s*)?([IVXLC]+)\.\s+(.+?)(?:\s+\[(CORE|DEEP DIVE)\])?\s*$/i);
+                if (hMatch) return `**${hMatch[2].trim()}**`;
+                return l;
+              });
+              const raw = reformatted.join('\n').trim();
               if (raw) {
                 formattedParts.push(raw);
               }
