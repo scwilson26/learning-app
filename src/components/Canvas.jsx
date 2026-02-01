@@ -2618,6 +2618,8 @@ function DeckSpread({
   onReadPreviewCard,
   // Outline for toggle display
   outline,
+  // Toast callback
+  onToast,
 }) {
   const [addedToCollection, setAddedToCollection] = useState(() => isTopicInDeck(deck.id))
 
@@ -2658,11 +2660,15 @@ function DeckSpread({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
     >
-      {/* Bookmark icon — tap to save/unsave from collection */}
+      {/* Bookmark icon — tap to save/unsave from library */}
       {isArticle && hasReadyCard && (
         <button
           onClick={() => {
-            if (!addedToCollection) {
+            if (addedToCollection) {
+              removeTopicFromDeck(deck.id)
+              setAddedToCollection(false)
+              if (onToast) { onToast('Removed from Library') }
+            } else {
               const allCards = [
                 ...(tierCards.core || []),
                 ...(tierCards.deep_dive || [])
@@ -2684,6 +2690,7 @@ function DeckSpread({
                 flashcards: allFlashcards
               })
               setAddedToCollection(true)
+              if (onToast) { onToast('Added to Library') }
             }
           }}
           className="fixed top-2 right-3 z-50 w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-700 transition-colors"
@@ -2756,10 +2763,14 @@ function DeckSpread({
               gradient={gradient}
               patternId={patternId}
               onSlateClick={() => {}}
+              isStreaming={!!(generationProgress && generationProgress.current < generationProgress.total)}
             />
           </div>
         )
       })()}
+
+
+
 
       {/* Loading state for sub-decks */}
       {isLoadingChildren && (
@@ -3040,6 +3051,7 @@ export default function Canvas() {
 
   // Study session overlay (launched from Library tab)
   const [showStudySession, setShowStudySession] = useState(false)
+  const [libraryRefresh, setLibraryRefresh] = useState(0)
 
   // Toast message for "Coming Soon" etc
   const [toastMessage, setToastMessage] = useState(null)
@@ -3821,7 +3833,7 @@ export default function Canvas() {
         let lastSeenDeepDiveReal = countRealCards(deepDiveCards)
         let hasShownFirstCard = coreCards.length > 0
 
-        // Poll for new cards while streaming continues (500ms to reduce spam)
+        // Poll for new cards while streaming continues
         const pollInterval = setInterval(() => {
           const currentPrebuilt = prebuiltCardsRef.current[deck.id]
           if (currentPrebuilt && currentPrebuilt.core) {
@@ -3865,7 +3877,7 @@ export default function Canvas() {
               }))
             }
           }
-        }, 500)
+        }, 200)
 
         // Wait for streaming to complete, then clean up
         streamingInProgress.then((resultOutline) => {
@@ -7942,14 +7954,13 @@ export default function Canvas() {
                     <h2 className="text-sm font-medium text-gray-400 mb-2 px-1">{catName}</h2>
                     <div className="grid grid-cols-3 gap-1.5" style={{ maxWidth: '400px', margin: '0 auto' }}>
                       {topics.map(topic => (
-                        <button
+                        <div
                           key={topic.id}
+                          className="relative aspect-square rounded-lg overflow-hidden shadow-md cursor-pointer"
                           onClick={() => {
-                            // Navigate to this topic's content view
                             const catPath = topic.categoryId || ''
                             setStack([catPath, topic.originalTopicId])
                           }}
-                          className="relative aspect-square rounded-lg overflow-hidden shadow-md"
                         >
                           <div className={`w-full h-full bg-gradient-to-br ${gradient} relative`}>
                             <TilePattern patternId={pattern} />
@@ -7960,14 +7971,24 @@ export default function Canvas() {
                               <span className="text-white/70 text-xs mt-1">
                                 {(topic.flashcards || []).length} cards
                               </span>
-                              {topic.inStudyQueue && (
-                                <span className="mt-2 px-2 py-0.5 bg-white/20 rounded-full text-white/90 text-[10px]">
-                                  Studying
-                                </span>
-                              )}
                             </div>
+                            {/* Study toggle button */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                toggleStudyQueue(topic.originalTopicId)
+                                // Force re-render by updating a counter
+                                setLibraryRefresh(prev => prev + 1)
+                              }}
+                              className="absolute bottom-1.5 left-1/2 -translate-x-1/2 z-20 px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors"
+                              style={{ background: topic.inStudyQueue ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.15)' }}
+                            >
+                              <span className="text-white/90">
+                                {topic.inStudyQueue ? 'Studying \u2713' : '+ Study'}
+                              </span>
+                            </button>
                           </div>
-                        </button>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -8350,6 +8371,7 @@ export default function Canvas() {
                   }
                 }}
                 outline={currentDeck ? loadedOutlines[currentDeck.id] : null}
+                onToast={(msg) => { setToastMessage(msg); setTimeout(() => setToastMessage(null), 2000) }}
               />
             </AnimatePresence>
           </div>
