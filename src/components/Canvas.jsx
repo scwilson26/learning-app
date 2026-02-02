@@ -3,8 +3,8 @@ import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getCategoryTheme, hasCustomTheme, isDarkTheme } from '../themes'
 import { findTopicMatches, matchTopic } from '../utils/topicMatcher'
-import { generateSubDecks, generateSingleCardContent, generateTierCards, generateTopicPreview, generateTopicOutline, generateFlashcardsFromCard, generateFlashcardsFromOutline, classifyTopic, extractTextFromImage, extractTextFromPDF, generateNotesTitle, generateOutlineFromNotes } from '../services/claude'
-import { supabase, onAuthStateChange, signOut, syncCards, getCanonicalCardsForTopic, upsertCanonicalCard, getPreviewCardRemote, savePreviewCardRemote, getOutline, saveOutline, syncFlashcards, upsertFlashcardRemote, upsertFlashcardsRemote } from '../services/supabase'
+import { generateSubDecks, generateSingleCardContent, generateTierCards, generateTopicPreview, generateTopicOutline, generateFlashcardsFromCard, generateFlashcardsFromOutline, classifyTopic, extractTextFromImage, extractTextFromPDF, generateNotesTitle, generateOutlineFromNotes, generatePeopleChapter1, generatePeopleNextChapter, generateFlashcardsFromChapters } from '../services/claude'
+import { supabase, onAuthStateChange, signOut, syncCards, getCanonicalCardsForTopic, upsertCanonicalCard, getPreviewCardRemote, savePreviewCardRemote, getOutline, saveOutline, getChapterData, saveChapterData, syncFlashcards, upsertFlashcardRemote, upsertFlashcardsRemote } from '../services/supabase'
 import Auth from './Auth'
 import { MosaicView, CategoryTile, TilePattern, CATEGORY_GRADIENTS, CATEGORY_PATTERNS, UnifiedTileView, TileGrid } from './tiles'
 import {
@@ -26,7 +26,11 @@ import {
   unlockTier,
   getUnlockedTiers,
   getTreeChildren,
+  getAllTreeLeaves,
   isTreeDeck,
+  isPeopleTopic,
+  saveChapter,
+  getChapters,
   getTreeNode,
   getRandomTreePath,
   searchTopics,
@@ -283,7 +287,6 @@ const CATEGORIES = [
     gradient: 'from-sky-500 to-blue-600',
     bgColor: 'bg-sky-50',
     borderColor: 'border-sky-300',
-    children: ['leaders-politicians', 'scientists-inventors', 'artists-writers', 'musicians-performers', 'explorers-adventurers', 'philosophers-thinkers', 'athletes', 'villains-outlaws']
   },
   {
     id: 'philosophy',
@@ -392,15 +395,7 @@ const SUBCATEGORIES = {
   'famous-problems': { id: 'famous-problems', name: 'Famous Problems', gradient: 'from-indigo-500 to-purple-600', borderColor: 'border-indigo-300', children: [] },
   'mathematicians': { id: 'mathematicians', name: 'Mathematicians', gradient: 'from-indigo-500 to-purple-600', borderColor: 'border-indigo-300', children: [] },
 
-  // ===== PEOPLE (8 sub-categories) =====
-  'leaders-politicians': { id: 'leaders-politicians', name: 'Leaders & Politicians', gradient: 'from-sky-500 to-blue-600', borderColor: 'border-sky-300', children: [] },
-  'scientists-inventors': { id: 'scientists-inventors', name: 'Scientists & Inventors', gradient: 'from-sky-500 to-blue-600', borderColor: 'border-sky-300', children: [] },
-  'artists-writers': { id: 'artists-writers', name: 'Artists & Writers', gradient: 'from-sky-500 to-blue-600', borderColor: 'border-sky-300', children: [] },
-  'musicians-performers': { id: 'musicians-performers', name: 'Musicians & Performers', gradient: 'from-sky-500 to-blue-600', borderColor: 'border-sky-300', children: [] },
-  'explorers-adventurers': { id: 'explorers-adventurers', name: 'Explorers & Adventurers', gradient: 'from-sky-500 to-blue-600', borderColor: 'border-sky-300', children: [] },
-  'philosophers-thinkers': { id: 'philosophers-thinkers', name: 'Philosophers & Thinkers', gradient: 'from-sky-500 to-blue-600', borderColor: 'border-sky-300', children: [] },
-  'athletes': { id: 'athletes', name: 'Athletes', gradient: 'from-sky-500 to-blue-600', borderColor: 'border-sky-300', children: [] },
-  'villains-outlaws': { id: 'villains-outlaws', name: 'Villains & Outlaws', gradient: 'from-sky-500 to-blue-600', borderColor: 'border-sky-300', children: [] },
+
 
   // ===== PHILOSOPHY & RELIGION (7 sub-categories) =====
   'world-religions': { id: 'world-religions', name: 'World Religions', gradient: 'from-violet-500 to-purple-700', borderColor: 'border-violet-300', children: [] },
@@ -2604,6 +2599,275 @@ const INLINE_GRADIENTS = {
   default: 'linear-gradient(135deg, #6b7280, #4b5563, #374151)',
 }
 
+// Render markdown-like content with bold, bullets, and line breaks
+function renderChapterContent(text) {
+  if (!text) return null
+  const lines = text.split('\n')
+  return lines.map((line, i) => {
+    const trimmed = line.trim()
+    if (!trimmed) return <br key={i} />
+
+    // Detect headers (## or numbered sections like "1." "2.")
+    const headerMatch = trimmed.match(/^#{1,3}\s+(.+)/)
+    const numberedHeader = trimmed.match(/^(\d+)\.\s+(.+)/)
+
+    let content = trimmed
+    if (headerMatch) content = headerMatch[1]
+    else if (numberedHeader) content = numberedHeader[0]
+
+    // Bold formatting
+    const formatted = content.split(/(\*\*[^*]+\*\*)/).map((part, j) => {
+      const boldMatch = part.match(/^\*\*(.+)\*\*$/)
+      if (boldMatch) return <strong key={j}>{boldMatch[1]}</strong>
+      return part
+    })
+
+    // Bullet points
+    const isBullet = /^[-•*]\s/.test(trimmed)
+
+    if (headerMatch) {
+      return <h3 key={i} style={{ fontSize: '18px', fontWeight: 700, marginTop: '20px', marginBottom: '8px', color: '#1f2937' }}>{formatted}</h3>
+    }
+    if (numberedHeader) {
+      return <h3 key={i} style={{ fontSize: '17px', fontWeight: 700, marginTop: '18px', marginBottom: '6px', color: '#1f2937' }}>{formatted}</h3>
+    }
+    if (isBullet) {
+      return <p key={i} style={{ paddingLeft: '16px', marginBottom: '4px', color: '#374151', lineHeight: 1.6 }}>{formatted}</p>
+    }
+    return <p key={i} style={{ marginBottom: '8px', color: '#374151', lineHeight: 1.7 }}>{formatted}</p>
+  })
+}
+
+// Chapter-based content view for People topics
+function ChapterView({ chapters, streamingContent, isGenerating, isComplete, activeChapter, onSetActiveChapter, onContinueLearning, onAddToStudy, rootCategoryId }) {
+  const hasChapters = chapters && chapters.length > 0
+  const bg = INLINE_GRADIENTS[rootCategoryId] || INLINE_GRADIENTS.default
+
+  // Show loading state when generating first chapter
+  if (!hasChapters && isGenerating) {
+    return (
+      <div className="flex flex-col items-center gap-6 py-12">
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-gray-200 rounded-full" />
+          <div className="absolute top-0 left-0 w-16 h-16 border-4 border-sky-500 rounded-full border-t-transparent animate-spin" />
+        </div>
+        <div className="text-center">
+          <p className="text-lg font-semibold text-gray-700 mb-1">Writing Chapter 1...</p>
+          <p className="text-sm text-gray-500">Creating an introduction to this person</p>
+        </div>
+        {streamingContent && (
+          <div style={{ maxWidth: '600px', width: '100%', padding: '0 16px', maxHeight: '400px', overflow: 'auto' }}>
+            {renderChapterContent(streamingContent)}
+            <span className="inline-block w-2 h-4 bg-sky-500 animate-pulse ml-1" />
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  if (!hasChapters) {
+    return (
+      <div className="flex flex-col items-center gap-6 py-12">
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-gray-200 rounded-full" />
+          <div className="absolute top-0 left-0 w-16 h-16 border-4 border-sky-500 rounded-full border-t-transparent animate-spin" />
+        </div>
+        <p className="text-sm text-gray-500">Loading...</p>
+      </div>
+    )
+  }
+
+  const currentChapter = chapters[activeChapter] || chapters[0]
+  const isOnLatestChapter = activeChapter === chapters.length - 1
+
+  return (
+    <div style={{ width: '100%', padding: '0 16px' }}>
+      {/* Chapter navigation pills */}
+      {chapters.length > 1 && (
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '16px', flexWrap: 'wrap' }}>
+          {chapters.map((ch, i) => (
+            <button
+              key={ch.number}
+              onClick={() => onSetActiveChapter(i)}
+              style={{
+                padding: '6px 14px', borderRadius: '20px', border: 'none', cursor: 'pointer',
+                fontSize: '13px', fontWeight: 600,
+                background: i === activeChapter ? bg : '#f3f4f6',
+                color: i === activeChapter ? 'white' : '#6b7280',
+              }}
+            >
+              Ch {ch.number}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Chapter title */}
+      <h2 style={{ fontSize: '20px', fontWeight: 700, textAlign: 'center', marginBottom: '16px', color: '#111827' }}>
+        {currentChapter.title}
+      </h2>
+
+      {/* Chapter content */}
+      <div style={{ maxWidth: '600px', margin: '0 auto', paddingBottom: '24px' }}>
+        {renderChapterContent(currentChapter.content)}
+
+        {/* Streaming content for new chapter being generated */}
+        {isGenerating && isOnLatestChapter && streamingContent && (
+          <div style={{ marginTop: '24px', borderTop: '1px solid #e5e7eb', paddingTop: '16px' }}>
+            <p style={{ fontSize: '12px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', marginBottom: '8px' }}>
+              Generating Chapter {chapters.length + 1}...
+            </p>
+            {renderChapterContent(streamingContent)}
+            <span className="inline-block w-2 h-4 bg-sky-500 animate-pulse ml-1" />
+          </div>
+        )}
+
+        {/* Add to Study button — generates flashcards on demand */}
+        {chapters && chapters[0]?.flashcards?.length > 0 ? (
+          <p style={{ fontSize: '13px', color: '#059669', textAlign: 'center', marginTop: '16px', fontWeight: 600 }}>
+            {chapters[0].flashcards.length} flashcards added to study
+          </p>
+        ) : (
+          <button
+            onClick={onAddToStudy}
+            disabled={isGenerating}
+            style={{
+              display: 'block', margin: '16px auto 0', padding: '10px 24px', borderRadius: '10px',
+              background: 'white', color: '#374151', border: '1px solid #d1d5db', fontWeight: 600,
+              fontSize: '14px', cursor: isGenerating ? 'not-allowed' : 'pointer',
+              opacity: isGenerating ? 0.5 : 1,
+            }}
+          >
+            {isGenerating ? 'Generating flashcards...' : 'Add to Study'}
+          </button>
+        )}
+
+        {/* Continue Learning button (only on latest chapter, not generating, not complete) */}
+        {isOnLatestChapter && !isGenerating && !isComplete && (
+          <button
+            onClick={onContinueLearning}
+            style={{
+              display: 'block', margin: '24px auto 0', padding: '14px 32px', borderRadius: '12px',
+              background: bg, color: 'white', border: 'none', fontWeight: 700,
+              fontSize: '16px', cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+            }}
+          >
+            Continue Learning
+          </button>
+        )}
+
+        {/* Generating indicator */}
+        {isOnLatestChapter && isGenerating && !streamingContent && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '24px' }}>
+            <div className="w-5 h-5 border-2 border-sky-500 rounded-full border-t-transparent animate-spin" />
+            <span style={{ fontSize: '14px', color: '#6b7280' }}>Generating next chapter...</span>
+          </div>
+        )}
+
+        {/* Course complete */}
+        {isComplete && isOnLatestChapter && (
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+            marginTop: '24px', padding: '12px 24px', borderRadius: '12px',
+            background: '#ecfdf5', border: '1px solid #a7f3d0',
+          }}>
+            <span style={{ fontSize: '20px' }}>✓</span>
+            <span style={{ fontSize: '15px', fontWeight: 600, color: '#065f46' }}>Course Complete</span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Flat alphabetical list of all People with search filter
+function PeopleFlatList({ childDecks, onOpenDeck, rootCategoryId }) {
+  const [filter, setFilter] = useState('')
+  const BATCH_SIZE = 60
+
+  const filtered = useMemo(() => {
+    if (!filter.trim()) return childDecks
+    const q = filter.toLowerCase()
+    return childDecks.filter(d => (d.name || d.title || '').toLowerCase().includes(q))
+  }, [childDecks, filter])
+
+  const [visibleCount, setVisibleCount] = useState(BATCH_SIZE)
+
+  // Reset visible count when filter changes
+  useEffect(() => { setVisibleCount(BATCH_SIZE) }, [filter])
+
+  const visible = filtered.slice(0, visibleCount)
+  const hasMore = visibleCount < filtered.length
+  const bg = INLINE_GRADIENTS[rootCategoryId] || INLINE_GRADIENTS.default
+
+  return (
+    <div id="explore-section" style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', padding: '0 16px' }}>
+      <span style={{ fontSize: '12px', fontWeight: 500, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'center' }}>
+        {filtered.length.toLocaleString()} People
+      </span>
+      <div style={{ maxWidth: '400px', margin: '0 auto', width: '100%' }}>
+        <input
+          type="text"
+          placeholder="Search people..."
+          value={filter}
+          onChange={e => setFilter(e.target.value)}
+          style={{
+            width: '100%', padding: '10px 14px', borderRadius: '10px',
+            border: '1px solid #d1d5db', fontSize: '15px', outline: 'none',
+            background: '#f9fafb', marginBottom: '10px',
+          }}
+        />
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', maxWidth: '400px', margin: '0 auto', width: '100%' }}>
+        {visible.map((childDeck) => {
+          const tileName = childDeck.name || childDeck.title || ''
+          return (
+            <div
+              key={childDeck.id}
+              style={{
+                aspectRatio: '1', borderRadius: '8px', background: bg,
+                position: 'relative', overflow: 'hidden', cursor: 'pointer',
+                boxShadow: '0 4px 8px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2)',
+              }}
+              onClick={() => onOpenDeck(childDeck)}
+            >
+              <div style={{
+                position: 'absolute', inset: 0, borderRadius: '8px', pointerEvents: 'none',
+                boxShadow: 'inset 2px 2px 4px rgba(255,255,255,0.25), inset -2px -2px 4px rgba(0,0,0,0.25)',
+              }} />
+              <div style={{
+                position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: '8px', zIndex: 10,
+              }}>
+                <span style={{
+                  color: 'white', fontWeight: 600, textAlign: 'center', lineHeight: 1.2,
+                  fontSize: tileName.length > 25 ? '10px' : '13px',
+                  textShadow: '0 1px 3px rgba(0,0,0,0.4)',
+                }}>
+                  {tileName}
+                </span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      {hasMore && (
+        <button
+          onClick={() => setVisibleCount(c => c + BATCH_SIZE)}
+          style={{
+            margin: '8px auto', padding: '10px 24px', borderRadius: '10px',
+            background: bg, color: 'white', border: 'none', fontWeight: 600,
+            fontSize: '14px', cursor: 'pointer',
+          }}
+        >
+          Show more ({(filtered.length - visibleCount).toLocaleString()} remaining)
+        </button>
+      )}
+    </div>
+  )
+}
+
 // The spread - overview cards + sub-decks laid out in a grid (now with tiered cards)
 function DeckSpread({
   deck,
@@ -2640,8 +2904,23 @@ function DeckSpread({
   onToast,
   // Live streaming content for word-by-word display
   streamingContent,
+  // Chapter-based content (People topics)
+  chapters,
+  isChapterTopic,
+  isTopicComplete,
+  isGeneratingChapter,
+  onContinueLearning,
+  onAddToStudy,
 }) {
   const [addedToCollection, setAddedToCollection] = useState(() => isTopicInDeck(deck.id))
+  const [activeChapter, setActiveChapter] = useState(0) // index into chapters array
+
+  // Reset active chapter when chapters update (new chapter added → jump to it)
+  useEffect(() => {
+    if (chapters && chapters.length > 0) {
+      setActiveChapter(chapters.length - 1)
+    }
+  }, [chapters?.length])
 
   // Sync flashcards to collection when they become available
   useEffect(() => {
@@ -2722,8 +3001,23 @@ function DeckSpread({
 
 
 
+      {/* Chapter-based content for People topics */}
+      {isChapterTopic && isArticle && (
+        <ChapterView
+          chapters={chapters}
+          streamingContent={streamingContent}
+          isGenerating={isGeneratingChapter}
+          isComplete={isTopicComplete}
+          activeChapter={activeChapter}
+          onSetActiveChapter={setActiveChapter}
+          onContinueLearning={onContinueLearning}
+          onAddToStudy={onAddToStudy}
+          rootCategoryId={rootCategoryId}
+        />
+      )}
+
       {/* Loading state - show progress until at least 1 card has content */}
-      {isArticle && !hasReadyCard && (
+      {!isChapterTopic && isArticle && !hasReadyCard && (
         <div className="flex flex-col items-center gap-6 py-12">
           {/* Animated spinner */}
           <div className="relative">
@@ -2759,7 +3053,7 @@ function DeckSpread({
       )}
 
       {/* Tile-based card display - matching MosaicView style */}
-      {isArticle && hasReadyCard && (() => {
+      {!isChapterTopic && isArticle && hasReadyCard && (() => {
         // Get cards (sections) with embedded flashcards
         const allCards = [
           ...(tierCards.core || []),
@@ -2831,6 +3125,9 @@ function DeckSpread({
 
       {/* Sub-decks tile grid (for non-sectioned decks) */}
       {!isLoadingChildren && !sections && childDecks.length > 0 && (
+        deck.id === 'people' ? (
+          <PeopleFlatList childDecks={childDecks} onOpenDeck={onOpenDeck} rootCategoryId={rootCategoryId} />
+        ) : (
         <div id="explore-section" style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', padding: '0 16px' }}>
           <span style={{ fontSize: '12px', fontWeight: 500, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'center' }}>Explore</span>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', maxWidth: '400px', margin: '0 auto', width: '100%' }}>
@@ -2868,6 +3165,7 @@ function DeckSpread({
             })}
           </div>
         </div>
+        )
       )}
 
     </div>
@@ -3197,6 +3495,8 @@ export default function Canvas() {
   const [showPreviewCard, setShowPreviewCard] = useState(null) // { deckId, title, preview, isLoading } or null
   const [previewCards, setPreviewCards] = useState({}) // deckId -> { preview, claimed }
   const [loadedOutlines, setLoadedOutlines] = useState({}) // deckId -> outline object
+  const [chapterDataState, setChapterDataState] = useState({}) // deckId -> { chapters: [...], isComplete: bool }
+  const [generatingChapter, setGeneratingChapter] = useState(null) // deckId currently generating
 
   // Rabbit hole preview state (shown when tapping a linked topic in card content)
   const [rabbitHolePreview, setRabbitHolePreview] = useState(null) // { topic, category, preview, isLoading } or null
@@ -3661,6 +3961,26 @@ export default function Canvas() {
       if (deckLevel === 2 && dynamicChildren[deck.id].length === 0) {
         // Don't return - fall through to regeneration
       } else {
+        return
+      }
+    }
+
+    // FLAT PEOPLE: collect all leaf nodes directly instead of nested subcategories
+    if (deck.id === 'people') {
+      const allLeaves = getAllTreeLeaves('people')
+      if (allLeaves && allLeaves.length > 0) {
+        const childDeckObjects = allLeaves.map(leaf => ({
+          id: leaf.id,
+          name: leaf.name || leaf.title,
+          gradient: deck.gradient,
+          borderColor: deck.borderColor,
+          level: deckLevel + 1,
+          isLeaf: true,
+          wikiTitle: leaf.wikiTitle || null,
+          children: [],
+          source: 'vital-tree',
+        }))
+        setDynamicChildren(prev => ({ ...prev, [deck.id]: childDeckObjects }))
         return
       }
     }
@@ -4689,8 +5009,16 @@ export default function Canvas() {
   const prebuiltCardsRef = useRef({}) // deckId -> { core: [], deep_dive: [] }
 
   // Start background outline generation for a topic WITH STREAMING
-  // Cards are pre-built as sections complete, ready instantly when user navigates
+  // Dispatch: People topics → chapter system, everything else → outline system
   const startOutlineGeneration = async (deckId, topicName, parentContext, previewText = null, topicType = null) => {
+    if (isPeopleTopic(deckId)) {
+      return startChapterGeneration(deckId, topicName, parentContext, previewText)
+    }
+    return _startOutlineGenerationImpl(deckId, topicName, parentContext, previewText, topicType)
+  }
+
+  // Cards are pre-built as sections complete, ready instantly when user navigates
+  const _startOutlineGenerationImpl = async (deckId, topicName, parentContext, previewText = null, topicType = null) => {
     // Check if we already have an in-flight promise
     if (outlinePromisesRef.current[deckId]) {
       console.log(`[OUTLINE] Already generating outline for: ${topicName}`)
@@ -4828,6 +5156,211 @@ export default function Canvas() {
 
     outlinePromisesRef.current[deckId] = promise
     return promise
+  }
+
+  // =========================================================================
+  // PEOPLE CHAPTER GENERATION
+  // =========================================================================
+
+  const startChapterGeneration = async (deckId, topicName, parentContext, previewText = null) => {
+    // Check if already generating
+    if (outlinePromisesRef.current[deckId]) {
+      console.log(`[CHAPTERS] Already generating for: ${topicName}`)
+      return outlinePromisesRef.current[deckId]
+    }
+
+    // Check if chapters already exist in state
+    if (chapterDataState[deckId]?.chapters?.length > 0) {
+      console.log(`[CHAPTERS] Already loaded for: ${topicName}`)
+      return chapterDataState[deckId]
+    }
+
+    // Check Supabase for existing chapter data
+    try {
+      const existing = await getChapterData(deckId)
+      if (existing && existing.chapters.length > 0) {
+        console.log(`[CHAPTERS] Found ${existing.chapters.length} existing chapters for: ${topicName}`)
+        // Save to localStorage too
+        existing.chapters.forEach(ch => saveChapter(deckId, ch))
+        setChapterDataState(prev => ({ ...prev, [deckId]: existing }))
+        return existing
+      }
+    } catch (err) {
+      console.warn(`[CHAPTERS] Error checking Supabase:`, err)
+    }
+
+    // Check localStorage
+    const localChapters = getChapters(deckId)
+    if (localChapters.length > 0) {
+      console.log(`[CHAPTERS] Found ${localChapters.length} chapters in localStorage for: ${topicName}`)
+      setChapterDataState(prev => ({ ...prev, [deckId]: { chapters: localChapters, isComplete: false } }))
+      return { chapters: localChapters, isComplete: false }
+    }
+
+    // Initialize streaming storage
+    prebuiltCardsRef.current[deckId] = {
+      core: [], deep_dive: [],
+      _streamingContent: null
+    }
+
+    // Generate Chapter 1
+    setGeneratingChapter(deckId)
+    console.log(`[CHAPTERS] Starting Chapter 1 generation for: ${topicName}`)
+
+    const promise = (async () => {
+      try {
+        const onStreamChunk = (fullText) => {
+          if (prebuiltCardsRef.current[deckId]) {
+            prebuiltCardsRef.current[deckId]._streamingContent = fullText
+          }
+        }
+
+        const result = await generatePeopleChapter1(topicName, parentContext, previewText, onStreamChunk)
+
+        // Clear streaming content
+        if (prebuiltCardsRef.current[deckId]) {
+          prebuiltCardsRef.current[deckId]._streamingContent = null
+        }
+
+        const chapter = {
+          number: 1,
+          title: 'Introduction',
+          content: result.content,
+        }
+
+        // Save to localStorage
+        saveChapter(deckId, chapter)
+
+        // Save to Supabase
+        try {
+          await saveChapterData(deckId, [chapter], false)
+          console.log(`[CHAPTERS] Saved Chapter 1 to Supabase for: ${topicName}`)
+        } catch (err) {
+          console.warn(`[CHAPTERS] Failed to save to Supabase:`, err)
+        }
+
+        const data = { chapters: [chapter], isComplete: false }
+        setChapterDataState(prev => ({ ...prev, [deckId]: data }))
+        return data
+      } catch (err) {
+        console.error(`[CHAPTERS] Failed to generate Chapter 1 for: ${topicName}`, err)
+        throw err
+      } finally {
+        setGeneratingChapter(null)
+        delete outlinePromisesRef.current[deckId]
+      }
+    })()
+
+    outlinePromisesRef.current[deckId] = promise
+    return promise
+  }
+
+  const handleContinueLearning = async (deckId, topicName) => {
+    const existing = chapterDataState[deckId]
+    if (!existing || existing.isComplete) return
+
+    // Hard limit: max 4 chapters — auto-complete if already at 4
+    if (existing.chapters.length >= 4) {
+      const data = { ...existing, isComplete: true }
+      setChapterDataState(prev => ({ ...prev, [deckId]: data }))
+      try { await saveChapterData(deckId, existing.chapters, true) } catch (e) {}
+      return
+    }
+
+    setGeneratingChapter(deckId)
+
+    // Initialize streaming storage
+    prebuiltCardsRef.current[deckId] = {
+      ...(prebuiltCardsRef.current[deckId] || {}),
+      _streamingContent: null
+    }
+
+    try {
+      const onStreamChunk = (fullText) => {
+        if (prebuiltCardsRef.current[deckId]) {
+          prebuiltCardsRef.current[deckId]._streamingContent = fullText
+        }
+      }
+
+      const result = await generatePeopleNextChapter(topicName, existing.chapters, onStreamChunk)
+
+      // Clear streaming content
+      if (prebuiltCardsRef.current[deckId]) {
+        prebuiltCardsRef.current[deckId]._streamingContent = null
+      }
+
+      if (result.isComplete) {
+        const data = { ...existing, isComplete: true }
+        setChapterDataState(prev => ({ ...prev, [deckId]: data }))
+        try {
+          await saveChapterData(deckId, existing.chapters, true)
+        } catch (err) {
+          console.warn(`[CHAPTERS] Failed to save completion to Supabase:`, err)
+        }
+        return
+      }
+
+      const chapter = {
+        number: existing.chapters.length + 1,
+        title: result.title,
+        content: result.content,
+      }
+
+      // Save to localStorage
+      saveChapter(deckId, chapter)
+
+      const updatedChapters = [...existing.chapters, chapter]
+      const data = { chapters: updatedChapters, isComplete: false }
+      setChapterDataState(prev => ({ ...prev, [deckId]: data }))
+
+      // Save to Supabase
+      try {
+        await saveChapterData(deckId, updatedChapters, false)
+      } catch (err) {
+        console.warn(`[CHAPTERS] Failed to save chapter to Supabase:`, err)
+      }
+    } catch (err) {
+      console.error(`[CHAPTERS] Failed to generate next chapter for: ${topicName}`, err)
+    } finally {
+      setGeneratingChapter(null)
+    }
+  }
+
+  const handleAddChaptersToStudy = async (deckId, topicName) => {
+    const existing = chapterDataState[deckId]
+    if (!existing || existing.chapters.length === 0) return
+
+    // Check if flashcards already exist
+    if (existing.chapters[0].flashcards?.length > 0) {
+      // Already generated — just sync
+      const allFlashcards = existing.chapters.flatMap(ch =>
+        (ch.flashcards || []).map(fc => ({ ...fc, sectionTitle: `Chapter ${ch.number}: ${ch.title}` }))
+      )
+      updateTopicFlashcards(deckId, allFlashcards)
+      return
+    }
+
+    setGeneratingChapter(deckId) // reuse as loading indicator
+    try {
+      const flashcards = await generateFlashcardsFromChapters(topicName, existing.chapters)
+      if (flashcards.length > 0) {
+        // Attach flashcards to first chapter for storage
+        const updatedChapters = existing.chapters.map((ch, i) =>
+          i === 0 ? { ...ch, flashcards } : ch
+        )
+        const data = { ...existing, chapters: updatedChapters }
+        setChapterDataState(prev => ({ ...prev, [deckId]: data }))
+        updatedChapters.forEach(ch => saveChapter(deckId, ch))
+        try { await saveChapterData(deckId, updatedChapters, existing.isComplete) } catch (e) {}
+
+        const allFlashcards = flashcards.map(fc => ({ ...fc, sectionTitle: topicName }))
+        updateTopicFlashcards(deckId, allFlashcards)
+      }
+    } catch (err) {
+      console.error(`[CHAPTERS] Failed to generate flashcards:`, err)
+    } finally {
+      setGeneratingChapter(null)
+    }
   }
 
   // Get outline for a topic (from cache, in-flight, or Supabase)
@@ -7474,7 +8007,14 @@ export default function Canvas() {
               )}
             </div>
             <h1 className="text-lg font-semibold text-gray-800">Explore</h1>
-            <div className="w-16" /> {/* Spacer for balance */}
+            <div className="w-16 flex justify-end">
+              <button
+                onClick={() => { if (window.confirm('Clear all local data?')) { clearAllData(); window.location.reload() } }}
+                className="text-xs text-red-400 hover:text-red-600 font-medium"
+              >
+                Reset
+              </button>
+            </div>
           </div>
         </div>
 
@@ -8445,6 +8985,12 @@ export default function Canvas() {
                 outline={currentDeck ? loadedOutlines[currentDeck.id] : null}
                 onToast={(msg) => { setToastMessage(msg); setTimeout(() => setToastMessage(null), 2000) }}
                 streamingContent={streamingContent}
+                chapters={currentDeck ? chapterDataState[currentDeck.id]?.chapters : null}
+                isChapterTopic={currentDeck ? isPeopleTopic(currentDeck.id) : false}
+                isTopicComplete={currentDeck ? chapterDataState[currentDeck.id]?.isComplete : false}
+                isGeneratingChapter={currentDeck ? generatingChapter === currentDeck.id : false}
+                onContinueLearning={() => currentDeck && handleContinueLearning(currentDeck.id, currentDeck.name || currentDeck.title)}
+                onAddToStudy={() => currentDeck && handleAddChaptersToStudy(currentDeck.id, currentDeck.name || currentDeck.title)}
               />
           </div>
         )}

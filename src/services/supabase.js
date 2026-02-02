@@ -224,6 +224,28 @@ export async function saveOutline(topicId, outline) {
 }
 
 /**
+ * Get chapter data for a People topic (stored in topic_outlines with type: 'chapters')
+ * @param {string} topicId - The topic ID
+ * @returns {Promise<{chapters: Array, isComplete: boolean}|null>}
+ */
+export async function getChapterData(topicId) {
+  const { data, error } = await getOutline(topicId)
+  if (error || !data?.outline_json || data.outline_json.type !== 'chapters') return null
+  return { chapters: data.outline_json.chapters || [], isComplete: data.outline_json.isComplete || false }
+}
+
+/**
+ * Save chapter data for a People topic
+ * @param {string} topicId - The topic ID
+ * @param {Array} chapters - Array of chapter objects
+ * @param {boolean} isComplete - Whether the topic is fully covered
+ * @returns {Promise<{data: Object|null, error: Error|null}>}
+ */
+export async function saveChapterData(topicId, chapters, isComplete = false) {
+  return saveOutline(topicId, { type: 'chapters', chapters, isComplete })
+}
+
+/**
  * Claim a card for the current user
  * @param {string} cardId - The canonical card UUID
  * @param {string} userId - Optional user ID to use directly

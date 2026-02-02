@@ -1966,3 +1966,295 @@ Return the full outline with [CORE] and [DEEP DIVE] labels. End with POPUP TERMS
     throw new Error('Failed to generate outline from notes');
   }
 }
+
+// =============================================================================
+// PEOPLE CHAPTER GENERATION
+// =============================================================================
+
+/**
+ * Generate Chapter 1 (Introduction) for a People topic
+ * @param {string} personName - The person's name
+ * @param {string} parentContext - Parent path context
+ * @param {string} previewText - Preview card text (to avoid repetition)
+ * @param {Function} onStreamChunk - Streaming callback(fullText)
+ * @returns {Promise<{content: string, flashcards: Array, rawText: string}>}
+ */
+export async function generatePeopleChapter1(personName, parentContext = null, previewText = null, onStreamChunk = null) {
+  console.log(`[PEOPLE CH1] Generating Chapter 1 for: ${personName}`)
+
+  const previewNote = previewText ? `\nThe user already saw this preview — do NOT repeat these facts:\n"""\n${previewText}\n"""` : ''
+
+  const prompt = `Create Chapter 1 (Introduction) for: ${personName}${previewNote}
+
+GOAL: After this chapter, the user can TELL THE STORY of this person. Not recite facts — actually explain who they were and why they matter. They could impress someone at a dinner party.
+
+STRUCTURE:
+
+1. THE HOOK (2-3 sentences)
+   - Why should anyone care about this person?
+   - What makes them fascinating?
+   - This is the "central thread" that runs through their whole story
+
+2. THE WORLD THEY ENTERED (Context)
+   - What was happening when they were born/came of age?
+   - What did they inherit? What were they up against?
+   - Keep it brief — just enough to understand their story
+
+3. WHAT SHAPED THEM (Formation)
+   - Key moments that made them who they became
+   - Not a childhood biography — the TURNING POINTS
+   - What drove them? What wound or ambition?
+
+4. WHAT THEY DID (Actions — overview)
+   - The major beats of their life/career
+   - Tell it as a narrative, not a list
+   - Beginning → Middle → End (or present)
+
+5. WHY THEY MATTER (Impact)
+   - What changed because of them?
+   - What would be different if they never existed?
+   - Be specific, not generic praise
+
+6. IT'S NOT THAT SIMPLE (Complexity)
+   - One major flaw, failure, or controversy
+   - What's debated or misunderstood about them?
+   - Don't destroy them — add dimension
+
+7. HOW THEY'RE REMEMBERED (Legacy)
+   - Their place in history/culture now
+   - One sentence that captures their life
+
+TONE:
+- Tell a STORY, not a report
+- Direct, clear, no fluff
+- Make it interesting — this is a real person
+- Assume reader knows nothing
+
+FORMATTING:
+- Short paragraphs (1-3 sentences max)
+- One idea per paragraph
+- Line breaks between paragraphs
+- Use bullet lists sparingly — only for lists of 3+ items
+- Lots of white space
+- Easy to read on mobile
+- No walls of text
+
+OUTPUT:
+Chapter content following the 7 sections above.`
+
+  let buffer = ''
+
+  const stream = await anthropic.messages.create({
+    model: MODELS.CONTENT,
+    max_tokens: 8000,
+    messages: [{ role: 'user', content: prompt }],
+    stream: true
+  })
+
+  for await (const event of stream) {
+    if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+      buffer += event.delta.text
+      if (onStreamChunk) {
+        onStreamChunk(buffer)
+      }
+    }
+  }
+
+  const content = buffer.trim()
+  console.log(`[PEOPLE CH1] ✅ Generated Chapter 1 for ${personName}: ${content.length} chars`)
+
+  return { content, rawText: buffer }
+}
+
+/**
+ * Generate the next chapter for a People topic (expansion)
+ * @param {string} personName - The person's name
+ * @param {Array} previousChapters - Array of { number, title, content } objects
+ * @param {Function} onStreamChunk - Streaming callback(fullText)
+ * @returns {Promise<{title: string, content: string, flashcards: Array, isComplete: boolean}>}
+ */
+export async function generatePeopleNextChapter(personName, previousChapters, onStreamChunk = null) {
+  const chapterNum = previousChapters.length + 1
+  console.log(`[PEOPLE CH${chapterNum}] Generating next chapter for: ${personName}`)
+
+  const prevContent = previousChapters.map(ch =>
+    `--- CHAPTER ${ch.number}: ${ch.title} ---\n${ch.content}`
+  ).join('\n\n')
+
+  const prompt = `You are expanding a course on: ${personName}
+
+PREVIOUS CHAPTERS:
+${prevContent}
+
+YOUR TASK:
+
+1. ANALYZE: Review what's already covered. Identify which dimensions need DEEPER coverage.
+
+The 7 dimensions:
+- Identity (who they were)
+- Context (their world)
+- Formation (what shaped them)
+- Actions (what they did)
+- Impact (why they matter)
+- Complexity (flaws, debates)
+- Legacy (how remembered)
+
+2. DECIDE: Does this person need another chapter?
+
+STOPPING RULES:
+
+Before stopping, ask:
+
+"Does Chapter 1 alone give DEEP understanding, or just surface understanding?"
+
+If any dimension is only touched briefly but deserves more depth → generate another chapter.
+
+MINIMUM: Most people need at least 2 chapters.
+MAXIMUM: No more than 4 chapters.
+
+HARD LIMIT: After generating Chapter 4, ALWAYS output "COMPLETE". No exceptions. Do not generate Chapter 5.
+
+Only output "COMPLETE" after Chapter 1 if the person is genuinely simple (minor historical figure, limited impact).
+
+If more depth is needed → continue to step 3.
+
+3. GENERATE: Create Chapter ${chapterNum}.
+
+CHAPTER PRIORITIES:
+- If this is Chapter 4 (final chapter), MUST cover:
+  - How they died / end of their story
+  - Legacy and lasting impact
+  - How they're remembered today
+- Never end a course without covering the person's ending.
+
+RULES:
+- Focus on ONE dimension that needs depth (or two if tightly related)
+- NEVER repeat information from previous chapters
+- Assume user has completed all previous chapters
+- Go DEEPER, not wider
+- Chapter title should be specific (not "More About X")
+
+CHAPTER STRUCTURE:
+- Clear focus (what dimension is this deepening?)
+- Narrative flow (still a story, not a textbook)
+- New information only
+- Connects to what user already knows
+
+TONE:
+- Tell a STORY, not a report
+- Direct, clear, no fluff
+
+FORMATTING:
+- Short paragraphs (1-3 sentences max)
+- One idea per paragraph
+- Line breaks between paragraphs
+- Use bullet lists sparingly — only for lists of 3+ items
+- Lots of white space
+- Easy to read on mobile
+- No walls of text
+
+If generating a new chapter, output the chapter title on the first line prefixed with "CHAPTER TITLE: ", then the chapter content.
+
+If complete, output only: COMPLETE`
+
+  let buffer = ''
+
+  const stream = await anthropic.messages.create({
+    model: MODELS.CONTENT,
+    max_tokens: 8000,
+    messages: [{ role: 'user', content: prompt }],
+    stream: true
+  })
+
+  for await (const event of stream) {
+    if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+      buffer += event.delta.text
+      if (onStreamChunk) {
+        onStreamChunk(buffer)
+      }
+    }
+  }
+
+  const trimmed = buffer.trim()
+
+  // Check if complete
+  if (trimmed === 'COMPLETE' || trimmed.startsWith('COMPLETE')) {
+    console.log(`[PEOPLE CH${chapterNum}] ✅ Topic COMPLETE for ${personName}`)
+    return { title: null, content: null, isComplete: true }
+  }
+
+  // Parse title
+  let title = `Chapter ${chapterNum}`
+  const titleMatch = trimmed.match(/^CHAPTER TITLE:\s*(.+)/i)
+  if (titleMatch) {
+    title = titleMatch[1].trim()
+  }
+
+  // Remove title line from content
+  const content = (titleMatch ? trimmed.substring(trimmed.indexOf('\n') + 1) : trimmed).trim()
+
+  console.log(`[PEOPLE CH${chapterNum}] ✅ Generated "${title}" for ${personName}: ${content.length} chars`)
+
+  return { title, content, isComplete: false }
+}
+
+/**
+ * Generate flashcards from People chapter content (on-demand)
+ * @param {string} personName - The person's name
+ * @param {Array} chapters - Array of { number, title, content }
+ * @returns {Promise<Array<{question: string, answer: string}>>}
+ */
+export async function generateFlashcardsFromChapters(personName, chapters) {
+  console.log(`[PEOPLE FC] Generating flashcards for ${personName} (${chapters.length} chapters)`)
+
+  const chapterContent = chapters.map(ch =>
+    `--- CHAPTER ${ch.number}: ${ch.title} ---\n${ch.content}`
+  ).join('\n\n')
+
+  const prompt = `Generate flashcards for a course on: ${personName}
+
+CHAPTER CONTENT:
+${chapterContent}
+
+Generate 40-60 high-quality flashcards covering ALL chapters above.
+
+Rules:
+- Cover story beats, significance, causes, effects, complexity, key supporting facts
+- Question should be specific and clear
+- Answer should be 1-3 sentences (memorable, not paragraphs)
+- Test understanding, not just recall
+- Flashcards from later chapters can reference earlier chapter concepts
+- Bad: "When was ${personName} born?" → "1732"
+- Good: "What early experience taught ${personName} that [key lesson]?" → "[Specific answer that connects to their story]"
+
+Output a JSON array of flashcards. Each flashcard: {"question": "...", "answer": "..."}
+Output ONLY the JSON array, nothing else.`
+
+  const message = await anthropic.messages.create({
+    model: MODELS.CONTENT,
+    max_tokens: 8000,
+    messages: [{ role: 'user', content: prompt }]
+  })
+
+  const text = message.content[0].text.trim()
+
+  // Extract JSON array
+  const jsonMatch = text.match(/\[[\s\S]*\]/)
+  if (!jsonMatch) {
+    console.warn(`[PEOPLE FC] No JSON array found in response`)
+    return []
+  }
+
+  try {
+    const parsed = JSON.parse(jsonMatch[0])
+    if (Array.isArray(parsed)) {
+      const flashcards = parsed.filter(fc => fc.question && fc.answer)
+      console.log(`[PEOPLE FC] ✅ Generated ${flashcards.length} flashcards for ${personName}`)
+      return flashcards
+    }
+  } catch (e) {
+    console.error(`[PEOPLE FC] Failed to parse flashcards JSON:`, e)
+  }
+
+  return []
+}

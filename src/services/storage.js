@@ -381,6 +381,86 @@ export function getTreeChildren(deckId) {
 }
 
 /**
+ * Get all leaf nodes under a given tree node, recursively flattened
+ * @param {string} nodeId - The node ID to collect leaves from
+ * @returns {Array|null} Array of leaf objects sorted alphabetically, null if not found
+ */
+export function getAllTreeLeaves(nodeId) {
+  const node = findNodeById(vitalArticlesTree, nodeId)
+  if (!node) return null
+
+  const leaves = []
+  const collect = (n) => {
+    if (n.isLeaf) {
+      leaves.push({
+        id: n.id,
+        name: n.title,
+        title: n.title,
+        isLeaf: true,
+        wikiTitle: n.wikiTitle || null,
+        articleCount: 0,
+      })
+      return
+    }
+    if (n.children) {
+      for (const child of n.children) {
+        collect(child)
+      }
+    }
+  }
+
+  if (node.children) {
+    for (const child of node.children) {
+      collect(child)
+    }
+  }
+
+  leaves.sort((a, b) => a.title.localeCompare(b.title))
+  return leaves
+}
+
+/**
+ * Check if a topic belongs to the People category
+ * @param {string} deckId - The deck ID to check
+ * @returns {boolean} True if this is a People topic
+ */
+export function isPeopleTopic(deckId) {
+  return deckId?.startsWith('people-') || false
+}
+
+/**
+ * Save a chapter for a People topic to localStorage
+ * @param {string} deckId - The deck/topic ID
+ * @param {Object} chapter - { number, title, content, flashcards }
+ */
+export function saveChapter(deckId, chapter) {
+  const data = getData()
+  if (!data.decks) data.decks = {}
+  if (!data.decks[deckId]) data.decks[deckId] = {}
+  if (!data.decks[deckId].chapters) data.decks[deckId].chapters = []
+
+  // Replace if same chapter number exists, otherwise append
+  const idx = data.decks[deckId].chapters.findIndex(c => c.number === chapter.number)
+  if (idx >= 0) {
+    data.decks[deckId].chapters[idx] = chapter
+  } else {
+    data.decks[deckId].chapters.push(chapter)
+  }
+  data.decks[deckId].chapters.sort((a, b) => a.number - b.number)
+  saveData(data)
+}
+
+/**
+ * Get all chapters for a People topic from localStorage
+ * @param {string} deckId - The deck/topic ID
+ * @returns {Array} Array of chapter objects, or empty array
+ */
+export function getChapters(deckId) {
+  const data = getData()
+  return data.decks?.[deckId]?.chapters || []
+}
+
+/**
  * Check if a deck exists in the vital articles tree
  * @param {string} deckId - The deck ID to check
  * @returns {boolean} True if deck exists in tree
